@@ -1,4 +1,3 @@
-import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { useGaesupStore } from '../../../../stores/gaesupStore';
@@ -75,7 +74,7 @@ describe('CameraPresets 커스텀 UI', () => {
     const button = root.root.findByProps({ 'data-testid': 'preset-button' });
     expect(button.props['data-active']).toBe('false');
     act(() => {
-      const handleClick = button.props.onClick as () => void;
+      const handleClick = button.props['onClick'] as () => void;
       handleClick();
     });
     const state = useGaesupStore.getState();

@@ -1,5 +1,5 @@
-import { useQuestStore } from '../../quests/stores/questStore';
-import { useFriendshipStore } from '../../relations/stores/friendshipStore';
+import { useQuestStore, type QuestStore } from '../../quests/stores/questStore';
+import { useFriendshipStore, type FriendshipStore } from '../../relations/stores/friendshipStore';
 import type {
   AgentBehaviorBlueprint,
   NPCAction,
@@ -17,6 +17,14 @@ import type {
 } from '../types';
 
 const MAX_BLUEPRINT_STEPS = 32;
+export type NPCBrainConditionStores = {
+  questStore: QuestStore;
+  friendshipStore: FriendshipStore;
+};
+const legacyConditionStores: NPCBrainConditionStores = {
+  questStore: useQuestStore,
+  friendshipStore: useFriendshipStore,
+};
 const blueprints = new Map<string, NPCBrainBlueprint>();
 
 export function registerNPCBrainBlueprint(blueprint: NPCBrainBlueprint): () => void {
@@ -148,7 +156,7 @@ export function applyAgentBehaviorBlueprint(
   );
 }
 
-function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NPCObservation): boolean {
+function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NPCObservation, stores: NPCBrainConditionStores): boolean {
   switch (condition.type) {
     case 'always':
       return true;
@@ -157,10 +165,10 @@ function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NP
     case 'perceivedAny':
       return observation.perceived.length > 0;
     case 'questStatus':
-      return useQuestStore.getState().statusOf(condition.questId) === condition.status;
+      return stores.questStore.getState().statusOf(condition.questId) === condition.status;
     case 'friendshipAtLeast': {
       const npcId = condition.npcId ?? observation.instanceId;
-      return useFriendshipStore.getState().scoreOf(npcId) >= condition.score;
+      return stores.friendshipStore.getState().scoreOf(npcId) >= condition.score;
     }
     case 'memoryEquals':
       return observation.memory?.[condition.key] === condition.value;
@@ -222,6 +230,7 @@ function findNextEdge(
 export function compileNPCBrainBlueprint(
   blueprint: NPCBrainBlueprint,
   observation: NPCObservation,
+  stores: NPCBrainConditionStores = legacyConditionStores,
 ): NPCAction[] {
   const nodes = new Map(blueprint.nodes.map((node) => [node.id, node]));
   const actions: NPCAction[] = [];
@@ -232,7 +241,7 @@ export function compileNPCBrainBlueprint(
     steps += 1;
 
     if (current.type === 'condition') {
-      const branch = resolveCondition(current.condition, observation) ? 'true' : 'false';
+      const branch = resolveCondition(current.condition, observation, stores) ? 'true' : 'false';
       current = nodes.get(findNextEdge(blueprint.edges, current.id, branch)?.target ?? '');
       continue;
     }

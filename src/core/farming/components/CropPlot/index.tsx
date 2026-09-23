@@ -3,15 +3,15 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 import { MILLISECONDS_IN_SECOND } from '../../../boilerplate/types';
-import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
 import { useEngineFrame } from '../../../runtime/frame';
-import { useTimeStore } from '../../../time/stores/timeStore';
+import { useInventoryStoreApi } from '../../../inventory/stores/inventoryStore';
+import { useTimeStoreApi } from '../../../time/stores/timeStore';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
 import { notify } from '../../../ui/components/Toast/toastStore';
 import { getCropRegistry } from '../../registry/CropRegistry';
 import { acquireFarmingClock } from '../../stores/clock';
-import { usePlotStore } from '../../stores/plotStore';
+import { usePlotStore, usePlotStoreApi } from '../../stores/plotStore';
 import type { Plot } from '../../types';
 
 export type CropPlotProps = {
@@ -28,6 +28,9 @@ function inRange(plot: Plot, evt: ToolUseEvent, hit: number): boolean {
 }
 
 export function CropPlot({ id, position, size = 1.4, hitRange = 1.6 }: CropPlotProps) {
+  const plotStore = usePlotStoreApi();
+  const inventoryStore = useInventoryStoreApi();
+  const timeStore = useTimeStoreApi();
   const registerPlot = usePlotStore((s) => s.registerPlot);
   const plot = usePlotStore((s) => s.plots[id]);
   const till = usePlotStore((s) => s.till);
@@ -39,10 +42,10 @@ export function CropPlot({ id, position, size = 1.4, hitRange = 1.6 }: CropPlotP
     registerPlot({ id, position });
   }, [id, position, registerPlot]);
 
-  useEffect(acquireFarmingClock, []);
+  useEffect(() => acquireFarmingClock(timeStore, plotStore), [timeStore, plotStore]);
 
   const onShovel = useCallback((evt: ToolUseEvent): boolean | void => {
-    const cur = usePlotStore.getState().plots[id];
+    const cur = plotStore.getState().plots[id];
     if (!cur || !inRange(cur, evt, hitRange)) return;
     if (cur.state === 'mature') return harvest(id) ? true : undefined;
     if (cur.state === 'empty') {
@@ -50,29 +53,29 @@ export function CropPlot({ id, position, size = 1.4, hitRange = 1.6 }: CropPlotP
       if (ok) notify('info', '땅을 갈았다');
       return ok ? true : undefined;
     }
-  }, [id, hitRange, till, harvest]);
+  }, [id, hitRange, till, harvest, plotStore]);
 
   const onSeed = useCallback((evt: ToolUseEvent): boolean | void => {
-    const cur = usePlotStore.getState().plots[id];
+    const cur = plotStore.getState().plots[id];
     if (!cur || !inRange(cur, evt, hitRange)) return;
     if (cur.state !== 'tilled') return;
-    const equipped = useInventoryStore.getState().getEquipped();
+    const equipped = inventoryStore.getState().getEquipped();
     if (!equipped) return;
     const def = getCropRegistry().bySeedItemId(equipped.itemId);
     if (!def) return;
-    const minutes = useTimeStore.getState().totalMinutes;
+    const minutes = timeStore.getState().totalMinutes;
     return plant(id, def.id, minutes) ? true : undefined;
-  }, [id, hitRange, plant]);
+  }, [id, hitRange, plant, timeStore, plotStore, inventoryStore]);
 
   const onWater = useCallback((evt: ToolUseEvent): boolean | void => {
-    const cur = usePlotStore.getState().plots[id];
+    const cur = plotStore.getState().plots[id];
     if (!cur || !inRange(cur, evt, hitRange)) return;
     if (cur.state !== 'planted' && cur.state !== 'dried') return;
-    const minutes = useTimeStore.getState().totalMinutes;
+    const minutes = timeStore.getState().totalMinutes;
     const ok = water(id, minutes);
     if (ok) notify('info', '물을 줬다');
     return ok ? true : undefined;
-  }, [id, hitRange, water]);
+  }, [id, hitRange, water, timeStore, plotStore]);
 
   useToolUse('shovel', onShovel);
   useToolUse('seed', onSeed);

@@ -1,12 +1,14 @@
-import { computeVisibleRoomIds, findContainingRoomId, pointInRoomBounds } from '../core';
 import type { RoomDescriptor, RoomPortalDescriptor } from '../../types';
+import { computeVisibleRoomIds, findContainingRoomId, pointInRoomBounds } from '../core';
+
+const foyer: RoomDescriptor = {
+  id: 'foyer',
+  sceneId: 'home',
+  bounds: { min: [-4, -1, 1], max: [4, 3, 4] },
+};
 
 const rooms: RoomDescriptor[] = [
-  {
-    id: 'foyer',
-    sceneId: 'home',
-    bounds: { min: [-4, -1, 1], max: [4, 3, 4] },
-  },
+  foyer,
   {
     id: 'living',
     sceneId: 'home',
@@ -40,8 +42,8 @@ const portals: RoomPortalDescriptor[] = [
 
 describe('scene room visibility core', () => {
   it('detects whether a point is inside room bounds', () => {
-    expect(pointInRoomBounds({ x: 0, y: 0, z: 2 }, rooms[0].bounds)).toBe(true);
-    expect(pointInRoomBounds({ x: 0, y: 0, z: -3 }, rooms[0].bounds)).toBe(false);
+    expect(pointInRoomBounds({ x: 0, y: 0, z: 2 }, foyer.bounds)).toBe(true);
+    expect(pointInRoomBounds({ x: 0, y: 0, z: -3 }, foyer.bounds)).toBe(false);
   });
 
   it('finds the containing room', () => {

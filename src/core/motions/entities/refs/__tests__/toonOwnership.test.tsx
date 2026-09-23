@@ -3,11 +3,12 @@ import { StrictMode, type ReactElement, type ReactNode } from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
+
 import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 
 import { disposeToonGradients, setDefaultToonMode } from '../../../../rendering/toon';
-import { PhysicsEntity } from '../PhysicsEntity';
 import { PartsGroupRef } from '../PartsGroupRef';
+import { PhysicsEntity } from '../PhysicsEntity';
 import RiderRef from '../RiderRef';
 
 type MockGltf = {
@@ -56,12 +57,11 @@ jest.mock('@react-three/fiber', () => ({
 
 jest.mock('@react-three/rapier', () => {
   const three = jest.requireActual<typeof import('three')>('three');
-  const rapierContext = { rapier: { Ray: class {}, QueryFilterFlags: {} }, world: {} };
   return {
     CapsuleCollider: () => null,
     RigidBody: ({ children }: { children?: ReactNode }) => children ?? null,
     euler: () => new three.Euler(),
-    useRapier: () => rapierContext,
+    useRapier: () => ({ world: {} }),
   };
 });
 
@@ -128,7 +128,7 @@ function getProjectedClone(source: THREE.Object3D): THREE.Object3D {
 
 function getRenderedMaterial(renderer: ReactTestRenderer): THREE.Material {
   const meshes = renderer.root.findAllByType('mesh');
-  const material = meshes.at(-1)?.props.material as THREE.Material | THREE.Material[] | undefined;
+  const material = meshes.at(-1)?.props['material'] as THREE.Material | THREE.Material[] | undefined;
   if (!material || Array.isArray(material)) throw new Error('Expected one rendered material.');
   return material;
 }

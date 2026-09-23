@@ -10,7 +10,7 @@ import Ocean from '../mesh/water';
 jest.mock('../../../rendering/tsl/toonWater', () => {
   const { MeshBasicMaterial } = jest.requireActual<typeof import('three')>('three');
   return { createToonWaterMaterial: jest.fn(() => ({
-    material: new MeshBasicMaterial({ name: 'node-water-test' }), time: { value: 0 },
+    material: new MeshBasicMaterial({ name: 'node-water-test' }), time: { value: 0 }, brightness: { value: 1 },
   })) };
 });
 

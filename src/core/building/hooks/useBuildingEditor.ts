@@ -4,7 +4,7 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { getDefaultBuildingObject } from '../catalog';
-import { useBuildingStore } from '../stores/buildingStore';
+import { useBuildingStore, useBuildingStoreApi } from '../stores/buildingStore';
 import { MeshConfig, Position3D, Rotation3D, TileGroupConfig, TileObjectType } from '../types';
 import { TILE_CONSTANTS } from '../types/constants';
 
@@ -74,6 +74,7 @@ export function findTerrainBlockMaterial(
 }
 
 export function useBuildingEditor() {
+  const buildingStore = useBuildingStoreApi();
   const { camera, raycaster } = useThree();
   const mouseRef = useRef({ x: 0, y: 0 });
 
@@ -104,9 +105,9 @@ export function useBuildingEditor() {
   const raycastStackable = useCallback(() => {
     const grounded = raycastGround();
     if (!grounded) return null;
-    const support = useBuildingStore.getState().getSupportHeightAt(grounded);
+    const support = buildingStore.getState().getSupportHeightAt(grounded);
     return { ...grounded, y: support };
-  }, [raycastGround]);
+  }, [buildingStore, raycastGround]);
 
   const updateMousePosition = useCallback((event: MouseEvent) => {
     const targetLike = (event.currentTarget as Partial<HTMLCanvasElement> | null)
@@ -129,7 +130,7 @@ export function useBuildingEditor() {
     mouseRef.current.x = normalizedX * 2 - 1;
     mouseRef.current.y = -normalizedY * 2 + 1;
 
-    const mode = useBuildingStore.getState().editMode;
+    const mode = buildingStore.getState().editMode;
     if (mode === 'tile' || mode === 'block' || mode === 'npc') {
       setHoverPosition(raycastStackable());
     } else if (mode === 'wall' || mode === 'object') {
@@ -137,7 +138,7 @@ export function useBuildingEditor() {
     } else {
       setHoverPosition(null);
     }
-  }, [raycastGround, raycastStackable, setHoverPosition]);
+  }, [buildingStore, raycastGround, raycastStackable, setHoverPosition]);
 
   const placeWall = useCallback(() => {
     const {
@@ -147,7 +148,7 @@ export function useBuildingEditor() {
       currentWallKind,
       checkWallPosition,
       hoverPosition,
-    } = useBuildingStore.getState();
+    } = buildingStore.getState();
     if (mode !== 'wall' || !groupId || !hoverPosition) return;
     if (checkWallPosition(hoverPosition, currentWallRotation)) return;
     const rotation: Rotation3D = { x: 0, y: currentWallRotation, z: 0 };
@@ -158,7 +159,7 @@ export function useBuildingEditor() {
       wallGroupId: groupId,
       wallKind: currentWallKind,
     });
-  }, [addWall]);
+  }, [buildingStore, addWall]);
 
   const placeTile = useCallback(() => {
     const {
@@ -171,7 +172,7 @@ export function useBuildingEditor() {
       currentTileShape,
       currentTileRotation,
       hoverPosition,
-    } = useBuildingStore.getState();
+    } = buildingStore.getState();
     if (mode !== 'tile' || !groupId || !hoverPosition) return;
 
     // Stacking semantics:
@@ -196,7 +197,7 @@ export function useBuildingEditor() {
       rotation: currentTileRotation,
       shape: currentTileShape,
     });
-  }, [addTile]);
+  }, [buildingStore, addTile]);
 
   const placeBlock = useCallback(() => {
     const {
@@ -212,7 +213,7 @@ export function useBuildingEditor() {
       meshes,
       addMesh,
       hoverPosition,
-    } = useBuildingStore.getState();
+    } = buildingStore.getState();
     if (mode !== 'block' || !hoverPosition) return;
 
     const heightStep = TILE_CONSTANTS.HEIGHT_STEP;
@@ -237,7 +238,7 @@ export function useBuildingEditor() {
 
     if (checkBlockPosition(block)) return;
     addBlock(block);
-  }, [addBlock]);
+  }, [buildingStore, addBlock]);
 
   const placeObject = useCallback(() => {
     const {
@@ -270,7 +271,7 @@ export function useBuildingEditor() {
       currentModelUrl,
       currentModelScale,
       currentModelColor,
-    } = useBuildingStore.getState();
+    } = buildingStore.getState();
     if (mode !== 'object' || selectedPlacedObjectType === 'none' || !hoverPosition) return;
 
     let tileY = 0;
@@ -290,7 +291,7 @@ export function useBuildingEditor() {
     const config =
       selectedPlacedObjectType === 'tree' || selectedPlacedObjectType === 'sakura'
         ? {
-            size: useBuildingStore.getState().currentTileMultiplier * cellSize,
+            size: buildingStore.getState().currentTileMultiplier * cellSize,
             primaryColor: currentObjectPrimaryColor,
             secondaryColor: currentObjectSecondaryColor,
             treeKind: selectedPlacedObjectType === 'sakura' ? 'sakura' : currentTreeKind,
@@ -343,28 +344,28 @@ export function useBuildingEditor() {
       ...(currentObjectRotation !== 0 ? { rotation: currentObjectRotation } : {}),
       ...(config ? { config } : {}),
     });
-  }, [addObject]);
+  }, [buildingStore, addObject]);
 
   const handleWallClick = useCallback((wallId: string) => {
-    const { editMode: mode } = useBuildingStore.getState();
+    const { editMode: mode } = buildingStore.getState();
     if (mode === 'wall') {
       setSelectedWallId(wallId);
     }
-  }, [setSelectedWallId]);
+  }, [buildingStore, setSelectedWallId]);
 
   const handleTileClick = useCallback((tileId: string) => {
-    const { editMode: mode } = useBuildingStore.getState();
+    const { editMode: mode } = buildingStore.getState();
     if (mode === 'tile') {
       setSelectedTileId(tileId);
     }
-  }, [setSelectedTileId]);
+  }, [buildingStore, setSelectedTileId]);
 
   const handleBlockClick = useCallback((blockId: string) => {
-    const { editMode: mode } = useBuildingStore.getState();
+    const { editMode: mode } = buildingStore.getState();
     if (mode === 'block') {
       setSelectedBlockId(blockId);
     }
-  }, [setSelectedBlockId]);
+  }, [buildingStore, setSelectedBlockId]);
 
   return {
     updateMousePosition,

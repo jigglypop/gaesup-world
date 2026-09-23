@@ -1,4 +1,4 @@
-import type { DomainBinding } from '../../../save/types';
+import type { DomainBinding, SerializedDomainValue } from '../../../save/types';
 import { createLocalVisitChannel } from '../channel';
 import {
   applyVisitSnapshot,
@@ -7,7 +7,11 @@ import {
 } from '../serializer';
 import type { VisitChannelEvent } from '../types';
 
-function bindingFor<T>(key: string, get: () => T, set: (v: T | null | undefined) => void): DomainBinding<T> {
+function bindingFor(
+  key: string,
+  get: () => SerializedDomainValue,
+  set: (v: SerializedDomainValue) => void,
+): DomainBinding {
   return { key, serialize: get, hydrate: (data) => set(data) };
 }
 
@@ -112,7 +116,7 @@ describe('visit-room serializer', () => {
   it('apply restores domain values via hydrate', () => {
     let captured: { tiles: number[] } | null = null;
     const provider = () => [
-      bindingFor<{ tiles: number[] }>(
+      bindingFor(
         'building',
         () => ({ tiles: [] }),
         (v) => { captured = (v as { tiles: number[] }) ?? null; },

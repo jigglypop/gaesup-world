@@ -9,7 +9,7 @@ test('retains one-time execution history across edits while accepting new event 
   blueprint.actions = [{ type: 'setFlag', key: 'visited', value: true }];
   blueprint.policy = { run: 'once' };
   const view = render(<GameplayEventPanel blueprints={[blueprint]} />);
-  const run = () => fireEvent.click(screen.getByRole('button', { name: '실행', exact: true }));
+  const run = () => fireEvent.click(screen.getByRole('button', { name: '실행' }));
   await act(async () => { run(); });
   expect(screen.getByRole('status')).toHaveTextContent('이벤트를 실행했습니다');
   view.rerender(<GameplayEventPanel blueprints={[{ ...blueprint, name: '수정한 이름' }]} />);
@@ -32,7 +32,7 @@ test('waits for an event run and permits retry after failure', async () => {
   const blueprint = createManualToastEventBlueprint({ id: 'run', name: '실행 체험', triggerKey: 'run', message: '안내' });
   const view = render(<GameplayEventPanel blueprints={[blueprint]} onRun={onRun} />);
   try {
-    const run = screen.getByRole('button', { name: '실행', exact: true });
+    const run = screen.getByRole('button', { name: '실행' });
     fireEvent.click(run);
     fireEvent.click(run);
     expect(onRun).toHaveBeenCalledTimes(1);
@@ -53,7 +53,7 @@ test('explains server-only events instead of reporting successful execution', as
   const blueprint = createManualToastEventBlueprint({ id: 'server', name: '서버 이벤트', triggerKey: 'server', message: '안내' });
   blueprint.policy = { requiresServer: true };
   render(<GameplayEventPanel blueprints={[blueprint]} />);
-  await act(async () => { fireEvent.click(screen.getByRole('button', { name: '실행', exact: true })); });
+  await act(async () => { fireEvent.click(screen.getByRole('button', { name: '실행' })); });
   expect(screen.getByRole('status')).toHaveTextContent('서버에서 실행해야 하는 이벤트입니다.');
   expect(screen.getByRole('status')).not.toHaveTextContent('이벤트를 실행했습니다');
 });
@@ -62,7 +62,7 @@ test('localized choices preserve event type and execution policy values', () => 
   const blueprint = createManualToastEventBlueprint({ id: 'event', name: '체험 이벤트', triggerKey: 'test', message: '안내' });
   const onUpdate = jest.fn();
   render(<GameplayEventPanel blueprints={[blueprint]} onUpdate={onUpdate} />);
-  fireEvent.click(screen.getByRole('button', { name: '편집', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: '편집' }));
   const conditions = screen.getByRole('combobox', { name: '조건 유형' });
   const actions = screen.getByRole('combobox', { name: '동작 유형' });
   expect(within(conditions).getByRole('option', { name: '아이템 보유' })).toHaveValue('hasItem');
@@ -83,9 +83,9 @@ test('keeps numeric-looking toast messages as text', () => {
   const blueprint = createManualToastEventBlueprint({ id: 'message', name: '메시지', triggerKey: 'test', message: '안내' });
   const onUpdate = jest.fn();
   render(<GameplayEventPanel blueprints={[blueprint]} onUpdate={onUpdate} />);
-  fireEvent.click(screen.getByRole('button', { name: '편집', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: '편집' }));
   for (const value of ['00123', 'true', 'false']) {
-    fireEvent.change(screen.getByRole('textbox', { name: '내용', exact: true }), { target: { value } });
+    fireEvent.change(screen.getByRole('textbox', { name: '내용' }), { target: { value } });
     expect(onUpdate.mock.calls.at(-1)?.[0].actions[0].text).toBe(value);
   }
 });
@@ -96,15 +96,15 @@ test('localized notification and quest choices save canonical values', () => {
   blueprint.conditions = [{ type: 'questStatus', questId: 'quest', status: 'available' }];
   const onUpdate = jest.fn();
   render(<GameplayEventPanel blueprints={[blueprint]} onUpdate={onUpdate} />);
-  fireEvent.click(screen.getByRole('button', { name: '편집', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: '편집' }));
   const kind = screen.getByRole('combobox', { name: '알림 종류' });
   expect(within(kind).getAllByRole('option').map(option => option.textContent)).toEqual(['안내', '성공', '주의', '오류', '보상', '우편']);
   fireEvent.change(kind, { target: { value: 'reward' } });
   expect(onUpdate.mock.calls.at(-1)?.[0].actions[0].kind).toBe('reward');
-  const [triggerStatus, conditionStatus] = screen.getAllByRole('combobox', { name: '상태', exact: true });
+  const [triggerStatus, conditionStatus] = screen.getAllByRole('combobox', { name: '상태' });
   expect(triggerStatus).toHaveValue('active');
   expect(conditionStatus).toHaveValue('available');
-  expect(within(triggerStatus!).getByRole('option', { name: '완료', exact: true })).toHaveValue('completed');
+  expect(within(triggerStatus!).getByRole('option', { name: '완료' })).toHaveValue('completed');
   fireEvent.change(triggerStatus!, { target: { value: 'completed' } });
   expect(onUpdate.mock.calls.at(-1)?.[0].trigger.status).toBe('completed');
   fireEvent.change(conditionStatus!, { target: { value: 'failed' } });

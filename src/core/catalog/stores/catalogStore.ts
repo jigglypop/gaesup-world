@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
 import type { ItemId } from '../../items/types';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import type { CatalogEntry, CatalogSerialized } from '../types';
 
 type State = {
@@ -16,7 +18,8 @@ type State = {
   prepareHydrate: (data: CatalogSerialized | null | undefined) => () => void;
 };
 
-export const useCatalogStore = create<State>((set, get) => ({
+export function createCatalogStore() {
+  return create<State>((set, get) => ({
   entries: {},
 
   record: (itemId, count, gameDay) => {
@@ -55,3 +58,9 @@ export const useCatalogStore = create<State>((set, get) => ({
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+}
+
+export type CatalogStore = ReturnType<typeof createCatalogStore>;
+export const { useStore: useCatalogStore, useStoreApi: useCatalogStoreApi } = createScopedStoreHook(
+  createCatalogStore(), () => useGaesupRuntime()?.catalogStore,
+);

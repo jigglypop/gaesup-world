@@ -1,7 +1,7 @@
-import { FC, useEffect, useRef } from 'react';
+import { FC, useLayoutEffect, useRef } from 'react';
 
 import type { CameraOptionType } from '../../../camera/core/types';
-import { useGaesupStore } from '../../../stores/gaesupStore';
+import { useGaesupStoreApi } from '../../../stores/gaesupStore';
 import type { ModeState } from '../../../stores/slices/mode/types';
 import { EditorLayout } from '../EditorLayout';
 import '../../styles/theme.css';
@@ -75,10 +75,13 @@ export const Editor: FC<EditorProps> = ({
   onAutosave,
   onToggleAutosave,
 }) => {
+  const storeApi = useGaesupStoreApi();
   const sessionSnapshotRef = useRef<EditorSessionSnapshot | null>(null);
 
-  useEffect(() => {
-    const store = useGaesupStore.getState();
+  // Release the outgoing editor before the incoming world applies its layout
+  // configuration. A passive cleanup can overwrite that new route's camera.
+  useLayoutEffect(() => {
+    const store = storeApi.getState();
     sessionSnapshotRef.current = {
       mode: { ...store.mode },
       cameraOption: cloneCameraOption(store.cameraOption),
@@ -94,14 +97,14 @@ export const Editor: FC<EditorProps> = ({
       const snapshot = sessionSnapshotRef.current;
       if (!snapshot) return;
 
-      const currentStore = useGaesupStore.getState();
+      const currentStore = storeApi.getState();
       currentStore.setMode(snapshot.mode);
       currentStore.replaceCameraOption(snapshot.cameraOption);
       currentStore.setInteractionActive(snapshot.interactionActive);
       currentStore.updateKeyboard(RELEASED_KEYBOARD_STATE);
       currentStore.updateMouse(INACTIVE_MOUSE_STATE);
     };
-  }, []);
+  }, [storeApi]);
 
   return (
     <div 

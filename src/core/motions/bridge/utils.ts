@@ -1,7 +1,8 @@
 import { PhysicsInputState, PhysicsState } from '../types';
 
 export const updateInputState = (state: PhysicsState, input: PhysicsInputState): void => {
-  const keyboardKeys = ['forward', 'backward', 'leftward', 'rightward', 'shift', 'space', 'keyE', 'keyR'] as const;
+  state.gamepad = input.gamepad;
+  const keyboardKeys = ['forward', 'backward', 'leftward', 'rightward', 'shift', 'space', 'keyE', 'keyR', 'keyF', 'keyZ', 'escape'] as const;
   
   keyboardKeys.forEach(key => {
     if (state.keyboard[key] !== input.keyboard[key]) {
@@ -22,4 +23,6 @@ export const updateInputState = (state: PhysicsState, input: PhysicsInputState):
   if (state.mouse.shouldRun !== input.mouse.shouldRun) {
     state.mouse.shouldRun = input.mouse.shouldRun;
   }
-}; 
+  if (input.mouse.isLookAround === undefined) delete state.mouse.isLookAround;
+  else state.mouse.isLookAround = input.mouse.isLookAround;
+};

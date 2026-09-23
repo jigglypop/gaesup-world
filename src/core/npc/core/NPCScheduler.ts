@@ -75,13 +75,20 @@ export function resolveSchedule(schedule: NPCSchedule, time: GameTime): ActiveSl
 
 class SchedulerRegistry {
   private map = new Map<string, NPCSchedule>();
+  private listeners = new Set<() => void>();
+  subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener);
+    return () => { this.listeners.delete(listener); };
+  };
+  private publish(): void { for (const listener of this.listeners) listener(); }
 
   register(schedule: NPCSchedule): void {
     this.map.set(schedule.npcId, schedule);
+    this.publish();
   }
 
   unregister(npcId: string): void {
-    this.map.delete(npcId);
+    if (this.map.delete(npcId)) this.publish();
   }
 
   get(npcId: string): NPCSchedule | undefined { return this.map.get(npcId); }
@@ -94,9 +101,10 @@ class SchedulerRegistry {
 
   all(): NPCSchedule[] { return Array.from(this.map.values()); }
 
-  clear(): void { this.map.clear(); }
+  clear(): void { if (this.map.size) { this.map.clear(); this.publish(); } }
 }
 
+export function createNPCScheduler(): SchedulerRegistry { return new SchedulerRegistry(); }
 let _instance: SchedulerRegistry | null = null;
 export function getNPCScheduler(): SchedulerRegistry {
   if (!_instance) _instance = new SchedulerRegistry();

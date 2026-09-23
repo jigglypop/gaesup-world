@@ -36,7 +36,8 @@ describe('Application Constants', () => {
 
     test('should be immutable', () => {
       expect(() => {
-        (PHYSICS_CONSTANTS as any).GRAVITY = -5;
+        // @ts-expect-error: frozen constants must reject writes at runtime
+        PHYSICS_CONSTANTS.GRAVITY = -5;
       }).toThrow();
     });
 
@@ -89,7 +90,8 @@ describe('Application Constants', () => {
 
     test('should be immutable', () => {
       expect(() => {
-        (CAMERA_CONSTANTS as any).DEFAULT_FOV = 45;
+        // @ts-expect-error: frozen constants must reject writes at runtime
+        CAMERA_CONSTANTS.DEFAULT_FOV = 45;
       }).toThrow();
     });
 
@@ -139,7 +141,8 @@ describe('Application Constants', () => {
 
     test('should be immutable', () => {
       expect(() => {
-        (UI_CONSTANTS as any).PANEL_MIN_WIDTH = 150;
+        // @ts-expect-error: frozen constants must reject writes at runtime
+        UI_CONSTANTS.PANEL_MIN_WIDTH = 150;
       }).toThrow();
     });
 
@@ -194,7 +197,8 @@ describe('Application Constants', () => {
 
     test('should be immutable', () => {
       expect(() => {
-        (GAME_CONSTANTS as any).MAX_PLAYERS = 200;
+        // @ts-expect-error: frozen constants must reject writes at runtime
+        GAME_CONSTANTS.MAX_PLAYERS = 200;
       }).toThrow();
     });
 
@@ -239,7 +243,8 @@ describe('Application Constants', () => {
 
     test('should be immutable', () => {
       expect(() => {
-        (STORAGE_KEYS as any).USER_PREFERENCES = 'user_prefs';
+        // @ts-expect-error: frozen constants must reject writes at runtime
+        STORAGE_KEYS.USER_PREFERENCES = 'user_prefs';
       }).toThrow();
     });
 
@@ -397,21 +402,25 @@ describe('Application Constants', () => {
 
     test('should prevent adding new properties', () => {
       expect(() => {
-        (PHYSICS_CONSTANTS as any).NEW_PROPERTY = 123;
+        // @ts-expect-error: frozen constants must reject new properties at runtime
+        PHYSICS_CONSTANTS.NEW_PROPERTY = 123;
       }).toThrow();
 
       expect(() => {
-        (STORAGE_KEYS as any).NEW_KEY = 'new_key';
+        // @ts-expect-error: frozen constants must reject new properties at runtime
+        STORAGE_KEYS.NEW_KEY = 'new_key';
       }).toThrow();
     });
 
     test('should prevent deleting properties', () => {
       expect(() => {
-        delete (GAME_CONSTANTS as any).MAX_PLAYERS;
+        // @ts-expect-error: frozen constants must reject deletes at runtime
+        delete GAME_CONSTANTS.MAX_PLAYERS;
       }).toThrow();
 
       expect(() => {
-        delete (UI_CONSTANTS as any).PANEL_MIN_WIDTH;
+        // @ts-expect-error: frozen constants must reject deletes at runtime
+        delete UI_CONSTANTS.PANEL_MIN_WIDTH;
       }).toThrow();
     });
   });

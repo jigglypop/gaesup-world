@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useTownStore } from './stores/townStore';
+import { useTownStore, type TownStore } from './stores/townStore';
 import type { TownSerialized } from './types';
 
 export interface TownPluginOptions {
@@ -12,12 +12,12 @@ const DEFAULT_PLUGIN_ID = 'gaesup.town';
 const DEFAULT_SAVE_EXTENSION_ID = 'town';
 const DEFAULT_STORE_SERVICE_ID = 'town.store';
 
-export function serializeTownState(): TownSerialized {
-  return useTownStore.getState().serialize();
+export function serializeTownState(store: TownStore = useTownStore): TownSerialized {
+  return store.getState().serialize();
 }
 
-export function hydrateTownState(data: TownSerialized | null | undefined): void {
-  useTownStore.getState().hydrate(data);
+export function hydrateTownState(data: TownSerialized | null | undefined, store: TownStore = useTownStore): void {
+  store.getState().hydrate(data);
 }
 
 export function createTownPlugin(options: TownPluginOptions = {}) {
@@ -27,11 +27,12 @@ export function createTownPlugin(options: TownPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useTownStore,
+    resolveStore: context => context.services.get<TownStore>('gaesup.runtime.town-store') ?? useTownStore,
     readyEvent: 'town:ready',
     capabilities: ['town'],
     serialize: serializeTownState,
     hydrate: hydrateTownState,
-    prepareHydrate: (data) => useTownStore.getState().prepareHydrate(data),
+    prepareHydrate: (data, store) => store.getState().prepareHydrate(data),
   });
 }
 

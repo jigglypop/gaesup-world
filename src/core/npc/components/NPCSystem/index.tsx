@@ -7,7 +7,9 @@ import { weightFromDistance } from '@core/utils/sfe';
 
 import { BuildingNavigationObstacleDriver } from '../../../building/components/BuildingNavigationObstacleDriver';
 import { useBuildingStore } from '../../../building/stores/buildingStore';
-import { applyNPCNavigationRoute, NavigationSystem } from '../../../navigation';
+import { applyNPCNavigationRoute, useNavigationSystem } from '../../../navigation';
+import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../../runtime/runtimeContext';
+import { useNPCSimulation } from '../../hooks/useNPCSimulation';
 import { useNPCStore } from '../../stores/npcStore';
 import { NPCInstance } from '../NPCInstance';
 import './styles.css';
@@ -17,6 +19,7 @@ const NPC_LOD_FAR = 120;
 const NPC_LOD_STRENGTH = 4;
 
 export function NPCSystem() {
+  const simulation = useNPCSimulation();
   const { gl, get: getThreeState } = useThree();
   const instances = useNPCStore((state) => state.instances);
   const selectedInstanceId = useNPCStore((state) => state.selectedInstanceId);
@@ -30,13 +33,18 @@ export function NPCSystem() {
   const editMode = useBuildingStore(state => state.editMode);
   const hoverPosition = useBuildingStore(state => state.hoverPosition);
   const isNPCMode = editMode === 'npc';
-  const navigationRef = useRef(NavigationSystem.getInstance());
+  const navigation = useNavigationSystem();
+  const runtime = useGaesupRuntime();
+  const runtimeRevision = useGaesupRuntimeRevision();
   const navigationReadyRef = useRef(false);
   const [navigationReady, setNavigationReady] = useState(false);
 
   useEffect(() => {
     let active = true;
-    void navigationRef.current.init().then((ready) => {
+    navigationReadyRef.current = false;
+    setNavigationReady(false);
+    if (runtime && !runtime.isActive()) return;
+    void navigation.init().then((ready) => {
       if (!active) return;
       navigationReadyRef.current = ready;
       setNavigationReady(ready);
@@ -44,7 +52,7 @@ export function NPCSystem() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [navigation, runtime, runtimeRevision]);
 
   // Distance-based LOD: hide NPCs beyond LOD_FAR.
   const [visibleIds, setVisibleIds] = useState<Set<string>>(() => new Set());
@@ -58,7 +66,7 @@ export function NPCSystem() {
     const cam = getThreeState().camera.position;
     const next = new Set<string>();
     instances.forEach((inst) => {
-      const [x, y, z] = inst.position;
+      const [x, y, z] = simulation.getPose(inst.id)?.position ?? inst.position;
       const dx = x - cam.x, dy = y - cam.y, dz = z - cam.z;
       const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
       const w = weightFromDistance(dist, NPC_LOD_NEAR, NPC_LOD_FAR, NPC_LOD_STRENGTH);
@@ -87,8 +95,8 @@ export function NPCSystem() {
         updateInstanceBehavior(selectedInstanceId, { mode: 'idle' });
         if (selectedInstance && navigationReadyRef.current) {
           const route = applyNPCNavigationRoute(
-            navigationRef.current,
-            { id: selectedInstance.id, position: selectedInstance.position },
+            navigation,
+            { id: selectedInstance.id, position: simulation.getPose(selectedInstance.id)?.position ?? selectedInstance.position },
             moveTarget,
             setNavigation,
           );
@@ -122,7 +130,7 @@ export function NPCSystem() {
   return (
     <group name="npc-system">
       <BuildingNavigationObstacleDriver
-        navigation={navigationRef.current}
+        navigation={navigation}
         enabled={navigationReady}
       />
       {Array.from(instances.values()).map((instance) => {

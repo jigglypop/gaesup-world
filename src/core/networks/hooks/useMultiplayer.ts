@@ -4,13 +4,18 @@ import type { RapierRigidBody } from '@react-three/rapier';
 
 import { useGaesupStore } from '@stores/gaesupStore';
 
+import { LivePlayerMap } from '../core/LivePlayerMap';
 import { PlayerNetworkManager } from '../core/PlayerNetworkManager';
 import { PlayerPositionTracker, PlayerTrackingConfig } from '../core/PlayerPositionTracker';
 import { 
   MultiplayerConnectionOptions, 
   MultiplayerState, 
-  MultiplayerConfig
+  MultiplayerConfig,
+  PlayerState
 } from '../types';
+
+/** Transform-only updates refresh `lastUpdate` for status UIs at most this often. */
+const TRANSFORM_STATUS_INTERVAL_MS = 250;
 
 interface UseMultiplayerOptions {
   config: MultiplayerConfig;
@@ -19,6 +24,8 @@ interface UseMultiplayerOptions {
 }
 
 interface UseMultiplayerResult extends MultiplayerState {
+  /** Same as `players`; entries stay current between renders and support per-player subscriptions. */
+  players: LivePlayerMap;
   connect: (options: MultiplayerConnectionOptions) => void;
   disconnect: () => void;
   startTracking: (playerRef: RefObject<RapierRigidBody>) => void;
@@ -34,17 +41,51 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
   const modeType = useGaesupStore((s) => s.mode?.type ?? 'character');
   const animationState = useGaesupStore((s) => s.animationState);
   
+  const playersRef = useRef<LivePlayerMap>(new LivePlayerMap());
+  const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // 상태 관리
-  const [state, setState] = useState<MultiplayerState>({
+  const [state, setState] = useState<MultiplayerState & { players: LivePlayerMap }>(() => ({
     isConnected: false,
     connectionStatus: 'disconnected',
-    players: new Map(),
+    players: playersRef.current,
     localPlayerId: null,
     roomId: null,
     error: null,
     ping: 0,
     lastUpdate: 0
-  });
+  }));
+
+  const cancelStatusRefresh = useCallback(() => {
+    if (statusTimerRef.current === null) return;
+    clearTimeout(statusTimerRef.current);
+    statusTimerRef.current = null;
+  }, []);
+
+  const commitPlayers = useCallback((next: LivePlayerMap, extra?: Partial<MultiplayerState>) => {
+    playersRef.current = next;
+    cancelStatusRefresh();
+    setState(prev => ({ ...prev, ...extra, players: next, lastUpdate: Date.now() }));
+  }, [cancelStatusRefresh]);
+
+  const scheduleStatusRefresh = useCallback(() => {
+    if (statusTimerRef.current !== null) return;
+    statusTimerRef.current = setTimeout(() => {
+      statusTimerRef.current = null;
+      setState(prev => ({ ...prev, lastUpdate: Date.now() }));
+    }, TRANSFORM_STATUS_INTERVAL_MS);
+  }, []);
+
+  const addOrPublishPlayer = useCallback((playerId: string, playerState: PlayerState) => {
+    const current = playersRef.current;
+    if (current.publish(playerId, playerState)) {
+      scheduleStatusRefresh();
+      return;
+    }
+    const next = new LivePlayerMap(current);
+    next.set(playerId, playerState);
+    commitPlayers(next);
+  }, [commitPlayers, scheduleStatusRefresh]);
 
   // 연결 정보 저장
   const connectionInfoRef = useRef<{
@@ -58,7 +99,7 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
   const trackingPlayerRef = useRef<RefObject<RapierRigidBody> | null>(null);
   const configOverridesRef = useRef<Partial<MultiplayerConfig>>({});
   const [trackingUpdateRate, setTrackingUpdateRate] = useState(config.tracking.updateRate);
-  const stateRef = useRef<MultiplayerState>(state);
+  const stateRef = useRef<MultiplayerState & { players: LivePlayerMap }>(state);
   const modeTypeRef = useRef(modeType);
   const animationStateRef = useRef(animationState);
 
@@ -172,47 +213,21 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
         }));
       },
       onDisconnect: () => {
-        setState(prev => ({
-          ...prev,
+        commitPlayers(new LivePlayerMap(), {
           isConnected: false,
           connectionStatus: 'disconnected',
-          players: new Map(),
           localPlayerId: null,
-          lastUpdate: Date.now()
-        }));
-      },
-      onPlayerJoin: (playerId, playerState) => {
-        setState(prev => {
-          const newPlayers = new Map(prev.players);
-          newPlayers.set(playerId, playerState);
-          return {
-            ...prev,
-            players: newPlayers,
-            lastUpdate: Date.now()
-          };
         });
       },
-      onPlayerUpdate: (playerId, playerState) => {
-        setState(prev => {
-          const newPlayers = new Map(prev.players);
-          newPlayers.set(playerId, playerState);
-          return {
-            ...prev,
-            players: newPlayers,
-            lastUpdate: Date.now()
-          };
-        });
-      },
+      onPlayerJoin: addOrPublishPlayer,
+      onPlayerUpdate: addOrPublishPlayer,
       onPlayerLeave: (playerId) => {
-        setState(prev => {
-          const newPlayers = new Map(prev.players);
-          newPlayers.delete(playerId);
-          return {
-            ...prev,
-            players: newPlayers,
-            lastUpdate: Date.now()
-          };
-        });
+        const current = playersRef.current;
+        if (!current.has(playerId)) return;
+        const next = new LivePlayerMap(current);
+        next.delete(playerId);
+        commitPlayers(next);
+        next.notify(playerId);
       },
       onChat: (playerId, text, timestamp) => {
         void timestamp;
@@ -253,7 +268,9 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
     config.enableAck,
     config.reliableTimeout,
     config.reliableRetryCount,
-    rigidBodyRef
+    rigidBodyRef,
+    addOrPublishPlayer,
+    commitPlayers,
   ]);
 
   // 연결 해제
@@ -262,17 +279,15 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
     positionTrackerRef.current?.reset();
     trackingPlayerRef.current = null;
     setSpeechByPlayerId(new Map());
-    
-    setState(prev => ({
-      ...prev,
+
+    commitPlayers(new LivePlayerMap(), {
       isConnected: false,
       connectionStatus: 'disconnected',
-      players: new Map(),
       localPlayerId: null,
       roomId: null,
-      error: null
-    }));
-  }, []);
+      error: null,
+    });
+  }, [commitPlayers]);
 
   // 위치 추적 시작
   const startTracking = useCallback((playerRef: RefObject<RapierRigidBody>) => {
@@ -355,8 +370,9 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
   useEffect(() => {
     return () => {
       networkManagerRef.current?.disconnect();
+      cancelStatusRefresh();
     };
-  }, []);
+  }, [cancelStatusRefresh]);
 
   const speechTextMap = useMemo(() => {
     const m = new Map<string, string>();

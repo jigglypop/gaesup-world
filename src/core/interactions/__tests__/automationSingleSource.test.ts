@@ -1,7 +1,8 @@
+import * as THREE from 'three';
+
+import { useGaesupStore } from '../../stores/gaesupStore';
 import { InteractionBridge } from '../bridge/InteractionBridge';
 import { getDefaultInteractionInputBackend } from '../core/adapter';
-import * as THREE from 'three';
-import { useGaesupStore } from '../../stores/gaesupStore';
 
 beforeEach(() => {
   jest.useFakeTimers();

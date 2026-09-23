@@ -4,6 +4,7 @@ import { RegisterSystem, Profile, HandleError } from '@core/boilerplate/decorato
 import { BaseSystem, SystemContext } from '@core/boilerplate/entity/BaseSystem';
 import type { RuntimeRecord } from '@core/boilerplate/types';
 
+import { BoundsIndex } from './BoundsIndex';
 import { SpatialGrid } from './SpatialGrid';
 
 export interface WorldObject {
@@ -13,7 +14,8 @@ export interface WorldObject {
   scale: THREE.Vector3;
   type: string;
   metadata?: RuntimeRecord;
-  boundingBox?: THREE.Box3;
+  /** World-space bounds. Submit geometry/transform changes through updateObject. */
+  boundingBox?: THREE.Box3 | undefined;
   isActive?: boolean;
   canInteract?: boolean;
 }
@@ -44,10 +46,16 @@ export interface InteractionEvent {
 
 @RegisterSystem('world')
 export class WorldSystem implements BaseSystem {
+  private revision = 0;
+  getRevision(): number { return this.revision; }
   private objects: Map<string, WorldObject> = new Map();
   private interactionEvents: InteractionEvent[] = [];
   private spatial: SpatialGrid = new SpatialGrid({ cellSize: 10 });
-  private raycaster: THREE.Raycaster = new THREE.Raycaster();
+  private bounds = new BoundsIndex();
+  private ray = new THREE.Ray();
+  private rayBounds = new THREE.Box3();
+  private rayEnd = new THREE.Vector3();
+  private nearestPoint = new THREE.Vector3();
   private tempVector: THREE.Vector3 = new THREE.Vector3();
   private nearbyIds: string[] = [];
   private nearbyIds2: string[] = [];
@@ -73,14 +81,19 @@ export class WorldSystem implements BaseSystem {
   addObject(object: WorldObject): void {
     this.objects.set(object.id, object);
     this.spatial.add(object.id, object.position);
+    this.bounds.update(object.id, object.boundingBox);
+    this.revision++;
   }
 
   removeObject(id: string): boolean {
     const object = this.objects.get(id);
     if (object) {
       this.spatial.remove(id);
+      this.bounds.remove(id);
     }
-    return this.objects.delete(id);
+    const removed = this.objects.delete(id);
+    if (removed) this.revision++;
+    return removed;
   }
 
   getObject(id: string): WorldObject | undefined {
@@ -98,11 +111,15 @@ export class WorldSystem implements BaseSystem {
   updateObject(id: string, updates: Partial<WorldObject>): boolean {
     const object = this.objects.get(id);
     if (!object) return false;
+    if (updates.id !== undefined && updates.id !== id) throw new TypeError('World object identity cannot change during update');
 
-    Object.assign(object, updates);
+    const updated = { ...object, ...updates, id };
+    this.objects.set(id, updated);
+    this.bounds.update(id, updated.boundingBox);
     if (updates.position) {
       this.spatial.update(id, updates.position);
     }
+    this.revision++;
     return true;
   }
 
@@ -120,8 +137,7 @@ export class WorldSystem implements BaseSystem {
     const object = this.objects.get(objectId);
     if (!object || !object.boundingBox) return [];
 
-    const radius = object.boundingBox.max.distanceTo(object.boundingBox.min);
-    const ids = this.spatial.getNearby(object.position, radius, this.nearbyIds2);
+    const ids = this.bounds.query(object.boundingBox, this.nearbyIds2);
     const result: WorldObject[] = [];
     for (const id of ids) {
       if (id === objectId) continue;
@@ -134,6 +150,7 @@ export class WorldSystem implements BaseSystem {
 
   processInteraction(event: InteractionEvent): void {
     this.interactionEvents.push(event);
+    this.revision++;
     
     if (this.interactionEvents.length > 1000) {
       this.interactionEvents = this.interactionEvents.slice(-500);
@@ -147,36 +164,50 @@ export class WorldSystem implements BaseSystem {
     );
   }
 
+  clearEvents(): void { this.interactionEvents.length = 0; this.revision++; }
+
   raycast(origin: THREE.Vector3, direction: THREE.Vector3, maxDistance: number = 100): {
     object: WorldObject;
     distance: number;
     point: THREE.Vector3;
   } | null {
-    this.raycaster.set(origin, direction);
-    this.raycaster.near = 0;
-    this.raycaster.far = maxDistance;
-    
-    const ids = this.spatial.getNearby(origin, maxDistance, this.nearbyIds);
+    const length = Math.hypot(direction.x, direction.y, direction.z);
+    if (!Number.isFinite(length) || length === 0 || Number.isNaN(maxDistance) || maxDistance < 0
+      || !Number.isFinite(origin.x) || !Number.isFinite(origin.y) || !Number.isFinite(origin.z)) return null;
+    this.ray.origin.copy(origin);
+    this.ray.direction.copy(direction).multiplyScalar(1 / length);
+    if (maxDistance === Infinity) {
+      this.rayBounds.min.set(-Infinity, -Infinity, -Infinity);
+      this.rayBounds.max.set(Infinity, Infinity, Infinity);
+    } else {
+      this.rayEnd.copy(origin).addScaledVector(this.ray.direction, maxDistance);
+      this.rayBounds.set(origin, origin).expandByPoint(this.rayEnd);
+    }
+    const ids = this.bounds.query(this.rayBounds, this.nearbyIds);
+    let nearest: WorldObject | undefined;
+    let distanceSq = maxDistance * maxDistance;
     for (const id of ids) {
       const object = this.objects.get(id);
       if (object && object.boundingBox) {
-        const intersect = this.raycaster.ray.intersectBox(object.boundingBox, this.tempVector);
+        const intersect = this.ray.intersectBox(object.boundingBox, this.tempVector);
         if (intersect) {
-          return {
-            object,
-            distance: origin.distanceTo(intersect),
-            point: intersect.clone()
-          };
+          const candidateDistanceSq = origin.distanceToSquared(intersect);
+          if (candidateDistanceSq > distanceSq || (nearest && candidateDistanceSq === distanceSq)) continue;
+          nearest = object;
+          distanceSq = candidateDistanceSq;
+          this.nearestPoint.copy(intersect);
         }
       }
     }
     
-    return null;
+    return nearest ? { object: nearest, distance: Math.sqrt(distanceSq), point: this.nearestPoint.clone() } : null;
   }
 
   cleanup(): void {
     this.objects.clear();
     this.interactionEvents.length = 0;
     this.spatial.clear();
+    this.bounds.clear();
+    this.revision++;
   }
 }

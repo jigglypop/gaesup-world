@@ -1,4 +1,5 @@
 export { CameraSystem } from './core/CameraSystem';
+export { cameraUtils, invalidateCollisionCache } from './utils/camera';
 export { useCamera } from './hooks/useCamera';
 export { default as Camera } from './Camera';
 export * from './core/types';
@@ -16,9 +17,11 @@ export {
 export type { CameraCloseUpOptions, CameraCloseUpTarget } from './closeUp';
 export {
   playCameraCinematic,
+  createCameraCinematicPlayer,
 } from './cinematic';
 export type {
   CameraCinematicBeat,
   CameraCinematicOptions,
   CameraCinematicPlayback,
+  CameraCinematicPlayer,
 } from './cinematic';

@@ -4,7 +4,11 @@ const POSITION_STRIDE = 3;
 
 export const FRUSTUM_PLANES_LENGTH = PLANE_COUNT * PLANE_STRIDE;
 
-export function extractFrustumPlanes(viewProjection: Float32Array, out: Float32Array, clipDepthZeroToOne = false): Float32Array {
+export function extractFrustumPlanes(
+  viewProjection: Float32Array,
+  out: Float32Array,
+  clipDepthZeroToOne = false,
+): Float32Array {
   const m0 = viewProjection[0] ?? 0;
   const m1 = viewProjection[1] ?? 0;
   const m2 = viewProjection[2] ?? 0;
@@ -91,6 +95,52 @@ export function cullSpheres(
     }
     outVisibility[index] = visible;
     visibleCount += visible;
+  }
+  return visibleCount;
+}
+
+/** Culls and writes source indices in one pass without a visibility buffer. */
+export function cullAndCompactSpheres(
+  planes: Float32Array,
+  positions: Float32Array,
+  radius: number,
+  count: number,
+  outIndices: Uint32Array,
+): number {
+  if (
+    !Number.isInteger(count) ||
+    count < 0 ||
+    count * POSITION_STRIDE > positions.length ||
+    count > outIndices.length ||
+    planes.length < FRUSTUM_PLANES_LENGTH ||
+    !Number.isFinite(radius) ||
+    radius < 0
+  ) {
+    throw new RangeError(
+      'Expected valid frustum planes, radius, position count and output capacity.',
+    );
+  }
+  let visibleCount = 0;
+  for (let index = 0; index < count; index += 1) {
+    const offset = index * POSITION_STRIDE;
+    const x = positions[offset] ?? 0;
+    const y = positions[offset + 1] ?? 0;
+    const z = positions[offset + 2] ?? 0;
+    let visible = true;
+    for (let plane = 0; plane < PLANE_COUNT; plane += 1) {
+      const base = plane * PLANE_STRIDE;
+      if (
+        (planes[base] ?? 0) * x +
+          (planes[base + 1] ?? 0) * y +
+          (planes[base + 2] ?? 0) * z +
+          (planes[base + 3] ?? 0) <
+        -radius
+      ) {
+        visible = false;
+        break;
+      }
+    }
+    if (visible) outIndices[visibleCount++] = index;
   }
   return visibleCount;
 }

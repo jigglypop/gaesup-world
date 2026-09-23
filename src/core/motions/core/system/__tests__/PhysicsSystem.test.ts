@@ -10,9 +10,13 @@ import type { GameStatesType } from '@core/world/components/Rideable/types';
 
 import type { PhysicsCalcProps, PhysicsState } from '../../../types';
 import type { PhysicsConfigType } from '../../config';
-import type { GroundRayHit, PhysicsVector } from '../../physics/types';
 import type { ActiveStateType } from '../../types';
+import { GroundContactProbe } from '../GroundContactProbe';
 import { PhysicsSystem } from '../PhysicsSystem';
+
+jest.mock('../GroundContactProbe', () => ({
+  GroundContactProbe: jest.fn().mockImplementation(() => ({ read: jest.fn(() => false) })),
+}));
 
 jest.mock('@core/motions/core/movement/DirectionComponent', () => ({
   DirectionComponent: jest.fn().mockImplementation(() => ({
@@ -110,6 +114,8 @@ describe('PhysicsSystem', () => {
     config = createDefaultConfig();
     system = new PhysicsSystem(config);
   });
+
+  const groundRead = () => jest.mocked(GroundContactProbe).mock.results.at(-1)!.value.read as jest.Mock;
 
   afterEach(() => {
     if (!system.isDisposed) system.dispose();
@@ -252,9 +258,10 @@ describe('PhysicsSystem', () => {
   });
 
   describe('checkGround (via calculate)', () => {
-    it('지면 가까이에 있고 낙하 속도가 낮으면 isOnTheGround = true', () => {
+    it('지지 접촉이 있으면 높이에 관계없이 두 접지 상태를 갱신한다', () => {
+      groundRead().mockReturnValue(true);
       const mockRigidBody = createMockRigidBody({
-        translation: jest.fn().mockReturnValue({ x: 0, y: 0.5, z: 0 }),
+        translation: jest.fn().mockReturnValue({ x: 0, y: 10.5, z: 0 }),
         linvel: jest.fn().mockReturnValue({ x: 0, y: 0, z: 0 }),
       });
       const calcProp = {
@@ -265,6 +272,7 @@ describe('PhysicsSystem', () => {
 
       system.calculate(calcProp, physicsState);
       expect(physicsState.gameStates.isOnTheGround).toBe(true);
+      expect(physicsState.activeState.isGround).toBe(true);
       expect(physicsState.gameStates.isFalling).toBe(false);
     });
 
@@ -303,7 +311,7 @@ describe('PhysicsSystem', () => {
       expect(physicsState.gameStates.isJumping).toBe(false);
     });
 
-    it('지면 근처 보행 흔들림은 grounded를 유지해야 합니다', () => {
+    it('높이와 속도가 작아도 지지 접촉이 사라지면 grounded를 해제한다', () => {
       const positions = [0.5, 0.62, 0.7, 0.58];
       const velocities = [0, 0, 0.7, 0.7, -0.8, -0.8, 0.3, 0.3];
       const mockRigidBody = createMockRigidBody({
@@ -316,78 +324,12 @@ describe('PhysicsSystem', () => {
       } as unknown as PhysicsCalcProps;
       const physicsState = createPhysicsState();
 
-      for (let i = 0; i < 4; i += 1) {
+      for (const supported of [true, true, false, false]) {
+        groundRead().mockReturnValue(supported);
         system.calculate(calcProp, physicsState);
-        expect(physicsState.gameStates.isOnTheGround).toBe(true);
+        expect(physicsState.gameStates.isOnTheGround).toBe(supported);
+        expect(physicsState.activeState.isGround).toBe(supported);
       }
-    });
-
-    const createProbeCalcProp = (
-      rigidBody: ReturnType<typeof createMockRigidBody>,
-      normalY: number | null,
-      groundRay?: { length: number },
-    ) => {
-      const castGroundRay = jest.fn(
-        (_origin: PhysicsVector, _maxDistance: number, out: GroundRayHit) => {
-          if (normalY === null) return false;
-          out.normalY = normalY;
-          return true;
-        },
-      );
-      const calcProp = {
-        rigidBodyRef: { current: rigidBody },
-        physicsQueries: { castGroundRay },
-        ...(groundRay ? { groundRay } : {}),
-      } as unknown as PhysicsCalcProps;
-      return { calcProp, castGroundRay };
-    };
-
-    it('접지 탐침이 있으면 높이와 무관하게 발 아래 충돌면으로 접지를 판정한다', () => {
-      const roofBody = createMockRigidBody({
-        translation: jest.fn().mockReturnValue({ x: 2, y: 10, z: -3 }),
-      });
-      const roof = createProbeCalcProp(roofBody, 1);
-      const physicsState = createPhysicsState();
-      physicsState.gameStates.isOnTheGround = false;
-      system.resolve(roof.calcProp, physicsState);
-      expect(physicsState.gameStates.isOnTheGround).toBe(true);
-      expect(roof.castGroundRay).toHaveBeenCalledWith(
-        { x: 2, y: expect.closeTo(10.1), z: -3 },
-        expect.closeTo(0.3),
-        expect.any(Object),
-      );
-      const gap = createProbeCalcProp(createMockRigidBody(), null);
-      system.resolve(gap.calcProp, physicsState);
-      expect(physicsState.gameStates.isOnTheGround).toBe(false);
-    });
-
-    it('경사 한계를 넘는 면과 점프 상승 중에는 접지로 보지 않는다', () => {
-      const physicsState = createPhysicsState();
-      const steep = createProbeCalcProp(
-        createMockRigidBody({ linvel: jest.fn().mockReturnValue({ x: 0, y: -1, z: 0 }) }),
-        Math.cos(THREE.MathUtils.degToRad(60)),
-      );
-      system.resolve(steep.calcProp, physicsState);
-      expect(physicsState.gameStates.isOnTheGround).toBe(false);
-      expect(physicsState.gameStates.isFalling).toBe(true);
-      physicsState.gameStates.isJumping = true;
-      const rising = createProbeCalcProp(
-        createMockRigidBody({ linvel: jest.fn().mockReturnValue({ x: 0, y: 3, z: 0 }) }),
-        1,
-      );
-      system.resolve(rising.calcProp, physicsState);
-      expect(physicsState.gameStates.isOnTheGround).toBe(false);
-      expect(rising.castGroundRay).not.toHaveBeenCalled();
-    });
-
-    it('groundRay.length가 접지 탐침 거리를 정한다', () => {
-      const probe = createProbeCalcProp(createMockRigidBody(), 1, { length: 1 });
-      system.resolve(probe.calcProp, createPhysicsState());
-      expect(probe.castGroundRay).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.closeTo(1.1),
-        expect.any(Object),
-      );
     });
   });
 
@@ -445,6 +387,7 @@ describe('PhysicsSystem', () => {
     });
 
     it('space 입력 시 isJumping = true', () => {
+      groundRead().mockReturnValue(true);
       const mockRigidBody = createMockRigidBody();
       const calcProp = {
         rigidBodyRef: { current: mockRigidBody },
@@ -463,6 +406,7 @@ describe('PhysicsSystem', () => {
     });
 
     it('space를 누르고 유지해도 점프가 연속 재트리거되면 안 됩니다', () => {
+      groundRead().mockReturnValue(true);
       const mockRigidBody = createMockRigidBody();
       const calcProp = {
         rigidBodyRef: { current: mockRigidBody },

@@ -59,3 +59,14 @@ test('unpaused realtime saves keep elapsed wall-clock time across reloads', () =
   useTimeStore.getState().tick(16);
   expect(useTimeStore.getState().totalMinutes).toBe(482);
 });
+
+test('paused realtime restoration stays paused and resume excludes time spent away', () => {
+  useTimeStore.getState().setMode('realtime'); useTimeStore.getState().setTotalMinutes(1440); useTimeStore.getState().pause();
+  const saved = useTimeStore.getState().serialize(); const revision = useTimeStore.getState().hydrationRevision;
+  const apply = useTimeStore.getState().prepareHydrate(saved); saved.pausedAt = null;
+  useTimeStore.getState().resume(); jest.setSystemTime(NOW + 10 * MINUTE_MS); apply();
+  expect(useTimeStore.getState().paused).toBe(true); expect(useTimeStore.getState().hydrationRevision).toBe(revision + 1);
+  useTimeStore.getState().tick(1000); expect(useTimeStore.getState().totalMinutes).toBe(1440);
+  useTimeStore.getState().resume(); jest.setSystemTime(NOW + 11 * MINUTE_MS); useTimeStore.getState().tick(1000); expect(useTimeStore.getState().totalMinutes).toBe(1441);
+  expect(useTimeStore.getState().serialize()).not.toHaveProperty('hydrationRevision');
+});

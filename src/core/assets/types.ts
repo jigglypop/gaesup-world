@@ -1,4 +1,7 @@
 export type AssetKind =
+  | 'avatar-body'
+  | 'avatar-part'
+  | 'avatar-animation'
   | 'characterPart'
   | 'weapon'
   | 'material'
@@ -7,6 +10,13 @@ export type AssetKind =
   | 'object3d';
 
 export type AssetSlot =
+  | 'onepiece'
+  | 'ear'
+  | 'back'
+  | 'bag'
+  | 'hand'
+  | 'faceAccessory'
+  | 'neckAccessory'
   | 'body'
   | 'hair'
   | 'hat'

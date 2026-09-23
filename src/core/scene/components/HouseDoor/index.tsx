@@ -51,8 +51,8 @@ export function HouseDoor({
   const goTo = useSceneStore((s) => s.goTo);
   const current = useSceneStore((s) => s.current);
   const { teleport } = useTeleport();
-  const { position: playerPos } = usePlayerPosition({ updateInterval: 50 });
-  const lastTriggerRef = useRef<number>(0);
+  const { position: playerPos } = usePlayerPosition({ updateInterval: 50, reactive: false });
+  const lastTriggerRef = useRef(Number.NEGATIVE_INFINITY);
 
   const padGeometry = useMemo(() => new THREE.CylinderGeometry(radius, radius, 0.08, 28), [radius]);
 
@@ -79,10 +79,10 @@ export function HouseDoor({
       position: [position[0], position[1], position[2]] as [number, number, number],
     };
 
-    await goTo(sceneId, { entry, saveReturn });
-
-    const target = new THREE.Vector3(entry.position[0], entry.position[1], entry.position[2]);
-    teleport(target);
+    await goTo(sceneId, {
+      entry, saveReturn,
+      onEntered: () => teleport(new THREE.Vector3(...entry.position)),
+    });
   }
 
   return (

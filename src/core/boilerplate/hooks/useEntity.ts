@@ -4,7 +4,6 @@ import type { RapierCollider, RapierRigidBody } from '@react-three/rapier';
 import type { Group } from 'three';
 
 import type { AnimatorControllerDefinition } from '@core/animation/core/animator/types';
-import type { PhysicsQueryAdapter } from '@core/motions/core/physics/types';
 import type { GroundRay } from '@core/motions/entities/types';
 import type { PhysicsEntityProps } from '@core/motions/entities/types';
 import { useAnimationSetup } from '@core/motions/hooks/setup/useAnimationSetup';
@@ -37,7 +36,8 @@ export interface UseEntityOptions
   groundRay?: GroundRay;
   colliderSize?: PhysicsEntityProps['colliderSize'];
   animatorController?: AnimatorControllerDefinition;
-  physicsQueries?: PhysicsQueryAdapter;
+  physicsWorld?: UsePhysicsBridgeOptions['physicsWorld'];
+  groundContactFilter?: UsePhysicsBridgeOptions['groundContactFilter'];
 }
 
 export function useEntity(options: UseEntityOptions) {
@@ -52,7 +52,6 @@ export function useEntity(options: UseEntityOptions) {
     groundRay,
     colliderSize,
     animatorController,
-    physicsQueries,
   } = options;
 
   const entityId = useRef<string>(
@@ -80,12 +79,13 @@ export function useEntity(options: UseEntityOptions) {
     entityId,
     rigidBodyRef,
     enabled: active,
+    ...(options.physicsWorld ? { physicsWorld: options.physicsWorld } : {}),
+    ...(options.groundContactFilter ? { groundContactFilter: options.groundContactFilter } : {}),
     ...(outerGroupRef ? { outerGroupRef } : {}),
     ...(innerGroupRef ? { innerGroupRef } : {}),
     ...(colliderRef ? { colliderRef } : {}),
     ...(groundRay ? { groundRay } : {}),
     ...(colliderSize ? { colliderSize } : {}),
-    ...(physicsQueries ? { physicsQueries } : {}),
   };
   usePhysicsBridge(physicsProps);
 

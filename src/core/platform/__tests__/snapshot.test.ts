@@ -1,21 +1,21 @@
+import { createContentBundleFromSaveSystem } from '../../content';
+import { applyVisitSnapshot, serializeVisit } from '../../networks/visit/serializer';
+import { SaveSystem } from '../../save';
+import type { SaveAdapter } from '../../save';
+import { createSceneDocument, createSceneDocumentController, createSceneDocumentSaveBinding } from '../../scene-object';
 import {
   WORLD_SNAPSHOT_DOMAINS,
   collectSaveDomains,
   createPlayerProgressFromSaveSystem,
   createWorldSnapshotFromSaveSystem,
 } from '../snapshot';
-import { SaveSystem } from '../../save';
-import type { SaveAdapter, SaveBlob } from '../../save';
-import { createContentBundleFromSaveSystem } from '../../content';
-import { applyVisitSnapshot, serializeVisit } from '../../networks/visit/serializer';
-import { createSceneDocument, createSceneDocumentController, createSceneDocumentSaveBinding } from '../../scene-object';
 
 class MemoryAdapter implements SaveAdapter {
-  async read(_slot: string) {
+  async read() {
     return null;
   }
 
-  async write(_slot: string, _blob: SaveBlob) {
+  async write() {
     return undefined;
   }
 
@@ -23,7 +23,7 @@ class MemoryAdapter implements SaveAdapter {
     return [];
   }
 
-  async remove(_slot: string) {
+  async remove() {
     return undefined;
   }
 }

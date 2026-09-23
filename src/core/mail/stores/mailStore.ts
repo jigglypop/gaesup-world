@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 
-import { useWalletStore } from '../../economy/stores/walletStore';
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
+import { useWalletStore, type WalletStore } from '../../economy/stores/walletStore';
+import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
 import type { MailAttachment, MailMessage, MailSerialized } from '../types';
 
@@ -22,16 +24,18 @@ type State = {
   prepareHydrate: (data: MailSerialized | null | undefined) => () => void;
 };
 
-let _seq = 0;
-function genId(): string { return `mail_${Date.now().toString(36)}_${(++_seq).toString(36)}`; }
 
 function isItemAttachment(a: MailAttachment): a is { itemId: string; count?: number } {
   return (a as { itemId?: string }).itemId !== undefined;
 }
 
-const PENDING_CLAIMS = new Set<string>();
 
-export const useMailStore = create<State>((set, get) => ({
+
+export function createMailStore(inventoryStore: InventoryStore, walletStore: WalletStore) {
+  let _seq = 0;
+  function genId(): string { return `mail_${Date.now().toString(36)}_${(++_seq).toString(36)}`; }
+  const PENDING_CLAIMS = new Set<string>();
+  return create<State>((set, get) => ({
   messages: [],
 
   send: (msg) => {
@@ -68,7 +72,7 @@ export const useMailStore = create<State>((set, get) => ({
       if (!msg || msg.claimed || !msg.attachments) return false;
       for (const [index, a] of msg.attachments.entries()) {
         if (isItemAttachment(a)) {
-          const left = useInventoryStore.getState().add(a.itemId, a.count ?? 1);
+          const left = inventoryStore.getState().add(a.itemId, a.count ?? 1);
           if (left > 0) {
             const attachments = [{ ...a, count: left }, ...msg.attachments.slice(index + 1)];
             set({ messages: get().messages.map((m) => (m.id === id ? { ...m, attachments, read: true } : m)) });
@@ -76,7 +80,7 @@ export const useMailStore = create<State>((set, get) => ({
             return false;
           }
         } else {
-          useWalletStore.getState().add(a.bells);
+          walletStore.getState().add(a.bells);
         }
       }
       set({ messages: get().messages.map((m) => (m.id === id ? { ...m, claimed: true, read: true } : m)) });
@@ -140,3 +144,9 @@ export const useMailStore = create<State>((set, get) => ({
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+}
+
+export type MailStore = ReturnType<typeof createMailStore>;
+export const { useStore: useMailStore, useStoreApi: useMailStoreApi } = createScopedStoreHook(
+  createMailStore(useInventoryStore, useWalletStore), () => useGaesupRuntime()?.mailStore,
+);

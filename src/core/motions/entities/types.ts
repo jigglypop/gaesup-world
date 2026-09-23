@@ -16,6 +16,8 @@ import * as THREE from 'three';
 import type { AnimatorControllerDefinition } from '@core/animation/core/animator/types';
 import type { CollisionUserData } from '@core/boilerplate/hooks/useCollisionHandler';
 
+import type { CharacterBoneAttachment } from '../../character/attachments';
+
 export type Part = {
   id?: string;
   slot?: string;
@@ -23,6 +25,8 @@ export type Part = {
   color?: string;
   /** Base-model node names to hide while this part is equipped (from asset `hideBodyRegions`). */
   hideNodeNames?: string[];
+  /** Rigid parts follow this named bone; omit for shared-skeleton garments. */
+  attachment?: CharacterBoneAttachment;
 };
 
 export type ModelRendererProps = {
@@ -33,14 +37,7 @@ export type ModelRendererProps = {
   offset ? : THREE.Vector3;
 }
 
-export type PartsGroupRefProps = {
-  url: string;
-  isActive: boolean;
-  componentType: string;
-  currentAnimation ? : string;
-  color ? : string;
-  skeleton ? : THREE.Skeleton | null;
-}
+export type { PartsGroupRefProps } from './refs/types';
 
 export type riderRefType = {
   url: string;
@@ -73,6 +70,8 @@ export type PhysicsEntityProps = {
   componentType: string;
   rigidbodyType ? : RigidBodyTypeString;
   groundRay ? : GroundRay;
+  /** Additional support policy for detection-only or one-way physics contacts. */
+  groundContactFilter?: (actor: RapierCollider, support: RapierCollider) => boolean;
   rigidBodyProps ? : RigidBodyProps;
   parts ? : Part[];
   /**
@@ -80,6 +79,8 @@ export type PhysicsEntityProps = {
    * Useful when you want per-entity coloring without adding a separate "part" GLTF.
    */
   baseColor?: string;
+  /** Preserve the authored GLTF hierarchy, transforms and materials for imported rigs. */
+  modelHierarchy?: boolean;
   /**
    * Hide specific mesh nodes from the base model renderer.
    * Useful when a "part" GLB includes an overlapping mesh (prevents z-fighting/ghosting).
@@ -92,6 +93,8 @@ export type PhysicsEntityProps = {
   outerGroupRef ? : RefObject < THREE.Group > ;
   innerGroupRef ? : RefObject < THREE.Group > ;
   children ? : ReactNode;
+  /** Physical attachments stay outside the interpolated visual hierarchy. */
+  colliderChildren?: ReactNode;
   userData ? : CollisionUserData;
   sensor ? : boolean;
   onIntersectionEnter ? : (payload: CollisionPayload) => void;

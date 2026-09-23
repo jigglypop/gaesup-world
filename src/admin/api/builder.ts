@@ -1,4 +1,4 @@
-import cache from "@core/utils/cache";
+import { adminToken } from './token';
 
 interface APIResponse<T> {
   data: T;
@@ -8,6 +8,26 @@ interface APIResponse<T> {
 
 type JsonPrimitive = string | number | boolean | null;
 type RequestBody = JsonPrimitive | object;
+
+export class AdminApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly body: unknown,
+  ) {
+    super(`Admin API request failed with status ${status}`);
+    this.name = 'AdminApiError';
+  }
+}
+
+async function readBody(response: Response): Promise<unknown> {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
+}
 
 class APIBuilder {
   private method: string = 'GET';
@@ -68,7 +88,7 @@ class APIBuilder {
         };
 
         if (this.withAuth) {
-          const token = cache.get('token');
+          const token = adminToken.get();
           if (token) {
             headers['Authorization'] = `Bearer ${token}`;
           }
@@ -77,14 +97,16 @@ class APIBuilder {
         const options: RequestInit = {
           method: this.method,
           headers,
+          credentials: 'include',
         };
 
-        if (this.body && this.method !== 'GET') {
+        if (this.body !== null && this.method !== 'GET') {
           options.body = typeof this.body === 'string' ? this.body : JSON.stringify(this.body);
         }
 
         const response = await fetch(fullUrl, options);
-        const data = (await response.json()) as T;
+        const data = await readBody(response);
+        if (!response.ok) throw new AdminApiError(response.status, data);
 
         const responseHeaders: { [key: string]: string } = {};
         response.headers.forEach((value, key) => {
@@ -92,7 +114,7 @@ class APIBuilder {
         });
 
         return {
-          data,
+          data: data as T,
           headers: responseHeaders,
           status: response.status,
         };
@@ -101,4 +123,4 @@ class APIBuilder {
   }
 }
 
-export default APIBuilder; 
+export default APIBuilder;

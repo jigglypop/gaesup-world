@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 
+import { useGaesupStore } from '../../stores/gaesupStore';
 import {
   createCameraCloseUpPreset,
   requestCameraCloseUp,
   restoreCameraCloseUp,
 } from '../closeUp';
-import { useGaesupStore } from '../../stores/gaesupStore';
 import type { CameraOptionType } from '../core/types';
 
 const baseCameraOption: CameraOptionType = {

@@ -71,8 +71,11 @@ export type GameplayEventRuntimeState = {
   flags: Record<string, string | number | boolean>;
 };
 
+export type GameplayEventSerialized = GameplayEventRuntimeState & { version: 1 };
+
 export type GameplayEventExecution = {
   blueprintId: GameplayEventId;
+  /** Handlers invoked, including an async handler cancelled before it settles. */
   actionCount: number;
   skipped?: string;
 };
@@ -82,6 +85,12 @@ export type GameplayEventContext = {
   trigger: GameplayTriggerEvent;
   state: GameplayEventRuntimeState;
   now: number;
+  /** Custom async handlers should stop their own work when the owning engine is suspended. */
+  signal?: AbortSignal;
+  /** False after cancellation or completion. Present on engine-created contexts. */
+  isCurrent?: () => boolean;
+  /** Fast guarded flag write. Returns false for a completed or cancelled execution. */
+  setFlag?: (key: string, value: string | number | boolean) => boolean;
 };
 
 export type GameplayConditionHandler<TCondition extends GameplayEventCondition = GameplayEventCondition> = (
@@ -107,4 +116,5 @@ export type GameplayEventServices = {
   isEventActive: (eventId: string) => boolean;
   showDialog: (dialogTreeId: string, npcId?: string) => void;
   notify: (kind: GameplayToastKind, text: string) => void;
+  emit?: (eventName: string, payload?: Record<string, unknown>) => void;
 };

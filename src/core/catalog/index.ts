@@ -7,7 +7,9 @@ export {
   serializeCatalogState,
 } from './plugin';
 export type { CatalogPluginOptions } from './plugin';
-export { useCatalogStore } from './stores/catalogStore';
+export { useCatalogStore, useCatalogStoreApi, createCatalogStore } from './stores/catalogStore';
 export { useCatalogTracker } from './hooks/useCatalogTracker';
 export { CatalogUI } from './components/CatalogUI';
 export type { CatalogUIProps } from './components/CatalogUI';
+
+export type { CatalogStore } from './stores/catalogStore';

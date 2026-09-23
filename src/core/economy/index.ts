@@ -8,9 +8,13 @@ export {
   serializeWalletState,
 } from './plugin';
 export type { EconomyPluginOptions } from './plugin';
-export { useWalletStore } from './stores/walletStore';
-export { useShopStore } from './stores/shopStore';
+export { useWalletStore, useWalletStoreApi, createWalletStore } from './stores/walletStore';
+export { useShopStore, useShopStoreApi, createShopStore } from './stores/shopStore';
 export { WalletHUD } from './components/WalletHUD';
 export type { WalletHUDProps } from './components/WalletHUD';
 export { ShopUI } from './components/ShopUI';
 export type { ShopUIProps } from './components/ShopUI';
+
+export type { WalletStore } from './stores/walletStore';
+
+export type { ShopStore } from './stores/shopStore';

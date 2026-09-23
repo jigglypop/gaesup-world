@@ -1,6 +1,35 @@
-import { entityGenerationOf, entityIndexOf, NextWorld } from '../core/World';
+import { entityGenerationOf, entityIndexOf, MAX_ENTITY_CAPACITY, NextWorld } from '../core/World';
 
 describe('NextWorld', () => {
+  test.each([0, -1, 1.5, NaN, Infinity, MAX_ENTITY_CAPACITY + 1])('rejects invalid capacity %s before allocation', capacity => {
+    expect(() => new NextWorld({ capacity })).toThrow(RangeError);
+  });
+
+  test('retired slots never revive handles across generation exhaustion', () => {
+    const world = new NextWorld({ capacity: 1 });
+    let current = world.createEntity();
+    const stale = current;
+    for (let i = 0; i < 10000; i++) {
+      expect(world.destroyEntity(current)).toBe(true);
+      current = world.createEntity();
+      expect(world.isAlive(stale)).toBe(false);
+      expect(world.isAlive(current)).toBe(true);
+    }
+    expect(entityIndexOf(current)).toBe(4);
+    expect(world.entityCount).toBe(1);
+  });
+
+  test('noninteger and out-of-range handles cannot alias a live slot through bitwise coercion', () => {
+    const world = new NextWorld();
+    const id = world.createEntity();
+    for (const invalid of [NaN, Infinity, -4294967296, 4294967296, 0.5]) {
+      expect(world.isAlive(invalid)).toBe(false);
+      expect(world.destroyEntity(invalid)).toBe(false);
+    }
+    expect(world.isAlive(id)).toBe(true);
+    expect(world.entityCount).toBe(1);
+  });
+
   test('엔티티를 생성하면 살아있는 상태로 카운트된다', () => {
     const world = new NextWorld();
     const entity = world.createEntity();

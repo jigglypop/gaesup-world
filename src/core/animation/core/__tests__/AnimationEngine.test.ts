@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 
-const mockAnimationAction = {
+import type { AnimationSystem as AnimationSystemClass } from '../AnimationSystem';
+
+const mockAnimationActionImpl = {
   play: jest.fn().mockReturnThis(),
   stop: jest.fn().mockReturnThis(),
   reset: jest.fn().mockReturnThis(),
@@ -10,6 +12,7 @@ const mockAnimationAction = {
   weight: 1,
   timeScale: 1,
 };
+const mockAnimationAction = mockAnimationActionImpl as unknown as THREE.AnimationAction;
 
 const mockAnimationMixer = {
   clipAction: jest.fn(() => mockAnimationAction),
@@ -18,8 +21,8 @@ const mockAnimationMixer = {
 };
 
 describe('AnimationSystem', () => {
-  let AnimationSystem: any;
-  let engine: any;
+  let AnimationSystem: typeof AnimationSystemClass;
+  let engine: AnimationSystemClass;
   let mockObject: THREE.Object3D;
 
   beforeEach(async () => {
@@ -68,8 +71,8 @@ describe('AnimationSystem', () => {
 
     expect(engine.getCurrentAnimation()).toBe('testAnim');
     expect(engine.getState().isPlaying).toBe(true);
-    expect(mockAnimationAction.reset).toHaveBeenCalled();
-    expect(mockAnimationAction.play).toHaveBeenCalled();
+    expect(mockAnimationActionImpl.reset).toHaveBeenCalled();
+    expect(mockAnimationActionImpl.play).toHaveBeenCalled();
   });
 
   it('현재 애니메이션을 정지할 수 있어야 함', () => {
@@ -79,7 +82,7 @@ describe('AnimationSystem', () => {
 
     expect(engine.getCurrentAnimation()).toBe('idle');
     expect(engine.getState().isPlaying).toBe(false);
-    expect(mockAnimationAction.stop).toHaveBeenCalled();
+    expect(mockAnimationActionImpl.stop).toHaveBeenCalled();
   });
 
   it('상태 변경 시 구독자에게 알림을 보낼 수 있어야 함', () => {

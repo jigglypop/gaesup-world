@@ -1,4 +1,8 @@
+import { createWebSocketVisitChannel } from '../../networks/visit/channel';
+import { applyVisitSnapshot } from '../../networks/visit/serializer';
 import { createPluginRegistry } from '../../plugins';
+import { SaveSystem } from '../../save';
+import type { DomainBinding } from '../../save/types';
 import {
   buildingGridAdapter,
   buildingPlacementAdapter,
@@ -6,10 +10,6 @@ import {
 import { createBuildingPlugin } from '../plugin';
 import type { BuildingPlacementExtension } from '../plugin';
 import { useBuildingStore } from '../stores/buildingStore';
-import { createWebSocketVisitChannel } from '../../networks/visit/channel';
-import { applyVisitSnapshot } from '../../networks/visit/serializer';
-import type { DomainBinding } from '../../save/types';
-import { SaveSystem } from '../../save';
 
 describe('building plugin', () => {
   it('rejects malformed building geometry before applying earlier save domains', async () => {
@@ -40,7 +40,7 @@ describe('building plugin', () => {
     registry.register(createBuildingPlugin());
     await registry.setup('gaesup.building');
     const previous = useBuildingStore.getState().serialize();
-    let receive = (_raw: string): void => {};
+    let receive: (raw: string) => void = () => {};
     const channel = createWebSocketVisitChannel({
       send: jest.fn(),
       onMessage: (listener) => { receive = listener; return () => {}; },

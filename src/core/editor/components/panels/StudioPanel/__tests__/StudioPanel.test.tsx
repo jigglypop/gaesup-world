@@ -1,8 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import { StudioPanel } from '..';
-import { getSaveSystem, SaveSystem, type SaveBlob } from '../../../../../save';
 import { createGaesupRuntime, GaesupRuntimeProvider } from '../../../../../runtime';
+import { getSaveSystem, SaveSystem, type SaveBlob } from '../../../../../save';
 import { logger } from '../../../../../utils/logger';
 
 afterEach(() => jest.restoreAllMocks());

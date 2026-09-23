@@ -6,15 +6,19 @@ import { AbstractSystem, SystemContext, SystemUpdateArgs } from '@core/boilerpla
 import { HandleError, ManageRuntime, Profile } from '@core/boilerplate/engine';
 import { GameStatesType } from '@core/world/components/Rideable/types';
 
+import type { ClickNavigationRoute } from '../../../navigation/ClickNavigationRoute';
 import type { PhysicsCalcProps, PhysicsState } from '../../types';
 import type { PhysicsConfigType } from '../config';
 import { GravityComponent } from '../forces';
 import { EntityStateManager } from './EntityStateManager';
+import { GroundContactProbe } from './GroundContactProbe';
 import { PhysicsSystemState, PhysicsSystemMetrics, PhysicsSystemOptions } from './types';
 import { ForceComponent } from '../forces/ForceComponent';
 import { DirectionComponent, ImpulseComponent } from '../movement';
-import { GroundProbe } from '../physics/GroundProbe';
-import type { PhysicsVector } from '../physics/types';
+import type { InputAdapter } from '../../../interactions/core/adapter';
+import type { NavigationSystem } from '../../../navigation/NavigationSystem';
+
+export type PhysicsWorldServices = { inputAdapter?: InputAdapter; navigation?: NavigationSystem; clickNavigation?: ClickNavigationRoute };
 
 const defaultState: PhysicsSystemState = {
   isJumping: false,
@@ -29,14 +33,7 @@ const defaultMetrics: PhysicsSystemMetrics = {
   frameTime: 0,
 };
 
-const WORLD_GROUND_Y_THRESHOLD = 0.75;
-const GROUNDED_VERTICAL_SPEED = 0.25;
-const GROUNDED_Y_DELTA = 0.025;
-const GROUNDED_STABLE_FRAMES = 3;
-const WALK_GROUNDED_VERTICAL_SPEED = 1.2;
-const WALK_GROUNDED_Y_DELTA = 0.35;
 const FALLING_VERTICAL_SPEED = -0.25;
-const RISING_VERTICAL_SPEED = 0.02;
 
 function createOwnedPhysicsConfig(config: PhysicsConfigType): PhysicsConfigType {
   const ownedConfig = { ...config };
@@ -82,27 +79,25 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   private lastMovingState = false;
   private lastRunningState = false;
 
-  private lastPositionY = 0;
-  private groundStableCount = 0;
-  private lastGroundedY: number | null = null;
+  private readonly groundContact = new GroundContactProbe();
   private previousMode: PhysicsState['modeType'] | null = null;
 
   private tempQuaternion = new THREE.Quaternion();
   private tempEuler = new THREE.Euler();
   private tempVector = new THREE.Vector3();
   private jumpScratch = new THREE.Vector3();
-  private readonly groundProbe = new GroundProbe();
   private readonly config: PhysicsConfigType;
 
   constructor(
     config: PhysicsConfigType,
     options: PhysicsSystemOptions = {},
     stateManager?: EntityStateManager,
+    services: PhysicsWorldServices = {},
   ) {
     super(defaultState, defaultMetrics, options);
     this.config = createOwnedPhysicsConfig(config);
-    this.directionComponent = new DirectionComponent(this.config);
-    this.impulseComponent = new ImpulseComponent(this.config, stateManager);
+    this.directionComponent = new DirectionComponent(this.config, services.inputAdapter, services.clickNavigation);
+    this.impulseComponent = new ImpulseComponent(this.config, stateManager, services.inputAdapter, services.navigation);
     this.gravityComponent = new GravityComponent(this.config);
   }
 
@@ -270,68 +265,23 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     const activeStateRef = physicsState.activeState;
     if (!rigidBodyRef.current) {
       gameStatesRef.isOnTheGround = false;
+      activeStateRef.isGround = false;
       gameStatesRef.isFalling = true;
       return;
     }
-    const rigidBody = rigidBodyRef.current;
-    const velocity = rigidBody.linvel();
-    const position = rigidBody.translation();
-    const isOnTheGround =
-      prop.physicsQueries && (physicsState.modeType ?? 'character') === 'character'
-        ? !(gameStatesRef.isJumping && velocity.y > RISING_VERTICAL_SPEED) &&
-          this.groundProbe.isGrounded(prop.physicsQueries, position, prop.groundRay?.length)
-        : this.estimateGround(physicsState, position, velocity);
+    const velocity = rigidBodyRef.current.linvel();
+    const position = rigidBodyRef.current.translation();
+    const isOnTheGround = this.groundContact.read(prop.physicsWorld, rigidBodyRef.current, this.config, prop.groundContactFilter);
     const isFalling = !isOnTheGround && velocity.y < FALLING_VERTICAL_SPEED;
 
     if (isOnTheGround) {
-      this.lastGroundedY = position.y;
       this.resetJumpState(physicsState);
     }
     gameStatesRef.isOnTheGround = isOnTheGround;
+    activeStateRef.isGround = isOnTheGround;
     gameStatesRef.isFalling = isFalling;
     this.copyVector3(activeStateRef.position, position);
     this.copyVector3(activeStateRef.velocity, velocity);
-  }
-
-  private estimateGround(
-    physicsState: PhysicsState,
-    position: Readonly<PhysicsVector>,
-    velocity: Readonly<PhysicsVector>,
-  ): boolean {
-    const gameStatesRef = physicsState.gameStates;
-    const verticalSpeed = Math.abs(velocity.y);
-    const positionDeltaY = Math.abs(position.y - this.lastPositionY);
-    const isRising = velocity.y > RISING_VERTICAL_SPEED;
-    const isNearWorldGround = position.y <= WORLD_GROUND_Y_THRESHOLD;
-    const isNearKnownGround =
-      this.lastGroundedY !== null &&
-      Math.abs(position.y - this.lastGroundedY) <= WORLD_GROUND_Y_THRESHOLD;
-    const canReuseStableGround = isNearWorldGround || isNearKnownGround;
-    const isJumpIntent = gameStatesRef.isJumping || physicsState.keyboard.space;
-    const isWalkingGroundJitter =
-      isNearKnownGround &&
-      !isJumpIntent &&
-      verticalSpeed < WALK_GROUNDED_VERTICAL_SPEED &&
-      positionDeltaY < WALK_GROUNDED_Y_DELTA;
-
-    if (
-      !isRising &&
-      canReuseStableGround &&
-      verticalSpeed < GROUNDED_VERTICAL_SPEED &&
-      positionDeltaY < GROUNDED_Y_DELTA
-    ) {
-      this.groundStableCount = Math.min(this.groundStableCount + 1, 5);
-    } else {
-      this.groundStableCount = 0;
-    }
-    this.lastPositionY = position.y;
-
-    const isNearGround = canReuseStableGround && !isRising && verticalSpeed < GROUNDED_VERTICAL_SPEED;
-    return (
-      isNearGround ||
-      isWalkingGroundJitter ||
-      this.groundStableCount >= GROUNDED_STABLE_FRAMES
-    );
   }
 
   @Profile()
@@ -340,7 +290,7 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     const keyboard = physicsState.keyboard;
     const mouse = physicsState.mouse;
     const { shift, space, forward, backward, leftward, rightward } = keyboard;
-    const isKeyboardMoving = forward || backward || leftward || rightward;
+    const isKeyboardMoving = forward || backward || leftward || rightward || !!(physicsState.gamepad?.connected && physicsState.gamepad.leftStick.lengthSq() > 0);
     const isMoving = isKeyboardMoving || mouse.isActive;
     const isRunning =
       (isKeyboardMoving && shift && !mouse.isLookAround) ||
@@ -537,8 +487,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   protected override onDispose(): void {
     this.directionComponent.dispose();
     this.forceComponents = [];
-    this.groundStableCount = 0;
-    this.lastGroundedY = null;
     this.lastJumpPressed = false;
     this.previousMode = null;
   }

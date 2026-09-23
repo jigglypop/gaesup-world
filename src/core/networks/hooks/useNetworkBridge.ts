@@ -1,8 +1,10 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 
 import { BridgeFactory } from '@core/boilerplate';
-import { useEngineFrame } from '@core/runtime/frame';
 
+import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../runtime/runtimeContext';
+import { getTimeClock } from '../../time/core/timeClock';
+import { useTimeStoreApi } from '../../time/stores/timeStore';
 import { NetworkBridge } from '../bridge/NetworkBridge';
 import { NetworkCommand, NetworkSnapshot, NetworkConfig } from '../types';
 
@@ -35,11 +37,12 @@ export function useNetworkBridge(options: UseNetworkBridgeOptions = {}): UseNetw
   const bridgeRef = useRef<NetworkBridge | null>(null);
   const [bridge, setBridge] = useState<NetworkBridge | null>(null);
   const [isReady, setIsReady] = useState<boolean>(false);
+  const runtime = useGaesupRuntime();
+  const revision = useGaesupRuntimeRevision();
+  const timeStore = useTimeStoreApi();
 
   useEffect(() => {
-    if (!bridgeRef.current) {
-      bridgeRef.current = BridgeFactory.getOrCreate<NetworkBridge>('networks');
-    }
+    bridgeRef.current = runtime ? (runtime.isActive() ? runtime.networkBridge : null) : BridgeFactory.getOrCreate<NetworkBridge>('networks');
 
     const b = bridgeRef.current;
     if (!b) {
@@ -58,7 +61,8 @@ export function useNetworkBridge(options: UseNetworkBridgeOptions = {}): UseNetw
     }
 
     // Apply runtime config updates (works for both first-time and subsequent updates).
-    if (config && Object.keys(config).length > 0) {
+    const currentConfig = b.getEngine(systemId)?.system.getConfig();
+    if (config && Object.entries(config).some(([key, value]) => value !== undefined && currentConfig?.[key as keyof NetworkConfig] !== value)) {
       b.execute(systemId, { type: 'updateConfig', data: { config } });
     }
 
@@ -68,18 +72,12 @@ export function useNetworkBridge(options: UseNetworkBridgeOptions = {}): UseNetw
     return () => {
       // cleanup은 BridgeFactory에서 관리
     };
-  }, [systemId, config]);
+  }, [systemId, config, runtime, revision]);
 
-  // 자동 업데이트 (매 프레임)
-  useEngineFrame(
-    'snapshot',
-    (deltaTime) => {
-      if (enableAutoUpdate && bridgeRef.current && isReady) {
-        bridgeRef.current.updateSystem(systemId, deltaTime);
-      }
-    },
-    { label: 'network:bridge-update', active: enableAutoUpdate && isReady },
-  );
+  useEffect(() => {
+    if (!enableAutoUpdate || !bridge || bridge !== bridgeRef.current || !isReady || runtime && !runtime.isActive()) return;
+    return bridge.acquireUpdates(systemId, runtime?.clockLoop ?? getTimeClock(timeStore));
+  }, [enableAutoUpdate, bridge, isReady, systemId, runtime, revision, timeStore]);
 
   const executeCommand = useCallback((command: NetworkCommand) => {
     if (bridgeRef.current && isReady) {
@@ -123,4 +121,4 @@ export function useNetworkBridge(options: UseNetworkBridgeOptions = {}): UseNetw
     updateSystem,
     isReady
   };
-} 
+}

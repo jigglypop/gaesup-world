@@ -3,7 +3,12 @@ import * as THREE from 'three';
 
 import { frameScheduler } from '../../../runtime/frame';
 import { useBuildingRenderStateStore } from '../../render/store';
+import { useFrame } from '@react-three/fiber';
+import { render, act } from '@testing-library/react';
+import * as THREE from 'three';
+
 import { useBuildingGpuCullingStore } from '../../render/cullingStore';
+import { useBuildingRenderStateStore } from '../../render/store';
 import { useBuildingStore } from '../../stores/buildingStore';
 import { useBuildingVisibilityStore } from '../../visibility/store';
 import { BuildingVisibilityDriver } from '../BuildingVisibilityDriver';
@@ -18,7 +23,7 @@ jest.mock('@react-three/fiber', () => ({
   useThree: (selector: (state: { get: () => MockFrameState }) => unknown) => selector({ get: () => mockFrameState }),
 }));
 jest.mock('../mesh/grass/manager', () => ({
-  getGrassManager: () => ({ size: () => 1, tick: mockGrassTick }),
+  getGrassManager: () => ({ size: () => 1, isEnabled: () => true, tick: mockGrassTick }),
 }));
 const mockGrassTick = jest.fn();
 

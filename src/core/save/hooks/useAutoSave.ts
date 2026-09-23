@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 
-import { logger } from '../../utils/logger';
-import { isAutoSaveSuspended } from '../core/autoSaveSuspension';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import type { GaesupRuntime } from '../../runtime/types';
+import { acquireAutoSave, acquireInitialLoad } from '../core/saveHookCoordinator';
 import { getSaveSystem } from '../core/SaveSystem';
 import type { SaveSystem } from '../core/SaveSystem';
 
@@ -11,9 +12,11 @@ export type AutoSaveOptions = {
   slot?: string;
   saveOnUnload?: boolean;
   saveOnVisibilityChange?: boolean;
+  /** Overrides the nearest world's system; without a Provider, uses the legacy default. */
   saveSystem?: SaveSystem;
 };
 
+/** Shares a writer per system/slot. The shortest active interval wins; pending writes coalesce. */
 export function useAutoSave({
   enabled = true,
   intervalMs = 5 * 60 * 1000,
@@ -22,60 +25,40 @@ export function useAutoSave({
   saveOnVisibilityChange = true,
   saveSystem,
 }: AutoSaveOptions = {}): void {
+  const runtime = useGaesupRuntime();
+  const system = saveSystem ?? runtime?.save ?? getSaveSystem();
   useEffect(() => {
     if (!enabled) return;
-    const sys = saveSystem ?? getSaveSystem();
-    let cancelled = false;
-
-    const doSave = () => {
-      if (cancelled || isAutoSaveSuspended()) return;
-      void sys.save(slot).catch((error: unknown) => {
-        logger.error('Automatic save failed', error instanceof Error ? error : String(error));
-      });
-    };
-
-    const timer = window.setInterval(doSave, Math.max(1000, intervalMs));
-
-    const onUnload = doSave;
-    const onVisibility = () => {
-      if (document.visibilityState === 'hidden') doSave();
-    };
-
-    if (saveOnUnload) window.addEventListener('beforeunload', onUnload);
-    if (saveOnVisibilityChange) document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-      if (saveOnUnload) window.removeEventListener('beforeunload', onUnload);
-      if (saveOnVisibilityChange) document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, [enabled, intervalMs, slot, saveOnUnload, saveOnVisibilityChange, saveSystem]);
+    return ownRuntimeLease(runtime, () => acquireAutoSave(system, slot, { intervalMs, saveOnUnload, saveOnVisibilityChange }));
+  }, [enabled, intervalMs, slot, saveOnUnload, saveOnVisibilityChange, system, runtime]);
 }
 
+/** Shares an initial read while consumers remain mounted; late consumers receive its cached result. */
 export function useLoadOnMount(
   slot?: string,
   onLoaded?: (loaded: boolean) => void,
   saveSystem?: SaveSystem,
 ): void {
+  const runtime = useGaesupRuntime();
+  const system = saveSystem ?? runtime?.save ?? getSaveSystem();
   const onLoadedRef = useRef(onLoaded);
-  useEffect(() => {
+  useLayoutEffect(() => {
     onLoadedRef.current = onLoaded;
   }, [onLoaded]);
 
   useEffect(() => {
-    const sys = saveSystem ?? getSaveSystem();
-    const controller = new AbortController();
-    void sys
-      .load(slot, controller.signal)
-      .then((ok) => {
-        if (!controller.signal.aborted) onLoadedRef.current?.(ok);
-      })
-      .catch((error: unknown) => {
-        logger.error('Initial save load failed', error instanceof Error ? error : String(error));
-      });
-    return () => {
-      controller.abort();
-    };
-  }, [slot, saveSystem]);
+    return ownRuntimeLease(runtime, () => acquireInitialLoad(system, slot, ok => onLoadedRef.current?.(ok)));
+  }, [slot, system, runtime]);
+}
+
+/** Release synchronously with the world, even before React flushes the Provider update. */
+function ownRuntimeLease(runtime: GaesupRuntime | null, acquire: () => () => void): () => void {
+  let release: (() => void) | undefined;
+  const sync = (): void => {
+    if (!runtime || runtime.isActive()) release ??= acquire();
+    else { release?.(); release = undefined; }
+  };
+  const unsubscribe = runtime?.subscribeLifecycle(sync);
+  sync();
+  return () => { unsubscribe?.(); release?.(); release = undefined; };
 }

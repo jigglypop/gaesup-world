@@ -1,7 +1,7 @@
 import type { Vector3 } from 'three';
 
-import { CharacterMovementComponent } from '../CharacterMovementComponent';
 import type { ComponentContext } from '../../types';
+import { CharacterMovementComponent } from '../CharacterMovementComponent';
 
 test.each([0, 0.2, 1])('air control %s preserves momentum and is independent of frame rate', (airControl) => {
   const results = [30, 60, 120].map(fps => {
@@ -78,7 +78,7 @@ test('reuses movement velocity while retaining camera rotation, diagonal speed a
     jumpHeight: 1,
     airControl: 0.2,
   });
-  const setLinvel = jest.fn((_velocity: Vector3, _wake: boolean) => {});
+  const setLinvel = jest.fn<void, [velocity: Vector3, wake: boolean]>();
   const context = {
     rigidBodyRef: { current: { linvel: () => ({ x: 0, y: -3, z: 0 }), setLinvel } },
     deltaTime: 1 / 60,

@@ -1,5 +1,9 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { frameScheduler } from '@core/runtime/frame';
+import * as THREE from 'three';
+
+import { BridgeFactory } from '@core/boilerplate';
+
+import type { NetworkCommand } from '../../types';
 import { useNetworkBridge } from '../useNetworkBridge';
 
 // BridgeFactory 모킹
@@ -20,23 +24,16 @@ const mockBridge = {
   snapshot: jest.fn(),
   getNetworkStats: jest.fn(),
   getSystemState: jest.fn(),
-  updateSystem: jest.fn()
+  updateSystem: jest.fn(),
+  acquireUpdates: jest.fn(() => jest.fn()),
+  dispose: jest.fn()
 };
 
+const mockBridgeFactory = jest.mocked(BridgeFactory);
+
 describe('useNetworkBridge', () => {
-  let mockBridgeFactory: any;
-
-  afterEach(() => {
-    frameScheduler.clear();
-  });
-
   beforeEach(() => {
     jest.clearAllMocks();
-
-    // 모킹된 모듈들 가져오기
-    const boilerplate = require('@core/boilerplate');
-    
-    mockBridgeFactory = boilerplate.BridgeFactory;
     
     mockBridgeFactory.getOrCreate.mockImplementation((domain: string) => {
       return mockBridgeFactory.get(domain) ?? mockBridgeFactory.create(domain);
@@ -136,13 +133,10 @@ describe('useNetworkBridge', () => {
         expect(result.current.isReady).toBe(true);
       });
       
-      const command = {
-        type: 'registerNPC' as const,
-        data: {
-          npcId: 'npc-1',
-          position: { x: 0, y: 0, z: 0 },
-          metadata: {}
-        }
+      const command: NetworkCommand = {
+        type: 'registerNPC',
+        npcId: 'npc-1',
+        position: new THREE.Vector3(0, 0, 0)
       };
 
       act(() => {
@@ -158,13 +152,10 @@ describe('useNetworkBridge', () => {
       
       const { result } = renderHook(() => useNetworkBridge());
       
-      const command = {
-        type: 'registerNPC' as const,
-        data: {
-          npcId: 'npc-1',
-          position: { x: 0, y: 0, z: 0 },
-          metadata: {}
-        }
+      const command: NetworkCommand = {
+        type: 'registerNPC',
+        npcId: 'npc-1',
+        position: new THREE.Vector3(0, 0, 0)
       };
 
       act(() => {
@@ -192,7 +183,7 @@ describe('useNetworkBridge', () => {
     });
 
     test('자동 업데이트 테스트', async () => {
-      const { result, unmount } = renderHook(() => 
+      const { result } = renderHook(() => 
         useNetworkBridge({ enableAutoUpdate: true })
       );
       
@@ -201,12 +192,7 @@ describe('useNetworkBridge', () => {
         expect(result.current.isReady).toBe(true);
       });
       
-      // 프레임 콜백이 snapshot 단계에 등록되었는지 확인
-      expect(frameScheduler.count('snapshot')).toBe(1);
-      frameScheduler.tick(0.016, 16);
-      expect(mockBridge.updateSystem).toHaveBeenCalledWith('main', 0.016);
-      unmount();
-      expect(frameScheduler.count('snapshot')).toBe(0);
+      expect(mockBridge.acquireUpdates).toHaveBeenCalledWith('main', expect.anything());
     });
   });
 
@@ -229,7 +215,7 @@ describe('useNetworkBridge', () => {
       
       // 에러 없이 호출되어야 함
       expect(() => {
-        result.current.executeCommand({ type: 'start', data: {} });
+        result.current.executeCommand({ type: 'startMonitoring', npcId: 'npc-1' });
         result.current.getSnapshot();
         result.current.getNetworkStats();
         result.current.getSystemState();
@@ -237,4 +223,4 @@ describe('useNetworkBridge', () => {
       }).not.toThrow();
     });
   });
-}); 
+});

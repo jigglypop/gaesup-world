@@ -1,10 +1,11 @@
+import type { RefObject } from 'react';
+
 import { renderHook } from '@testing-library/react';
-import { RefObject, createRef } from 'react';
-import { useManagedEntity } from '../useManagedEntity';
-import { ManagedEntity } from '../../entity/ManagedEntity';
+
 import { AbstractBridge } from '../../bridge/AbstractBridge';
-import { IDisposable, UseManagedEntityOptions } from '../../types';
-import { DIContainer } from '../../di';
+import { ManagedEntity } from '../../entity/ManagedEntity';
+import { IDisposable, RuntimeValue, UseManagedEntityOptions } from '../../types';
+import { useManagedEntity } from '../useManagedEntity';
 
 // Mock 클래스들
 class MockEngine implements IDisposable {
@@ -15,10 +16,24 @@ class MockEngine implements IDisposable {
   }
 }
 
-class MockBridge extends AbstractBridge<MockEngine, any, any> {
-  register = jest.fn();
-  unregister = jest.fn();
-  notifyListeners = jest.fn();
+type MockSnapshot = { disposed: boolean };
+type MockCommand = { type: 'noop' };
+type TestOptions = UseManagedEntityOptions<MockEngine, MockSnapshot, MockCommand>;
+
+class MockBridge extends AbstractBridge<MockEngine, MockSnapshot, MockCommand> {
+  override register = jest.fn<void, [id: string, ...args: RuntimeValue[]]>();
+  override unregister = jest.fn<void, [id: string]>();
+  override notifyListeners = jest.fn<void, [id: string]>();
+
+  protected buildEngine(): MockEngine {
+    return new MockEngine();
+  }
+
+  protected executeCommand(): void {}
+
+  protected createSnapshot(engine: MockEngine): MockSnapshot {
+    return { disposed: engine.disposed };
+  }
 }
 
 // DIContainer mock
@@ -35,8 +50,8 @@ jest.mock('../../di', () => ({
 
 // ManagedEntity mock
 const mockManagedEntity = {
-  initialize: jest.fn(),
-  dispose: jest.fn(),
+  initialize: jest.fn<void, []>(),
+  dispose: jest.fn<void, []>(),
   execute: jest.fn(),
   getSnapshot: jest.fn(),
   restoreSnapshot: jest.fn(),
@@ -47,6 +62,13 @@ const mockManagedEntity = {
 jest.mock('../../entity/ManagedEntity', () => ({
   ManagedEntity: jest.fn(() => mockManagedEntity)
 }));
+
+const mockManagedEntityClass = jest.mocked(ManagedEntity);
+
+// 훅은 생성된 엔티티를 그대로 반환하고 정리만 하므로 필요한 메서드만 가진 부분 스텁을 쓴다
+function mockManagedEntityInstance(): InstanceType<typeof ManagedEntity> {
+  return mockManagedEntity as unknown as InstanceType<typeof ManagedEntity>;
+}
 
 // useBaseLifecycle과 useBaseFrame mock
 jest.mock('../useBaseLifecycle', () => ({
@@ -65,8 +87,7 @@ describe('useManagedEntity', () => {
   beforeEach(() => {
     mockBridge = new MockBridge();
     mockEngine = new MockEngine();
-    engineRef = createRef<MockEngine>();
-    engineRef.current = mockEngine;
+    engineRef = { current: mockEngine };
     
     jest.clearAllMocks();
 
@@ -81,12 +102,12 @@ describe('useManagedEntity', () => {
     mockManagedEntity.dispose.mockImplementation(() => undefined);
     
     // ManagedEntity 생성자 mock 초기화
-    (ManagedEntity as jest.Mock).mockImplementation(() => mockManagedEntity);
+    mockManagedEntityClass.mockImplementation(mockManagedEntityInstance);
   });
 
   describe('기본 동작', () => {
     test('브리지와 엔진이 있으면 ManagedEntity를 생성해야 함', () => {
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {};
+      const options: TestOptions = {};
       
       const { result } = renderHook(() => 
         useManagedEntity(mockBridge, 'test-id', engineRef, options)
@@ -99,7 +120,7 @@ describe('useManagedEntity', () => {
     });
 
     test('브리지가 null이면 ManagedEntity를 생성하지 않아야 함', () => {
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {};
+      const options: TestOptions = {};
       
       const { result } = renderHook(() => 
         useManagedEntity(null, 'test-id', engineRef, options)
@@ -110,8 +131,9 @@ describe('useManagedEntity', () => {
     });
 
     test('엔진 ref가 null이면 ManagedEntity를 생성하지 않아야 함', () => {
-      const emptyRef = createRef<MockEngine>();
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {};
+      // 마운트 전 `useRef<T>(null!)` ref와 같은 상태
+      const emptyRef: RefObject<MockEngine> = { current: null! };
+      const options: TestOptions = {};
       
       const { result } = renderHook(() => 
         useManagedEntity(mockBridge, 'test-id', emptyRef, options)
@@ -122,7 +144,7 @@ describe('useManagedEntity', () => {
     });
 
     test('enabled가 false면 ManagedEntity를 생성하지 않아야 함', () => {
-      const options: UseManagedEntityOptions<MockEngine, any, any> = { enabled: false };
+      const options: TestOptions = { enabled: false };
       
       const { result } = renderHook(() => 
         useManagedEntity(mockBridge, 'test-id', engineRef, options)
@@ -136,12 +158,12 @@ describe('useManagedEntity', () => {
   describe('옵션 처리', () => {
     test('ManagedEntity 옵션이 올바르게 전달되어야 함', () => {
       const entityOptions = {
-        enableSnapshots: true,
-        maxCommandHistory: 50,
-        enableEventListeners: true
+        enableCommandQueue: true,
+        maxQueueSize: 50,
+        enableStateCache: true
       };
       
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {
+      const options: TestOptions = {
         ...entityOptions,
         onInit: jest.fn(),
         onDispose: jest.fn(),
@@ -166,7 +188,7 @@ describe('useManagedEntity', () => {
 
     test('undefined 옵션으로도 정상 작동해야 함', () => {
       renderHook(() => 
-        useManagedEntity(mockBridge, 'test-id', engineRef, undefined as any)
+        useManagedEntity(mockBridge, 'test-id', engineRef, undefined)
       );
       
       expect(ManagedEntity).toHaveBeenCalledWith('test-id', mockEngine, {});
@@ -176,7 +198,7 @@ describe('useManagedEntity', () => {
   describe('라이프사이클 콜백', () => {
     test('onInit이 ManagedEntity 생성 후 호출되어야 함', () => {
       const onInit = jest.fn();
-      const options: UseManagedEntityOptions<MockEngine, any, any> = { onInit };
+      const options: TestOptions = { onInit };
       
       renderHook(() => 
         useManagedEntity(mockBridge, 'test-id', engineRef, options)
@@ -187,7 +209,7 @@ describe('useManagedEntity', () => {
 
     test('onDispose가 언마운트 시 호출되어야 함', () => {
       const onDispose = jest.fn();
-      const options: UseManagedEntityOptions<MockEngine, any, any> = { onDispose };
+      const options: TestOptions = { onDispose };
       
       const { unmount } = renderHook(() => 
         useManagedEntity(mockBridge, 'test-id', engineRef, options)
@@ -203,7 +225,7 @@ describe('useManagedEntity', () => {
       const onInit = jest.fn(() => {
         throw new Error('Init error');
       });
-      const options: UseManagedEntityOptions<MockEngine, any, any> = { onInit };
+      const options: TestOptions = { onInit };
       
       expect(() => {
         renderHook(() => 
@@ -219,7 +241,7 @@ describe('useManagedEntity', () => {
   describe('상태 변경 처리', () => {
     test('브리지가 변경되면 새로운 ManagedEntity가 생성되어야 함', () => {
       const mockBridge2 = new MockBridge();
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {};
+      const options: TestOptions = {};
       
       const { rerender } = renderHook(
         (bridge) => useManagedEntity(bridge, 'test-id', engineRef, options),
@@ -236,10 +258,9 @@ describe('useManagedEntity', () => {
 
     test('엔진이 변경되면 새로운 ManagedEntity가 생성되어야 함', () => {
       const mockEngine2 = new MockEngine();
-      const engineRef2 = createRef<MockEngine>();
-      engineRef2.current = mockEngine2;
+      const engineRef2: RefObject<MockEngine> = { current: mockEngine2 };
       
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {};
+      const options: TestOptions = {};
       
       const { rerender } = renderHook(
         (ref) => useManagedEntity(mockBridge, 'test-id', ref, options),
@@ -255,7 +276,7 @@ describe('useManagedEntity', () => {
     });
 
     test('id가 변경되면 새로운 ManagedEntity가 생성되어야 함', () => {
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {};
+      const options: TestOptions = {};
       
       const { rerender } = renderHook(
         (id) => useManagedEntity(mockBridge, id, engineRef, options),
@@ -299,10 +320,6 @@ describe('useManagedEntity', () => {
 
   describe('의존성 처리', () => {
     test('dependencies가 변경되면 ManagedEntity가 재생성되어야 함', () => {
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {
-        dependencies: ['dep1']
-      };
-      
       const { rerender } = renderHook(
         (deps) => useManagedEntity(mockBridge, 'test-id', engineRef, { dependencies: deps }),
         { initialProps: ['dep1'] }
@@ -317,7 +334,7 @@ describe('useManagedEntity', () => {
     });
 
     test('빈 의존성 배열도 올바르게 처리되어야 함', () => {
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {
+      const options: TestOptions = {
         dependencies: []
       };
       
@@ -335,7 +352,7 @@ describe('useManagedEntity', () => {
 
   describe('메모리 관리', () => {
     test('언마운트 시 ManagedEntity가 정리되어야 함', () => {
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {};
+      const options: TestOptions = {};
       
       const { unmount } = renderHook(() => 
         useManagedEntity(mockBridge, 'test-id', engineRef, options)
@@ -349,7 +366,7 @@ describe('useManagedEntity', () => {
     });
 
     test('연속적인 변경에서 이전 entity가 항상 정리되어야 함', () => {
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {};
+      const options: TestOptions = {};
       
       const { rerender } = renderHook(
         (id) => useManagedEntity(mockBridge, id, engineRef, options),
@@ -369,7 +386,7 @@ describe('useManagedEntity', () => {
 
   describe('DI Container 통합', () => {
     test('DIContainer.injectProperties가 호출되어야 함', () => {
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {};
+      const options: TestOptions = {};
       
       renderHook(() => 
         useManagedEntity(mockBridge, 'test-id', engineRef, options)
@@ -383,7 +400,7 @@ describe('useManagedEntity', () => {
         throw new Error('DI error');
       });
       
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {};
+      const options: TestOptions = {};
       
       expect(() => {
         renderHook(() => 
@@ -411,11 +428,11 @@ describe('useManagedEntity', () => {
     });
 
     test('ManagedEntity 생성자에서 에러가 발생해도 안전해야 함', () => {
-      (ManagedEntity as jest.Mock).mockImplementation(() => {
+      mockManagedEntityClass.mockImplementation(() => {
         throw new Error('Constructor error');
       });
       
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {};
+      const options: TestOptions = {};
       
       expect(() => {
         renderHook(() => 
@@ -429,7 +446,7 @@ describe('useManagedEntity', () => {
         throw new Error('Initialize error');
       });
       
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {};
+      const options: TestOptions = {};
       
       expect(() => {
         renderHook(() => 
@@ -445,7 +462,7 @@ describe('useManagedEntity', () => {
         throw new Error('Dispose error');
       });
       
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {};
+      const options: TestOptions = {};
       
       const { unmount } = renderHook(() => 
         useManagedEntity(mockBridge, 'test-id', engineRef, options)
@@ -495,7 +512,7 @@ describe('useManagedEntity', () => {
       const onRegister = jest.fn();
       const onUnregister = jest.fn();
       
-      const options: UseManagedEntityOptions<MockEngine, any, any> = {
+      const options: TestOptions = {
         onInit,
         onDispose,
         frameCallback,
@@ -506,8 +523,8 @@ describe('useManagedEntity', () => {
         priority: 1,
         throttle: 16,
         skipWhenHidden: true,
-        enableSnapshots: true,
-        maxCommandHistory: 100
+        enableCommandQueue: true,
+        maxQueueSize: 100
       };
       
       const { result, unmount } = renderHook(() => 

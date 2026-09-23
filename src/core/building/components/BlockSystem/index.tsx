@@ -199,7 +199,7 @@ function BlockBatchMesh({
   return (
     <instancedMesh
       ref={ref}
-      name={`block-system-${batch.key}`}
+      name={`building-batch:block:${batch.key}`}
       args={[geometry, batch.material, Math.max(1, batch.blocks.length)]}
       castShadow
       receiveShadow

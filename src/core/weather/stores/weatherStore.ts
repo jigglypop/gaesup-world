@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import type { WeatherEntry, WeatherKind, WeatherSerialized } from '../types';
 
 type State = {
@@ -44,7 +46,8 @@ function prepareWeatherEntry(entry: WeatherEntry): WeatherEntry {
   return { day: entry.day, kind: entry.kind, intensity: entry.intensity };
 }
 
-export const useWeatherStore = create<State>((set, get) => ({
+export function createWeatherStore() {
+  return create<State>((set, get) => ({
   current: null,
   history: [],
 
@@ -104,3 +107,10 @@ export const useWeatherStore = create<State>((set, get) => ({
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+
+}
+
+export type WeatherStore = ReturnType<typeof createWeatherStore>;
+export const { useStore: useWeatherStore, useStoreApi: useWeatherStoreApi } = createScopedStoreHook(
+  createWeatherStore(), () => useGaesupRuntime()?.weatherStore,
+);

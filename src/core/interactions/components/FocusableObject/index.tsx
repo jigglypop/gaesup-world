@@ -4,10 +4,10 @@ import { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { FocusableObjectProps } from './types';
-import { useGaesupStore } from '../../../stores/gaesupStore';
+import { useGaesupStore, useGaesupStoreApi, type GaesupStore } from '../../../stores/gaesupStore';
 
-export function unfocusCamera() {
-  const { cameraOption, setCameraOption } = useGaesupStore.getState();
+export function unfocusCamera(store: GaesupStore = useGaesupStore) {
+  const { cameraOption, setCameraOption } = store.getState();
   if (!cameraOption?.focus) return;
   setCameraOption({
     focus: false,
@@ -16,6 +16,7 @@ export function unfocusCamera() {
 
 export const FocusableObject = forwardRef<THREE.Group, FocusableObjectProps>(
   ({ children, position, focusDistance = 10, focusDuration = 1, onFocus, onBlur, ...props }, ref) => {
+    const storeApi = useGaesupStoreApi();
     const setCameraOption = useGaesupStore((state) => state.setCameraOption);
     const cameraOption = useGaesupStore((state) => state.cameraOption);
 
@@ -24,7 +25,7 @@ export const FocusableObject = forwardRef<THREE.Group, FocusableObjectProps>(
       if (!cameraOption?.enableFocus) return;
 
       if (cameraOption.focus) {
-        unfocusCamera();
+        unfocusCamera(storeApi);
         if (onBlur) onBlur(event);
         return;
       }

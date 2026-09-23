@@ -1,6 +1,6 @@
-import { registerSeedItems } from '../../items/data/items';
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import { useWalletStore } from '../../economy/stores/walletStore';
+import { useInventoryStore } from '../../inventory/stores/inventoryStore';
+import { registerSeedItems } from '../../items/data/items';
 import { DialogRunner } from '../core/DialogRunner';
 import type { DialogRuntimeAdapter, DialogTree } from '../types';
 

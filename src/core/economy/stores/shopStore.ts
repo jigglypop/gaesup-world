@@ -1,10 +1,12 @@
 import { create } from 'zustand';
 
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
+import { useWalletStore, type WalletStore } from './walletStore';
+import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import type { ItemId } from '../../items/types';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import type { ShopOffer, ShopSerialized } from '../types';
-import { useWalletStore } from './walletStore';
 
 type ShopState = {
   catalog: ItemId[];
@@ -25,7 +27,7 @@ type ShopState = {
   prepareHydrate: (data: ShopSerialized | null | undefined) => () => void;
 };
 
-let tradeInProgress = false;
+
 
 const DEFAULT_CATALOG: ItemId[] = ['axe', 'shovel', 'water-can', 'net', 'rod', 'apple'];
 
@@ -47,7 +49,9 @@ function makeRng(seed: number): () => number {
   };
 }
 
-export const useShopStore = create<ShopState>((set, get) => ({
+export function createShopStore(inventoryStore: InventoryStore, walletStore: WalletStore) {
+  let tradeInProgress = false;
+  return create<ShopState>((set, get) => ({
   catalog: DEFAULT_CATALOG,
   dailyStock: [],
   lastRolledDay: -1,
@@ -80,19 +84,19 @@ export const useShopStore = create<ShopState>((set, get) => ({
       if (stock < count) return { ok: false, reason: 'insufficient stock' };
       const price = (offer.price ?? get().priceOf(itemId)) * count;
       if (!Number.isFinite(price) || price < 0) return { ok: false, reason: 'invalid price' };
-      const wallet = useWalletStore.getState();
+      const wallet = walletStore.getState();
       if (wallet.bells < price) return { ok: false, reason: 'insufficient bells' };
       const definition = getItemRegistry().get(itemId);
       const maxStack = definition?.stackable ? Math.max(1, definition.maxStack) : 1;
       let capacity = 0;
-      for (const slot of useInventoryStore.getState().slots) {
+      for (const slot of inventoryStore.getState().slots) {
         if (slot === null) capacity += maxStack;
         else if (slot.itemId === itemId) capacity += Math.max(0, maxStack - slot.count);
         if (capacity >= count) break;
       }
       if (capacity < count) return { ok: false, reason: 'inventory full' };
       if (!wallet.spend(price)) return { ok: false, reason: 'spend failed' };
-      const remaining = useInventoryStore.getState().add(itemId, count);
+      const remaining = inventoryStore.getState().add(itemId, count);
       if (remaining > 0) {
         wallet.refund(price);
         return { ok: false, reason: 'inventory full' };
@@ -111,12 +115,12 @@ export const useShopStore = create<ShopState>((set, get) => ({
     tradeInProgress = true;
     try {
       if (!Number.isSafeInteger(count) || count <= 0) return { ok: false, reason: 'invalid count' };
-      const owned = useInventoryStore.getState().countOf(itemId);
+      const owned = inventoryStore.getState().countOf(itemId);
       if (owned < count) return { ok: false, reason: 'not enough items' };
-      const removed = useInventoryStore.getState().removeById(itemId, count);
+      const removed = inventoryStore.getState().removeById(itemId, count);
       if (removed < count) return { ok: false, reason: 'remove failed' };
       const sellPrice = get().sellPriceOf(itemId) * removed;
-      if (sellPrice > 0) useWalletStore.getState().add(sellPrice);
+      if (sellPrice > 0) walletStore.getState().add(sellPrice);
       return { ok: true };
     } finally {
       tradeInProgress = false;
@@ -162,3 +166,10 @@ export const useShopStore = create<ShopState>((set, get) => ({
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+
+}
+
+export type ShopStore = ReturnType<typeof createShopStore>;
+export const { useStore: useShopStore, useStoreApi: useShopStoreApi } = createScopedStoreHook(
+  createShopStore(useInventoryStore, useWalletStore), () => useGaesupRuntime()?.shopStore,
+);

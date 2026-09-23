@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { Canvas } from '@react-three/fiber';
-import { Physics } from '@react-three/rapier';
+
 
 import { getNPCBrainLabel } from './helpers';
 import {
@@ -22,7 +22,8 @@ import type {
   NPCPerceptionConfig,
   NPCTemplate,
 } from '../../../../npc/types';
-import { FrameSchedulerHost, PHYSICS_STEP_PRIORITY } from '../../../../runtime/frame';
+import { FrameSchedulerHost } from '../../../../runtime/frame';
+import { WorldPhysics } from '../../../../world/components/WorldPhysics';
 
 type NPCPanelProps = {
   layout?: 'default' | 'split' | 'sidebars';
@@ -462,9 +463,9 @@ function NPCMotionCanvas({
         <circleGeometry args={[3.2, 48]} />
         <meshStandardMaterial color="#0f172a" />
       </mesh>
-      <Physics gravity={[0, 0, 0]} updatePriority={PHYSICS_STEP_PRIORITY}>
+      <WorldPhysics gravity={[0, 0, 0]}>
         <NPCPreviewInstance instance={previewInstance} isEditMode={false} />
-      </Physics>
+      </WorldPhysics>
       <PreviewMarkers state={state} origin={origin} />
     </Canvas>
   );

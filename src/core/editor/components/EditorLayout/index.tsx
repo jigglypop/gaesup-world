@@ -5,6 +5,7 @@ import {
   type EditorLayoutProps,
   type PanelConfig,
 } from './types';
+import { WorldInputSurface } from '../../../input/WorldInputSurface';
 import '../../styles/theme.css';
 import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../../runtime';
 import { useEditorAutosave } from '../../hooks/useEditorAutosave';
@@ -373,7 +374,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
   const sidebarPresetStyle = typeof sidebarPreset === 'string' ? undefined : sidebarPreset.style;
 
   return (
-    <div className="editor-root">
+    <WorldInputSurface className="editor-root">
       <aside
         className={`editor-sidebar ${sidebarPresetClassName} ${isPanelOpen ? 'editor-sidebar--open' : 'editor-sidebar--collapsed'}`}
         style={sidebarPresetStyle}
@@ -565,6 +566,6 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
       />
 
       {children}
-    </div>
+    </WorldInputSurface>
   );
 };

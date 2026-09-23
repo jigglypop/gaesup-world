@@ -1,7 +1,12 @@
-import { CoreBridge, DomainBridge, EnableMetrics, ValidateCommand, LogSnapshot, CacheSnapshot } from '@core/boilerplate';
+import { CoreBridge, DomainBridge, EnableMetrics, ValidateCommand, LogSnapshot } from '@core/boilerplate';
 
+import type { AnimationClockLoop } from '../../simulation/AnimationClockLoop';
+import type { FixedStepClock } from '../../simulation/FixedStepClock';
 import { NetworkSystem } from '../core/NetworkSystem';
 import { NetworkSnapshot, NetworkCommand, NetworkConfig, NetworkSystemState } from '../types';
+
+let nextBridgeClockId = 0;
+type UpdateLease = { entity: NetworkBridgeEntity; loop: AnimationClockLoop; references: number; dispose: () => void };
 
 export interface NetworkBridgeEntity {
   system: NetworkSystem;
@@ -11,9 +16,17 @@ export interface NetworkBridgeEntity {
 @DomainBridge('networks')
 @EnableMetrics()
 export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapshot, NetworkCommand> {
+  private readonly updates = new Map<string, UpdateLease>();
+  private readonly clockId = `network-publish:${++nextBridgeClockId}`;
+  private clock: FixedStepClock | undefined;
+
   constructor() {
     super();
     this.setupEngineSubscriptions();
+  }
+
+  static forClock(clock: FixedStepClock): NetworkBridge {
+    const bridge = new NetworkBridge(); bridge.clock = clock; return bridge;
   }
 
   /**
@@ -24,14 +37,17 @@ export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapsh
     this.register('main', config ?? this.createDefaultConfig());
   }
 
-  protected buildEngine(_: string, config?: NetworkConfig): NetworkBridgeEntity | null {
-    void _;
+  protected buildEngine(_id: string, config?: NetworkConfig): NetworkBridgeEntity | null {
     try {
       const system = new NetworkSystem(config ?? this.createDefaultConfig());
+      const releaseOwnedClock = this.clock ? system.acquireClock(this.clock) : undefined;
       system.start();
       return {
         system,
-        dispose: () => system.dispose()
+        dispose: () => {
+          system.dispose();
+          releaseOwnedClock?.();
+        }
       };
     } catch (error) {
       console.error('[NetworkBridge] Failed to build engine:', error);
@@ -47,7 +63,6 @@ export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapsh
   }
 
   @LogSnapshot()
-  @CacheSnapshot(16) // 60fps에서 16프레임마다 캐싱
   protected createSnapshot(entity: NetworkBridgeEntity, id: string): NetworkSnapshot {
     const { system } = entity;
     void id;
@@ -62,6 +77,50 @@ export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapsh
     if (!entity) return;
     void deltaTime;
     this.notifyListeners(id);
+  }
+
+  /** All hooks observing this engine share one clock registration and one publication per update. */
+  acquireUpdates(id: string, loop: AnimationClockLoop): () => void {
+    const entity = this.getEngine(id);
+    if (!entity) throw new Error(`Unknown network engine: ${id}`);
+    let lease = this.updates.get(id);
+    if (lease && (lease.entity !== entity || lease.loop !== loop)) throw new Error('Network updates already have another clock owner');
+    if (!lease) {
+      let current = entity;
+      let releaseClock = current.system.acquireClock(loop.clock);
+      let revision = entity.system.updateRevision;
+      const releasePublish = loop.clock.addSystem({ id: `${this.clockId}:${id}`, phase: 'publish', update: () => {
+        if (revision === current.system.updateRevision) return;
+        revision = current.system.updateRevision;
+        this.notifyListeners(id);
+      } });
+      const releaseLoop = loop.acquire();
+      const owned: UpdateLease = { entity, loop, references: 0, dispose: () => {
+        if (this.updates.get(id) !== owned) return;
+        this.updates.delete(id); releaseRegistration(); releaseLoop(); releasePublish(); releaseClock();
+      } };
+      const releaseRegistration = this.on('register', event => {
+        if (event.id !== id) return;
+        const replacement = this.getEngine(id);
+        if (!replacement || replacement === current) return;
+        releaseClock(); current = replacement; owned.entity = replacement;
+        releaseClock = current.system.acquireClock(loop.clock); revision = current.system.updateRevision;
+      });
+      lease = owned; this.updates.set(id, lease);
+    }
+    lease.references++;
+    const owned = lease; let released = false;
+    return () => {
+      if (released || this.updates.get(id) !== owned) return;
+      released = true; if (--owned.references === 0) owned.dispose();
+    };
+  }
+
+  override unregister(id: string): void { this.updates.get(id)?.dispose(); super.unregister(id); }
+
+  override dispose(): void {
+    for (const lease of this.updates.values()) lease.dispose();
+    super.dispose();
   }
 
   /**
@@ -155,4 +214,4 @@ export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapsh
     
     return entity.system.getState();
   }
-} 
+}

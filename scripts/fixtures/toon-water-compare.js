@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
-import { createToonWaterMaterial } from '../../src/core/rendering/tsl/toonWater';
+
 import source from '../../src/core/building/components/mesh/water/index.tsx?raw';
+import { createToonWaterMaterial } from '../../src/core/rendering/tsl/toonWater';
 
 const shader = (name) => source.match(new RegExp(`const ${name} =[\\s\\S]*?\u0060([\\s\\S]*?)\u0060;`))[1];
 const geometry = new THREE.PlaneGeometry(12, 12, 40, 40);

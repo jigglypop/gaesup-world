@@ -1,12 +1,15 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+jest.mock('../admin/api/env', () => ({ readViteServerUrl: () => undefined }));
+
 const ROOT = path.resolve(__dirname, '../..');
 
 const ENTRY_LOADERS: Record<string, () => Promise<object>> = {
   '.': () => import('gaesup-world'),
   './admin': () => import('gaesup-world/admin'),
   './assets': () => import('gaesup-world/assets'),
+  './avatar': () => import('gaesup-world/avatar'),
   './blueprints': () => import('gaesup-world/blueprints'),
   './blueprints/editor': () => import('gaesup-world/blueprints/editor'),
   './building': () => import('gaesup-world/building'),

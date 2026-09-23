@@ -1,5 +1,5 @@
 export type { WeatherKind, WeatherEntry, WeatherSerialized } from './types';
-export { useWeatherStore } from './stores/weatherStore';
+export { useWeatherStore, useWeatherStoreApi, createWeatherStore } from './stores/weatherStore';
 export {
   createWeatherPlugin,
   hydrateWeatherState,
@@ -12,3 +12,5 @@ export type { WeatherHUDProps } from './components/WeatherHUD';
 export { WeatherEffect } from './components/WeatherEffect';
 export type { WeatherEffectKind, WeatherEffectProps } from './components/WeatherEffect';
 export { useWeatherTicker } from './hooks/useWeatherTicker';
+
+export type { WeatherStore } from './stores/weatherStore';

@@ -38,7 +38,8 @@ export function Footprints({
   color = '#1a1612',
 }: FootprintsProps = {}) {
   const meshRef = useRef<THREE.InstancedMesh>(null!);
-  const { position, isMoving, isGrounded } = usePlayerPosition({ updateInterval: 32 });
+  const player = usePlayerPosition({ updateInterval: 32, reactive: false });
+  const { position } = player;
 
   const baseColor = useMemo(() => new THREE.Color(color), [color]);
 
@@ -93,7 +94,7 @@ export function Footprints({
 
     const now = elapsedMs / MILLISECONDS_IN_SECOND;
 
-    if (isGrounded && isMoving) {
+    if (player.isGrounded && player.isMoving) {
       const last = lastDropRef.current;
       const dx = position.x - (last?.x ?? position.x);
       const dz = position.z - (last?.z ?? position.z);

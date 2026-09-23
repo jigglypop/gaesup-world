@@ -1,6 +1,10 @@
 import 'reflect-metadata';
 import { Validate, EnableEventLog, DebugLog, PerformanceLog } from '../advanced';
 
+type TestEngine = object;
+// @Validate는 런타임 입력을 검사하므로 type이 빠진 명령도 전달될 수 있다
+type TestCommand = { type?: string; payload?: unknown };
+
 describe('Advanced Decorators', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -10,7 +14,7 @@ describe('Advanced Decorators', () => {
     test('should validate command structure', () => {
       class TestClass {
         @Validate()
-        processCommand(engine: any, command: any) {
+        processCommand(_engine: TestEngine, command: TestCommand) {
           return `Processing ${command.type}`;
         }
       }
@@ -28,7 +32,7 @@ describe('Advanced Decorators', () => {
     test('should throw error for invalid command missing type field', () => {
       class TestClass {
         @Validate()
-        processCommand(engine: any, command: any) {
+        processCommand(_engine: TestEngine, command: TestCommand) {
           return `Processing ${command.type}`;
         }
       }
@@ -47,7 +51,7 @@ describe('Advanced Decorators', () => {
     test('should pass through when no command metadata exists', () => {
       class TestClass {
         @Validate()
-        regularMethod(arg1: any, arg2: any) {
+        regularMethod(arg1: string, arg2: object) {
           return `Regular method with ${arg1} and ${arg2}`;
         }
       }
@@ -61,7 +65,7 @@ describe('Advanced Decorators', () => {
     test('should validate only when second argument is object', () => {
       class TestClass {
         @Validate()
-        processCommand(engine: any, command: any) {
+        processCommand(_engine: TestEngine, command: unknown) {
           return `Processing: ${command}`;
         }
       }
@@ -84,12 +88,12 @@ describe('Advanced Decorators', () => {
     test('should handle multiple validated methods', () => {
       class TestClass {
         @Validate()
-        processCommand1(engine: any, command: any) {
+        processCommand1(_engine: TestEngine, command: TestCommand) {
           return `Command1: ${command.type}`;
         }
 
         @Validate()
-        processCommand2(engine: any, command: any) {
+        processCommand2(_engine: TestEngine, command: TestCommand) {
           return `Command2: ${command.type}`;
         }
       }
@@ -115,7 +119,7 @@ describe('Advanced Decorators', () => {
         public name = 'test-class';
 
         @Validate()
-        contextMethod(engine: any, command: any, extra: string) {
+        contextMethod(_engine: TestEngine, command: TestCommand, extra: string) {
           return `${this.name}: ${command.type} - ${extra}`;
         }
       }
@@ -135,7 +139,7 @@ describe('Advanced Decorators', () => {
     test('should handle async methods', async () => {
       class TestClass {
         @Validate()
-        async asyncProcessCommand(engine: any, command: any) {
+        async asyncProcessCommand(_engine: TestEngine, command: TestCommand) {
           await new Promise(resolve => setTimeout(resolve, 1));
           return `Async: ${command.type}`;
         }
@@ -157,7 +161,7 @@ describe('Advanced Decorators', () => {
     test('should handle complex command structures', () => {
       class TestClass {
         @Validate()
-        processComplexCommand(engine: any, command: any) {
+        processComplexCommand(_engine: TestEngine, command: TestCommand) {
           return `Complex: ${command.type} with ${JSON.stringify(command.payload)}`;
         }
       }
@@ -389,7 +393,7 @@ describe('Advanced Decorators', () => {
         @Validate()
         @DebugLog()
         @PerformanceLog()
-        combinedMethod(engine: any, command: any) {
+        combinedMethod(_engine: TestEngine, command: TestCommand) {
           return `combined: ${command.type}`;
         }
       }
@@ -407,7 +411,7 @@ describe('Advanced Decorators', () => {
         @Validate()
         @DebugLog()
         @PerformanceLog()
-        validatedMethod(engine: any, command: any) {
+        validatedMethod(_engine: TestEngine, command: TestCommand) {
           return `validated: ${command.type}`;
         }
       }
@@ -430,7 +434,7 @@ describe('Advanced Decorators', () => {
       class TestClass {
         @Validate()
         @DebugLog()
-        methodWithMetadata(engine: any, command: any) {
+        methodWithMetadata(_engine: TestEngine, command: TestCommand) {
           return command.type;
         }
       }
@@ -470,7 +474,9 @@ describe('Advanced Decorators', () => {
         @Validate()
         @DebugLog()
         @PerformanceLog()
-        fastMethod(engine: any, command: any) {
+        fastMethod(engine: TestEngine, command: TestCommand) {
+          void engine;
+          void command;
           return Math.random();
         }
       }
@@ -521,7 +527,7 @@ describe('Advanced Decorators', () => {
         }
 
         @Validate()
-        validationErrorMethod(engine: any, command: any) {
+        validationErrorMethod(_engine: TestEngine, command: TestCommand) {
           return command.type;
         }
       }

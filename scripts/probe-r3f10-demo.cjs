@@ -1,7 +1,7 @@
+const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const assert = require('node:assert/strict');
 
 if (!process.argv[2]) throw Error('Usage: node scripts/probe-r3f10-demo.cjs <isolated-fixture-directory>');
 const workspace = path.resolve(__dirname, '..');

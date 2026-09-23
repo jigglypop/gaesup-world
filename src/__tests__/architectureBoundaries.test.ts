@@ -277,7 +277,7 @@ function collectModuleReferences(sourceFile: ts.SourceFile): ModuleReference[] {
       });
     } else if (
       ts.isCallExpression(node) &&
-      node.arguments.length > 0 &&
+      node.arguments[0] !== undefined &&
       ts.isStringLiteralLike(node.arguments[0])
     ) {
       if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {

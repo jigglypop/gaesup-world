@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 
+import { useWorldInputScope } from '../../input/useWorldInputScope';
 import {
   createEditorShortcutRegistry,
   type EditorShortcutBinding,
@@ -16,6 +17,7 @@ export function useEditorShortcuts(
   bindings: EditorShortcutBinding[],
   options: UseEditorShortcutsOptions = {},
 ): EditorShortcutRegistry {
+  const inputScope = useWorldInputScope();
   const { enabled = true, target, registry } = options;
   const internalRegistry = useMemo(() => registry ?? createEditorShortcutRegistry(), [registry]);
 
@@ -32,11 +34,13 @@ export function useEditorShortcuts(
     if (!eventTarget) return undefined;
 
     const onKeyDown = (event: Event) => {
-      internalRegistry.handleKeyDown(event as KeyboardEvent);
+      if (inputScope.acceptsKeyboard(event as KeyboardEvent)) internalRegistry.handleKeyDown(event as KeyboardEvent);
     };
+    if (!target || target === window || target === document) return inputScope.listen('keydown', onKeyDown);
+    const offSurface = target instanceof HTMLElement ? inputScope.registerSurface(target) : undefined;
     eventTarget.addEventListener('keydown', onKeyDown);
-    return () => eventTarget.removeEventListener('keydown', onKeyDown);
-  }, [enabled, internalRegistry, target]);
+    return () => { eventTarget.removeEventListener('keydown', onKeyDown); offSurface?.(); };
+  }, [enabled, internalRegistry, target, inputScope]);
 
   return internalRegistry;
 }

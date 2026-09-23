@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useInventoryStore } from './stores/inventoryStore';
+import { useInventoryStore, type InventoryStore } from './stores/inventoryStore';
 import type { InventorySerialized } from './types';
 
 export interface InventoryPluginOptions {
@@ -12,12 +12,12 @@ const DEFAULT_PLUGIN_ID = 'gaesup.inventory';
 const DEFAULT_SAVE_EXTENSION_ID = 'inventory';
 const DEFAULT_STORE_SERVICE_ID = 'inventory.store';
 
-export function serializeInventoryState(): InventorySerialized {
-  return useInventoryStore.getState().serialize();
+export function serializeInventoryState(store: InventoryStore = useInventoryStore): InventorySerialized {
+  return store.getState().serialize();
 }
 
-export function hydrateInventoryState(data: InventorySerialized | null | undefined): void {
-  useInventoryStore.getState().hydrate(data);
+export function hydrateInventoryState(data: InventorySerialized | null | undefined, store: InventoryStore = useInventoryStore): void {
+  store.getState().hydrate(data);
 }
 
 export function createInventoryPlugin(options: InventoryPluginOptions = {}) {
@@ -27,11 +27,12 @@ export function createInventoryPlugin(options: InventoryPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useInventoryStore,
+    resolveStore: ctx => ctx.services.get<InventoryStore>('gaesup.runtime.inventory-store') ?? useInventoryStore,
     readyEvent: 'inventory:ready',
     capabilities: ['inventory'],
     serialize: serializeInventoryState,
     hydrate: hydrateInventoryState,
-    prepareHydrate: (data) => useInventoryStore.getState().prepareHydrate(data),
+    prepareHydrate: (data, store) => store.getState().prepareHydrate(data),
   });
 }
 

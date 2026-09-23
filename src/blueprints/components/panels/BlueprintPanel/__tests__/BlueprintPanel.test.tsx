@@ -16,11 +16,11 @@ afterEach(() => {
 test('created blueprints appear immediately in the list', () => {
   render(<BlueprintPanel />);
   fireEvent.click(screen.getByRole('button', { name: '+ 새 블루프린트' }));
-  expect(screen.getByRole('textbox', { name: '유형', exact: true })).toHaveValue('캐릭터');
-  fireEvent.change(screen.getByRole('textbox', { name: '이름', exact: true }), {
+  expect(screen.getByRole('textbox', { name: '유형' })).toHaveValue('캐릭터');
+  fireEvent.change(screen.getByRole('textbox', { name: '이름' }), {
     target: { value: '테스트 캐릭터' },
   });
-  fireEvent.click(screen.getByRole('button', { name: '만들기', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: '만들기' }));
   expect(screen.getByText('테스트 캐릭터', { exact: true })).toBeInTheDocument();
   const created = screen.getByRole('button', { name: /^테스트 캐릭터 / });
   expect(created).toHaveAttribute('aria-pressed', 'true');

@@ -1,12 +1,13 @@
-import { fireEvent, render, screen } from '@testing-library/react';
 import { Children, isValidElement, StrictMode } from 'react';
 import type { ReactNode } from 'react';
+
 import { Canvas } from '@react-three/fiber';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 import { BlueprintPreview } from '..';
+import { Camera, GaesupController, useKeyboard } from '../../../../core';
 import { WARRIOR_BLUEPRINT } from '../../../characters/warrior';
 import { BASIC_KART_BLUEPRINT } from '../../../vehicles/kart';
-import { Camera, GaesupController, useKeyboard } from '../../../../core';
 
 const mockSetUrls = jest.fn();
 const mockSetMode = jest.fn();
@@ -32,6 +33,8 @@ jest.mock('../../../../core', () => ({
   useKeyboard: jest.fn(),
   GaesupController: () => null, Camera: () => null, Clicker: () => null, GroundClicker: () => null,
 }));
+const mockStoreApi = { getState: () => mockStore, setState: (update: (state: typeof mockStore) => Partial<typeof mockStore>) => Object.assign(mockStore, update(mockStore)) };
+jest.mock('../../../../core/stores/gaesupStore', () => ({ useGaesupStoreApi: () => mockStoreApi }));
 jest.mock('@react-three/fiber', () => ({ Canvas: jest.fn(() => <div data-testid="preview-canvas" />) }));
 jest.mock('@react-three/drei', () => ({ Environment: () => null }));
 jest.mock('@react-three/rapier', () => ({ Physics: () => null, RigidBody: () => null, euler: () => [0, 0, 0] }));
@@ -151,7 +154,7 @@ test('name and movement edits preserve the current camera without rewriting its 
   view.rerender(<BlueprintPreview blueprint={{ ...WARRIOR_BLUEPRINT, name: '이름 변경',
     physics: { ...WARRIOR_BLUEPRINT.physics, moveSpeed: 7 },
   }} />);
-  expect(mockStore.cameraOption.zoom).toBe(1.5);
+  expect(mockStore.cameraOption['zoom']).toBe(1.5);
   expect(mockSetCameraOption).not.toHaveBeenCalled();
   expect(mockReplaceCameraOption).not.toHaveBeenCalled();
   expect(mockSetMode).not.toHaveBeenCalled();
@@ -178,7 +181,7 @@ test('closing restores camera and mode including removal of preview-only options
   const camera = { ...mockStore.cameraOption };
   const view = render(<BlueprintPreview blueprint={WARRIOR_BLUEPRINT} />);
   expect(mockStore.mode.type).toBe('character');
-  expect(mockStore.cameraOption.fov).toBe(50);
+  expect(mockStore.cameraOption['fov']).toBe(50);
   view.unmount();
   expect(mockStore.mode).toEqual(mode);
   expect(mockStore.cameraOption).toEqual(camera);
@@ -208,7 +211,7 @@ test('StrictMode and blueprint replacement restore the original settings when cl
   const view = render(<StrictMode><BlueprintPreview blueprint={WARRIOR_BLUEPRINT} /></StrictMode>);
   view.rerender(<StrictMode><BlueprintPreview blueprint={{ ...WARRIOR_BLUEPRINT, camera: { mode: 'firstPerson', fov: 75 } }} /></StrictMode>);
   expect(mockStore.mode.control).toBe('firstPerson');
-  expect(mockStore.cameraOption.fov).toBe(75);
+  expect(mockStore.cameraOption['fov']).toBe(75);
   view.unmount();
   expect(mockStore.mode).toEqual(mode);
   expect(mockStore.cameraOption).toEqual(camera);

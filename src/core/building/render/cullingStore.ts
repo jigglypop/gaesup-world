@@ -1,4 +1,6 @@
-import { create } from 'zustand';
+import { create, useStore } from 'zustand';
+
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
 
 type BuildingGpuCullingState = {
   active: boolean;
@@ -26,7 +28,6 @@ type BuildingGpuCullingState = {
   reset: () => void;
 };
 
-const EMPTY = new Set<string>();
 
 function sameSet(a: Set<string>, b: Set<string>): boolean {
   if (a === b) return true;
@@ -46,7 +47,9 @@ function sameUint32Array(a: Uint32Array, b: Uint32Array): boolean {
   return true;
 }
 
-export const useBuildingGpuCullingStore = create<BuildingGpuCullingState>((set) => ({
+export function createBuildingCullingStore() {
+  const EMPTY = new Set<string>();
+  return create<BuildingGpuCullingState>((set) => ({
   active: false,
   version: 0,
   camera: null,
@@ -100,3 +103,18 @@ export const useBuildingGpuCullingStore = create<BuildingGpuCullingState>((set) 
       clusterCounts: new Uint32Array(0),
     }),
 }));
+
+}
+
+export type BuildingCullingStore = ReturnType<typeof createBuildingCullingStore>;
+const legacyStore = createBuildingCullingStore();
+export function useBuildingGpuCullingStoreApi(): BuildingCullingStore {
+  return useGaesupRuntime()?.buildingCullingStore ?? useBuildingGpuCullingStore;
+}
+function useScopedStore(): BuildingGpuCullingState;
+function useScopedStore<T>(selector: (state: BuildingGpuCullingState) => T): T;
+function useScopedStore(selector: (state: BuildingGpuCullingState) => unknown = state => state) {
+  return useStore(useBuildingGpuCullingStoreApi(), selector);
+}
+/** React uses the nearest runtime; static methods retain the legacy default. */
+export const useBuildingGpuCullingStore = Object.assign(useScopedStore, legacyStore);

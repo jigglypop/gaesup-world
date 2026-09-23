@@ -1,4 +1,5 @@
 const path = require('node:path');
+
 const ts = require('typescript');
 
 if (!process.argv[2]) throw Error('Usage: node scripts/probe-r3f10-types.cjs <isolated-fixture-directory>');

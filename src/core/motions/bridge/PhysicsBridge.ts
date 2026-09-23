@@ -3,7 +3,7 @@ import { ValidateCommand } from '@core/boilerplate';
 
 import type { PhysicsConfigType } from '../core/config';
 import { EntityStateManager } from '../core/system/EntityStateManager';
-import { PhysicsSystem } from '../core/system/PhysicsSystem';
+import { PhysicsSystem, type PhysicsWorldServices } from '../core/system/PhysicsSystem';
 import { PhysicsUpdateArgs } from '../core/system/PhysicsSystem';
 
 export type PhysicsBridgeEntity = {
@@ -29,9 +29,10 @@ export class PhysicsBridge extends CoreBridge<PhysicsBridgeEntity, PhysicsSnapsh
     _: string,
     config: PhysicsConfigType,
     stateManager?: EntityStateManager,
+    services?: PhysicsWorldServices,
   ): PhysicsBridgeEntity | null {
     void _;
-    const system = new PhysicsSystem(config, {}, stateManager);
+    const system = new PhysicsSystem(config, {}, stateManager, services);
     return { system, dispose: () => system.dispose() };
   }
 

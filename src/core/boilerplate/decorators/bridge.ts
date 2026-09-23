@@ -81,6 +81,7 @@ export function LogSnapshot() {
     const originalMethod = descriptor.value as DecoratedMethod;
 
     descriptor.value = function (this: NamedInstance, ...args: DecoratorValue[]) {
+      if (logger.isEnabled('log') === false) return originalMethod.apply(this, args);
       const startTime = performance.now();
       const result = originalMethod.apply(this, args);
       const endTime = performance.now();

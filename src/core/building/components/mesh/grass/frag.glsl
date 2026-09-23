@@ -1,4 +1,9 @@
 precision highp float;
+#include <common>
+#include <packing>
+#include <lights_pars_begin>
+#include <shadowmap_pars_fragment>
+#include <shadowmask_pars_fragment>
 uniform sampler2D map;
 uniform sampler2D alphaMap;
 uniform vec3 tipColor;
@@ -41,6 +46,7 @@ void main() {
   vec3 simple = clamp(col.rgb, 0.0, 1.0);
   col.rgb = mix(reinhard, simple, uToon);
   col.rgb = pow(col.rgb, vec3(1.0 / 2.2));
+  col.rgb *= mix(0.48, 1.0, getShadowMask());
 
   gl_FragColor = col;
 }

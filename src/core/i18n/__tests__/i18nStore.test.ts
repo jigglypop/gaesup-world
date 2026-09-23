@@ -44,7 +44,7 @@ describe('i18nStore', () => {
       ko: { 'a': '에이' },
       en: { 'a': 'a' },
     });
-    expect(useI18nStore.getState().bundle.ko.a).toBe('에이');
-    expect(useI18nStore.getState().bundle.en.a).toBe('a');
+    expect(useI18nStore.getState().bundle.ko['a']).toBe('에이');
+    expect(useI18nStore.getState().bundle.en['a']).toBe('a');
   });
 });

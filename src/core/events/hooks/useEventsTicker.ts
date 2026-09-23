@@ -1,7 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 
-import { useTimeStore } from '../../time/stores/timeStore';
-import { useEventsStore } from '../stores/eventsStore';
+import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../runtime/runtimeContext';
+import { useTimeStoreApi } from '../../time/stores/timeStore';
+import { useEventsStoreApi } from '../stores/eventsStore';
+import { acquireEventsTicker } from '../stores/ticker';
 
 export type EventsTickerOptions = {
   onStarted?: (ids: string[]) => void;
@@ -9,25 +11,18 @@ export type EventsTickerOptions = {
 };
 
 export function useEventsTicker(enabled: boolean = true, opts: EventsTickerOptions = {}): void {
+  const runtime = useGaesupRuntime(); const revision = useGaesupRuntimeRevision();
+  const callbacks = useRef(opts); useLayoutEffect(() => { callbacks.current = opts; }, [opts]);
+  const eventsStore = useEventsStoreApi();
+  const timeStore = useTimeStoreApi();
   useEffect(() => {
-    if (!enabled) return;
-    const apply = () => {
-      const t = useTimeStore.getState().time;
-      const { started, ended } = useEventsStore.getState().refresh(t);
-      if (started.length && opts.onStarted) opts.onStarted(started);
-      if (ended.length && opts.onEnded) opts.onEnded(ended);
-    };
-    apply();
-    const off = useTimeStore.subscribe((state, prev) => {
-      if (
-        state.time.day !== prev.time.day ||
-        state.time.month !== prev.time.month ||
-        state.time.season !== prev.time.season ||
-        state.time.weekday !== prev.time.weekday
-      ) {
-        apply();
-      }
+    if (!enabled || (runtime && !runtime.isActive())) return;
+    return acquireEventsTicker(timeStore, eventsStore, {
+      active: () => !runtime || (runtime.isActive() && !runtime.save.isRestoring()),
+      notify: ({ started, ended }) => {
+        if (started.length) callbacks.current.onStarted?.([...started]);
+        if (ended.length && (!runtime || (runtime.isActive() && !runtime.save.isRestoring()))) callbacks.current.onEnded?.([...ended]);
+      },
     });
-    return off;
-  }, [enabled, opts.onStarted, opts.onEnded]);
+  }, [enabled, timeStore, eventsStore, runtime, revision]);
 }

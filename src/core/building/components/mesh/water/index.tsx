@@ -8,12 +8,16 @@ import { getDefaultToonMode } from "@core/rendering/toon";
 import { weightFromDistance } from "@core/utils/sfe";
 
 import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
+import { getSharedWaterNormals } from './normals';
+
 
 class OwnedWater extends Water {
-  dispose(): void {
+  override dispose(): void {
     const mirror: unknown = this.material.uniforms['mirrorSampler']?.value;
     if (mirror instanceof THREE.Texture) mirror.renderTarget?.dispose();
     this.material.dispose();
+    // Object3D.dispose (three r186+) notifies renderers; older supported releases lack it.
+    super.dispose?.();
   }
 }
 
@@ -38,11 +42,15 @@ type WaterProps = {
     west: boolean;
   }>;
   followCamera?: boolean;
+  /** Borrowed repeating normal texture. The caller owns its lifetime. */
+  normalMap?: THREE.Texture;
   /**
    * When true, uses a lightweight stylized shader without reflection RT.
    * Defaults to the global toon mode. The normal path keeps the original Water quality.
    */
   toon?: boolean;
+  /** Multiplier for the unlit toon surface (1 = authored colors), e.g. to dim water at night. */
+  brightness?: number;
 };
 
 // Vertex displacement uses world-space frequencies (cycles per meter) so wave
@@ -68,147 +76,36 @@ void main() {
 }
 `;
 
-// Fragment uses world-XZ for every detail layer (foam stripes, sparse specks,
-// rippling highlights, depth tint) so density and pattern stay visually
-// consistent at every tile size. Edge vignette softens the rectangular border.
+// Two scrolling normal samples replace per-pixel multi-octave noise. Both
+// render backends share the same texture, wave silhouette and shading model.
 const TOON_WATER_FRAG = /* glsl */ `
 uniform vec3 uShallow;
 uniform vec3 uDeep;
 uniform vec3 uFoam;
+uniform sampler2D uNormals;
 uniform float uTime;
+uniform float uBrightness;
 varying vec2 vUv;
 varying vec3 vWorldPos;
 varying float vWave;
-
-float hash21(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-
-float vnoise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  float a = hash21(i);
-  float b = hash21(i + vec2(1.0, 0.0));
-  float c = hash21(i + vec2(0.0, 1.0));
-  float d = hash21(i + vec2(1.0, 1.0));
-  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-}
-
-float fbm(vec2 p) {
-  float v = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 4; i++) {
-    v += a * vnoise(p);
-    p = p * 2.07 + vec2(13.7, 7.1);
-    a *= 0.5;
-  }
-  return v;
-}
-
-float band(float v, float c, float w) {
-  return smoothstep(c - w, c, v) - smoothstep(c, c + w, v);
-}
-
 void main() {
-  vec2 wp = vWorldPos.xz;
-
-  float baseNoise = fbm(wp * 0.18 + vec2(uTime * 0.04, -uTime * 0.03));
-  float depthCol  = clamp(0.5 + vWave * 3.5 + (baseNoise - 0.5) * 0.55, 0.0, 1.0);
-  vec3  base      = mix(uDeep, uShallow, depthCol);
-
-  float stripeCoord = (wp.x + wp.y) * 0.55 + uTime * 0.35 + baseNoise * 0.8;
-  float stripe      = sin(stripeCoord * 6.0) * 0.5 + 0.5;
-  float stripeFoam  = band(stripe, 0.86, 0.10) * (0.35 + depthCol * 0.65);
-
-  float specks = smoothstep(0.78, 0.95, fbm(wp * 0.62 + uTime * 0.10));
-  float ripple = smoothstep(0.60, 0.95, fbm(wp * 1.30 + uTime * 0.60));
-
-  vec3 col = mix(base, uFoam, stripeFoam * 0.55 + specks * 0.50 + ripple * 0.18);
-
-  float edge = smoothstep(0.0, 0.06, min(min(vUv.x, vUv.y), min(1.0 - vUv.x, 1.0 - vUv.y)));
-  col = mix(col * 0.86, col, edge);
-
-  gl_FragColor = vec4(col, 0.88);
+  vec2 p = vWorldPos.xz;
+  vec2 a = texture2D(uNormals, p * 0.055 + vec2(uTime * 0.009, uTime * 0.004)).xy * 2.0 - 1.0;
+  vec2 b = texture2D(uNormals, p * 0.12 + vec2(-uTime * 0.006, uTime * 0.008)).xy * 2.0 - 1.0;
+  vec3 n = normalize(vec3((a.x + b.x) * 0.48, 1.0, (a.y + b.y) * 0.48));
+  vec3 view = normalize(cameraPosition - vWorldPos);
+  float fresnel = pow(1.0 - max(dot(n, view), 0.0), 3.0);
+  float highlight = pow(max(dot(n, normalize(view + normalize(vec3(-0.5, 0.9, -0.3)))), 0.0), 96.0);
+  float tint = clamp(0.42 + vWave * 1.1 + n.x * 0.28, 0.0, 1.0);
+  vec3 col = mix(uDeep, uShallow, tint);
+  col = mix(col, vec3(0.48, 0.72, 0.78), fresnel * 0.6);
+  col += uFoam * highlight * 0.38;
+  gl_FragColor = vec4(col * uBrightness, 1.0);
+  #include <colorspace_fragment>
 }
 `;
 
-let _sharedWaterNormals: THREE.DataTexture | null = null;
-
-function noise2(x: number, y: number): number {
-  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123;
-  return s - Math.floor(s);
-}
-
-function smoothNoise(x: number, y: number): number {
-  const xi = Math.floor(x);
-  const yi = Math.floor(y);
-  const xf = x - xi;
-  const yf = y - yi;
-  const u = xf * xf * (3 - 2 * xf);
-  const v = yf * yf * (3 - 2 * yf);
-  const a = noise2(xi, yi);
-  const b = noise2(xi + 1, yi);
-  const c = noise2(xi, yi + 1);
-  const d = noise2(xi + 1, yi + 1);
-  return THREE.MathUtils.lerp(
-    THREE.MathUtils.lerp(a, b, u),
-    THREE.MathUtils.lerp(c, d, u),
-    v,
-  );
-}
-
-function waterHeight(x: number, y: number): number {
-  let value = 0;
-  let amp = 0.58;
-  let freq = 1.15;
-  for (let i = 0; i < 5; i += 1) {
-    value += smoothNoise(x * freq + 17.3 * i, y * freq - 9.1 * i) * amp;
-    freq *= 2.03;
-    amp *= 0.48;
-  }
-  value += Math.sin(x * 8.2 + y * 1.7) * 0.06;
-  value += Math.cos(y * 7.1 - x * 2.4) * 0.05;
-  return value;
-}
-
-function getSharedWaterNormals(size = 128): THREE.DataTexture {
-  if (_sharedWaterNormals) return _sharedWaterNormals;
-  const data = new Uint8Array(size * size * 4);
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      const i = (y * size + x) * 4;
-      const u = x / size;
-      const v = y / size;
-      const e = 1 / size;
-      const hL = waterHeight(u - e, v);
-      const hR = waterHeight(u + e, v);
-      const hD = waterHeight(u, v - e);
-      const hU = waterHeight(u, v + e);
-      const nx = (hL - hR) * 1.15;
-      const ny = (hD - hU) * 1.15;
-      const nz = 1.0;
-      const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
-      data[i] = Math.round((nx / len * 0.5 + 0.5) * 255);
-      data[i + 1] = Math.round((ny / len * 0.5 + 0.5) * 255);
-      data[i + 2] = Math.round((nz / len * 0.5 + 0.5) * 255);
-      data[i + 3] = 255;
-    }
-  }
-
-  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = true;
-  texture.colorSpace = THREE.NoColorSpace;
-  texture.needsUpdate = true;
-  _sharedWaterNormals = texture;
-  return texture;
-}
-
-export default function Ocean({ lod, center, size = 16, width, depth, shore, toon, followCamera = false }: WaterProps) {
+export default function Ocean({ lod, center, size = 16, width, depth, shore, toon, normalMap, followCamera = false, brightness = 1 }: WaterProps) {
   const useToon = toon ?? getDefaultToonMode();
   const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
   const waterRef = useRef<Water | null>(null);
@@ -266,7 +163,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
   );
   
   // Shared procedural normal texture avoids per-tile image decode and upload.
-  const waterNormals = useToon ? null : getSharedWaterNormals();
+  const waterNormals = normalMap ?? getSharedWaterNormals();
 
   const renderTargetSize = useMemo(() => {
     const longest = Math.max(surfaceWidth, surfaceDepth);
@@ -331,16 +228,21 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
     return new THREE.ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
-        uShallow: { value: new THREE.Color('#9ed6c8') },
-        uDeep: { value: new THREE.Color('#1f5f88') },
+        uNormals: { value: waterNormals },
+        uShallow: { value: new THREE.Color('#48b9b4') },
+        uDeep: { value: new THREE.Color('#176180') },
         uFoam: { value: new THREE.Color('#ffffff') },
+        uBrightness: { value: 1 },
       },
       vertexShader: TOON_WATER_VERT,
       fragmentShader: TOON_WATER_FRAG,
-      transparent: true,
-      depthWrite: false,
+      toneMapped: false,
     });
-  }, [useToon, useNodes]);
+  }, [useToon, useNodes, waterNormals]);
+  useEffect(() => {
+    const uniform = toonMaterial?.uniforms['uBrightness'];
+    if (uniform) uniform.value = brightness;
+  }, [toonMaterial, brightness]);
 
   useEffect(() => () => geom.dispose(), [geom]);
   useEffect(() => () => fallbackMaterial.dispose(), [fallbackMaterial]);
@@ -465,7 +367,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
             position={[waterOffsetX, 0.1, waterOffsetZ]}
             frustumCulled
           >
-            {useNodes ? <NodeWaterMaterial /> : (
+            {useNodes ? <NodeWaterMaterial normalMap={waterNormals} brightness={brightness} /> : (
               <primitive
                 ref={toonMatRef}
                 object={toonMaterial as THREE.ShaderMaterial}

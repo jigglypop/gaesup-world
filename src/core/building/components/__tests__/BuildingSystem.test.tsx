@@ -1,7 +1,6 @@
-import React from 'react';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 
-import { BuildingSystem } from '../BuildingSystem';
+import { useBuildingGpuCullingStore } from '../../render/cullingStore';
 import {
   createEmptyBuildingIndirectDrawMirror,
   DRAW_CLUSTER_BILLBOARD,
@@ -13,11 +12,17 @@ import {
   DRAW_CLUSTER_WALL,
   INDIRECT_DRAW_STRIDE,
 } from '../../render/draw';
-import { useBuildingGpuCullingStore } from '../../render/cullingStore';
 import { useBuildingRenderStateStore } from '../../render/store';
 import { useBuildingStore } from '../../stores/buildingStore';
 import { WallGroupConfig, TileGroupConfig, MeshConfig } from '../../types';
 import { useBuildingVisibilityStore } from '../../visibility/store';
+import type { BlockSystemProps } from '../BlockSystem/types';
+import { BuildingSystem } from '../BuildingSystem';
+import type { GridHelperProps } from '../GridHelper/types';
+import type { TileSystemProps } from '../TileSystem/types';
+import type { WallSystemProps } from '../WallSystem/types';
+
+type TestRenderer = Awaited<ReturnType<typeof ReactThreeTestRenderer.create>>;
 
 // BuildingStore 모킹
 jest.mock('../../stores/buildingStore', () => ({
@@ -26,7 +31,7 @@ jest.mock('../../stores/buildingStore', () => ({
 
 // 하위 컴포넌트들 모킹
 jest.mock('../WallSystem', () => ({
-  WallSystem: ({ wallGroup, onWallClick }: any) => (
+  WallSystem: ({ wallGroup, onWallClick }: WallSystemProps) => (
     <group name={`wall-system-${wallGroup.id}`}>
       <mesh onClick={() => onWallClick?.(wallGroup.id)}>
         <boxGeometry />
@@ -37,7 +42,7 @@ jest.mock('../WallSystem', () => ({
 }));
 
 jest.mock('../TileSystem', () => ({
-  TileSystem: ({ tileGroup, onTileClick }: any) => (
+  TileSystem: ({ tileGroup, onTileClick }: TileSystemProps) => (
     <group name={`tile-system-${tileGroup.id}`}>
       <mesh onClick={() => onTileClick?.(tileGroup.id)}>
         <planeGeometry />
@@ -48,9 +53,9 @@ jest.mock('../TileSystem', () => ({
 }));
 
 jest.mock('../BlockSystem', () => ({
-  BlockSystem: ({ blocks }: any) => (
+  BlockSystem: ({ blocks }: BlockSystemProps) => (
     <group name="block-system">
-      {blocks.map((block: any) => (
+      {blocks.map((block) => (
         <mesh key={block.id} name={`block-${block.id}`}>
           <boxGeometry />
           <meshBasicMaterial />
@@ -61,7 +66,7 @@ jest.mock('../BlockSystem', () => ({
 }));
 
 jest.mock('../GridHelper', () => ({
-  GridHelper: ({ size }: any) => <gridHelper name="grid-helper" args={[size, 25]} />,
+  GridHelper: ({ size }: GridHelperProps) => <gridHelper name="grid-helper" args={[size, 25]} />,
 }));
 
 jest.mock('../PreviewTile', () => ({
@@ -106,11 +111,11 @@ jest.mock('../mesh/snow', () => ({
   Snow: () => <group name="snow" />,
 }));
 
-const expectSceneHasName = (renderer: any, name: string) => {
+const expectSceneHasName = (renderer: TestRenderer, name: string) => {
   expect(renderer.scene.findByProps({ name })).toBeDefined();
 };
 
-const expectSceneMissingName = (renderer: any, name: string) => {
+const expectSceneMissingName = (renderer: TestRenderer, name: string) => {
   expect(() => renderer.scene.findByProps({ name })).toThrow();
 };
 
@@ -216,15 +221,15 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
     });
 
     test('기본 구조가 올바르게 렌더링되어야 함', async () => {
-      let renderer: any;
+      let renderer: TestRenderer;
       try {
         renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
-      } catch (e: any) {
+      } catch (error: unknown) {
         // React may throw an AggregateError (multiple passive effect errors).
-        if (e && Array.isArray(e.errors) && e.errors.length > 0) {
-          throw e.errors[0];
+        if (error instanceof AggregateError && error.errors.length > 0) {
+          throw error.errors[0];
         }
-        throw e;
+        throw error;
       }
       // 메인 그룹이 존재해야 함
       expect(renderer.scene.findByProps({ name: 'building-system' })).toBeDefined();

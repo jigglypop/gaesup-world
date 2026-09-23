@@ -39,6 +39,7 @@ export class InMemoryExtensionRegistry<
 > implements ExtensionRegistry<TValue, TMap> {
   private readonly entries = new Map<string, RegistryEntry<unknown>>();
   private readonly name: string | undefined;
+  private readonly listeners = new Set<(id: string | null) => void>();
 
   constructor(options: InMemoryExtensionRegistryOptions | string = {}) {
     this.name = typeof options === 'string' ? options : options.name;
@@ -64,14 +65,17 @@ export class InMemoryExtensionRegistry<
       ? { id, value }
       : { id, value, pluginId };
     this.entries.set(id, entry);
+    this.notify(id);
   }
 
   get<TId extends KnownExtensionId<TMap>>(id: TId): TMap[TId] | undefined;
+  get<TResolved extends TValue = TValue>(id: string): TResolved | undefined;
   get<TResolved extends TValue = TValue>(id: string): TResolved | undefined {
     return this.entries.get(id)?.value as TResolved | undefined;
   }
 
   require<TId extends KnownExtensionId<TMap>>(id: TId): TMap[TId];
+  require<TResolved extends TValue = TValue>(id: string): TResolved;
   require<TResolved extends TValue = TValue>(id: string): TResolved {
     const value = this.entries.get(id)?.value as TResolved | undefined;
     if (value === undefined) {
@@ -85,7 +89,9 @@ export class InMemoryExtensionRegistry<
   }
 
   remove(id: string): boolean {
-    return this.entries.delete(id);
+    const removed = this.entries.delete(id);
+    if (removed) this.notify(id);
+    return removed;
   }
 
   removeByPlugin(pluginId: string): number {
@@ -95,6 +101,7 @@ export class InMemoryExtensionRegistry<
       this.entries.delete(id);
       removed += 1;
     }
+    if (removed) this.notify(null);
     return removed;
   }
 
@@ -103,6 +110,23 @@ export class InMemoryExtensionRegistry<
   }
 
   clear(): void {
+    if (!this.entries.size) return;
     this.entries.clear();
+    this.notify(null);
+  }
+
+  subscribe(listener: (id: string | null) => void): () => void {
+    // A lease prevents a stale unsubscribe from removing a later registration of the same callback.
+    const wrapped = (id: string | null) => listener(id);
+    this.listeners.add(wrapped);
+    return () => { this.listeners.delete(wrapped); };
+  }
+
+  private notify(id: string | null): void {
+    for (const listener of [...this.listeners]) {
+      if (!this.listeners.has(listener)) continue;
+      try { listener(id); }
+      catch (error) { console.error('Extension registry subscriber failed', error); }
+    }
   }
 }

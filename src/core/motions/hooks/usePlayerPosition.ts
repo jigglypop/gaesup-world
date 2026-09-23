@@ -2,10 +2,10 @@ import { useRef, useState, useEffect } from 'react';
 
 import * as THREE from 'three';
 
-import { BridgeFactory } from '@core/boilerplate';
 import { AFTER_MOTION_FRAME_ORDER, useEngineFrame } from '@core/runtime/frame';
 
 import { useStateSystem } from './useStateSystem';
+import { useWorldMotionBridge } from './useWorldMotionBridge';
 import { MotionBridge } from '../bridge/MotionBridge';
 
 const POSITION_CHANGE_EPSILON_SQ = 0.000001;
@@ -51,6 +51,7 @@ export function usePlayerPosition(
   options: UsePlayerPositionOptions = {},
 ): UsePlayerPositionResult {
   const { updateInterval = 0, entityId, reactive = true } = options;
+  const worldMotionBridge = useWorldMotionBridge();
 
   // Keep stable references for consumers; update vectors in-place.
   const resultRef = useRef<UsePlayerPositionResult | null>(null);
@@ -71,7 +72,7 @@ export function usePlayerPosition(
   };
 
   useEffect(() => {
-    bridgeRef.current = BridgeFactory.getOrCreate('motion') as MotionBridge | null;
+    bridgeRef.current = worldMotionBridge;
     const bridge = bridgeRef.current;
     if (!bridge) return undefined;
 
@@ -100,7 +101,7 @@ export function usePlayerPosition(
     return () => {
       unsubscribe();
     };
-  }, [entityId, updateInterval, reactive]);
+  }, [entityId, updateInterval, reactive, worldMotionBridge]);
 
   // Fallback polling path (keeps position updating even when no bridge events are emitted).
   useEngineFrame('postPhysics', () => {

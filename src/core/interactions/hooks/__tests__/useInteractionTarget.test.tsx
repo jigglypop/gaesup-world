@@ -1,12 +1,13 @@
-import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
+
+import { act, renderHook } from '@testing-library/react';
 import * as THREE from 'three';
 
+import { createMotionsPlugin } from '../../../motions/plugin';
+import { createGaesupRuntime, GaesupRuntimeProvider } from '../../../runtime';
 import { createMemoryInputBackend } from '../../core';
 import { useInteractablesStore } from '../../stores/interactablesStore';
 import { useInteractionKey } from '../useInteractionTarget';
-import { createMotionsPlugin } from '../../../motions/plugin';
-import { createGaesupRuntime, GaesupRuntimeProvider } from '../../../runtime';
 
 describe('useInteractionKey', () => {
   beforeEach(() => {
@@ -28,7 +29,7 @@ describe('useInteractionKey', () => {
     });
     await runtime.setup();
 
-    useInteractablesStore.getState().register({
+    runtime.interactablesStore.getState().register({
       id: 'target-1',
       kind: 'misc',
       label: 'Target',
@@ -37,7 +38,7 @@ describe('useInteractionKey', () => {
       key: 'e',
       onActivate,
     });
-    useInteractablesStore.getState().setCurrent({
+    runtime.interactablesStore.getState().setCurrent({
       id: 'target-1',
       label: 'Target',
       key: 'e',

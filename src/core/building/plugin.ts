@@ -8,7 +8,7 @@ import {
   tileToPlacementEntry,
   wallToPlacementEntry,
 } from './model';
-import { useBuildingStore } from './stores/buildingStore';
+import { useBuildingStore, type BuildingStoreApi } from './stores/buildingStore';
 import type { BuildingSerializedState } from './types';
 
 export interface BuildingPlacementExtension {
@@ -65,6 +65,7 @@ export function createBuildingPlugin(options: BuildingPluginOptions = {}): Gaesu
   const storeServiceId = options.storeServiceId ?? DEFAULT_BUILDING_STORE_SERVICE_ID;
 
   const register = (ctx: PluginContext): void => {
+    const store = ctx.services.get<BuildingStoreApi>('gaesup.runtime.building-store') ?? useBuildingStore;
     ctx.grid.register(gridExtensionId, buildingGridAdapter, pluginId);
     ctx.placement.register(
       placementExtensionId,
@@ -80,14 +81,14 @@ export function createBuildingPlugin(options: BuildingPluginOptions = {}): Gaesu
     );
     ctx.save.register(saveExtensionId, {
       key: saveExtensionId,
-      serialize: () => useBuildingStore.getState().serialize(),
-      hydrate: (data: Partial<BuildingSerializedState> | null | undefined) => useBuildingStore.getState().hydrate(data),
-      prepareHydrate: (data: Partial<BuildingSerializedState> | null | undefined) => useBuildingStore.getState().prepareHydrate(data),
+      serialize: () => store.getState().serialize(),
+      hydrate: (data: Partial<BuildingSerializedState> | null | undefined) => store.getState().hydrate(data),
+      prepareHydrate: (data: Partial<BuildingSerializedState> | null | undefined) => store.getState().prepareHydrate(data),
     }, pluginId);
     ctx.services.register(storeServiceId, {
-      useStore: useBuildingStore,
-      getState: useBuildingStore.getState,
-      setState: useBuildingStore.setState,
+      useStore: store,
+      getState: store.getState,
+      setState: store.setState,
     }, pluginId);
     ctx.events.emit('building:ready', {
       pluginId,

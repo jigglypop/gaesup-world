@@ -264,6 +264,7 @@ function WallBatchMesh({
 
   return (
     <instancedMesh
+      name={`building-batch:wall:${batch.key}`}
       ref={instancedRef}
       args={[geometry, batch.materials, capacity]}
       castShadow

@@ -1,4 +1,5 @@
 # Logs
+.asset-work/
 logs
 *.log
 npm-debug.log*
@@ -36,6 +37,7 @@ coverage/
 
 dist
 dist/*
+demo-dist/
 .cursor/*
 coverage
 coverage/*
@@ -52,3 +54,9 @@ coverage/*
 # Python cache artifacts
 __pycache__/
 *.py[cod]
+
+# Local performance runs (approved baseline summaries remain versioned).
+.artifacts/performance/
+.artifacts/minihome/
+.artifacts/release/
+.artifacts/minihome-release/

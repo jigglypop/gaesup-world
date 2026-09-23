@@ -4,6 +4,8 @@ import { EngineState, FramePhaseTimings, PerformanceState, RenderState } from '.
 
 function sameRenderState(a: RenderState, b: RenderState): boolean {
   return a.calls === b.calls &&
+    a.renderInvocations === b.renderInvocations &&
+    a.counterScope === b.counterScope &&
     a.triangles === b.triangles &&
     a.points === b.points &&
     a.lines === b.lines;
@@ -12,7 +14,8 @@ function sameRenderState(a: RenderState, b: RenderState): boolean {
 function sameEngineState(a: EngineState, b: EngineState): boolean {
   return a.geometries === b.geometries &&
     a.textures === b.textures &&
-    a.programs === b.programs;
+    a.programs === b.programs &&
+    a.allocatedBytesEstimate === b.allocatedBytesEstimate;
 }
 
 export const initialPerformanceState = {

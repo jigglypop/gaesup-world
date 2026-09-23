@@ -1,0 +1,1 @@
+case_id,variant,scope,run_id,thread_id,parent_thread_id,model,effort,input_tokens,cached_input_tokens,output_tokens,reasoning_tokens,wall_seconds,rework_count,acceptance_passed,notes

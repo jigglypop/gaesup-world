@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
+
 import { FlagNodeMaterial } from '../../src/core/rendering/tsl/flag';
 import vertexShader from '/flag-vert.js';
 import fragmentShader from '/flag-frag.js';

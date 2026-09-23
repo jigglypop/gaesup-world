@@ -64,7 +64,7 @@ describe('CameraCollisionIndex', () => {
     expect(index.getTargets()).toEqual([wall]);
   });
 
-  test('충돌 판정은 결과 객체를 재사용하고 가장 가까운 장애물로 위치를 계산한다', () => {
+  test('충돌 판정은 가장 가까운 장애물 앞에서 멈추고 장면을 비우면 대상이 사라진다', () => {
     const scene = new THREE.Scene();
     scene.add(createBox(8), createBox(4));
     scene.updateMatrixWorld(true);
@@ -75,12 +75,9 @@ describe('CameraCollisionIndex', () => {
     expect(first.safe).toBe(false);
     expect(first.obstacles).toHaveLength(2);
     expect(first.position.z).toBeCloseTo(3);
-    const obstacles = first.obstacles;
 
     scene.clear();
     const second = cameraUtils.improvedCollisionCheck(from, to, scene, 0.5);
-    expect(second).toBe(first);
-    expect(second.obstacles).toBe(obstacles);
     expect(second.safe).toBe(true);
     expect(second.position.equals(to)).toBe(true);
     expect(getCameraCollisionIndex(scene).getTargets()).toHaveLength(0);

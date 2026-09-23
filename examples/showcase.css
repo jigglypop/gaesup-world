@@ -1,0 +1,612 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
+:root {
+  font-family: 'DM Sans', 'Noto Sans KR', sans-serif;
+  color: #e7ecea;
+  background: #131c1b;
+  font-synthesis: none;
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+a,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+select {
+  font: inherit;
+}
+button,
+a {
+  color: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:focus-visible,
+a:focus-visible,
+select:focus-visible {
+  outline: 2px solid #a6e3c2;
+  outline-offset: 5px;
+}
+button {
+  border: 0;
+  background: none;
+}
+a {
+  text-decoration: none;
+}
+.showcase {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.topbar {
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  border-bottom: 1px solid #ffffff12;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  font-size: 28px;
+  font-weight: 700;
+  gap: 3px;
+}
+.brand > span {
+  color: #a7dcb8;
+  font-size: 32px;
+}
+.brand b {
+  font-size: 18px;
+  letter-spacing: -0.6px;
+  margin-left: 10px;
+}
+.brand b span {
+  font-weight: 400;
+  color: #b2bdb7;
+}
+.topbar nav {
+  display: flex;
+  gap: 34px;
+  font-size: 13px;
+  align-items: center;
+  color: #8b9e95;
+}
+.topbar nav .active {
+  color: #dff8e9;
+}
+.topbar nav a[aria-disabled] {
+  font-size: 11px;
+}
+.live {
+  font-size: 10px;
+  letter-spacing: 1.6px;
+  color: #a0b7a9;
+}
+.live i,
+footer i,
+.backend i {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: #b5e5bf;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+.workspace {
+  flex: 1;
+  display: flex;
+  position: relative;
+  min-height: 660px;
+  padding: 30px 30px 30px 40px;
+  gap: 34px;
+}
+.story {
+  width: 302px;
+  flex-shrink: 0;
+  padding: 26px 0 0;
+}
+.eyebrow {
+  font-size: 9px;
+  letter-spacing: 1.7px;
+  color: #93b39d;
+}
+.story h1 {
+  font-size: 36px;
+  line-height: 1.5;
+  letter-spacing: -1.9px;
+  font-weight: 600;
+  margin: 31px 0 20px;
+}
+.story h1 em {
+  font-style: normal;
+  color: #b9debb;
+}
+.story > p {
+  font-size: 12px;
+  line-height: 2;
+  color: #91a398;
+}
+.section-label {
+  font-size: 10px;
+  color: #a7b2aa;
+  display: block;
+  margin: 40px 0 16px;
+}
+.scene-card {
+  width: 100%;
+  display: flex;
+  text-align: left;
+  padding: 19px 14px;
+  gap: 14px;
+  align-items: center;
+  border-bottom: 1px solid #ffffff0c;
+}
+.scene-card > span {
+  font-size: 11px;
+  color: #83988c;
+}
+.scene-card > span:last-child {
+  margin-left: auto;
+  font-size: 18px;
+}
+.scene-card div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.scene-card b {
+  font-size: 13px;
+  font-weight: 500;
+}
+.scene-card small {
+  font-size: 10px;
+  color: #80968b;
+}
+.scene-card.selected {
+  background: #25372e;
+  border: 1px solid #49614d;
+  border-radius: 8px;
+}
+.scene-card.selected > span {
+  color: #bce4b9;
+}
+.world-note {
+  display: flex;
+  gap: 14px;
+  margin: 29px 0 15px;
+  color: #799286;
+}
+.world-note > span {
+  font-size: 24px;
+  color: #c6ae79;
+}
+.world-note p {
+  font-size: 10px;
+  line-height: 1.8;
+  margin: 0;
+}
+.world-note b {
+  font-weight: 500;
+  color: #bdccbf;
+}
+.lab-toggle {
+  padding: 15px 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  text-align: left;
+  font-size: 11px;
+  color: #bed0c2;
+}
+.viewport {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #a8c3b8;
+  border: 1px solid #ffffff18;
+}
+.canvas-wrap,
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.canvas-wrap {
+  position: absolute;
+  inset: 0;
+}
+.world-title {
+  position: absolute;
+  left: 27px;
+  top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: #233c32;
+  pointer-events: none;
+}
+.world-title > span {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.world-title b {
+  font-size: 23px;
+  font-weight: 600;
+  letter-spacing: -1px;
+}
+.world-title small {
+  font-size: 9px;
+  opacity: 0.65;
+}
+.backend {
+  position: absolute;
+  right: 22px;
+  top: 24px;
+  border: 1px solid #ffffff70;
+  background: #f0f5e752;
+  color: #304c3e;
+  padding: 9px 12px;
+  border-radius: 22px;
+  font-size: 10px;
+  backdrop-filter: blur(10px);
+}
+.backend i {
+  background: #4e856a;
+}
+.viewport-toolbar {
+  position: absolute;
+  bottom: 19px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.viewport-toolbar > div {
+  display: flex;
+  background: #182c25b8;
+  border: 1px solid #ffffff30;
+  backdrop-filter: blur(12px);
+  border-radius: 8px;
+  padding: 5px;
+}
+.viewport-toolbar button {
+  font-size: 10px;
+  padding: 9px 13px;
+  color: #edf5e9;
+}
+.viewport-toolbar button[aria-pressed='true'] {
+  background: #ffffff16;
+  border-radius: 5px;
+}
+.viewport-toolbar > span {
+  font-size: 9px;
+  background: #1b312a88;
+  padding: 9px;
+  border-radius: 4px;
+  color: #e4eee5;
+}
+.lab {
+  position: absolute;
+  right: 45px;
+  top: 98px;
+  bottom: 50px;
+  width: 304px;
+  overflow: auto;
+  background: #14221ff5;
+  backdrop-filter: blur(18px);
+  padding: 22px;
+  border: 1px solid #537160;
+  border-radius: 10px;
+  box-shadow: 0 16px 50px #10272077;
+}
+.lab-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lab-heading .eyebrow {
+  font-size: 8px;
+}
+.lab-heading button {
+  font-size: 23px;
+}
+.lab h2 {
+  font-size: 19px;
+  letter-spacing: -0.7px;
+}
+.lab p {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #9ab3a5;
+}
+.lab label {
+  display: block;
+  font-size: 11px;
+  margin: 20px 0;
+}
+.lab select {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  background: #273a31;
+  padding: 10px;
+  border: 1px solid #526859;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.lab fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.lab legend {
+  font-size: 11px;
+  margin-bottom: 10px;
+}
+.lab fieldset button {
+  text-align: left;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+  margin-bottom: 5px;
+  border: 1px solid #40564a;
+  border-radius: 5px;
+}
+.lab fieldset button[aria-pressed='true'] {
+  background: #344c3b;
+  border-color: #97ba95;
+}
+.lab fieldset b {
+  font-size: 11px;
+  font-weight: 500;
+}
+.lab fieldset small {
+  font-size: 9px;
+  color: #9eafa4;
+}
+.metrics {
+  margin: 20px 0 10px;
+}
+.metrics > div {
+  display: flex;
+  justify-content: space-between;
+  margin: 12px 0;
+}
+.metrics dt {
+  font-size: 10px;
+  color: #9eb4a5;
+}
+.metrics dd {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: #c4e6bd;
+}
+.lab p.metric-note {
+  font-size: 9px;
+}
+.code-card {
+  background: #0c1713;
+  border-radius: 6px;
+  margin-top: 20px;
+  padding: 12px;
+}
+.code-card span {
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #809a88;
+}
+.code-card code {
+  display: block;
+  font-size: 10px;
+  line-height: 1.9;
+  color: #b7dbb9;
+  margin-top: 8px;
+  white-space: pre-wrap;
+}
+.package-inspector > button {
+  margin-top: 16px;
+  padding: 10px 12px;
+  border: 1px solid #526859;
+  border-radius: 5px;
+  font-size: 11px;
+  color: #c4e6bd;
+}
+footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 40px 22px;
+  color: #6e8879;
+  gap: 15px;
+  font-size: 9px;
+}
+footer > span:first-child {
+  letter-spacing: 1.3px;
+  font-size: 8px;
+}
+footer p {
+  margin: 0;
+}
+footer b {
+  padding: 0 9px;
+  color: #92a58f;
+}
+footer i {
+  width: 4px;
+  height: 4px;
+}
+.loading {
+  padding: 35%;
+  font-size: 12px;
+  white-space: nowrap;
+  color: #294739;
+}
+.error {
+  position: absolute;
+  inset: 25%;
+  padding: 20px;
+  background: #1b3028;
+  color: #ffd5a8;
+  font-size: 12px;
+  line-height: 1.8;
+  overflow: auto;
+}
+.error button {
+  display: block;
+  border: 1px solid;
+  padding: 8px;
+  margin-top: 15px;
+}
+@media (min-width: 1600px) {
+  .workspace {
+    padding: 40px 50px;
+    gap: 50px;
+  }
+  .story {
+    width: 340px;
+  }
+  .story h1 {
+    font-size: 43px;
+  }
+  .topbar {
+    padding: 0 50px;
+  }
+  .lab {
+    right: 65px;
+    top: 110px;
+  }
+}
+@media (max-width: 1050px) {
+  .story {
+    width: 245px;
+  }
+  .story h1 {
+    font-size: 29px;
+  }
+  .workspace {
+    padding: 20px;
+    gap: 20px;
+  }
+  .topbar {
+    padding: 0 22px;
+  }
+  .live {
+    display: none;
+  }
+  .viewport-toolbar > span {
+    display: none;
+  }
+  .backend {
+    top: auto;
+    bottom: 82px;
+    left: 20px;
+    right: auto;
+  }
+  .lab {
+    right: 32px;
+    top: 90px;
+  }
+  .story > p {
+    font-size: 11px;
+  }
+}
+@media (max-width: 720px) {
+  .topbar {
+    height: 66px;
+  }
+  .topbar nav {
+    gap: 18px;
+    font-size: 11px;
+  }
+  .workspace {
+    display: flex;
+    flex-direction: column;
+    padding: 20px 16px;
+    gap: 18px;
+  }
+  .story {
+    width: 100%;
+    padding: 0;
+  }
+  .story h1 {
+    font-size: 29px;
+    margin: 12px 0 8px;
+    line-height: 1.4;
+  }
+  .story h1 br {
+    display: none;
+  }
+  .story > p,
+  .world-note,
+  .section-label {
+    display: none;
+  }
+  .scene-picker {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .scene-card {
+    padding: 12px 9px;
+    border: 1px solid #ffffff1a;
+    border-radius: 6px;
+    gap: 8px;
+  }
+  .scene-card small,
+  .scene-card > span:last-child {
+    display: none;
+  }
+  .scene-card b {
+    font-size: 10px;
+  }
+  .lab-toggle {
+    padding-bottom: 0;
+  }
+  .viewport {
+    height: 58vh;
+    min-height: 390px;
+    flex: auto;
+  }
+  .world-title {
+    left: 20px;
+    top: 20px;
+  }
+  .lab {
+    position: fixed;
+    top: 80px;
+    bottom: 25px;
+    right: 20px;
+    left: 20px;
+    width: auto;
+    z-index: 5;
+  }
+  .lab h2 {
+    font-size: 21px;
+  }
+  footer {
+    padding: 0 18px 20px;
+  }
+  footer p {
+    display: none;
+  }
+  footer > span {
+    font-size: 8px;
+  }
+}

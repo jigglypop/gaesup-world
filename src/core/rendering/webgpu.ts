@@ -42,7 +42,7 @@ async function detectWebGPUAvailability(): Promise<boolean> {
   }
 }
 
-function createLegacyRenderer(props: RendererProps): THREE.WebGLRenderer {
+export function createLegacyRenderer(props: RendererProps): THREE.WebGLRenderer {
   const rendererProps = {
     ...props,
     antialias: props.antialias ?? true,

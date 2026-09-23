@@ -173,14 +173,13 @@ describe('InteractionSystem', () => {
 
     it('raw update와 explicit system update의 timestamp 계약을 유지해야 합니다', () => {
       const dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(1_234);
-      const performanceNowSpy = jest
-        .spyOn(performance, 'now')
-        .mockReturnValueOnce(0)
-        .mockReturnValueOnce(1)
-        .mockReturnValueOnce(10)
-        .mockReturnValueOnce(14)
-        .mockReturnValueOnce(15)
-        .mockReturnValueOnce(16);
+      // A clock advancing 4ms per read keeps frameTime independent of any profiling reads around the body.
+      let clock = 0;
+      const performanceNowSpy = jest.spyOn(performance, 'now').mockImplementation(() => {
+        const now = clock;
+        clock += 4;
+        return now;
+      });
 
       try {
         system.updateKeyboard({ forward: true });

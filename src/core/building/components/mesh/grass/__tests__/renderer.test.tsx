@@ -1,4 +1,4 @@
-import { act, type ReactNode } from 'react';
+import { act, useLayoutEffect, type ReactNode } from 'react';
 
 import { useThree } from '@react-three/fiber';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
@@ -9,10 +9,10 @@ import { getGrassManager } from '../manager';
 import type { GrassMaterialInstance } from '../type';
 
 jest.mock('../../../../../rendering/tsl/grassMaterial', () => {
-  const { Color, MeshBasicMaterial, Vector3 } = jest.requireActual<typeof import('three')>('three');
+  const { Color, MeshBasicMaterial, Vector3 } = jest.requireActual<typeof THREE>('three');
   return { GrassNodeMaterial: jest.fn(() => Object.assign(new MeshBasicMaterial({ name: 'grass-node-test' }), {
     uniforms: {
-      time: { value: 0 }, windScale: { value: 1 }, trampleCenter: { value: new Vector3() },
+      bladeHeight: { value: 1 }, time: { value: 0 }, windScale: { value: 1 }, trampleCenter: { value: new Vector3() },
       trampleStrength: { value: 0.85 }, uToon: { value: 0 }, uToonSteps: { value: 4 },
       tipColor: { value: new Color() }, bottomColor: { value: new Color() },
     },
@@ -30,8 +30,17 @@ test.each([false, true])('grass preserves the shared manager update path (nodes:
   const manager = getGrassManager();
   const initialSize = manager.size();
   const register = jest.spyOn(manager, 'register');
+  const initialCounts: number[] = [];
+  function InspectBeforePassiveEffects() {
+    const scene = useThree(state => state.scene);
+    useLayoutEffect(() => { scene.traverse(object => {
+      if (object instanceof THREE.Mesh && object.geometry instanceof THREE.InstancedBufferGeometry) initialCounts.push(object.geometry.instanceCount);
+    }); }, [scene]);
+    return null;
+  }
   const renderer = await ReactThreeTestRenderer.create(<RendererMode nodes={nodes}>
-    <Grass instances={64} toon bladeTipColor="#aabbcc" />
+    <Grass instances={64} options={{ bH: 0.32 }} toon bladeTipColor="#aabbcc" position={[20, 0, 0]} />
+    <InspectBeforePassiveEffects />
   </RendererMode>);
   const mesh = renderer.scene.find((node) => node.instance instanceof THREE.Mesh
     && node.instance.geometry instanceof THREE.InstancedBufferGeometry).instance as THREE.Mesh<THREE.InstancedBufferGeometry>;
@@ -39,8 +48,15 @@ test.each([false, true])('grass preserves the shared manager update path (nodes:
   expect(material.name === 'grass-node-test').toBe(nodes);
   expect(manager.size()).toBe(initialSize + 1);
   expect(mesh.geometry.instanceCount).toBeGreaterThan(0);
-  expect(material.uniforms.uToon?.value).toBe(1);
-  expect(material.uniforms.tipColor?.value).toEqual(new THREE.Color('#aabbcc').convertSRGBToLinear());
+  // The lazy node material suspends before the sibling inspector mounts. The
+  // shared geometry JSX is checked before passive effects on the legacy path;
+  // native WebGPU first-frame validation is covered by the browser lab sequence.
+  if (!nodes) {
+    expect(initialCounts.length).toBeGreaterThan(0);
+    expect(initialCounts.every(count => Number.isFinite(count) && count > 0)).toBe(true);
+  }
+  expect(material.uniforms['uToon']?.value).toBe(1);
+  expect(material.uniforms['tipColor']?.value).toEqual(new THREE.Color('#aabbcc'));
   const ground = renderer.scene.find((node) => node.instance instanceof THREE.Mesh
     && node.instance.geometry instanceof THREE.PlaneGeometry).instance as THREE.Mesh<THREE.PlaneGeometry>;
   ground.updateWorldMatrix(true, false);
@@ -56,10 +72,20 @@ test.each([false, true])('grass preserves the shared manager update path (nodes:
   apply({ visible: false, instanceCount: 7, time: 4, windScale: 0.6, trampleCenter: center, trampleStrength: 0.4 });
   expect(mesh.visible).toBe(false);
   expect(mesh.geometry.instanceCount).toBe(7);
-  expect(material.uniforms.time?.value).toBe(4);
-  expect(material.uniforms.windScale?.value).toBe(0.6);
-  expect(material.uniforms.trampleCenter?.value).toEqual(center);
-  expect(material.uniforms.trampleCenter?.value).not.toBe(center);
+  expect(material.uniforms['time']?.value).toBe(4);
+  expect(material.uniforms['bladeHeight']?.value).toBe(0.32);
+  expect(material.uniforms['windScale']?.value).toBe(0.6);
+  expect(material.uniforms['trampleCenter']?.value).toEqual(new THREE.Vector3(-19, 0, 2));
+  expect(material.uniforms['trampleCenter']?.value).not.toBe(center);
+  await renderer.update(<RendererMode nodes={nodes}>
+    <Grass instances={4} options={{ bH: 0.32 }} toon bladeTipColor="#aabbcc" position={[20, 0, 0]} />
+  </RendererMode>);
+  // A queued callback from the previous registration must respect new capacity.
+  apply({ visible: true, instanceCount: 64, time: 5, windScale: 0.6, trampleCenter: center, trampleStrength: 0.4 });
+  const capacity = mesh.geometry.getAttribute('offset').count;
+  expect(capacity).toBeGreaterThan(0);
+  expect(capacity).toBeLessThanOrEqual(4);
+  expect(mesh.geometry.instanceCount).toBe(capacity);
   const dispose = jest.spyOn(material, 'dispose');
   await renderer.unmount();
   expect(manager.size()).toBe(initialSize);
@@ -72,7 +98,7 @@ test.each([false, true])('grass releases replaced and late textures (nodes: %s)'
   const pending: Array<() => void> = [];
   const disposals: jest.SpyInstance[] = [];
   const loader = jest.spyOn(THREE.TextureLoader.prototype, 'load').mockImplementation((_url, onLoad) => {
-    const texture = new THREE.Texture();
+    const texture = new THREE.Texture<HTMLImageElement>();
     disposals.push(jest.spyOn(texture, 'dispose'));
     pending.push(() => onLoad?.(texture));
     return texture;

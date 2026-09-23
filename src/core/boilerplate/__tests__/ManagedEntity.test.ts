@@ -1,7 +1,7 @@
-import { ManagedEntity } from '../entity/ManagedEntity';
 import { AbstractBridge } from '../bridge/AbstractBridge';
 import { DIContainer } from '../di/container';
-import { IDisposable, BridgeEvent } from '../types';
+import { ManagedEntity } from '../entity/ManagedEntity';
+import { IDisposable, RuntimeValue } from '../types';
 
 // Mock Engine 타입
 type MockEngine = {
@@ -20,11 +20,18 @@ type MockCommand = {
   value?: number;
 };
 
-// 테스트용 Bridge 구현
+function isMockEngine(value: RuntimeValue): value is MockEngine {
+  return typeof value === 'object' && value !== null
+    && typeof (value as Partial<MockEngine>).value === 'number'
+    && typeof (value as Partial<MockEngine>).dispose === 'function';
+}
+
+// 테스트용 Bridge 구현: ManagedEntity.initialize()는 자신의 engine 객체를 등록한다
 class TestBridge extends AbstractBridge<MockEngine, MockSnapshot, MockCommand> {
-  protected buildEngine(id: string, ...args: unknown[]): MockEngine {
+  protected buildEngine(_id: string, engine?: RuntimeValue): MockEngine {
+    if (engine !== undefined && isMockEngine(engine)) return engine;
     return {
-      value: args[0] as number || 0,
+      value: typeof engine === 'number' ? engine : 0,
       dispose: jest.fn()
     };
   }
@@ -50,8 +57,26 @@ class TestBridge extends AbstractBridge<MockEngine, MockSnapshot, MockCommand> {
   }
 }
 
+type TestEntity = ManagedEntity<MockEngine, MockSnapshot, MockCommand>;
+
+// 보호된 이벤트 훅을 spy할 수 있도록 public으로 노출
+class InspectableManagedEntity extends ManagedEntity<MockEngine, MockSnapshot, MockCommand> {
+  public override onCommandExecuted(command: MockCommand): void {
+    super.onCommandExecuted(command);
+  }
+
+  public override onSnapshotTaken(snapshot: MockSnapshot): void {
+    super.onSnapshotTaken(snapshot);
+  }
+}
+
+// DI 컨테이너 대신 수동으로 bridge 주입
+function injectBridge(entity: TestEntity, bridge: TestBridge): void {
+  entity['bridge'] = bridge;
+}
+
 describe('ManagedEntity', () => {
-  let managedEntity: ManagedEntity<MockEngine, MockSnapshot, MockCommand>;
+  let managedEntity: InspectableManagedEntity;
   let mockBridge: TestBridge;
   let mockEngine: MockEngine;
   let container: DIContainer;
@@ -72,10 +97,10 @@ describe('ManagedEntity', () => {
     mockBridge = new TestBridge();
 
     // ManagedEntity 생성
-    managedEntity = new ManagedEntity(testId, mockEngine);
+    managedEntity = new InspectableManagedEntity(testId, mockEngine);
     
     // 수동으로 bridge 주입
-    (managedEntity as any).bridge = mockBridge;
+    injectBridge(managedEntity, mockBridge);
   });
 
   afterEach(() => {
@@ -122,11 +147,11 @@ describe('ManagedEntity', () => {
     });
 
     test('커맨드 큐가 활성화된 경우 명령이 큐에 저장되어야 함', () => {
-      const entityWithQueue = new ManagedEntity(testId, mockEngine, {
+      const entityWithQueue = new ManagedEntity<MockEngine, MockSnapshot, MockCommand>(testId, mockEngine, {
         enableCommandQueue: true,
         maxQueueSize: 10
       });
-      (entityWithQueue as any).bridge = mockBridge;
+      injectBridge(entityWithQueue, mockBridge);
       entityWithQueue.initialize();
 
       const command: MockCommand = { type: 'set', value: 42 };
@@ -153,11 +178,11 @@ describe('ManagedEntity', () => {
     });
 
     test('캐시가 활성화된 경우 스냅샷이 캐시되어야 함', () => {
-      const entityWithCache = new ManagedEntity(testId, mockEngine, {
+      const entityWithCache = new ManagedEntity<MockEngine, MockSnapshot, MockCommand>(testId, mockEngine, {
         enableStateCache: true,
         cacheTimeout: 100
       });
-      (entityWithCache as any).bridge = mockBridge;
+      injectBridge(entityWithCache, mockBridge);
       entityWithCache.initialize();
 
       const snapshotSpy = jest.spyOn(mockBridge, 'snapshot');
@@ -175,15 +200,15 @@ describe('ManagedEntity', () => {
   });
 
   describe('이벤트 처리', () => {
-    let executeEventSpy: jest.SpyInstance;
-    let snapshotEventSpy: jest.SpyInstance;
+    let executeEventSpy: jest.SpyInstance<void, [command: MockCommand]>;
+    let snapshotEventSpy: jest.SpyInstance<void, [snapshot: MockSnapshot]>;
 
     beforeEach(() => {
       managedEntity.initialize();
       
       // 보호된 메서드를 spy하기 위한 설정
-      executeEventSpy = jest.spyOn(managedEntity as any, 'onCommandExecuted');
-      snapshotEventSpy = jest.spyOn(managedEntity as any, 'onSnapshotTaken');
+      executeEventSpy = jest.spyOn(managedEntity, 'onCommandExecuted');
+      snapshotEventSpy = jest.spyOn(managedEntity, 'onSnapshotTaken');
     });
 
     test('실행 이벤트 수신 시 onCommandExecuted가 호출되어야 함', () => {
@@ -199,12 +224,10 @@ describe('ManagedEntity', () => {
       // 스냅샷 생성하여 이벤트 발생
       mockBridge.snapshot(testId);
       
-      expect(snapshotEventSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ 
-          value: expect.objectContaining({ value: expect.any(Number) }),
-          timestamp: expect.any(Number)
-        })
-      );
+      expect(snapshotEventSpy).toHaveBeenCalledWith({
+        value: mockEngine.value,
+        timestamp: expect.any(Number),
+      });
     });
 
     test('다른 엔티티의 이벤트는 무시되어야 함', () => {
@@ -220,25 +243,25 @@ describe('ManagedEntity', () => {
   describe('생명주기 콜백', () => {
     test('onInit 콜백이 옵션으로 설정되어야 함', () => {
       const onInitSpy = jest.fn();
-      const entityWithCallback = new ManagedEntity(testId, mockEngine, {
+      const entityWithCallback = new ManagedEntity<MockEngine, MockSnapshot, MockCommand>(testId, mockEngine, {
         onInit: onInitSpy
       });
-      (entityWithCallback as any).bridge = mockBridge;
+      injectBridge(entityWithCallback, mockBridge);
       
       entityWithCallback.initialize();
       
       // onInit 콜백이 옵션에 저장되어 있는지 확인
-      expect((entityWithCallback as any).options.onInit).toBe(onInitSpy);
+      expect(entityWithCallback['options'].onInit).toBe(onInitSpy);
       
       entityWithCallback.dispose();
     });
 
     test('onDispose 콜백이 호출되어야 함', () => {
       const onDisposeSpy = jest.fn();
-      const entityWithCallback = new ManagedEntity(testId, mockEngine, {
+      const entityWithCallback = new ManagedEntity<MockEngine, MockSnapshot, MockCommand>(testId, mockEngine, {
         onDispose: onDisposeSpy
       });
-      (entityWithCallback as any).bridge = mockBridge;
+      injectBridge(entityWithCallback, mockBridge);
       entityWithCallback.initialize();
       
       entityWithCallback.dispose();
@@ -261,7 +284,7 @@ describe('ManagedEntity', () => {
     });
 
     test('dispose 호출 시 이벤트 리스너가 제거되어야 함', () => {
-      const executeEventSpy = jest.spyOn(managedEntity as any, 'onCommandExecuted');
+      const executeEventSpy = jest.spyOn(managedEntity, 'onCommandExecuted');
       
       managedEntity.dispose();
       
@@ -299,7 +322,8 @@ describe('ManagedEntity', () => {
 
     test('잘못된 명령 실행 시 오류를 발생시키지 않아야 함', () => {
       expect(() => {
-        managedEntity.execute({ type: 'invalid' } as any);
+        // @ts-expect-error: unknown command types from untyped callers must be ignored at runtime
+        managedEntity.execute({ type: 'invalid' });
       }).not.toThrow();
     });
 

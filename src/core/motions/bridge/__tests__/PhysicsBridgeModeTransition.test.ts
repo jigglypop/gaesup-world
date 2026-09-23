@@ -12,6 +12,11 @@ import type { ActiveStateType } from '../../core/types';
 import type { PhysicsCalcProps, PhysicsState } from '../../types';
 import { PhysicsBridge } from '../PhysicsBridge';
 
+let mockGroundContact = false;
+jest.mock('../../core/system/GroundContactProbe', () => ({
+  GroundContactProbe: jest.fn().mockImplementation(() => ({ read: jest.fn(() => mockGroundContact) })),
+}));
+
 const ENTITY_ID = 'physics-mode-transition-entity';
 
 const CONFIG: PhysicsConfigType = {
@@ -129,7 +134,12 @@ function createCalcProp(
     inputRef: {
       current: {
         keyboard: physicsState.keyboard,
-        mouse: physicsState.mouse,
+        mouse: {
+          ...physicsState.mouse,
+          buttons: { left: false, right: false, middle: false },
+          wheel: 0,
+          position: new THREE.Vector2(),
+        },
       },
     },
     setKeyboardInput: jest.fn(),
@@ -358,10 +368,12 @@ describe('PhysicsBridge mode transitions', () => {
       expect(physicsState.gameStates.isOnTheGround).toBe(false);
       expect(physicsState.activeState.position.toArray()).toEqual([0, 0, 0]);
 
+      mockGroundContact = true;
       bridge.resolveEntity(ENTITY_ID, args);
       expect(physicsState.gameStates.isOnTheGround).toBe(true);
       expect(physicsState.activeState.position.toArray()).toEqual([7, 0.5, -2]);
     } finally {
+      mockGroundContact = false;
       bridge.dispose();
     }
   });

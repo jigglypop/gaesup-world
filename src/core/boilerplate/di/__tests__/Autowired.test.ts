@@ -10,7 +10,7 @@ describe('@Autowired 데코레이터', () => {
     test('프로퍼티를 autowired 목록에 추가해야 함', () => {
       class TestService {
         @Autowired()
-        public dependency: any;
+        public dependency: unknown;
       }
       
       const autowiredProps = Reflect.getMetadata('autowired', TestService);
@@ -21,13 +21,13 @@ describe('@Autowired 데코레이터', () => {
     test('여러 프로퍼티를 autowired 목록에 추가할 수 있어야 함', () => {
       class MultiAutowiredService {
         @Autowired()
-        public service1: any;
+        public service1: unknown;
         
         @Autowired()
-        public service2: any;
+        public service2: unknown;
         
         @Autowired()
-        private service3: any;
+        protected service3: unknown;
       }
       
       const autowiredProps = Reflect.getMetadata('autowired', MultiAutowiredService);
@@ -40,7 +40,7 @@ describe('@Autowired 데코레이터', () => {
     test('기존 autowired 목록을 보존하면서 새 프로퍼티를 추가해야 함', () => {
       class IncrementalService {
         @Autowired()
-        public first: any;
+        public first: unknown;
       }
       
       // 기존 메타데이터 확인
@@ -62,7 +62,7 @@ describe('@Autowired 데코레이터', () => {
     test('메타데이터가 프로토타입이 아닌 생성자에 저장되어야 함', () => {
       class MetadataLocationService {
         @Autowired()
-        public service: any;
+        public service: unknown;
       }
       
       // 생성자에 메타데이터가 저장되는지 확인
@@ -71,14 +71,13 @@ describe('@Autowired 데코레이터', () => {
       
       expect(constructorMetadata).toBeDefined();
       expect(constructorMetadata).toContain('service');
-      
-      // 현재 구현에서는 프로토타입에 저장되지 않을 수 있음
+      expect(prototypeMetadata).toBeUndefined();
     });
 
     test('인스턴스가 아닌 클래스 레벨에서 메타데이터가 관리되어야 함', () => {
       class ClassLevelService {
         @Autowired()
-        public shared: any;
+        public shared: unknown;
       }
       
       const instance1 = new ClassLevelService();
@@ -97,12 +96,12 @@ describe('@Autowired 데코레이터', () => {
     test('상속된 클래스는 독립적인 autowired 목록을 가져야 함', () => {
       class BaseService {
         @Autowired()
-        protected baseService: any;
+        protected baseService: unknown;
       }
       
       class DerivedService extends BaseService {
         @Autowired()
-        public derivedService: any;
+        public derivedService: unknown;
       }
       
       const baseAutowired = Reflect.getMetadata('autowired', BaseService);
@@ -117,17 +116,17 @@ describe('@Autowired 데코레이터', () => {
     test('깊은 상속 구조에서도 각 클래스가 독립적인 메타데이터를 가져야 함', () => {
       class GrandParent {
         @Autowired()
-        public grandParentService: any;
+        public grandParentService: unknown;
       }
       
       class Parent extends GrandParent {
         @Autowired()
-        public parentService: any;
+        public parentService: unknown;
       }
       
       class Child extends Parent {
         @Autowired()
-        public childService: any;
+        public childService: unknown;
       }
       
       const grandParentAutowired = Reflect.getMetadata('autowired', GrandParent);
@@ -145,20 +144,20 @@ describe('@Autowired 데코레이터', () => {
     test('여러 클래스가 각각 독립적인 autowired 목록을 가져야 함', () => {
       class ServiceA {
         @Autowired()
-        public depA: any;
+        public depA: unknown;
       }
       
       class ServiceB {
         @Autowired()
-        public depB: any;
+        public depB: unknown;
       }
       
       class ServiceC {
         @Autowired()
-        public depC1: any;
+        public depC1: unknown;
         
         @Autowired()
-        public depC2: any;
+        public depC2: unknown;
       }
       
       const autowiredA = Reflect.getMetadata('autowired', ServiceA);
@@ -173,14 +172,14 @@ describe('@Autowired 데코레이터', () => {
     test('클래스들이 서로의 메타데이터에 영향을 주지 않아야 함', () => {
       class IsolatedServiceA {
         @Autowired()
-        public serviceA: any;
+        public serviceA: unknown;
       }
       
       const autowiredA = Reflect.getMetadata('autowired', IsolatedServiceA);
       
       class IsolatedServiceB {
         @Autowired()
-        public serviceB: any;
+        public serviceB: unknown;
       }
       
       // A의 메타데이터가 B 생성 후에도 변경되지 않아야 함
@@ -196,19 +195,19 @@ describe('@Autowired 데코레이터', () => {
     test('다양한 형태의 프로퍼티 이름을 처리할 수 있어야 함', () => {
       class VariousPropertyService {
         @Autowired()
-        public normalProperty: any;
+        public normalProperty: unknown;
         
         @Autowired()
-        public camelCaseProperty: any;
+        public camelCaseProperty: unknown;
         
         @Autowired()
-        public _privateProperty: any;
+        public _privateProperty: unknown;
         
         @Autowired()
-        public $specialProperty: any;
+        public $specialProperty: unknown;
         
         @Autowired()
-        public property123: any;
+        public property123: unknown;
       }
       
       const autowiredProps = Reflect.getMetadata('autowired', VariousPropertyService);
@@ -225,7 +224,7 @@ describe('@Autowired 데코레이터', () => {
       // 메타데이터 레벨에서의 중복 처리를 테스트
       class DuplicateTestService {
         @Autowired()
-        public testProp: any;
+        public testProp: unknown;
       }
       
       // 수동으로 중복 추가 시뮬레이션
@@ -233,7 +232,7 @@ describe('@Autowired 데코레이터', () => {
       existing.push('testProp'); // 중복 추가
       Reflect.defineMetadata('autowired', existing, DuplicateTestService);
       
-      const autowiredProps = Reflect.getMetadata('autowired', DuplicateTestService);
+      const autowiredProps: string[] = Reflect.getMetadata('autowired', DuplicateTestService);
       
       // 중복이 있을 수 있음 (현재 구현에서는 중복 제거를 하지 않음)
       expect(autowiredProps.filter(prop => prop === 'testProp')).toHaveLength(2);
@@ -249,24 +248,26 @@ describe('@Autowired 데코레이터', () => {
             return 'test';
           }
         }
+        return MethodTestService;
       }).not.toThrow();
     });
 
     test('getter/setter에 적용해도 에러를 발생시키지 않아야 함', () => {
       expect(() => {
+        // TS는 get/set 쌍 중 하나에만 데코레이터를 허용하며, 쌍 전체의 descriptor에 적용된다
         class GetterSetterService {
-          private _value: any;
+          private _value: unknown;
           
           @Autowired()
           get value() {
             return this._value;
           }
           
-          @Autowired()
-          set value(val: any) {
+          set value(val: unknown) {
             this._value = val;
           }
         }
+        return GetterSetterService;
       }).not.toThrow();
     });
 
@@ -274,8 +275,9 @@ describe('@Autowired 데코레이터', () => {
       expect(() => {
         class StaticPropertyService {
           @Autowired()
-          static staticService: any;
+          static staticService: unknown;
         }
+        return StaticPropertyService;
       }).not.toThrow();
     });
   });
@@ -284,7 +286,7 @@ describe('@Autowired 데코레이터', () => {
     test('빈 배열에서 시작하여 순차적으로 추가되어야 함', () => {
       class SequentialService {
         @Autowired()
-        public first: any;
+        public first: unknown;
       }
       
       let props = Reflect.getMetadata('autowired', SequentialService);
@@ -293,10 +295,10 @@ describe('@Autowired 데코레이터', () => {
       // 두 번째 프로퍼티 추가 시뮬레이션
       class SequentialService2 {
         @Autowired()
-        public first: any;
+        public first: unknown;
         
         @Autowired()
-        public second: any;
+        public second: unknown;
       }
       
       props = Reflect.getMetadata('autowired', SequentialService2);
@@ -306,7 +308,7 @@ describe('@Autowired 데코레이터', () => {
     test('메타데이터가 배열 형태로 저장되어야 함', () => {
       class ArrayTestService {
         @Autowired()
-        public service: any;
+        public service: unknown;
       }
       
       const autowiredProps = Reflect.getMetadata('autowired', ArrayTestService);
@@ -323,18 +325,18 @@ describe('@Autowired 데코레이터', () => {
       }
       
       abstract class IDatabase {
-        abstract query(sql: string): any[];
+        abstract query(sql: string): unknown[];
       }
       
       class BusinessService {
         @Autowired()
-        public logger: ILogger;
+        public logger!: ILogger;
         
         @Autowired()
-        public database: IDatabase;
+        public database!: IDatabase;
         
         @Autowired()
-        private cacheService: any;
+        protected cacheService: unknown;
         
         public processData() {
           // 비즈니스 로직
@@ -352,13 +354,13 @@ describe('@Autowired 데코레이터', () => {
     test('컨트롤러 클래스에서의 사용', () => {
       class UserController {
         @Autowired()
-        public userService: any;
+        public userService: unknown;
         
         @Autowired()
-        public validationService: any;
+        public validationService: unknown;
         
         @Autowired()
-        public responseFormatter: any;
+        public responseFormatter: unknown;
         
         public createUser() {}
         public updateUser() {}
@@ -380,13 +382,13 @@ describe('@Autowired 데코레이터', () => {
       const start = performance.now();
       
       class ManyPropertiesService {
-        @Autowired() prop1: any; @Autowired() prop2: any; @Autowired() prop3: any;
-        @Autowired() prop4: any; @Autowired() prop5: any; @Autowired() prop6: any;
-        @Autowired() prop7: any; @Autowired() prop8: any; @Autowired() prop9: any;
-        @Autowired() prop10: any; @Autowired() prop11: any; @Autowired() prop12: any;
-        @Autowired() prop13: any; @Autowired() prop14: any; @Autowired() prop15: any;
-        @Autowired() prop16: any; @Autowired() prop17: any; @Autowired() prop18: any;
-        @Autowired() prop19: any; @Autowired() prop20: any;
+        @Autowired() prop1: unknown; @Autowired() prop2: unknown; @Autowired() prop3: unknown;
+        @Autowired() prop4: unknown; @Autowired() prop5: unknown; @Autowired() prop6: unknown;
+        @Autowired() prop7: unknown; @Autowired() prop8: unknown; @Autowired() prop9: unknown;
+        @Autowired() prop10: unknown; @Autowired() prop11: unknown; @Autowired() prop12: unknown;
+        @Autowired() prop13: unknown; @Autowired() prop14: unknown; @Autowired() prop15: unknown;
+        @Autowired() prop16: unknown; @Autowired() prop17: unknown; @Autowired() prop18: unknown;
+        @Autowired() prop19: unknown; @Autowired() prop20: unknown;
       }
       
       const duration = performance.now() - start;
@@ -399,7 +401,7 @@ describe('@Autowired 데코레이터', () => {
     test('메타데이터가 메모리 효율적으로 저장되어야 함', () => {
       class MemoryTestService {
         @Autowired()
-        public service: any;
+        public service: unknown;
       }
       
       const metadata = Reflect.getMetadata('autowired', MemoryTestService);

@@ -6,41 +6,65 @@ import {
   setDefaultGameplayEventServices,
 } from './registry';
 import type { GameplayEventServices } from './types';
-import { useDialogStore } from '../../dialog/stores/dialogStore';
-import { useEventsStore } from '../../events/stores/eventsStore';
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
-import { useQuestStore } from '../../quests/stores/questStore';
+import { useDialogStore, type DialogStore } from '../../dialog/stores/dialogStore';
+import { useEventsStore, type EventsStore } from '../../events/stores/eventsStore';
+import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
+import { useQuestStore, type QuestStore } from '../../quests/stores/questStore';
 import { notify } from '../../ui/components/Toast/toastStore';
 
 let clientServicesInstalled = false;
 
-export function createClientGameplayEventServices(): GameplayEventServices {
+export type GameplayEventDependencies = {
+  dialogStore: DialogStore;
+  eventsStore: EventsStore;
+  inventoryStore: InventoryStore;
+  questStore: QuestStore;
+  emit?: (eventName: string, payload?: Record<string, unknown>) => void;
+};
+
+export function createStoreGameplayEventServices({
+  dialogStore,
+  eventsStore,
+  inventoryStore,
+  questStore,
+  emit,
+}: GameplayEventDependencies): GameplayEventServices {
   return {
-    hasItem: (itemId, count) => useInventoryStore.getState().has(itemId, count),
+    hasItem: (itemId, count) => inventoryStore.getState().has(itemId, count),
     addItem: (itemId, count) => {
-      useInventoryStore.getState().add(itemId, count);
+      inventoryStore.getState().add(itemId, count);
     },
     removeItem: (itemId, count) => {
-      useInventoryStore.getState().removeById(itemId, count);
+      inventoryStore.getState().removeById(itemId, count);
     },
-    questStatus: (questId) => useQuestStore.getState().statusOf(questId),
+    questStatus: (questId) => questStore.getState().statusOf(questId),
     startQuest: (questId) => {
-      useQuestStore.getState().start(questId);
+      questStore.getState().start(questId);
     },
     completeQuest: (questId) => {
-      useQuestStore.getState().complete(questId);
+      questStore.getState().complete(questId);
     },
     notifyQuestFlag: (key, value) => {
-      useQuestStore.getState().notifyFlag(key, value);
+      questStore.getState().notifyFlag(key, value);
     },
-    isEventActive: (eventId) => useEventsStore.getState().isActive(eventId),
+    isEventActive: (eventId) => eventsStore.getState().isActive(eventId),
     showDialog: (dialogTreeId, npcId) => {
-      useDialogStore.getState().start(dialogTreeId, npcId ? { context: { npcId } } : undefined);
+      dialogStore.getState().start(dialogTreeId, npcId ? { context: { npcId } } : undefined);
     },
     notify: (kind, text) => {
       notify(kind, text);
     },
+    ...(emit ? { emit } : {}),
   };
+}
+
+export function createClientGameplayEventServices(): GameplayEventServices {
+  return createStoreGameplayEventServices({
+    dialogStore: useDialogStore,
+    eventsStore: useEventsStore,
+    inventoryStore: useInventoryStore,
+    questStore: useQuestStore,
+  });
 }
 
 export function installClientGameplayEventServices(): void {

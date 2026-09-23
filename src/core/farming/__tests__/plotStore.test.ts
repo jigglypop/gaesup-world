@@ -38,7 +38,7 @@ describe('plotStore', () => {
     const beforeCount = useInventoryStore.getState().countOf(crop.yieldItemId);
     expect(usePlotStore.getState().harvest('ready')).toBe(true);
     expect(useInventoryStore.getState().countOf(crop.yieldItemId)).toBe(beforeCount + 3);
-    expect(usePlotStore.getState().plots.ready?.state).toBe('tilled');
+    expect(usePlotStore.getState().plots['ready']?.state).toBe('tilled');
     expect(usePlotStore.getState().harvest('ready')).toBe(false);
   });
 
@@ -58,11 +58,11 @@ describe('plotStore', () => {
     expect(usePlotStore.getState()).toBe(before);
     data.plots[0]!.position[0] = 99;
     apply();
-    expect(usePlotStore.getState().plots.p?.position).toEqual([1, 2, 3]);
-    expect(usePlotStore.getState().plots.p?.cropId).toBe('custom');
+    expect(usePlotStore.getState().plots['p']?.position).toEqual([1, 2, 3]);
+    expect(usePlotStore.getState().plots['p']?.cropId).toBe('custom');
     const saved = usePlotStore.getState().serialize();
     saved.plots[0]!.position[1] = 99;
-    expect(usePlotStore.getState().plots.p?.position).toEqual([1, 2, 3]);
+    expect(usePlotStore.getState().plots['p']?.position).toEqual([1, 2, 3]);
     expect(() => before.prepareHydrate({ version: 1, plots: [data.plots[0]!, data.plots[0]!] })).toThrow(TypeError);
     expect(() => before.prepareHydrate({ version: 2, plots: [] })).toThrow(TypeError);
     const current = usePlotStore.getState();
@@ -75,14 +75,14 @@ describe('plotStore', () => {
   test('register / till / plant / harvest cycle', () => {
     const ps = usePlotStore.getState();
     ps.registerPlot({ id: 'p1', position: [0, 0, 0] });
-    expect(usePlotStore.getState().plots.p1?.state).toBe('empty');
+    expect(usePlotStore.getState().plots['p1']?.state).toBe('empty');
 
     expect(ps.till('p1')).toBe(true);
-    expect(usePlotStore.getState().plots.p1?.state).toBe('tilled');
+    expect(usePlotStore.getState().plots['p1']?.state).toBe('tilled');
 
     useInventoryStore.getState().add('seed-turnip', 3);
     expect(ps.plant('p1', 'crop.turnip', 0)).toBe(true);
-    expect(usePlotStore.getState().plots.p1?.state).toBe('planted');
+    expect(usePlotStore.getState().plots['p1']?.state).toBe('planted');
     expect(useInventoryStore.getState().countOf('seed-turnip')).toBe(2);
   });
 
@@ -104,7 +104,7 @@ describe('plotStore', () => {
     const total = def.stages.reduce((s, st) => s + st.durationMinutes, 0);
     ps.water('p1', total);
     ps.tick(total + 1);
-    expect(usePlotStore.getState().plots.p1?.state).toBe('mature');
+    expect(usePlotStore.getState().plots['p1']?.state).toBe('mature');
   });
 
   test('harvest yields items and resets to tilled', () => {
@@ -118,7 +118,7 @@ describe('plotStore', () => {
     ps.tick(total + 1);
     expect(ps.harvest('p1')).toBe(true);
     expect(useInventoryStore.getState().countOf('turnip')).toBe(getCropRegistry().require('crop.turnip').yieldCount);
-    expect(usePlotStore.getState().plots.p1?.state).toBe('tilled');
+    expect(usePlotStore.getState().plots['p1']?.state).toBe('tilled');
   });
 
   test('drying after lack of water', () => {
@@ -129,10 +129,10 @@ describe('plotStore', () => {
     ps.plant('p1', 'crop.turnip', 0);
     const def = getCropRegistry().require('crop.turnip');
     ps.tick(def.driedOutMinutes + 1);
-    expect(usePlotStore.getState().plots.p1?.state).toBe('dried');
+    expect(usePlotStore.getState().plots['p1']?.state).toBe('dried');
 
     ps.water('p1', def.driedOutMinutes + 2);
-    expect(usePlotStore.getState().plots.p1?.state).toBe('planted');
+    expect(usePlotStore.getState().plots['p1']?.state).toBe('planted');
   });
 
   test('serialize/hydrate round trip', () => {
@@ -142,7 +142,7 @@ describe('plotStore', () => {
     const data = ps.serialize();
     usePlotStore.setState({ plots: {} });
     usePlotStore.getState().hydrate(data);
-    expect(usePlotStore.getState().plots.p1?.state).toBe('tilled');
+    expect(usePlotStore.getState().plots['p1']?.state).toBe('tilled');
   });
 
   test('near() returns the closest plot within radius', () => {

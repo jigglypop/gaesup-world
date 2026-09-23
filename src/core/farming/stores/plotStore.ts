@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
+import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
 import { getCropRegistry } from '../registry/CropRegistry';
 import type { CropId, FarmingSerialized, Plot, PlotState } from '../types';
@@ -44,7 +46,8 @@ function effectiveStageIndex(plot: Plot, currentMinutes: number): number {
   return def.stages.length - 1;
 }
 
-export const usePlotStore = create<State>((set, get) => ({
+export function createPlotStore(inventoryStore: InventoryStore) {
+  return create<State>((set, get) => ({
   plots: {},
 
   registerPlot: (input) => {
@@ -74,7 +77,7 @@ export const usePlotStore = create<State>((set, get) => ({
     const def = getCropRegistry().get(cropId);
     if (!cur || !def) return false;
     if (cur.state !== 'tilled') return false;
-    const inv = useInventoryStore.getState();
+    const inv = inventoryStore.getState();
     if (inv.countOf(def.seedItemId) < 1) {
       notify('warn', `${def.name} 씨앗 부족`);
       return false;
@@ -112,7 +115,7 @@ export const usePlotStore = create<State>((set, get) => ({
     if (!cur || cur.state !== 'mature' || !cur.cropId) return false;
     const def = getCropRegistry().get(cur.cropId);
     if (!def) return false;
-    const inventory = useInventoryStore.getState();
+    const inventory = inventoryStore.getState();
     const item = getItemRegistry().get(def.yieldItemId);
     const maxStack = item?.stackable ? Math.max(1, item.maxStack) : 1;
     let capacity = 0;
@@ -207,3 +210,10 @@ export const usePlotStore = create<State>((set, get) => ({
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+
+}
+
+export type PlotStore = ReturnType<typeof createPlotStore>;
+export const { useStore: usePlotStore, useStoreApi: usePlotStoreApi } = createScopedStoreHook(
+  createPlotStore(useInventoryStore), () => useGaesupRuntime()?.plotStore,
+);

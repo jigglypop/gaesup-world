@@ -1,39 +1,46 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { useContext, useMemo, useSyncExternalStore, type ReactNode } from 'react';
 
+import { GaesupRuntimeContext } from './runtimeContext';
 import type { GaesupRuntime } from './types';
+import { GaesupStoreProvider } from '../stores/gaesupStore';
+import { TimeStoreProvider } from '../time/stores/timeStore';
 
-type GaesupRuntimeContextValue = {
-  runtime: GaesupRuntime | null;
-  revision: number;
-};
+export { useGaesupRuntime, useGaesupRuntimeRevision } from './runtimeContext';
 
 export interface GaesupRuntimeProviderProps {
-  runtime?: GaesupRuntime | null;
-  revision?: number;
+  /** Omission inherits the parent world; null explicitly selects the legacy default scope. */
+  runtime?: GaesupRuntime | null | undefined;
+  revision?: number | undefined;
   children?: ReactNode;
 }
 
-const GaesupRuntimeContext = createContext<GaesupRuntimeContextValue>({
-  runtime: null,
-  revision: 0,
-});
+const noLifecycleSubscription = () => () => {};
+const noLifecycleRevision = () => 0;
 
 export function GaesupRuntimeProvider({
-  runtime = null,
-  revision = 0,
+  runtime: providedRuntime,
+  revision: providedRevision,
   children,
 }: GaesupRuntimeProviderProps) {
+  const parent = useContext(GaesupRuntimeContext);
+  const runtime = providedRuntime === undefined ? parent.runtime : providedRuntime;
+  const ownRevision = useSyncExternalStore(
+    runtime?.subscribeLifecycle ?? noLifecycleSubscription,
+    runtime?.getLifecycleRevision ?? noLifecycleRevision,
+    runtime?.getLifecycleRevision ?? noLifecycleRevision,
+  );
+  const revision =
+    providedRevision !== undefined
+      ? providedRevision + ownRevision
+      : providedRuntime === undefined
+        ? parent.revision
+        : ownRevision;
+  const value = useMemo(() => ({ runtime, revision }), [runtime, revision]);
   return (
-    <GaesupRuntimeContext.Provider value={{ runtime, revision }}>
-      {children}
+    <GaesupRuntimeContext.Provider value={value}>
+      <GaesupStoreProvider value={runtime?.store ?? null}>
+        <TimeStoreProvider value={runtime?.timeStore ?? null}>{children}</TimeStoreProvider>
+      </GaesupStoreProvider>
     </GaesupRuntimeContext.Provider>
   );
-}
-
-export function useGaesupRuntime(): GaesupRuntime | null {
-  return useContext(GaesupRuntimeContext).runtime;
-}
-
-export function useGaesupRuntimeRevision(): number {
-  return useContext(GaesupRuntimeContext).revision;
 }

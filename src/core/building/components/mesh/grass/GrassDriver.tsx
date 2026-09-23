@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { getGrassManager } from './manager';
+import { useGrassManager } from './useGrassManager';
 import { MILLISECONDS_IN_SECOND } from '../../../../boilerplate/types';
 import { useEngineFrame } from '../../../../runtime/frame';
 
@@ -17,6 +17,7 @@ import { useEngineFrame } from '../../../../runtime/frame';
  * a single one regardless of how many grass tiles are placed.
  */
 export function GrassDriver() {
+  const manager = useGrassManager();
   const scratch = useMemo(() => ({
     frustum: new THREE.Frustum(),
     matrix: new THREE.Matrix4(),
@@ -26,7 +27,7 @@ export function GrassDriver() {
   const getThreeState = useThree((state) => state.get);
 
   useEngineFrame('effects', (delta, elapsedMs) => {
-    if (getGrassManager().size() === 0) return;
+    if (!manager.isEnabled() || manager.size() === 0) return;
     const camera = getThreeState().camera;
     camera.updateWorldMatrix(true, false);
     scratch.matrix.multiplyMatrices(
@@ -36,7 +37,7 @@ export function GrassDriver() {
     scratch.frustum.setFromProjectionMatrix(scratch.matrix, camera.coordinateSystem, camera.reversedDepth);
     camera.getWorldPosition(scratch.camPos);
 
-    getGrassManager().tick({
+    manager.tick({
       elapsedTime: elapsedMs / MILLISECONDS_IN_SECOND,
       delta,
       cameraPosition: scratch.camPos,

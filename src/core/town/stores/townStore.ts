@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
 import type {
   HouseId,
@@ -38,7 +40,8 @@ function emptyHouse(id: HouseId, position: [number, number, number]): HousePlot 
   return { id, position, size: [4, 4], state: 'empty' };
 }
 
-export const useTownStore = create<State>((set, get) => ({
+export function createTownStore() {
+  return create<State>((set, get) => ({
   houses: {},
   residents: {},
   decorationScore: 0,
@@ -192,3 +195,9 @@ export const useTownStore = create<State>((set, get) => ({
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+}
+
+export type TownStore = ReturnType<typeof createTownStore>;
+export const { useStore: useTownStore, useStoreApi: useTownStoreApi } = createScopedStoreHook(
+  createTownStore(), () => useGaesupRuntime()?.townStore,
+);

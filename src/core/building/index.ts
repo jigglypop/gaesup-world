@@ -1,4 +1,6 @@
 export * from './components/BuildingSystem';
+export { MaterialManager } from './core/MaterialManager';
+export { GpuBatchBridge, supportsGpuInstanceBatches } from '../rendering/GpuBatchBridge';
 export * from './components/BuildingController';
 export * from './components/BuildingRenderStateDriver';
 export * from './components/BlockSystem';
@@ -39,7 +41,8 @@ export type { SnowfieldEntry } from './components/mesh/snowfield';
 export { Snow } from './components/mesh/snow';
 export { default as Grass } from './components/mesh/grass/Grass';
 export { default as GrassDriver } from './components/mesh/grass/GrassDriver';
-export { getGrassManager, type GrassTileHandle, type GrassTileRenderState } from './components/mesh/grass/manager';
+export { getGrassManager, createGrassManager, type GrassManagerType, type GrassManagerSources, type GrassTileHandle, type GrassTileRenderState } from './components/mesh/grass/manager';
+export { useGrassManager, GrassManagerProvider } from './components/mesh/grass/useGrassManager';
 export { default as Water } from './components/mesh/water';
 export { default as Billboard } from './components/mesh/billboard';
 export { default as Fire } from './components/mesh/fire';

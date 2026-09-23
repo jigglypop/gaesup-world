@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import { logger } from '../../utils/logger';
 import { BridgeRegistry } from '../bridge/BridgeRegistry';
-import { ServiceTarget } from '../types';
 
 // 테스트용 Mock 클래스들
 class MockBridgeA {
@@ -91,8 +90,10 @@ describe('BridgeRegistry', () => {
 
     test('null 또는 undefined 도메인 조회 시 안전하게 처리되어야 함', () => {
       expect(() => {
-        BridgeRegistry.get(null as any);
-        BridgeRegistry.get(undefined as any);
+        // @ts-expect-error: runtime guard for untyped callers passing null
+        BridgeRegistry.get(null);
+        // @ts-expect-error: runtime guard for untyped callers passing undefined
+        BridgeRegistry.get(undefined);
       }).not.toThrow();
     });
   });
@@ -326,8 +327,10 @@ describe('BridgeRegistry', () => {
   describe('에지 케이스', () => {
     test('null 또는 undefined 브릿지 등록 시 안전하게 처리되어야 함', () => {
       expect(() => {
-        BridgeRegistry.register('null-test', null as any);
-        BridgeRegistry.register('undefined-test', undefined as any);
+        // @ts-expect-error: runtime guard for untyped callers passing null
+        BridgeRegistry.register('null-test', null);
+        // @ts-expect-error: runtime guard for untyped callers passing undefined
+        BridgeRegistry.register('undefined-test', undefined);
       }).not.toThrow();
       
       expect(BridgeRegistry.get('null-test')).toBe(null);
@@ -338,7 +341,8 @@ describe('BridgeRegistry', () => {
       const domain = 'function-test';
       const functionBridge = function() { return 'test'; };
       
-      BridgeRegistry.register(domain, functionBridge as any);
+      // @ts-expect-error: plain functions are not typed as constructors but must still be stored
+      BridgeRegistry.register(domain, functionBridge);
       expect(BridgeRegistry.get(domain)).toBe(functionBridge);
     });
 

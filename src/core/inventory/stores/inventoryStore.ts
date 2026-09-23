@@ -2,6 +2,8 @@ import { create } from 'zustand';
 
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import type { ItemId } from '../../items/types';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import {
   DEFAULT_HOTBAR_SIZE,
   DEFAULT_INVENTORY_SIZE,
@@ -14,6 +16,8 @@ type InventoryState = {
   slots: Slot[];
   hotbar: number[];
   equippedHotbar: number;
+  /** Transient revision: restores replace contents without acquiring new items. */
+  hydrationRevision: number;
 
   add: (itemId: ItemId, count?: number) => number;
   remove: (slotIndex: number, count?: number) => boolean;
@@ -47,11 +51,13 @@ function maxStackOf(itemId: ItemId): number {
   return def.stackable && Number.isSafeInteger(def.maxStack) ? Math.max(1, def.maxStack) : 1;
 }
 
-export const useInventoryStore = create<InventoryState>((set, get) => ({
+export function createInventoryStore() {
+  return create<InventoryState>((set, get) => ({
   size: DEFAULT_INVENTORY_SIZE,
   slots: emptySlots(DEFAULT_INVENTORY_SIZE),
   hotbar: defaultHotbar(DEFAULT_HOTBAR_SIZE),
   equippedHotbar: 0,
+  hydrationRevision: 0,
 
   add: (itemId, count = 1) => {
     if (count <= 0) return 0;
@@ -201,7 +207,14 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
       return index;
     }).slice(0, DEFAULT_HOTBAR_SIZE);
     const equippedHotbar = Math.max(0, Math.min(Math.max(0, hotbar.length - 1), data.equippedHotbar));
-    return () => set({ size, slots, hotbar, equippedHotbar });
+    return () => set(state => ({ size, slots, hotbar, equippedHotbar, hydrationRevision: state.hydrationRevision + 1 }));
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+
+}
+
+export type InventoryStore = ReturnType<typeof createInventoryStore>;
+export const { useStore: useInventoryStore, useStoreApi: useInventoryStoreApi } = createScopedStoreHook(
+  createInventoryStore(), () => useGaesupRuntime()?.inventoryStore,
+);

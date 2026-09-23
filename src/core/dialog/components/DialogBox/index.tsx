@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useReducer } from 'react';
 
-import { useDialogStore } from '../../stores/dialogStore';
+import { useWorldInputScope } from '../../../input/useWorldInputScope';
+import { WorldInputSurface } from '../../../input/WorldInputSurface';
+import { useDialogStore, useDialogStoreApi } from '../../stores/dialogStore';
 import type { DialogChoice } from '../../types';
 
 export type DialogBoxProps = {
@@ -9,6 +11,8 @@ export type DialogBoxProps = {
 };
 
 export function DialogBox({ advanceKey = 'e', closeKey = 'Escape' }: DialogBoxProps) {
+  const inputScope = useWorldInputScope();
+  const dialogStore = useDialogStoreApi();
   const node = useDialogStore((s) => s.node);
   const runner = useDialogStore((s) => s.runner);
   const advance = useDialogStore((s) => s.advance);
@@ -18,11 +22,11 @@ export function DialogBox({ advanceKey = 'e', closeKey = 'Escape' }: DialogBoxPr
 
   const choices = runner?.visibleChoices() ?? [];
   const handleChoose = useCallback((choice: DialogChoice) => {
-    if (!runner || useDialogStore.getState().runner !== runner) return;
+    if (!runner || dialogStore.getState().runner !== runner) return;
     const index = runner.visibleChoices().indexOf(choice);
     if (index >= 0) choose(index);
     else refreshChoices();
-  }, [runner, choose]);
+  }, [runner, choose, dialogStore]);
 
   useEffect(() => {
     if (!node) return;
@@ -49,14 +53,14 @@ export function DialogBox({ advanceKey = 'e', closeKey = 'Escape' }: DialogBoxPr
         if (choice) handleChoose(choice);
       }
     };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [node, choices, advance, handleChoose, close, advanceKey, closeKey]);
+    const offKey = inputScope.listen('keydown', onKey, true);
+    return () => offKey();
+  }, [inputScope, node, choices, advance, handleChoose, close, advanceKey, closeKey]);
 
   if (!node) return null;
 
   return (
-    <div
+    <WorldInputSurface
       role="dialog"
       aria-label={node.speaker ? `${node.speaker} 대화` : '대화'}
       data-world-overlay
@@ -131,7 +135,7 @@ export function DialogBox({ advanceKey = 'e', closeKey = 'Escape' }: DialogBoxPr
       <button type="button" onClick={close} style={{ marginTop: 10, marginRight: 8, padding: '9px 12px', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: 'inherit', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8 }}>
         대화 닫기
       </button>
-    </div>
+    </WorldInputSurface>
   );
 }
 

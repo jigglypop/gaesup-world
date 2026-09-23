@@ -2,14 +2,14 @@ import { useCallback, useRef } from 'react';
 
 import * as THREE from 'three';
 
-import { useEventsStore } from '../../../events/stores/eventsStore';
-import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
+import { useEventsStoreApi } from '../../../events/stores/eventsStore';
+import { useInventoryStoreApi } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
 import { useEngineFrame } from '../../../runtime/frame';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
 import { notify } from '../../../ui/components/Toast/toastStore';
-import { useWeatherStore } from '../../../weather/stores/weatherStore';
+import { useWeatherStoreApi } from '../../../weather/stores/weatherStore';
 
 export type CatchEntry = { itemId: string; weight: number };
 
@@ -59,6 +59,9 @@ export function FishSpot({
   showRipple = true,
   rippleColor = '#9ad9ff',
 }: FishSpotProps) {
+  const eventsStore = useEventsStoreApi();
+  const inventoryStore = useInventoryStoreApi();
+  const weatherStore = useWeatherStoreApi();
   const lastUseRef = useRef(-Infinity);
   const rippleRef = useRef<THREE.Mesh>(null);
   const flashRef = useRef(-Infinity);
@@ -72,20 +75,20 @@ export function FishSpot({
     lastUseRef.current = now;
     flashRef.current = now;
 
-    const bonus = useWeatherStore.getState().fishingBonus();
+    const bonus = weatherStore.getState().fishingBonus();
     if (Math.random() > Math.min(0.95, successChance + bonus)) {
       notify('warn', '놓쳤다…');
       return true;
     }
-    const seasonalPool = filterByTags(pool, 'fish:', useEventsStore.getState().tags);
+    const seasonalPool = filterByTags(pool, 'fish:', eventsStore.getState().tags);
     const itemId = pickWeighted(seasonalPool);
     if (!itemId) return true;
     const def = getItemRegistry().get(itemId);
-    const left = useInventoryStore.getState().add(itemId, 1);
+    const left = inventoryStore.getState().add(itemId, 1);
     if (left > 0) notify('warn', '인벤토리가 가득 찼습니다');
     else notify('reward', `${def?.name ?? itemId} 낚음!`);
     return true;
-  }, [position, radius, cooldownMs, pool, successChance]);
+  }, [position, radius, cooldownMs, pool, successChance, inventoryStore, weatherStore, eventsStore]);
 
   useToolUse('rod', onRod);
 

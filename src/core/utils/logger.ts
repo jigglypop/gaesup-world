@@ -5,6 +5,13 @@ const isProduction = process.env.NODE_ENV === 'production';
 export type LogLevel = 'log' | 'warn' | 'error' | 'info';
 export type LogValue = object | string | number | boolean | bigint | symbol | null | undefined;
 
+const LEVEL_RANK: Readonly<Record<LogLevel, number>> = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  log: 3,
+};
+
 class Logger {
   private static instance: Logger;
   private enabled: boolean = !isProduction && process.env.NODE_ENV !== 'test';
@@ -31,15 +38,13 @@ class Logger {
     this.level = level;
   }
 
+  /** Lets hot paths skip building messages that would be discarded. */
+  public isEnabled(level: LogLevel): boolean {
+    return this.enabled && LEVEL_RANK[level] <= LEVEL_RANK[this.level];
+  }
+
   private shouldLog(level: LogLevel): boolean {
-    if (!this.enabled) return false;
-    const levels: Record<LogLevel, number> = {
-      error: 0,
-      warn: 1,
-      info: 2,
-      log: 3,
-    };
-    return levels[level] <= levels[this.level];
+    return this.isEnabled(level);
   }
 
   public log(message: string, ...args: LogValue[]): void {

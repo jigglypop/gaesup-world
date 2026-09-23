@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import * as THREE from 'three';
 
-import { useInventoryStore } from '../../../inventory/stores/inventoryStore';
 import { useEngineFrame } from '../../../runtime/frame';
-import { useTimeStore } from '../../../time/stores/timeStore';
+import { useInventoryStoreApi } from '../../../inventory/stores/inventoryStore';
+import { useTimeStoreApi } from '../../../time/stores/timeStore';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
 import { notify } from '../../../ui/components/Toast/toastStore';
@@ -33,6 +33,8 @@ export function TreeObject({
   foliageColor = '#3f8a3a',
   scale = 1,
 }: TreeObjectProps) {
+  const inventoryStore = useInventoryStoreApi();
+  const timeStore = useTimeStoreApi();
   const groupRef = useRef<THREE.Group>(null!);
   const [remaining, setRemaining] = useState(hp);
   const [fallen, setFallen] = useState(false);
@@ -51,23 +53,23 @@ export function TreeObject({
     setRemaining((prev) => {
       const next = prev - 1;
       if (next <= 0) {
-        const overflow = useInventoryStore.getState().add('wood', woodDrop);
+        const overflow = inventoryStore.getState().add('wood', woodDrop);
         if (overflow > 0) notify('warn', '인벤토리가 가득 찼습니다');
         else notify('reward', `목재 +${woodDrop}`);
         setFallen(true);
-        regrowAtRef.current = useTimeStore.getState().totalMinutes + regrowMinutes;
+        regrowAtRef.current = timeStore.getState().totalMinutes + regrowMinutes;
         return hp;
       }
       return next;
     });
     return true;
-  }, [fallen, position, hitRange, woodDrop, regrowMinutes, hp]);
+  }, [fallen, position, hitRange, woodDrop, regrowMinutes, hp, timeStore, inventoryStore]);
 
   useToolUse('axe', onAxe);
 
   useEffect(() => {
     if (!fallen) return;
-    const off = useTimeStore.subscribe((state, prev) => {
+    const off = timeStore.subscribe((state, prev) => {
       if (state.totalMinutes === prev.totalMinutes) return;
       if (state.totalMinutes >= regrowAtRef.current) {
         setFallen(false);
@@ -75,7 +77,7 @@ export function TreeObject({
       }
     });
     return off;
-  }, [fallen, hp]);
+  }, [fallen, hp, timeStore]);
 
   useEngineFrame('lateUpdate', (delta) => {
     const g = groupRef.current;

@@ -1,6 +1,6 @@
-const path = require('node:path');
-const Module = require('node:module');
 const assert = require('node:assert/strict');
+const Module = require('node:module');
+const path = require('node:path');
 if (!process.argv[2])
   throw new Error('Usage: node scripts/probe-r3f10-cancellation.cjs <isolated-fixture-directory>');
 const fixtureRequire = Module.createRequire(

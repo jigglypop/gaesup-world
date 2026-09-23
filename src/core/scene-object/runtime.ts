@@ -1,11 +1,12 @@
 import { parseSceneDocument } from './serialization';
+import { multiplySceneMatrices, sceneMatrixToTransform, sceneTransformToMatrix } from './transforms';
+import type { SceneMatrix } from './transforms';
 import type {
   SceneDocument,
   SceneObject,
   SceneObjectId,
   SceneTransform,
   SceneValidationIssue,
-  SceneVector3,
 } from './types';
 
 export interface SceneRuntime {
@@ -16,6 +17,7 @@ export interface SceneRuntime {
   getObject: (id: SceneObjectId) => SceneObject | undefined;
   getChildren: (id?: SceneObjectId) => SceneObject[];
   getWorldTransform: (id: SceneObjectId) => SceneTransform | undefined;
+  getWorldMatrix: (id: SceneObjectId) => SceneMatrix | undefined;
 }
 
 const ROOT_PARENT = Symbol('scene-root-parent');
@@ -57,7 +59,12 @@ export function loadSceneRuntime(document: SceneDocument): LoadSceneRuntimeResul
     getWorldTransform: (id) => {
       const object = objects.get(id);
       if (!object) return undefined;
-      return computeWorldTransform(object, objects);
+      if (!object.parentId) return object.transform;
+      return sceneMatrixToTransform(computeWorldMatrix(object, objects));
+    },
+    getWorldMatrix: (id) => {
+      const object = objects.get(id);
+      return object ? computeWorldMatrix(object, objects) : undefined;
     },
   };
 
@@ -84,27 +91,21 @@ export function composeSceneTransforms(
   parent: SceneTransform,
   child: SceneTransform,
 ): SceneTransform {
-  return {
-    position: addVector3(parent.position, child.position),
-    rotation: addVector3(parent.rotation, child.rotation),
-    scale: multiplyVector3(parent.scale, child.scale),
-  };
+  return sceneMatrixToTransform(multiplySceneMatrices(sceneTransformToMatrix(parent), sceneTransformToMatrix(child)));
 }
 
-function computeWorldTransform(
+function computeWorldMatrix(
   object: SceneObject,
   objects: ReadonlyMap<SceneObjectId, SceneObject>,
-): SceneTransform {
-  if (!object.parentId) return object.transform;
-  const parent = objects.get(object.parentId);
-  if (!parent) return object.transform;
-  return composeSceneTransforms(computeWorldTransform(parent, objects), object.transform);
-}
-
-function addVector3(left: SceneVector3, right: SceneVector3): SceneVector3 {
-  return [left[0] + right[0], left[1] + right[1], left[2] + right[2]];
-}
-
-function multiplyVector3(left: SceneVector3, right: SceneVector3): SceneVector3 {
-  return [left[0] * right[0], left[1] * right[1], left[2] * right[2]];
+): SceneMatrix {
+  let matrix = sceneTransformToMatrix(object.transform);
+  const visited = new Set([object.id]);
+  let parent = object.parentId ? objects.get(object.parentId) : undefined;
+  while (parent) {
+    if (visited.has(parent.id)) throw new RangeError('Scene hierarchy contains a cycle.');
+    visited.add(parent.id);
+    matrix = multiplySceneMatrices(sceneTransformToMatrix(parent.transform), matrix);
+    parent = parent.parentId ? objects.get(parent.parentId) : undefined;
+  }
+  return matrix;
 }

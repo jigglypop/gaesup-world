@@ -1,35 +1,37 @@
 import { useEffect, useState } from 'react';
 
-import { useTimeStore } from '../../time/stores/timeStore';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { useTimeStoreApi } from '../../time/stores/timeStore';
 import { getNPCScheduler, type ActiveSlot } from '../core/NPCScheduler';
 
 export function useNpcSchedule(npcId: string): ActiveSlot | null {
+  const timeStore = useTimeStoreApi();
+  const scheduler = useGaesupRuntime()?.npcScheduler ?? getNPCScheduler();
   const [slot, setSlot] = useState<ActiveSlot | null>(() => {
-    const s = useTimeStore.getState();
-    return getNPCScheduler().resolve(npcId, s.time);
+    const s = timeStore.getState();
+    return scheduler.resolve(npcId, s.time);
   });
 
   useEffect(() => {
-    let lastHour = -1;
     const apply = () => {
-      const s = useTimeStore.getState();
-      if (s.time.hour === lastHour) return;
-      lastHour = s.time.hour;
-      const next = getNPCScheduler().resolve(npcId, s.time);
+      const s = timeStore.getState();
+      const next = scheduler.resolve(npcId, s.time);
       setSlot(next);
     };
     apply();
-    const off = useTimeStore.subscribe((state, prev) => {
+    const off = timeStore.subscribe((state, prev) => {
       if (
         state.time.hour !== prev.time.hour ||
         state.time.day !== prev.time.day ||
+        state.time.season !== prev.time.season ||
         state.time.weekday !== prev.time.weekday
       ) {
         apply();
       }
     });
-    return off;
-  }, [npcId]);
+    const offScheduler = scheduler.subscribe(apply);
+    return () => { off(); offScheduler(); };
+  }, [npcId, timeStore, scheduler]);
 
   return slot;
 }

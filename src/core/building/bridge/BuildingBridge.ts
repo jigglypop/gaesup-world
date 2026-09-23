@@ -85,10 +85,10 @@ export class BuildingBridge {
       id: legacyMesh.id || `mesh-${Date.now()}`,
       color: legacyMesh.color || '#ffffff',
       material: legacyMesh.material === 'GLASS' ? 'GLASS' : 'STANDARD',
-      roughness: legacyMesh.roughness || 0.5,
-      metalness: legacyMesh.metalness || 0,
-      opacity: legacyMesh.opacity || 1,
-      transparent: legacyMesh.transparent || false,
+      roughness: legacyMesh.roughness ?? 0.5,
+      metalness: legacyMesh.metalness ?? 0,
+      opacity: legacyMesh.opacity ?? 1,
+      transparent: legacyMesh.transparent ?? false,
     };
     if (legacyMesh.map_texture_url) {
       mesh.mapTextureUrl = legacyMesh.map_texture_url;

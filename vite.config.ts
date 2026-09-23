@@ -1,4 +1,4 @@
-import { createReadStream, existsSync } from 'fs';
+import { createReadStream, existsSync, readFileSync } from 'fs';
 import type { IncomingMessage, ServerResponse } from 'http';
 import path from 'path';
 
@@ -7,6 +7,9 @@ import type { Plugin, ViteDevServer } from 'vite';
 import { defineConfig } from 'vite';
 import glsl from 'vite-plugin-glsl';
 import svgr from 'vite-plugin-svgr';
+
+import { minihomeRoomPlugin } from './scripts/minihome-room-service.mjs';
+import { performanceIdentityPlugin } from './scripts/performance/vite-plugin.mjs';
 
 const libraryExternals = [
   'react',
@@ -22,7 +25,6 @@ const libraryExternals = [
   'immer',
   /^immer\//,
   'mitt',
-  'react-router-dom',
   'reflect-metadata',
   'simplex-noise',
   'zustand',
@@ -33,26 +35,6 @@ const GLTF_CONTENT_TYPES: Record<string, string> = {
   '.glb': 'model/gltf-binary',
   '.gltf': 'model/gltf+json',
 };
-
-function demoManualChunks(id: string): string | undefined {
-  if (id.includes('node_modules')) {
-    if (id.includes('@dimforge') || id.includes('@react-three/rapier')) return 'vendor-physics';
-    if (id.includes('@react-three')) return 'vendor-r3f';
-    if (id.includes('three')) return 'vendor-three';
-    if (id.includes('react') || id.includes('scheduler')) return 'vendor-react';
-    return 'vendor';
-  }
-
-  const normalized = id.replace(/\\/g, '/');
-  if (normalized.includes('/src/core/building/')) return 'gaesup-building';
-  if (normalized.includes('/src/core/editor/')) return 'gaesup-editor';
-  if (normalized.includes('/src/core/networks/')) return 'gaesup-network';
-  if (normalized.includes('/src/core/motions/')) return 'gaesup-motions';
-  if (normalized.includes('/src/core/camera/')) return 'gaesup-camera';
-  if (normalized.includes('/src/core/plugins/') || normalized.includes('/src/core/runtime/'))
-    return 'gaesup-runtime';
-  return undefined;
-}
 
 function serveDemoGltfAssets(): Plugin {
   return {
@@ -87,7 +69,8 @@ function serveDemoGltfAssets(): Plugin {
 export default defineConfig(({ mode }) => {
   const isLibraryBuild = mode === 'esm' || mode === 'cjs';
 
-  const alias = [
+  let alias = [
+    { find: /^gaesup-world\/avatar$/, replacement: path.resolve(import.meta.dirname, 'src/avatar.ts') },
     { find: /^gaesup-world$/, replacement: path.resolve(import.meta.dirname, 'src/index.ts') },
     {
       find: /^gaesup-world\/style\.css$/,
@@ -159,8 +142,16 @@ export default defineConfig(({ mode }) => {
     { find: '@constants', replacement: path.resolve(import.meta.dirname, 'src/core/constants') },
     { find: '@utils', replacement: path.resolve(import.meta.dirname, 'src/core/utils') },
     { find: '@motions', replacement: path.resolve(import.meta.dirname, 'src/core/motions') },
-    { find: '@debug', replacement: path.resolve(import.meta.dirname, 'src/core/debug') },
   ];
+  if (!isLibraryBuild && process.env['GAESUP_PACKAGE_ROOT']) {
+    const packageRoot = path.resolve(process.env['GAESUP_PACKAGE_ROOT']);
+    const published = JSON.parse(readFileSync(path.join(packageRoot, 'package.json'), 'utf8'));
+    const publishedAliases = Object.entries(published.exports as Record<string, string | { import: { default: string } }>).map(([subpath, value]) => ({
+      find: new RegExp(`^${(subpath === '.' ? 'gaesup-world' : `gaesup-world/${subpath.slice(2)}`).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`),
+      replacement: path.resolve(packageRoot, typeof value === 'string' ? value : value.import.default),
+    }));
+    alias = [...publishedAliases, ...alias.filter(entry => !(entry.find instanceof RegExp && entry.find.source.startsWith('^gaesup-world')))];
+  }
   if (isLibraryBuild) {
     return {
       plugins: [
@@ -188,6 +179,7 @@ export default defineConfig(({ mode }) => {
       build: {
         lib: {
           entry: {
+            avatar: path.resolve(import.meta.dirname, 'src/avatar.ts'),
             index: path.resolve(import.meta.dirname, 'src/index.ts'),
             admin: path.resolve(import.meta.dirname, 'src/admin-entry.ts'),
             assets: path.resolve(import.meta.dirname, 'src/assets.ts'),
@@ -219,7 +211,7 @@ export default defineConfig(({ mode }) => {
             },
           },
         },
-        outDir: mode === 'esm' ? 'dist' : 'dist',
+        outDir: 'dist',
         emptyOutDir: false,
       },
       define: {
@@ -250,11 +242,18 @@ export default defineConfig(({ mode }) => {
       svgr(),
       glsl(),
       serveDemoGltfAssets(),
+      performanceIdentityPlugin(),
+      minihomeRoomPlugin(),
     ],
     resolve: {
       tsconfigPaths: true,
       alias,
-      dedupe: ['react', 'react-dom'],
+      // Published-consumer builds must share one Three module graph with the example.
+      // Duplicate node/lighting registries can render an unlit WebGPU scene without errors.
+      dedupe: ['react', 'react-dom', 'three'],
+    },
+    optimizeDeps: {
+      entries: ['index.html', 'examples/engine/packageSurface.ts'],
     },
     server: {
       host: '127.0.0.1',
@@ -267,9 +266,6 @@ export default defineConfig(({ mode }) => {
       rolldownOptions: {
         output: {
           strictExecutionOrder: true,
-          codeSplitting: {
-            groups: [{ name: demoManualChunks, includeDependenciesRecursively: false }],
-          },
         },
       },
     },

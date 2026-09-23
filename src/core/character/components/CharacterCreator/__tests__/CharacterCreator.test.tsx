@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { CharacterCreator } from '../index';

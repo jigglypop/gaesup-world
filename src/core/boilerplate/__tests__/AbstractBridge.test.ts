@@ -1,5 +1,5 @@
 import { AbstractBridge } from '../bridge/AbstractBridge';
-import { IDisposable, BridgeEvent } from '../types';
+import { BridgeMiddleware, IDisposable, RuntimeValue } from '../types';
 
 // Mock Engine 타입
 type MockEngine = { 
@@ -18,11 +18,15 @@ type MockCommand = {
   value?: number; 
 };
 
+type TestMiddleware = BridgeMiddleware<MockEngine, MockSnapshot, MockCommand>;
+type TestMiddlewareEvent = Parameters<TestMiddleware>[0];
+
 // 테스트용 AbstractBridge 구현
 class TestBridge extends AbstractBridge<MockEngine, MockSnapshot, MockCommand> {
-  protected buildEngine(id: string, ...args: unknown[]): MockEngine {
+  protected buildEngine(_id: string, ...args: RuntimeValue[]): MockEngine {
+    const [initialValue] = args;
     return { 
-      value: args[0] as number || 0, 
+      value: typeof initialValue === 'number' ? initialValue : 0, 
       dispose: jest.fn() 
     };
   }
@@ -221,7 +225,7 @@ describe('AbstractBridge', () => {
 
   describe('미들웨어 시스템', () => {
     test('미들웨어를 추가하고 실행할 수 있어야 함', () => {
-      const middleware = jest.fn((event, next) => {
+      const middleware = jest.fn((_event: TestMiddlewareEvent, next: () => void) => {
         next();
       });
       
@@ -237,12 +241,12 @@ describe('AbstractBridge', () => {
     test('여러 미들웨어가 순서대로 실행되어야 함', () => {
       const calls: number[] = [];
       
-      bridge.use((event, next) => {
+      bridge.use((_event, next) => {
         calls.push(1);
         next();
       });
       
-      bridge.use((event, next) => {
+      bridge.use((_event, next) => {
         calls.push(2);
         next();
       });
@@ -253,10 +257,9 @@ describe('AbstractBridge', () => {
     });
 
     test('미들웨어에서 next를 호출하지 않으면 체인이 중단되어야 함', () => {
-      const middleware1 = jest.fn((event, next) => {
-        // next()를 호출하지 않음
-      });
-      const middleware2 = jest.fn((event, next) => {
+      // next()를 호출하지 않음
+      const middleware1 = jest.fn<void, Parameters<TestMiddleware>>();
+      const middleware2 = jest.fn((_event: TestMiddlewareEvent, next: () => void) => {
         next();
       });
       
@@ -315,7 +318,7 @@ describe('AbstractBridge', () => {
 
     test('dispose 호출 시 모든 이벤트 리스너와 미들웨어를 정리해야 함', () => {
       const listener = jest.fn();
-      const middleware = jest.fn((event, next) => next());
+      const middleware = jest.fn((_event: TestMiddlewareEvent, next: () => void) => next());
       
       bridge.on('register', listener);
       bridge.use(middleware);

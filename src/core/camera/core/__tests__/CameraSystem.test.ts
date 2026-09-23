@@ -1,11 +1,11 @@
 import 'reflect-metadata';
 import * as THREE from 'three';
 
-import { CameraSystem } from '../CameraSystem';
-import { BaseCameraSystem } from '../../bridge/BaseCameraSystem';
-import type { CameraCalcProps, CameraState } from '../types';
-import type { CameraSystemConfig } from '../../bridge/types';
 import type { ActiveStateType } from '../../../motions/core/types';
+import { BaseCameraSystem } from '../../bridge/BaseCameraSystem';
+import type { CameraSystemConfig } from '../../bridge/types';
+import { CameraSystem } from '../CameraSystem';
+import type { CameraCalcProps, CameraState } from '../types';
 
 const createDefaultSystemConfig = (): CameraSystemConfig => ({
   mode: 'thirdPerson',
@@ -56,6 +56,31 @@ describe('CameraSystem', () => {
 
   afterEach(() => {
     system.destroy();
+  });
+
+  it('updates orbit without config cloning, preserves snapshots and emits both config changes', () => {
+    const snapshot = system.getConfig();
+    const configChanged = jest.fn();
+    system.emitter.on('configChange', configChanged);
+    const getConfig = jest.spyOn(system, 'getConfig');
+    system.updateOrbit(0.7, 0.25);
+    expect(getConfig).not.toHaveBeenCalled();
+    expect(snapshot.orbitYaw).toBeUndefined();
+    expect(system.getConfig()).toMatchObject({ orbitYaw: 0.7, orbitPitch: 0.25 });
+    expect(configChanged.mock.calls).toEqual([
+      [{ key: 'orbitYaw', value: 0.7 }],
+      [{ key: 'orbitPitch', value: 0.25 }],
+    ]);
+    const legacy = new CameraSystem(createDefaultSystemConfig());
+    try {
+      legacy.updateConfig({ orbitYaw: 0.7, orbitPitch: 0.25 });
+      const actual = createCalcProps();
+      const expected = createCalcProps();
+      system.calculate(actual);
+      legacy.calculate(expected);
+      expect(actual.camera.position.toArray()).toEqual(expected.camera.position.toArray());
+      expect(actual.camera.quaternion.toArray()).toEqual(expected.camera.quaternion.toArray());
+    } finally { legacy.destroy(); }
   });
 
   describe('constructor', () => {
@@ -164,17 +189,17 @@ describe('CameraSystem', () => {
       fastSystem.destroy();
     });
 
-    it('enableCollision이 켜져 있으면 장애물 앞에서 카메라 목표 거리를 줄여야 합니다', () => {
+    it('enableCollision이 켜져 있으면 이동 중 실제 카메라를 장애물 앞에 유지해야 합니다', () => {
       const blockedProps = createCalcProps();
       const clearProps = createCalcProps();
       addBlockingMesh(blockedProps.scene);
       addBlockingMesh(clearProps.scene);
 
       system.updateConfig({ enableCollision: true, collisionMargin: 0.5 });
-      system.calculate(blockedProps);
+      for (let i = 0; i < 30; i++) system.calculate(blockedProps);
 
       system.updateConfig({ enableCollision: false });
-      system.calculate(clearProps);
+      for (let i = 0; i < 30; i++) system.calculate(clearProps);
 
       expect(blockedProps.camera.position.length()).toBeLessThan(clearProps.camera.position.length());
     });
@@ -389,11 +414,10 @@ describe('CameraSystem', () => {
     });
 
     it('BaseCameraSystem.updateConfig으로 modeChange 이벤트를 발생시킬 수 있어야 합니다', () => {
-      const baseSys = system as any;
       const callback = jest.fn();
       system.emitter.on('modeChange', callback);
       // BaseCameraSystem의 updateConfig를 직접 호출
-      BaseCameraSystem.prototype.updateConfig.call(baseSys, { mode: 'firstPerson' });
+      BaseCameraSystem.prototype.updateConfig.call(system, { mode: 'firstPerson' });
       expect(callback).toHaveBeenCalledWith(
         expect.objectContaining({ from: 'thirdPerson', to: 'firstPerson' }),
       );

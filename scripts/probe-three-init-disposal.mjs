@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import Renderer from 'three/src/renderers/common/Renderer.js';
-import Backend from 'three/src/renderers/common/Backend.js';
+
 import { REVISION } from 'three';
-import WebGPUBackend from 'three/src/renderers/webgpu/WebGPUBackend.js';
+import Backend from 'three/src/renderers/common/Backend.js';
+import Renderer from 'three/src/renderers/common/Renderer.js';
 import WebGLBackend from 'three/src/renderers/webgl-fallback/WebGLBackend.js';
+import WebGPUBackend from 'three/src/renderers/webgpu/WebGPUBackend.js';
 
 const failure = new Error('Injected backend failure after allocation');
 class FailingBackend extends Backend {

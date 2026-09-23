@@ -15,6 +15,7 @@ export abstract class BaseController implements ICameraController {
   private focusDirection = new THREE.Vector3();
   private focusBasePosition = new THREE.Vector3();
   private focusTargetPosition = new THREE.Vector3();
+  private readonly nextPosition = new THREE.Vector3();
   private orbitRight = new THREE.Vector3();
   private orbitYawQuaternion = new THREE.Quaternion();
   private orbitPitchQuaternion = new THREE.Quaternion();
@@ -127,16 +128,6 @@ export abstract class BaseController implements ICameraController {
       targetPosition = this.calculateTargetPosition(props, state);
       lookAtTarget = this.calculateLookAt(props, state);
     }
-    if (cameraOption.enableCollision) {
-      const collision = cameraUtils.improvedCollisionCheck(
-        lookAtTarget,
-        targetPosition,
-        props.scene,
-        cameraOption.collisionMargin ?? 0.5,
-        props.excludeObjects,
-      );
-      targetPosition = collision.position;
-    }
     const focusLerpSpeed = cameraOption.focusLerpSpeed || 10.0;
     const positionSmoothing = cameraOption.focus
       ? focusLerpSpeed
@@ -144,18 +135,22 @@ export abstract class BaseController implements ICameraController {
     const rotationSmoothing = cameraOption.focus
       ? focusLerpSpeed * 0.8
       : cameraUtils.smoothingToSpeed(cameraOption.smoothing?.rotation, positionSmoothing * 0.8);
-    cameraUtils.preventCameraJitter(
-      camera, 
-      targetPosition, 
-      lookAtTarget, 
-      positionSmoothing, 
-      deltaTime,
-      rotationSmoothing
+    // Sweep the actual frame position. A clear desired endpoint does not imply
+    // that the interpolated position is clear (e.g. orbiting around a corner).
+    cameraUtils.frameRateIndependentLerpVector3(
+      this.nextPosition.copy(camera.position), targetPosition, positionSmoothing, deltaTime,
     );
+    const position = cameraOption.enableCollision
+      ? cameraUtils.improvedCollisionCheck(
+        lookAtTarget, this.nextPosition, props.scene, cameraOption.collisionMargin ?? 0.5, props.excludeObjects,
+      ).position
+      : this.nextPosition;
+    camera.position.copy(position);
+    cameraUtils.smoothLookAt(camera, lookAtTarget, rotationSmoothing, deltaTime);
     
     // FOV 업데이트
     if (state.config.fov && camera instanceof THREE.PerspectiveCamera) {
       cameraUtils.updateFOV(camera, state.config.fov, state.config.smoothing?.fov, deltaTime);
     }
   }
-} 
+}

@@ -1,3 +1,6 @@
+import * as THREE from 'three';
+
+import type { BuildingBlockConfig, PlacedObject, TileGroupConfig, WallGroupConfig } from '../../types';
 import {
   buildTileGroupRecord,
   buildBlockRecord,
@@ -8,8 +11,6 @@ import {
   createVisibilityQueryKey,
   isOccludedByAny,
 } from '../core';
-import type { BuildingBlockConfig, PlacedObject, TileGroupConfig, WallGroupConfig } from '../../types';
-import * as THREE from 'three';
 
 describe('building visibility core', () => {
   it('builds tile group bounds from tile extents', () => {

@@ -1,7 +1,8 @@
 import { renderHook } from '@testing-library/react';
-import { useBaseLifecycle, UseBaseLifecycleOptions } from '../useBaseLifecycle';
+
 import { AbstractBridge } from '../../bridge/AbstractBridge';
-import { IDisposable } from '../../types';
+import { IDisposable, UseBaseLifecycleOptions } from '../../types';
+import { useBaseLifecycle } from '../useBaseLifecycle';
 
 // Mock Bridge와 Engine
 class MockEngine implements IDisposable {
@@ -12,18 +13,29 @@ class MockEngine implements IDisposable {
   }
 }
 
-class MockBridge extends AbstractBridge<MockEngine, any, any> {
-  private engines = new Map<string, MockEngine>();
-  
-  register = jest.fn((id: string, engine: MockEngine) => {
+type MockSnapshot = { disposed: boolean };
+type MockCommand = { type: 'noop' };
+
+class MockBridge extends AbstractBridge<MockEngine, MockSnapshot, MockCommand> {
+  override register = jest.fn((id: string, engine: MockEngine) => {
     this.engines.set(id, engine);
   });
   
-  unregister = jest.fn((id: string) => {
+  override unregister = jest.fn((id: string) => {
     this.engines.delete(id);
   });
   
-  notifyListeners = jest.fn();
+  override notifyListeners = jest.fn<void, [id: string]>();
+
+  protected buildEngine(): MockEngine {
+    return new MockEngine();
+  }
+
+  protected executeCommand(): void {}
+
+  protected createSnapshot(engine: MockEngine): MockSnapshot {
+    return { disposed: engine.disposed };
+  }
 }
 
 describe('useBaseLifecycle', () => {
@@ -124,6 +136,7 @@ describe('useBaseLifecycle', () => {
 
     test('onRegister에서 cleanup 함수가 아닌 값을 반환해도 안전해야 함', () => {
       const onRegister = jest.fn(() => 'not a function');
+      // @ts-expect-error: non-function return values from untyped callbacks must be ignored
       const options: UseBaseLifecycleOptions<MockEngine> = { onRegister };
       
       const { unmount } = renderHook(() => 
@@ -194,10 +207,6 @@ describe('useBaseLifecycle', () => {
 
   describe('의존성 처리', () => {
     test('의존성이 변경되면 재등록되어야 함', () => {
-      const options: UseBaseLifecycleOptions<MockEngine> = { 
-        dependencies: ['dep1'] 
-      };
-      
       const { rerender } = renderHook(
         (deps) => useBaseLifecycle(mockBridge, 'test-id', mockEngine, { dependencies: deps }),
         { initialProps: ['dep1'] }

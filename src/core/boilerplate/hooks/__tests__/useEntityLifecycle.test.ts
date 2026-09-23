@@ -1,15 +1,16 @@
 import { renderHook } from '@testing-library/react';
-import { useEntityLifecycle, EntityLifecycleOptions } from '../useEntityLifecycle';
 import * as THREE from 'three';
 
+import { useEntityLifecycle, EntityLifecycleOptions } from '../useEntityLifecycle';
+
 // requestAnimationFrame과 cancelAnimationFrame 모킹
-const mockRequestAnimationFrame = jest.fn();
-const mockCancelAnimationFrame = jest.fn();
+const mockRequestAnimationFrame = jest.fn<number, [callback: FrameRequestCallback]>();
+const mockCancelAnimationFrame = jest.fn<void, [handle: number]>();
 
 global.requestAnimationFrame = mockRequestAnimationFrame;
 global.cancelAnimationFrame = mockCancelAnimationFrame;
 
-// THREE.AnimationAction 모킹
+// THREE.AnimationAction 모킹: 훅은 액션 내용을 읽지 않으므로 부분 스텁으로 충분하다
 const createMockAnimationAction = (): THREE.AnimationAction => ({
   play: jest.fn().mockReturnThis(),
   stop: jest.fn().mockReturnThis(),
@@ -41,7 +42,7 @@ const createMockAnimationAction = (): THREE.AnimationAction => ({
   zeroSlopeAtEnd: true,
   loop: THREE.LoopRepeat,
   blendMode: THREE.NormalAnimationBlendMode
-} as any);
+} as unknown as THREE.AnimationAction);
 
 describe('useEntityLifecycle', () => {
   beforeEach(() => {
@@ -67,6 +68,7 @@ describe('useEntityLifecycle', () => {
     });
 
     test('모든 옵션이 undefined여도 안전해야 함', () => {
+      // @ts-expect-error: explicit undefined from untyped callers must be tolerated
       const options: EntityLifecycleOptions = {
         onReady: undefined,
         onFrame: undefined,
@@ -94,7 +96,7 @@ describe('useEntityLifecycle', () => {
       const onReady1 = jest.fn();
       const onReady2 = jest.fn();
       
-      const { rerender } = renderHook(
+      const { rerender } = renderHook<void, EntityLifecycleOptions>(
         (options) => useEntityLifecycle(options),
         { initialProps: { onReady: onReady1 } }
       );
@@ -110,7 +112,7 @@ describe('useEntityLifecycle', () => {
     test('onReady가 undefined로 변경되어도 안전해야 함', () => {
       const onReady = jest.fn();
       
-      const { rerender } = renderHook(
+      const { rerender } = renderHook<void, EntityLifecycleOptions>(
         (options) => useEntityLifecycle(options),
         { initialProps: { onReady } }
       );
@@ -118,7 +120,7 @@ describe('useEntityLifecycle', () => {
       expect(onReady).toHaveBeenCalledTimes(1);
       
       expect(() => {
-        rerender({ onReady: undefined });
+        rerender({});
       }).not.toThrow();
     });
   });
@@ -206,7 +208,7 @@ describe('useEntityLifecycle', () => {
 
   describe('옵션 변경 처리', () => {
     test('onFrame이 추가되면 프레임 루프가 시작되어야 함', () => {
-      const { rerender } = renderHook(
+      const { rerender } = renderHook<void, EntityLifecycleOptions>(
         (options) => useEntityLifecycle(options),
         { initialProps: {} }
       );
@@ -221,7 +223,7 @@ describe('useEntityLifecycle', () => {
     test('onFrame이 제거되면 프레임 루프가 중지되어야 함', () => {
       const onFrame = jest.fn();
       
-      const { rerender } = renderHook(
+      const { rerender } = renderHook<void, EntityLifecycleOptions>(
         (options) => useEntityLifecycle(options),
         { initialProps: { onFrame } }
       );
@@ -238,7 +240,7 @@ describe('useEntityLifecycle', () => {
       const actions1 = { walk: createMockAnimationAction() };
       const actions2 = { run: createMockAnimationAction() };
       
-      const { rerender } = renderHook(
+      const { rerender } = renderHook<void, EntityLifecycleOptions>(
         (options) => useEntityLifecycle(options),
         { initialProps: { onAnimate, actions: actions1 } }
       );
@@ -260,7 +262,7 @@ describe('useEntityLifecycle', () => {
       let callCount = 0;
       mockRequestAnimationFrame.mockImplementation((callback) => {
         setTimeout(() => {
-          callback();
+          callback(performance.now());
           callCount++;
           if (callCount === 1) {
             expect(onFrame).toHaveBeenCalled();
@@ -319,8 +321,8 @@ describe('useEntityLifecycle', () => {
       mockRequestAnimationFrame.mockImplementation((callback) => {
         setTimeout(() => {
           try {
-            callback();
-          } catch (error) {
+            callback(performance.now());
+          } catch {
             // 에러 무시하고 다음 프레임 스케줄
           }
           if (callCount < 2) {
@@ -366,7 +368,7 @@ describe('useEntityLifecycle', () => {
       const onFrame1 = jest.fn();
       const onFrame2 = jest.fn();
       
-      const { rerender } = renderHook(
+      const { rerender } = renderHook<void, EntityLifecycleOptions>(
         (options) => useEntityLifecycle(options),
         { initialProps: { onFrame: onFrame1 } }
       );

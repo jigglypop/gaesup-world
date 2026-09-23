@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import type { RoomDescriptor, RoomPortalDescriptor, SceneId } from '../types';
 
 type RoomVisibilityState = {
@@ -26,7 +28,8 @@ function sameSet(a: Set<string>, b: Set<string>): boolean {
   return true;
 }
 
-export const useRoomVisibilityStore = create<RoomVisibilityState>((set) => ({
+export function createRoomVisibilityStore() {
+return create<RoomVisibilityState>((set) => ({
   rooms: new Map(),
   portals: new Map(),
   currentRoomId: null,
@@ -89,3 +92,9 @@ export const useRoomVisibilityStore = create<RoomVisibilityState>((set) => ({
       initializedSceneId: null,
     }),
 }));
+}
+
+export type RoomVisibilityStore = ReturnType<typeof createRoomVisibilityStore>;
+export const { useStore: useRoomVisibilityStore, useStoreApi: useRoomVisibilityStoreApi } = createScopedStoreHook(
+  createRoomVisibilityStore(), () => useGaesupRuntime()?.roomVisibilityStore,
+);

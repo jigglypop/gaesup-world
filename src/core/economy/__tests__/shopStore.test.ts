@@ -1,5 +1,5 @@
-import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import { useInventoryStore } from '../../inventory/stores/inventoryStore';
+import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import { useShopStore } from '../stores/shopStore';
 import { useWalletStore } from '../stores/walletStore';
 

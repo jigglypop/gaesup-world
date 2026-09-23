@@ -1,32 +1,16 @@
 import {
-  Fn, float, fract, floor, sin, dot, mix, smoothstep, clamp, min,
-  vec2, vec3, vec4, uniform, varying, positionGeometry, modelWorldMatrix, uv,
-  sRGBTransferEOTF,
+  Fn, sin, mix, clamp, max, dot, normalize, pow, texture, cameraPosition,
+  vec2, vec3, vec4, uniform, varying, positionGeometry, modelWorldMatrix,
 } from 'three/tsl';
-import { Color, MeshBasicNodeMaterial, type Node } from 'three/webgpu';
+import { Color, MeshBasicNodeMaterial, type Texture } from 'three/webgpu';
 
-const hash = Fn(([p]: [Node<'vec2'>]) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453)));
-const noise = Fn(([p]: [Node<'vec2'>]) => {
-  const i = floor(p).toVar();
-  const f = fract(p).toVar();
-  const blend = f.mul(f).mul(float(3).sub(f.mul(2))).toVar();
-  return mix(mix(hash(i), hash(i.add(vec2(1, 0))), blend.x),
-    mix(hash(i.add(vec2(0, 1))), hash(i.add(vec2(1, 1))), blend.x), blend.y);
-});
-const fbm = Fn(([input]: [Node<'vec2'>]) => {
-  const p = input.toVar();
-  const value = float(0).toVar();
-  let amplitude = 0.5;
-  for (let octave = 0; octave < 4; octave++) {
-    value.addAssign(noise(p).mul(amplitude));
-    p.assign(p.mul(2.07).add(vec2(13.7, 7.1)));
-    amplitude *= 0.5;
-  }
-  return value;
-});
+import { getSharedWaterNormals } from '../../building/components/mesh/water/normals';
 
-export function createToonWaterMaterial() {
+/** Bounded surface cost: two filtered normal samples, no reflection render target. */
+export function createToonWaterMaterial(normalMap: Texture = getSharedWaterNormals()) {
   const time = uniform(0);
+  /** Unlit surface multiplier so day/night scenes can dim the water without relighting it. */
+  const brightness = uniform(1);
   const p = positionGeometry;
   const wave = sin(p.x.mul(0.55).add(time.mul(0.85))).mul(0.085)
     .add(sin(p.y.mul(0.78).sub(time.mul(1.05)).add(p.x.mul(0.33))).mul(0.055))
@@ -34,25 +18,18 @@ export function createToonWaterMaterial() {
   const displaced = vec3(p.xy, p.z.add(wave));
   const world = varying(modelWorldMatrix.mul(vec4(displaced, 1)).xyz);
   const waveHeight = varying(wave);
-  const material = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false, opacity: 0.88, fog: false });
+  const material = new MeshBasicNodeMaterial({ toneMapped: false, fog: false });
   material.positionNode = displaced;
   material.colorNode = Fn(() => {
-    const wp = world.xz;
-    const baseNoise = fbm(wp.mul(0.18).add(vec2(time.mul(0.04), time.mul(-0.03)))).toVar();
-    const depth = clamp(float(0.5).add(waveHeight.mul(3.5)).add(baseNoise.sub(0.5).mul(0.55)), 0, 1).toVar();
-    const base = mix(uniform(new Color('#1f5f88')), uniform(new Color('#9ed6c8')), depth);
-    const stripe = sin(wp.x.add(wp.y).mul(0.55).add(time.mul(0.35)).add(baseNoise.mul(0.8)).mul(6))
-      .mul(0.5).add(0.5).toVar();
-    const foam = smoothstep(0.76, 0.86, stripe).sub(smoothstep(0.86, 0.96, stripe))
-      .mul(float(0.35).add(depth.mul(0.65)));
-    const specks = smoothstep(0.78, 0.95, fbm(wp.mul(0.62).add(time.mul(0.1))));
-    const ripple = smoothstep(0.6, 0.95, fbm(wp.mul(1.3).add(time.mul(0.6))));
-    const color = mix(base, vec3(1), foam.mul(0.55).add(specks.mul(0.5)).add(ripple.mul(0.18))).toVar();
-    const coords = uv();
-    const edge = smoothstep(0, 0.06, min(min(coords.x, coords.y), min(float(1).sub(coords.x), float(1).sub(coords.y))));
-    // The legacy shader writes display values directly, without an output transfer.
-    return sRGBTransferEOTF(mix(color.mul(0.86), color, edge)) as Node<'vec3'>;
+    const a = texture(normalMap, world.xz.mul(0.055).add(vec2(time.mul(0.009), time.mul(0.004)))).xy.mul(2).sub(1);
+    const b = texture(normalMap, world.xz.mul(0.12).add(vec2(time.mul(-0.006), time.mul(0.008)))).xy.mul(2).sub(1);
+    const n = normalize(vec3(a.x.add(b.x).mul(0.48), 1, a.y.add(b.y).mul(0.48))).toVar();
+    const view = normalize(cameraPosition.sub(world)).toVar();
+    const fresnel = pow(max(dot(n, view), 0).oneMinus(), 3);
+    const highlight = pow(max(dot(n, normalize(view.add(normalize(vec3(-0.5, 0.9, -0.3))))), 0), 96);
+    const tint = clamp(waveHeight.mul(1.1).add(n.x.mul(0.28)).add(0.42), 0, 1);
+    const base = mix(uniform(new Color('#176180')), uniform(new Color('#48b9b4')), tint);
+    return mix(base, vec3(0.48, 0.72, 0.78), fresnel.mul(0.6)).add(highlight.mul(0.38)).mul(brightness);
   })();
-  material.toneMapped = false;
-  return { material, time };
+  return { material, time, brightness };
 }

@@ -1,18 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 import { buildBuildingGpuMirror } from '../../render/gpu';
-import { useBuildingRenderStateStore } from '../../render/store';
+import { useBuildingRenderStateStore, useBuildingRenderStateStoreApi } from '../../render/store';
 
 export function BuildingGpuMirrorDriver() {
+  const renderStore = useBuildingRenderStateStoreApi();
   const snapshot = useBuildingRenderStateStore((s) => s.snapshot);
   const setGpuMirror = useBuildingRenderStateStore((s) => s.setGpuMirror);
-  const previousRef = useRef(useBuildingRenderStateStore.getState().gpuMirror);
 
   useEffect(() => {
-    const nextMirror = buildBuildingGpuMirror(snapshot, previousRef.current);
-    previousRef.current = nextMirror;
+    const nextMirror = buildBuildingGpuMirror(snapshot, renderStore.getState().gpuMirror);
     setGpuMirror(nextMirror);
-  }, [snapshot, setGpuMirror]);
+  }, [renderStore, snapshot, setGpuMirror]);
 
   return null;
 }

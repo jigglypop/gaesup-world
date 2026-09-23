@@ -1,16 +1,15 @@
 import type {
   NPCBrainConfig,
+  NPCBrainBlueprint,
   NPCBrainDecision,
   NPCBrainMode,
   NPCInstance,
   NPCObservation,
   NPCObservationTarget,
 } from '../types';
-import { compileNPCBrainBlueprint, getNPCBrainBlueprint } from './blueprint';
+import { compileNPCBrainBlueprint, getNPCBrainBlueprint, type NPCBrainConditionStores } from './blueprint';
 
 type AdapterKey = `${NPCBrainMode}:${string}`;
-
-const adapters = new Map<AdapterKey, NPCBrainAdapter>();
 
 function getAdapterKey(mode: NPCBrainMode, id: string): AdapterKey {
   return `${mode}:${id}`;
@@ -41,22 +40,46 @@ export type NPCBrainAdapterContext = {
 
 export type NPCBrainAdapter = (context: NPCBrainAdapterContext) => NPCBrainDecision | undefined;
 
+export function createNPCBrainAdapterRegistry() {
+  const adapters = new Map<AdapterKey, { adapter: NPCBrainAdapter }>();
+  let active = true;
+  return {
+    get isActive() { return active; },
+    register(mode: NPCBrainMode, id: string, adapter: NPCBrainAdapter): () => void {
+      const key = getAdapterKey(mode, id);
+      const lease = { adapter };
+      adapters.set(key, lease);
+      return () => { if (adapters.get(key) === lease) adapters.delete(key); };
+    },
+    resolve(brain: NPCBrainConfig | undefined): NPCBrainAdapter | undefined {
+      if (!active || !brain) return undefined;
+      for (const id of [brain.policyId, brain.providerId, 'default']) {
+        const entry = id ? adapters.get(getAdapterKey(brain.mode, id)) : undefined;
+        if (entry) return entry.adapter;
+      }
+      return undefined;
+    },
+    suspend() { active = false; },
+    resume() { active = true; },
+    dispose() { active = false; adapters.clear(); },
+  };
+}
+export type NPCBrainAdapterRegistry = ReturnType<typeof createNPCBrainAdapterRegistry>;
+const defaultAdapters = createNPCBrainAdapterRegistry();
+
 export function registerNPCBrainAdapter(
   mode: NPCBrainMode,
   id: string,
   adapter: NPCBrainAdapter,
 ): () => void {
-  const key = getAdapterKey(mode, id);
-  adapters.set(key, adapter);
-  return () => {
-    adapters.delete(key);
-  };
+  return defaultAdapters.register(mode, id, adapter);
 }
 
 export function createNPCObservation(
   instance: NPCInstance,
   instances: Map<string, NPCInstance>,
   timestamp: number,
+  candidates: Iterable<NPCInstance> = instances.values(),
 ): NPCObservation {
   const perception = instance.perception;
   const sightRadius = perception?.enabled ? perception.sightRadius : 0;
@@ -64,7 +87,7 @@ export function createNPCObservation(
   const perceived: NPCObservationTarget[] = [];
 
   if (sightRadius > 0) {
-    for (const target of instances.values()) {
+    for (const target of candidates) {
       if (target.id === instance.id) continue;
       const distanceSquared = getDistanceSquared(instance.position, target.position);
       if (distanceSquared > sightRadiusSquared) continue;
@@ -97,21 +120,11 @@ export function createNPCObservation(
   };
 }
 
-function resolveAdapter(brain: NPCBrainConfig | undefined): NPCBrainAdapter | undefined {
-  if (!brain) return undefined;
-  const ids = [brain.policyId, brain.providerId].filter((id): id is string => Boolean(id));
-  for (const id of ids) {
-    const adapter = adapters.get(getAdapterKey(brain.mode, id));
-    if (adapter) return adapter;
-  }
-  return adapters.get(getAdapterKey(brain.mode, 'default'));
-}
-
-function resolveScriptedDecision(instance: NPCInstance, observation: NPCObservation): NPCBrainDecision | undefined {
+function resolveScriptedDecision(instance: NPCInstance, observation: NPCObservation, blueprints?: ReadonlyMap<string, NPCBrainBlueprint>, stores?: NPCBrainConditionStores): NPCBrainDecision | undefined {
   const blueprintId = instance.brain?.blueprintId;
-  const blueprint = blueprintId ? getNPCBrainBlueprint(blueprintId) : undefined;
+  const blueprint = blueprintId ? (blueprints ? blueprints.get(blueprintId) : getNPCBrainBlueprint(blueprintId)) : undefined;
   if (blueprint) {
-    const actions = compileNPCBrainBlueprint(blueprint, observation);
+    const actions = compileNPCBrainBlueprint(blueprint, observation, stores);
     if (actions.length > 0) {
       return {
         source: 'blueprint',
@@ -158,17 +171,20 @@ function resolveScriptedDecision(instance: NPCInstance, observation: NPCObservat
 export function resolveNPCBrainDecision(
   instance: NPCInstance,
   observation: NPCObservation,
+  blueprints?: ReadonlyMap<string, NPCBrainBlueprint>,
+  stores?: NPCBrainConditionStores & { npcBrainAdapters?: NPCBrainAdapterRegistry },
+  adapters: NPCBrainAdapterRegistry = stores?.npcBrainAdapters ?? defaultAdapters,
 ): NPCBrainDecision | undefined {
   const brainMode = instance.brain?.mode ?? 'none';
-  if (brainMode === 'none') return undefined;
+  if (brainMode === 'none' || !adapters.isActive) return undefined;
 
-  const adapter = resolveAdapter(instance.brain);
+  const adapter = adapters.resolve(instance.brain);
   if (adapter) {
     return adapter({ instance, observation });
   }
 
   if (brainMode === 'scripted') {
-    return resolveScriptedDecision(instance, observation);
+    return resolveScriptedDecision(instance, observation, blueprints, stores);
   }
 
   return undefined;

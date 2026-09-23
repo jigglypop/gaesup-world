@@ -1,8 +1,8 @@
 import React, { createElement as h, Suspense, useEffect, useRef, useState } from 'react';
 
 import { createRoot as createFiberRoot, events, useFrame, useBridge, _roots, unmountComponentAtNode } from '@react-three/fiber';
-import { FiberProvider } from 'its-fine';
 import { Physics, RigidBody, CuboidCollider, BallCollider, useRapier } from '@react-three/rapier';
+import { FiberProvider } from 'its-fine';
 import { createRoot } from 'react-dom/client';
 import { Scene, WebGPURenderer } from 'three/webgpu';
 

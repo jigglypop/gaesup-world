@@ -15,9 +15,7 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/coverage/**',
       '**/.tmp/**',
-      '**/__tests__/**',
-      '**/*.test.*',
-      '**/*.spec.*',
+      '.artifacts/**',
     ],
   },
   ...tseslint.configs.recommended,
@@ -45,6 +43,7 @@ export default tseslint.config(
           ignore: [
             // react-three-fiber props
             'args',
+            'matrixAutoUpdate',
             'attach',
             'blending',
             'castShadow',
@@ -61,6 +60,7 @@ export default tseslint.config(
             'gradientMap',
             'groundColor',
             'index',
+            'instanceCount',
             'intensity',
             'map',
             'alphaMap',
@@ -99,6 +99,8 @@ export default tseslint.config(
             'windStrength',
             'attributes-position',
             'attributes-uv',
+            'attributes-normal',
+            'lights',
           ],
         },
       ],
@@ -182,6 +184,18 @@ export default tseslint.config(
     files: ['scripts/**/*.cjs'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
+    files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}', 'test/**/*.{ts,tsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
+    },
+    rules: {
+      // Tests drive core modules through React/R3F harnesses.
+      'no-restricted-imports': 'off',
     },
   },
 );

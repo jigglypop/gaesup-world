@@ -1,20 +1,20 @@
-import { renderHook } from '@testing-library/react';
-import { useCollisionHandler, CollisionHandlerOptions } from '../useCollisionHandler';
 import { CollisionEnterPayload, CollisionExitPayload } from '@react-three/rapier';
+import { renderHook } from '@testing-library/react';
 
-// Mock 데이터
-const mockCollisionEnterPayload: CollisionEnterPayload = {
-  target: {} as any,
-  other: {} as any,
+import { useCollisionHandler, CollisionHandlerOptions } from '../useCollisionHandler';
+
+// Mock 데이터: 핸들러는 페이로드를 그대로 전달만 하므로 Rapier 객체는 빈 스텁으로 둔다
+const mockCollisionEnterPayload = {
+  target: {},
+  other: {},
   manifold: null,
   flipped: false,
-};
+} as unknown as CollisionEnterPayload;
 
-const mockCollisionExitPayload: CollisionExitPayload = {
-  target: {} as any,
-  other: {} as any,
-  flipped: false,
-};
+const mockCollisionExitPayload = {
+  target: {},
+  other: {},
+} as unknown as CollisionExitPayload;
 
 describe('useCollisionHandler', () => {
   beforeEach(() => {
@@ -260,7 +260,8 @@ describe('useCollisionHandler', () => {
     });
 
     test('userData가 null이어도 안전해야 함', async () => {
-      const options: CollisionHandlerOptions = { userData: null as any };
+      // @ts-expect-error: null userData from untyped callers must be tolerated
+      const options: CollisionHandlerOptions = { userData: null };
       
       const { result } = renderHook(() => useCollisionHandler(options));
       
@@ -268,6 +269,7 @@ describe('useCollisionHandler', () => {
     });
 
     test('userData가 undefined여도 안전해야 함', async () => {
+      // @ts-expect-error: explicit undefined from untyped callers must be tolerated
       const options: CollisionHandlerOptions = { userData: undefined };
       
       const { result } = renderHook(() => useCollisionHandler(options));

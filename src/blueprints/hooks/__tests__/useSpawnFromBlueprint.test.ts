@@ -1,9 +1,9 @@
 import { act, renderHook } from '@testing-library/react';
 
-import { useSpawnFromBlueprint } from '../useSpawnFromBlueprint';
+import type { WorldBridge } from '../../../core/world/bridge/WorldBridge';
 import { WARRIOR_BLUEPRINT } from '../../characters/warrior';
 import { blueprintRegistry } from '../../registry';
-import type { WorldBridge } from '../../../core/world/bridge/WorldBridge';
+import { useSpawnFromBlueprint } from '../useSpawnFromBlueprint';
 
 const mockAddObject = jest.fn<string, Parameters<WorldBridge['addObject']>>(() => 'spawned');
 const mockSetUrls = jest.fn();

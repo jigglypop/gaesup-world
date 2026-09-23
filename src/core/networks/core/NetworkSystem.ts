@@ -5,7 +5,10 @@ import { ConnectionPool } from './ConnectionPool';
 import { MessageQueue } from './MessageQueue';
 import { NPCNetworkManager } from './NPCNetworkManager';
 import { PerformanceMetrics, NetworkEvent } from './types';
+import type { FixedStepClock } from '../../simulation/FixedStepClock';
 import { logger } from '../../utils/logger';
+
+let nextClockOwner = 0;
 
 export class NetworkSystem {
   private state: NetworkSystemState;
@@ -16,6 +19,11 @@ export class NetworkSystem {
   private lastCleanupTime: number = 0;
   private lastStatsUpdateAt: number = 0;
   private updateTimer: ReturnType<typeof setTimeout> | undefined;
+  private clock: FixedStepClock | undefined;
+  private clockReferences = 0;
+  private releaseClock: (() => void) | undefined;
+  private readonly clockId = `network:${++nextClockOwner}`;
+  private completedUpdates = 0;
   private scratchNodeIds: Set<string> = new Set();
   private scratchGroupIds: Set<string> = new Set();
   private scratchRemoveIds: string[] = [];
@@ -62,19 +70,49 @@ export class NetworkSystem {
     if (!this.state.isRunning) return;
     
     this.state.isRunning = false;
-    if (this.updateTimer) {
+    this.releaseClock?.(); this.releaseClock = undefined;
+    if (this.updateTimer !== undefined) {
       clearTimeout(this.updateTimer);
       this.updateTimer = undefined;
     }
   }
 
+  get updateRevision(): number { return this.completedUpdates; }
+
+  /** A world driver replaces the standalone timer; repeated owners share one fixed-tick system. */
+  acquireClock(clock: FixedStepClock): () => void {
+    if (this.clock && this.clock !== clock) throw new Error('Network system already belongs to another clock');
+    this.clock = clock;
+    if (++this.clockReferences === 1 && this.state.isRunning) this.startUpdateLoop();
+    let released = false;
+    return () => {
+      if (released) return; released = true;
+      if (--this.clockReferences > 0) return;
+      this.releaseClock?.(); this.releaseClock = undefined; this.clock = undefined;
+      if (this.state.isRunning) this.startUpdateLoop();
+    };
+  }
+
   // 업데이트 루프 시작
   private startUpdateLoop(): void {
-    if (this.updateTimer) {
+    this.releaseClock?.(); this.releaseClock = undefined;
+    if (this.updateTimer !== undefined) {
       clearTimeout(this.updateTimer);
+      this.updateTimer = undefined;
     }
 
-    const frequency = Math.max(1, this.config.updateFrequency);
+    const frequency = Number.isFinite(this.config.updateFrequency) ? Math.max(1, this.config.updateFrequency) : 30;
+    if (this.clock) {
+      const intervalSeconds = Math.max(this.clock.deltaSeconds, 1 / frequency);
+      let accumulatedSeconds = 0;
+      this.releaseClock = this.clock.addSystem({ id: this.clockId, phase: 'postSimulation', update: tick => {
+        accumulatedSeconds += tick.deltaSeconds;
+        if (accumulatedSeconds + intervalSeconds * 1e-9 < intervalSeconds) return;
+        accumulatedSeconds = Math.max(0, accumulatedSeconds - intervalSeconds);
+        this.update();
+      } });
+      return;
+    }
     const interval = Math.max(1, Math.floor(1000 / frequency)); // FPS를 ms로 변환
 
     // setInterval() drifts under load; use a self-correcting timeout loop.
@@ -120,6 +158,7 @@ export class NetworkSystem {
     this.syncState();
 
     this.state.lastUpdate = now;
+    this.completedUpdates++;
   }
 
   // 메시지 배치 처리
@@ -168,10 +207,14 @@ export class NetworkSystem {
     // NPC 노드 동기화 (전체 clear/rebuild 대신 증분 업데이트)
     const nodeIds = this.scratchNodeIds;
     nodeIds.clear();
+    let connections = 0;
     this.npcManager.forEachNode((node) => {
       nodeIds.add(node.id);
       this.state.nodes.set(node.id, node);
+      connections += node.connections.size;
     });
+    this.state.stats.totalNodes = nodeIds.size;
+    this.state.stats.activeConnections = connections / 2;
     const toRemove = this.scratchRemoveIds;
     toRemove.length = 0;
     for (const existingId of this.state.nodes.keys()) {
@@ -305,7 +348,7 @@ export class NetworkSystem {
   // 스냅샷 생성
   createSnapshot(): NetworkSnapshot {
     return {
-      nodeCount: this.state.stats.totalNodes,
+      nodeCount: this.state.nodes.size,
       connectionCount: this.state.stats.activeConnections,
       activeGroups: this.state.groups.size,
       messagesPerSecond: this.state.stats.messagesPerSecond,
@@ -316,6 +359,7 @@ export class NetworkSystem {
 
   // 설정 업데이트
   updateConfig(partialConfig: Partial<NetworkConfig>): void {
+    const previousFrequency = this.config.updateFrequency;
     this.config = { ...this.config, ...partialConfig };
 
     // 컴포넌트 설정 업데이트
@@ -335,7 +379,7 @@ export class NetworkSystem {
       this.npcManager.updateSettings(this.config.proximityRange, this.config.maxDistance);
     }
 
-    if (partialConfig.updateFrequency) {
+    if (partialConfig.updateFrequency !== undefined && partialConfig.updateFrequency !== previousFrequency) {
       // 업데이트 주기 변경: 실행 중일 때만 interval 재시작
       if (this.state.isRunning) {
         this.startUpdateLoop();

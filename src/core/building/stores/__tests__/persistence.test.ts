@@ -1,10 +1,10 @@
+import type { BuildingSerializedState } from '../../types';
+import { useBuildingStore } from '../buildingStore';
 import {
   hydrateBuildingState,
   serializeBuildingState,
   type BuildingHydrationTarget,
 } from '../persistence';
-import type { BuildingSerializedState } from '../../types';
-import { useBuildingStore } from '../buildingStore';
 
 function createTarget(): BuildingHydrationTarget {
   return {
@@ -120,7 +120,7 @@ describe('building persistence helpers', () => {
   it('serializes maps and arrays without exposing mutable block and object references', () => {
     const target = createTarget();
     target.meshes.set('mesh', { id: 'mesh', color: '#fff', material: 'STANDARD' });
-    target.wallGroups.set('walls', { id: 'walls', name: 'Walls', meshId: 'mesh', walls: [] });
+    target.wallGroups.set('walls', { id: 'walls', name: 'Walls', frontMeshId: 'mesh', walls: [] });
     target.tileGroups.set('tiles', { id: 'tiles', name: 'Tiles', floorMeshId: 'mesh', tiles: [] });
     target.blocks.push({ id: 'block', position: { x: 0, y: 0, z: 0 } });
     target.objects.push({ id: 'object', type: 'fire', position: { x: 1, y: 0, z: 1 } });
@@ -132,7 +132,7 @@ describe('building persistence helpers', () => {
     expect(snapshot).toEqual({
       version: 1,
       meshes: [{ id: 'mesh', color: '#fff', material: 'STANDARD' }],
-      wallGroups: [{ id: 'walls', name: 'Walls', meshId: 'mesh', walls: [] }],
+      wallGroups: [{ id: 'walls', name: 'Walls', frontMeshId: 'mesh', walls: [] }],
       tileGroups: [{ id: 'tiles', name: 'Tiles', floorMeshId: 'mesh', tiles: [] }],
       blocks: [{ id: 'block', position: { x: 0, y: 0, z: 0 } }],
       objects: [{ id: 'object', type: 'fire', position: { x: 1, y: 0, z: 1 } }],
@@ -168,7 +168,7 @@ describe('building persistence helpers', () => {
         {
           id: 'walls',
           name: 'Walls',
-          meshId: 'mesh',
+          frontMeshId: 'mesh',
           walls: [
             {
               id: 'wall',
@@ -239,7 +239,7 @@ describe('building persistence helpers', () => {
         { id: 'custom-floor', name: 'Custom', floorMeshId: 'mesh', tiles: [] },
         { id: 'second-floor', name: 'Second', floorMeshId: 'mesh', tiles: [] },
       ],
-      wallGroups: [{ id: 'custom-walls', name: 'Custom Walls', meshId: 'mesh', walls: [] }],
+      wallGroups: [{ id: 'custom-walls', name: 'Custom Walls', frontMeshId: 'mesh', walls: [] }],
       blocks: [],
       objects: [],
       showSnow: false,
@@ -265,7 +265,7 @@ describe('building persistence helpers', () => {
         { id: 'other-floor', name: 'Other', floorMeshId: 'mesh', tiles: [] },
         { id: 'oak-floor', name: 'Oak', floorMeshId: 'mesh', tiles: [] },
       ],
-      wallGroups: [{ id: 'brick-walls', name: 'Brick', meshId: 'mesh', walls: [] }],
+      wallGroups: [{ id: 'brick-walls', name: 'Brick', frontMeshId: 'mesh', walls: [] }],
       blocks: [],
       objects: [],
       showSnow: false,

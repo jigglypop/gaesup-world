@@ -2,8 +2,8 @@ import type { AssetKind, AssetQuery, AssetRecord, AssetSlot, AssetSource } from 
 
 type FetchLike = typeof fetch;
 
-const ASSET_KINDS: ReadonlySet<string> = new Set<AssetKind>(['characterPart', 'weapon', 'material', 'tile', 'wall', 'object3d']);
-const ASSET_SLOTS: ReadonlySet<string> = new Set<AssetSlot>(['body', 'hair', 'hat', 'top', 'bottom', 'shoes', 'face', 'weapon', 'shield', 'accessory', 'glasses']);
+const ASSET_KINDS: ReadonlySet<string> = new Set<AssetKind>(['characterPart', 'weapon', 'material', 'tile', 'wall', 'object3d', 'avatar-body', 'avatar-part', 'avatar-animation']);
+const ASSET_SLOTS: ReadonlySet<string> = new Set<AssetSlot>(['body', 'hair', 'hat', 'top', 'bottom', 'shoes', 'face', 'weapon', 'shield', 'accessory', 'glasses', 'onepiece', 'ear', 'back', 'bag', 'hand', 'faceAccessory', 'neckAccessory']);
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 

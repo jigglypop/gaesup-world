@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   GAMEPLAY_EVENT_ACTION_TYPES,
@@ -19,6 +19,7 @@ import {
   type GameplayEventCondition,
   type GameplayTriggerEvent,
 } from '../../../../gameplay';
+import { useGaesupRuntime } from '../../../../runtime/runtimeContext';
 import { logger } from '../../../../utils/logger';
 import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
@@ -155,7 +156,13 @@ export function GameplayEventPanel({
   style,
   children,
 }: GameplayEventPanelProps) {
-  const [fallbackEngine] = useState(() => new GameplayEventEngine());
+  const runtime = useGaesupRuntime();
+  const fallbackEngine = useMemo(() => runtime?.gameplayEvents ?? new GameplayEventEngine(), [runtime]);
+  useEffect(() => {
+    if (runtime) return;
+    fallbackEngine.resume();
+    return () => fallbackEngine.suspend();
+  }, [runtime, fallbackEngine]);
   const [id, setId] = useState('manual-event');
   const [name, setName] = useState('수동 이벤트');
   const [triggerKey, setTriggerKey] = useState('manual.event');

@@ -1869,3 +1869,12 @@ Experimental `gaesup-world/next`의 Three WebGPURenderer facade를 실패 phase�
 
 - PRD-15 15-c: 카메라·캐릭터 간격 흔들림을 60fps와 프레임 제한 해제(약 730fps)에서 측정했다. rapier 보간 위치 추종 실험은 개선이 없어 채택하지 않았다(수치는 PRD-15). 15-e(부분): 카메라 유틸 경계값 테스트 4건, `clampPosition` 경계 0 무시 결함 수정. 카메라 `bounds` 옵션이 적용되지 않는 문제는 동작 변경이라 결정 대기로 기록했다.
 - 검증: camera 15 suites / 94 tests 통과, `tsc` 0, 변경 파일 eslint 0.
+
+## main 병합: 미니홈피 예제와 PRD 3차 통합 (2026-09-23)
+
+- 사용자 결정에 따라 `main`(미니홈피, 1.0.32)을 `master`에 병합하고 예제를 `main` 구성(미니홈피, 엔진 쇼케이스, 성능 랩)으로 전부 교체했다. 충돌 77개(양쪽 수정 66, 수정/삭제 11)를 해결했다.
+- 원칙: 구조는 `main`(런타임 범위 스토어, `WorldPhysics` 고정 스텝, NPC 시뮬레이션, 솔버 접촉 접지, 구 스윕 카메라 충돌)을 따르고, `master`의 PRD 수정은 그 위에 다시 얹었다(엔진 프레임 단계, 명시적 플레이어, XZ 경로점 도달, 방문 중 자동저장 차단, 플러그인 수명주기 저장 동기화, 매 프레임 이벤트 없는 궤도 갱신, 투과 오분류 제거, 그림자 깊이 재질, 스토어 없는 게임플레이 레지스트리).
+- 중복이 된 `master` 구현은 제거했다: 레이 접지 탐침(→ `GroundContactProbe`), 카메라 결과 재사용(→ `main`의 호출자 소유 계약), 원격 문자열 길이 초과 시 메시지 거부(→ 잘라서 수용).
+- 테스트 조정: 두 브랜치 계약이 충돌한 `CameraCollisionIndex` 결과 재사용 단언 2개 제거, 런타임 기본 `gameplay-events` 바인딩 제외, 엔진 프레임에 맞춘 테스트 구동(게임패드, 불, 플레이어 위치 소비자), 목 보완(물 `brightness`, admin env). 결함 수정: `HouseDoor` 쿨다운 초깃값 0 때문에 로드 직후 800ms 동안 첫 진입이 막히던 문제.
+- 기준선 변경(병합된 `main` 코드 기인): `check:layer1` 허용 3 → 5(원인은 기존과 같은 `npc/core/blueprint.ts` → `questStore`), 품질 ratchet interface 491 → 494, console 26 → 27, raw `useFrame` 0 → 9, 대형 컴포넌트 46 → 48, 대형 모듈 14 → 16. 후속 과제로 되돌린다.
+- 검증: 전체 jest 392 suites / 3,231 tests 중 1건(HouseDoor) 실패를 수정 후 관련 109 tests 통과, `tsc`(src, examples) 0, `check:entries` 0, `check:quality` 통과.
