@@ -1,9 +1,9 @@
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
-import { AbstractSystem, SystemContext, SystemUpdateArgs, Inject } from '@core/boilerplate';
-import { Profile, HandleError, ManageRuntime } from '@core/boilerplate';
-import type { RuntimeRecord } from '@core/boilerplate';
+import { AbstractSystem, SystemContext, SystemUpdateArgs, Inject } from '@core/boilerplate/engine';
+import { Profile, HandleError, ManageRuntime } from '@core/boilerplate/engine';
+import type { RuntimeRecord } from '@core/boilerplate/engine';
 import type { GameStatesType } from '@core/world/components/Rideable/types';
 
 import type { ActiveStateType } from '../types';
@@ -24,6 +24,8 @@ type EulerSeed = {
   readonly z: number;
   readonly order: THREE.EulerOrder;
 };
+
+const MOVING_SPEED_THRESHOLD = 0.1;
 
 function isRuntimeObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -214,7 +216,7 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
   public updateVelocity(velocity: THREE.Vector3, activeState: ActiveStateType, gameStates: GameStatesType): void {
     this.state.velocity.copy(velocity);
     this.state.speed = velocity.length();
-    this.updateStateIfChanged('isMoving', this.state.speed > 0.1, () => {
+    this.updateStateIfChanged('isMoving', this.state.speed > MOVING_SPEED_THRESHOLD, () => {
       gameStates.isMoving = this.state.isMoving;
       gameStates.isNotMoving = !this.state.isMoving;
     });
@@ -227,6 +229,17 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     activeState.euler.copy(rotation);
   }
   
+  public syncFromBody(position: THREE.Vector3, velocity: THREE.Vector3, grounded: boolean): void {
+    this.metrics.lastPosition.copy(this.state.position);
+    this.state.position.copy(position);
+    this.state.velocity.copy(velocity);
+    this.state.speed = velocity.length();
+    this.state.isMoving = this.state.speed > MOVING_SPEED_THRESHOLD;
+    this.state.isGrounded = grounded;
+    this.metrics.groundContact = grounded;
+    this.metrics.currentSpeed = this.state.speed;
+  }
+
   @HandleError()
   public setGrounded(grounded: boolean, activeState: ActiveStateType, gameStates: GameStatesType): void {
     this.state.isGrounded = grounded;

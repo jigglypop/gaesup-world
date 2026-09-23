@@ -60,6 +60,10 @@ export function isNewHour(prevTotalMinutes: number, nextTotalMinutes: number): b
     Math.floor(nextTotalMinutes / MINUTES_PER_HOUR);
 }
 
+export function dayOfTotalMinutes(totalMinutes: number): number {
+  return Math.floor(totalMinutes / MINUTES_PER_DAY);
+}
+
 export const TIME_CONSTANTS = {
   MINUTES_PER_HOUR,
   MINUTES_PER_DAY,

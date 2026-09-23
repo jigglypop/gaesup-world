@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 
+import { dayOfTotalMinutes } from '../../time/core/Clock';
 import { useTimeStore } from '../../time/stores/timeStore';
 import { useWeatherStore } from '../stores/weatherStore';
 
@@ -8,7 +9,7 @@ export function useWeatherTicker(enabled: boolean = true): void {
     if (!enabled) return;
     const apply = () => {
       const s = useTimeStore.getState();
-      const day = Math.floor(s.totalMinutes / (60 * 24));
+      const day = dayOfTotalMinutes(s.totalMinutes);
       const cur = useWeatherStore.getState().current;
       if (!cur || cur.day !== day) {
         useWeatherStore.getState().rollForDay(day, s.time.season);
@@ -16,8 +17,8 @@ export function useWeatherTicker(enabled: boolean = true): void {
     };
     apply();
     const off = useTimeStore.subscribe((state, prev) => {
-      const dayNow = Math.floor(state.totalMinutes / (60 * 24));
-      const dayPrev = Math.floor(prev.totalMinutes / (60 * 24));
+      const dayNow = dayOfTotalMinutes(state.totalMinutes);
+      const dayPrev = dayOfTotalMinutes(prev.totalMinutes);
       if (dayNow !== dayPrev) apply();
     });
     return off;

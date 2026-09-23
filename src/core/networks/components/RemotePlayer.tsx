@@ -10,6 +10,7 @@ import { Text } from '@/core/rendering/legacyDrei';
 import { weightFromDistance } from '@core/utils/sfe';
 
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
+import { isTrustedRemoteModelUrl } from '../core/remoteInputLimits';
 import { PlayerState, MultiplayerConfig } from '../types';
 
 interface RemotePlayerProps {
@@ -18,6 +19,7 @@ interface RemotePlayerProps {
   characterUrl?: string;
   config?: MultiplayerConfig;
   speechText?: string;
+  allowedModelOrigins?: readonly string[];
 }
 
 type RemotePlayerContentProps = {
@@ -483,8 +485,11 @@ export const RemotePlayer = React.memo(function RemotePlayer({
   characterUrl,
   config,
   speechText,
+  allowedModelOrigins,
 }: RemotePlayerProps) {
-  const modelUrl = characterUrl || state.modelUrl || '';
+  const remoteModelUrl =
+    state.modelUrl && isTrustedRemoteModelUrl(state.modelUrl, allowedModelOrigins) ? state.modelUrl : '';
+  const modelUrl = characterUrl || remoteModelUrl;
   if (!modelUrl) return null;
 
   return (

@@ -24,6 +24,7 @@ describe('AnimationBridge', () => {
       getMetrics: jest.fn().mockReturnValue({ activeAnimations: 0, totalActions: 0 }),
       getAnimationList: jest.fn().mockReturnValue([]),
       subscribe: jest.fn().mockReturnValue(jest.fn()),
+      getAnimator: jest.fn().mockReturnValue(null),
     } as unknown as jest.Mocked<AnimationSystemType>;
 
     MockedAnimationSystem.mockImplementation(() => mockEngineInstance);

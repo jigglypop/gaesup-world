@@ -3,7 +3,9 @@ import { createRef } from 'react';
 import type { RapierRigidBody } from '@react-three/rapier';
 import { renderHook } from '@testing-library/react';
 
+import { createDefaultCharacterAnimator } from '@core/animation/core/animator/defaultCharacterAnimator';
 import { useMotionSetup } from '@core/motions/hooks/setup/useMotionSetup';
+import { useCharacterAnimator } from '@core/motions/hooks/useCharacterAnimator';
 import { usePhysicsBridge } from '@core/motions/hooks/usePhysicsBridge';
 
 import { useEntity } from '../useEntity';
@@ -17,8 +19,8 @@ jest.mock('@core/motions/hooks/setup/useMotionSetup', () => ({
 jest.mock('@core/motions/hooks/usePhysicsBridge', () => ({
   usePhysicsBridge: jest.fn(),
 }));
-jest.mock('@hooks/useAnimationPlayer', () => ({
-  useAnimationPlayer: jest.fn(),
+jest.mock('@core/motions/hooks/useCharacterAnimator', () => ({
+  useCharacterAnimator: jest.fn(),
 }));
 jest.mock('@stores/gaesupStore', () => ({
   useGaesupStore: jest.fn(() => ({ type: 'character' })),
@@ -86,5 +88,19 @@ describe('useEntity ownership key', () => {
     rerender({ isActive: true });
 
     expectOwnershipKey(initialEntityId);
+  });
+
+  test('활성 캐릭터 엔티티만 Animator를 구동하고 지정한 컨트롤러를 전달한다', () => {
+    const rigidBodyRef = createRef<RapierRigidBody>();
+    const controller = createDefaultCharacterAnimator('entity.custom');
+    const mockUseCharacterAnimator = jest.mocked(useCharacterAnimator);
+    const { rerender } = renderHook(
+      ({ isActive }: { isActive: boolean }) =>
+        useEntity({ rigidBodyRef, isActive, animatorController: controller }),
+      { initialProps: { isActive: false } },
+    );
+    expect(mockUseCharacterAnimator).toHaveBeenLastCalledWith({ enabled: false, controller });
+    rerender({ isActive: true });
+    expect(mockUseCharacterAnimator).toHaveBeenLastCalledWith({ enabled: true, controller });
   });
 });

@@ -1,4 +1,5 @@
 import { SCENE_DOCUMENT_VERSION, isCanonicalSceneJsonObject } from './core';
+import { applySceneComponentUpdate, applySceneDocumentBatch } from './extendedCommands';
 import { deepFreezeOwned } from './ownership';
 import { parseSceneDocument } from './serialization';
 import type {
@@ -52,6 +53,12 @@ export function applySceneDocumentCommand(
   if (!parsedCurrent.ok || !parsedCurrent.document) {
     return createRejectedResult(document, parsedCurrent.issues);
   }
+  if (isRecordCommand(command, 'scene-object.component.update')) {
+    return applySceneComponentUpdate(parsedCurrent.document, command);
+  }
+  if (isRecordCommand(command, 'scene-document.batch')) {
+    return applySceneDocumentBatch(parsedCurrent.document, command, applySceneDocumentCommand);
+  }
 
   let mutation: SceneCommandMutation;
   try {
@@ -76,6 +83,13 @@ export function applySceneDocumentCommand(
     parsedCandidate.document,
     mutation.createEvent(parsedCandidate.document),
   );
+}
+
+function isRecordCommand<TType extends SceneDocumentCommand['type']>(
+  command: SceneDocumentCommand,
+  type: TType,
+): command is Extract<SceneDocumentCommand, { type: TType }> {
+  return typeof command === 'object' && command !== null && command.type === type;
 }
 
 function createMutation(

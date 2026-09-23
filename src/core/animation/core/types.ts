@@ -48,3 +48,7 @@ export interface AnimationSystemState {
 }
 
 export type AnimationSystemCallback = (metrics: AnimationMetrics) => void;
+
+export type AnimatorLease = {
+  readonly id: number;
+};

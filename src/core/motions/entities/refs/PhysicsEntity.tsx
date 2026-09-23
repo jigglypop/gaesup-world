@@ -75,6 +75,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         : {}),
       actions,
       isActive: props.isActive,
+      ...(props.animatorController ? { animatorController: props.animatorController } : {}),
       ...(props.outerGroupRef ? { outerGroupRef: props.outerGroupRef } : {}),
       ...(props.innerGroupRef ? { innerGroupRef: props.innerGroupRef } : {}),
       ...(props.colliderRef ? { colliderRef: props.colliderRef } : {}),

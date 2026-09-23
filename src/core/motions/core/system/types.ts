@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { BaseState, BaseMetrics, SystemOptions } from '@core/boilerplate';
+import type { BaseState, BaseMetrics, SystemOptions } from '@core/boilerplate/engine';
 import { GameStatesType } from '@core/world/components/Rideable/types';
 
 import { ActiveStateType } from '../types';

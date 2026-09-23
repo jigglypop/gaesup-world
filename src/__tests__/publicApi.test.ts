@@ -25,6 +25,18 @@ describe('public package API', () => {
     expect(root.LegacyGrid).toBe(drei.Grid);
     expect(root.LegacyGrid).toBeDefined();
   });
+  test('루트 엔트리로 Animator 컨트롤러 경로를 노출한다', () => {
+    const root = jest.requireActual('gaesup-world') as typeof import('gaesup-world');
+    expect(typeof root.AnimatorRuntime).toBe('function');
+    expect(typeof root.ThreeAnimatorBinding).toBe('function');
+    expect(typeof root.validateAnimatorController).toBe('function');
+    expect(typeof root.registerAnimatorController).toBe('function');
+    expect(typeof root.createDefaultCharacterAnimator).toBe('function');
+    expect(typeof root.useCharacterAnimator).toBe('function');
+    expect(typeof root.createAnimatorComponent).toBe('function');
+    expect(root.getAnimatorController(root.DEFAULT_CHARACTER_ANIMATOR_ID)).toBe(root.defaultCharacterAnimator);
+    expect(root.SCENE_COMPONENT_TYPES.animator).toBe('gaesup.animator');
+  });
   test('exports the SceneDocument command path through the existing root scene-object barrel', () => {
     const rootSource = readRootEntry();
     const coreSource = fs.readFileSync(CORE_ENTRY, 'utf8');

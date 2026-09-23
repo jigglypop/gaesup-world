@@ -3,15 +3,16 @@ import { useRef, RefObject } from 'react';
 import type { RapierCollider, RapierRigidBody } from '@react-three/rapier';
 import type { Group } from 'three';
 
+import type { AnimatorControllerDefinition } from '@core/animation/core/animator/types';
 import type { GroundRay } from '@core/motions/entities/types';
 import type { PhysicsEntityProps } from '@core/motions/entities/types';
 import { useAnimationSetup } from '@core/motions/hooks/setup/useAnimationSetup';
 import { useMotionSetup } from '@core/motions/hooks/setup/useMotionSetup';
+import { useCharacterAnimator } from '@core/motions/hooks/useCharacterAnimator';
 import {
   usePhysicsBridge,
   type UsePhysicsBridgeOptions,
 } from '@core/motions/hooks/usePhysicsBridge';
-import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 import { useGaesupStore } from '@stores/gaesupStore';
 
 import {
@@ -34,6 +35,7 @@ export interface UseEntityOptions
   colliderRef?: RefObject<RapierCollider>;
   groundRay?: GroundRay;
   colliderSize?: PhysicsEntityProps['colliderSize'];
+  animatorController?: AnimatorControllerDefinition;
 }
 
 export function useEntity(options: UseEntityOptions) {
@@ -47,6 +49,7 @@ export function useEntity(options: UseEntityOptions) {
     colliderRef,
     groundRay,
     colliderSize,
+    animatorController,
   } = options;
 
   const entityId = useRef<string>(
@@ -57,11 +60,12 @@ export function useEntity(options: UseEntityOptions) {
   const modeType = activeMode?.type ?? 'character';
   const active = isActive === true;
 
-  // 1. Animation Logic
   useAnimationSetup(actions, modeType, active);
-  useAnimationPlayer(active && modeType === 'character');
+  useCharacterAnimator({
+    enabled: active && modeType === 'character',
+    ...(animatorController ? { controller: animatorController } : {}),
+  });
 
-  // 2. Motion Logic
   const { executeMotionCommand, getMotionSnapshot } = useMotionSetup(
     entityId,
     rigidBodyRef,
@@ -69,7 +73,6 @@ export function useEntity(options: UseEntityOptions) {
     active,
   );
 
-  // 3. Physics Logic
   const physicsProps: UsePhysicsBridgeOptions = {
     entityId,
     rigidBodyRef,
@@ -82,10 +85,8 @@ export function useEntity(options: UseEntityOptions) {
   };
   usePhysicsBridge(physicsProps);
 
-  // 4. Collision Logic
   const collisionHandlers = useCollisionHandler(options);
 
-  // 5. Lifecycle Logic
   useEntityLifecycle(options);
 
   return {

@@ -7,3 +7,4 @@ export * from './useStateSystem';
 export * from './useBlueprintEntity';
 export * from './useInteractionSystem';
 export * from './types';
+export * from './useCharacterAnimator';

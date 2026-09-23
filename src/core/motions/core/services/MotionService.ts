@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 import { Profile } from '@/core/boilerplate/decorators';
 import { GameStatesType } from '@/core/world/components/Rideable/types';
-import { Service } from '@core/boilerplate';
+import { Service } from '@core/boilerplate/engine';
 
 @Service()
 export class MotionService {

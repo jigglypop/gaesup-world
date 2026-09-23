@@ -8,6 +8,7 @@ type WalletState = {
   lifetimeSpent: number;
   add: (amount: number) => void;
   spend: (amount: number) => boolean;
+  refund: (amount: number) => void;
   set: (amount: number) => void;
   serialize: () => WalletSerialized;
   hydrate: (data: WalletSerialized | null | undefined) => void;
@@ -28,6 +29,12 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     const lifetimeEarned = s.lifetimeEarned + amount;
     if (!Number.isFinite(bells) || !Number.isFinite(lifetimeEarned)) return;
     set({ bells, lifetimeEarned });
+  },
+
+  refund: (amount) => {
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    const s = get();
+    set({ bells: s.bells + amount, lifetimeSpent: Math.max(0, s.lifetimeSpent - amount) });
   },
 
   spend: (amount) => {

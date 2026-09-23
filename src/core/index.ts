@@ -68,6 +68,7 @@ export * from './prefab';
 export * from './runtime';
 export * from './scene';
 export * from './scene-object';
+export * from './scripting';
 export { DynamicFog } from './rendering/fog/DynamicFog';
 export type { DynamicFogProps } from './rendering/fog/DynamicFog';
 export { DynamicSky } from './rendering/sky';

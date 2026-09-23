@@ -1,4 +1,5 @@
 import { NetworkPayload, PlayerState } from '../types';
+import { MAX_REMOTE_CHAT_TEXT_LENGTH, isRemoteStringWithinLimit } from './remoteInputLimits';
 
 type PlayerNetworkLogLevel = 'none' | 'error' | 'warn' | 'info' | 'debug';
 
@@ -783,7 +784,9 @@ function isFiniteTuple(value: unknown, length: number): boolean {
 function isPlayerState(value: unknown, partial: boolean): boolean {
   if (!isRecord(value)) return false;
   for (const key of ['name', 'color', 'animation', 'modelUrl']) {
-    if (key in value && typeof value[key] !== 'string') return false;
+    if (!(key in value)) continue;
+    const field = value[key];
+    if (typeof field !== 'string' || !isRemoteStringWithinLimit(key, field)) return false;
   }
   if ('position' in value && !isFiniteTuple(value['position'], 3)) return false;
   if ('rotation' in value && !isFiniteTuple(value['rotation'], 4)) return false;
@@ -810,6 +813,7 @@ function isServerMessage(value: unknown): value is ServerMessage {
       return true;
     case 'Chat':
       return typeof value['text'] === 'string'
+        && value['text'].length <= MAX_REMOTE_CHAT_TEXT_LENGTH
         && typeof value['timestamp'] === 'number' && Number.isFinite(value['timestamp']);
     default:
       return false;

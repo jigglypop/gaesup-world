@@ -5,9 +5,18 @@ import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
 import { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
 import { BaseState, BaseMetrics } from '@/core/boilerplate/types';
 
+import { AnimatorRuntime } from './animator/AnimatorRuntime';
+import { ThreeAnimatorBinding } from './animator/ThreeAnimatorBinding';
+import type {
+  AnimatorControllerDefinition,
+  AnimatorEvent,
+  AnimatorEventListener,
+} from './animator/types';
+import { validateAnimatorController } from './animator/validate';
 import {
   AnimationSystemState,
-  AnimationSystemCallback
+  AnimationSystemCallback,
+  AnimatorLease,
 } from './types';
 import { AnimationMetrics } from '../bridge/types';
 
@@ -15,11 +24,27 @@ import { AnimationMetrics } from '../bridge/types';
 interface AnimationSystemMetrics extends BaseMetrics, AnimationMetrics {}
 interface AnimationSystemStateExt extends BaseState, AnimationSystemState {}
 
+type AnimatorLeaseEntry = {
+  lease: AnimatorLease;
+  definition: AnimatorControllerDefinition;
+};
+
 @ManageRuntime({ autoStart: false })
 export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, AnimationSystemMetrics> {
   private callbacks: Set<AnimationSystemCallback>;
   private systemType: string;
   private animationNames: string[] | null = null;
+  private animator: AnimatorRuntime | null = null;
+  private animatorBinding: ThreeAnimatorBinding | null = null;
+  private animatorDefinition: AnimatorControllerDefinition | null = null;
+  private animatorUnsubscribe: (() => void) | null = null;
+  private readonly animatorLeases: AnimatorLeaseEntry[] = [];
+  private readonly animatorListeners = new Set<AnimatorEventListener>();
+  private nextLeaseId = 1;
+  private readonly legacyContext: SystemContext = { deltaTime: 0, totalTime: 0, frameCount: 0 };
+  private readonly forwardAnimatorEvent = (event: AnimatorEvent) => {
+    this.animatorListeners.forEach((listener) => listener(event));
+  };
 
   constructor(type: string = 'default') {
     const defaultState: AnimationSystemStateExt = {
@@ -76,6 +101,7 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
     if (previous && previous !== action) previous.stop();
     if (!previous) this.animationNames = null;
     this.state.actions.set(name, action);
+    if (previous !== action) this.handleActionsChanged();
     this.updateMetrics(0);
     this.notifyCallbacks();
   }
@@ -85,13 +111,119 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
     expected.stop();
     this.state.actions.delete(name);
     this.animationNames = null;
+    this.handleActionsChanged();
     if (this.state.currentAnimation === name) this.state.currentAnimation = 'idle';
     this.updateMetrics(0);
     this.state.isPlaying = this.metrics.activeAnimations > 0;
     this.notifyCallbacks();
   }
 
+  acquireAnimator(definition: AnimatorControllerDefinition): AnimatorLease {
+    const validation = validateAnimatorController(definition);
+    if (!validation.valid) {
+      const first = validation.issues[0];
+      throw new Error(
+        `[AnimationSystem Error]: 잘못된 애니메이터 ${definition.id} (${first?.path}: ${first?.message})`,
+      );
+    }
+    const lease: AnimatorLease = { id: this.nextLeaseId++ };
+    this.animatorLeases.push({ lease, definition });
+    try {
+      this.rebuildAnimator();
+    } catch (error) {
+      this.animatorLeases.pop();
+      throw error;
+    }
+    return lease;
+  }
+
+  releaseAnimator(lease: AnimatorLease): void {
+    const index = this.animatorLeases.findIndex((entry) => entry.lease === lease);
+    if (index < 0) return;
+    this.animatorLeases.splice(index, 1);
+    this.rebuildAnimator();
+    this.notifyCallbacks();
+  }
+
+  isAnimatorOwner(lease: AnimatorLease): boolean {
+    return this.animatorLeases[0]?.lease === lease;
+  }
+
+  getAnimator(): AnimatorRuntime | null {
+    return this.animator;
+  }
+
+  onAnimatorEvent(listener: AnimatorEventListener): () => void {
+    this.animatorListeners.add(listener);
+    return () => {
+      this.animatorListeners.delete(listener);
+    };
+  }
+
+  private rebuildAnimator(): void {
+    const owner = this.animatorLeases[0];
+    if (!owner) {
+      this.teardownAnimator();
+      return;
+    }
+    if (this.animator && owner.definition === this.animatorDefinition) return;
+    this.teardownAnimator();
+    const binding = new ThreeAnimatorBinding(
+      (clip) => this.resolveAction(clip),
+      owner.definition.layers,
+    );
+    const runtime = new AnimatorRuntime(owner.definition, binding);
+    this.animator = runtime;
+    this.animatorBinding = binding;
+    this.animatorDefinition = owner.definition;
+    this.animatorUnsubscribe = runtime.onEvent(this.forwardAnimatorEvent);
+    this.syncAnimatorState();
+  }
+
+  private teardownAnimator(): void {
+    this.animatorUnsubscribe?.();
+    this.animatorUnsubscribe = null;
+    this.animator?.dispose();
+    this.animator = null;
+    this.animatorBinding = null;
+    this.animatorDefinition = null;
+  }
+
+  private resolveAction(clip: string): THREE.AnimationAction | null {
+    const exact = this.state.actions.get(clip);
+    if (exact) return exact;
+    const normalized = clip.toLowerCase();
+    for (const [name, action] of this.state.actions) {
+      if (name.toLowerCase() === normalized) return action;
+    }
+    return null;
+  }
+
+  private handleActionsChanged(): void {
+    if (!this.animator || !this.animatorBinding) return;
+    this.animatorBinding.invalidate();
+    this.animator.refreshBindings();
+    this.syncAnimatorState();
+  }
+
+  private syncAnimatorState(): void {
+    const animator = this.animator;
+    if (!animator) return;
+    const dominant = animator.getDominantClip();
+    if (dominant) this.state.currentAnimation = dominant;
+    this.state.isPlaying = animator.isEnabled() && dominant !== '';
+  }
+
   playAnimation(name: string, fadeInDuration: number = this.state.blendDuration): void {
+    if (this.animator) {
+      if (!this.animator.play(name, fadeInDuration)) return;
+      this.animator.setEnabled(true);
+      this.state.currentAnimation = name;
+      this.state.isPlaying = true;
+      this.updateMetrics(0);
+      this.notifyCallbacks();
+      return;
+    }
     const targetAction = this.state.actions.get(name);
     if (!targetAction) return;
     
@@ -108,6 +240,14 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
   }
 
   stopAnimation(): void {
+    if (this.animator) {
+      this.animator.setEnabled(false);
+      this.state.isPlaying = false;
+      this.state.currentAnimation = 'idle';
+      this.updateMetrics(0);
+      this.notifyCallbacks();
+      return;
+    }
     this.state.actions.forEach(action => action.stop());
     this.state.isPlaying = false;
     this.state.currentAnimation = 'idle';
@@ -116,6 +256,13 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
   }
 
   setWeight(weight: number): void {
+    if (this.animator) {
+      this.animator.setLayerWeight(0, weight);
+      this.state.currentWeight = this.animator.getLayerWeight(0);
+      this.updateMetrics(0);
+      this.notifyCallbacks();
+      return;
+    }
     const currentAction = this.state.actions.get(this.state.currentAnimation);
     if (currentAction) {
       currentAction.weight = weight;
@@ -126,6 +273,11 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
   }
 
   setTimeScale(scale: number): void {
+    if (this.animator) {
+      this.animator.setSpeed(scale);
+      this.notifyCallbacks();
+      return;
+    }
     const currentAction = this.state.actions.get(this.state.currentAnimation);
     if (currentAction) {
       currentAction.timeScale = scale;
@@ -145,14 +297,17 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
     return context;
   }
 
-  // AnimationBridge에서 호출하는 update 메서드 (deltaTime 파라미터 유지)
-  updateAnimation(deltaTime: number): void {
-    const context: SystemContext = {
-      deltaTime: deltaTime * 1000, // seconds to ms
-      totalTime: 0,
-      frameCount: 0
-    };
-    super.update(context);
+  updateAnimation(deltaTime: number, lease?: AnimatorLease): void {
+    if (this.animator) {
+      if (lease && !this.isAnimatorOwner(lease)) return;
+      if (!this.animator.update(deltaTime)) return;
+      this.syncAnimatorState();
+      this.updateMetrics(0);
+      this.notifyCallbacks();
+      return;
+    }
+    this.legacyContext.deltaTime = deltaTime * 1000;
+    super.update(this.legacyContext);
     this.state.isPlaying = this.metrics.activeAnimations > 0;
     
     if (this.callbacks.size > 0) {
@@ -197,6 +352,7 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
       }
     });
     this.state.actions.clear();
+    this.handleActionsChanged();
     this.state.currentAnimation = 'idle';
     this.state.isPlaying = false;
     this.updateMetrics(0);
@@ -204,6 +360,9 @@ export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, Ani
   }
 
   protected override onDispose(): void {
+    this.teardownAnimator();
+    this.animatorLeases.length = 0;
+    this.animatorListeners.clear();
     this.animationNames = null;
     if (this.state.animationMixer) {
       this.state.animationMixer.stopAllAction();

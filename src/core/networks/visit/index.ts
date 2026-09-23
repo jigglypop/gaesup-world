@@ -8,10 +8,12 @@ export {
 } from './types';
 export {
   applyVisitSnapshot,
+  captureVisitRestorePoint,
   serializeVisit,
   visitProviderFromSaveSystem,
   type ApplyVisitOptions,
   type SerializeVisitOptions,
+  type VisitRestorePoint,
 } from './serializer';
 export {
   createLocalVisitChannel,

@@ -21,6 +21,9 @@ export abstract class AbstractBridge<
   use(middleware: BridgeMiddleware<EngineType, SnapshotType, CommandType>): void {
     this.middlewares.push(middleware);
   }
+  protected hasEventConsumers(type: BridgeEventType): boolean {
+    return this.middlewares.length > 0 || (this.eventHandlers.get(type)?.size ?? 0) > 0;
+  }
   protected emit(event: BridgeEvent<EngineType, SnapshotType, CommandType>): void {
     const handlers = this.eventHandlers.get(event.type);
     if (handlers) {
@@ -84,7 +87,9 @@ export abstract class AbstractBridge<
   execute(id: string, command: CommandType): void {
     const engine = this.getEngine(id);
     if (!engine) return;
-    this.emit({ type: 'execute', id, timestamp: Date.now(), data: { command } });
+    if (this.hasEventConsumers('execute')) {
+      this.emit({ type: 'execute', id, timestamp: Date.now(), data: { command } });
+    }
     this.executeCommand(engine, command, id);
     this.notifyListeners(id);
   }
@@ -93,7 +98,7 @@ export abstract class AbstractBridge<
     const engine = this.getEngine(id);
     if (!engine) return null;
     const snapshot = this.createSnapshot(engine, id);
-    if (snapshot) {
+    if (snapshot && this.hasEventConsumers('snapshot')) {
       this.emit({ type: 'snapshot', id, timestamp: Date.now(), data: { snapshot } });
     }
     return snapshot;

@@ -32,12 +32,6 @@ jest.mock('@core/motions/core/forces/GravityComponent', () => ({
   })),
 }));
 
-jest.mock('@core/motions/controller/AnimationController', () => ({
-  AnimationController: jest.fn().mockImplementation(() => ({
-    update: jest.fn(),
-  })),
-}));
-
 const MockedDirectionComponent = jest.mocked(DirectionComponent);
 const MockedImpulseComponent = jest.mocked(ImpulseComponent);
 const MockedGravityComponent = jest.mocked(GravityComponent);
@@ -346,6 +340,21 @@ describe('PhysicsSystem', () => {
       system.calculate(calcProp, physicsState);
       expect(physicsState.gameStates.isMoving).toBe(true);
       expect(physicsState.gameStates.isNotMoving).toBe(false);
+    });
+
+    it('자동화 큐 없이 달리기 클릭 이동도 isRunning = true', () => {
+      const mockRigidBody = createMockRigidBody();
+      const calcProp = {
+        rigidBodyRef: { current: mockRigidBody },
+        innerGroupRef: { current: new THREE.Group() },
+      } as unknown as PhysicsCalcProps;
+      const physicsState = createPhysicsState({
+        mouse: { target: new THREE.Vector3(5, 0, 5), angle: 0, isActive: true, shouldRun: true },
+      });
+
+      system.calculate(calcProp, physicsState);
+      expect(physicsState.gameStates.isMoving).toBe(true);
+      expect(physicsState.gameStates.isRunning).toBe(true);
     });
 
     it('shift + 이동 시 isRunning = true', () => {

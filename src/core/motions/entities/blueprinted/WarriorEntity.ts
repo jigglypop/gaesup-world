@@ -1,10 +1,8 @@
 import { WARRIOR_BLUEPRINT } from '../../../../blueprints/characters/warrior'
 import { CharacterBlueprint } from '../../../../blueprints/types'
 import { Blueprint, BlueprintProperty } from '../../../boilerplate/decorators/blueprint/BlueprintDecorators'
-import { DomainBridge } from '../../../boilerplate/decorators/blueprint/BridgeDecorators'
 
 @Blueprint(WARRIOR_BLUEPRINT)
-@DomainBridge('motion')
 export class WarriorEntity {
   @BlueprintProperty('physics.mass')
   mass: number = 80

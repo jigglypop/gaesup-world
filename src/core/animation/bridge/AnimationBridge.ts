@@ -5,8 +5,15 @@ import { CoreBridge } from '@/core/boilerplate'
 import { AnimationCommand, AnimationSnapshot, AnimationMetrics } from './types'
 import { DomainBridge, EnableMetrics, Command } from '../../boilerplate/decorators'
 import { LogSnapshot, ValidateCommand, RequireEngineById } from '../../boilerplate/decorators'
+import { logger } from '../../utils/logger'
 import { AnimationSystem } from '../core/AnimationSystem'
-import { AnimationType } from '../core/types'
+import type { AnimatorRuntime } from '../core/animator/AnimatorRuntime'
+import type {
+  AnimatorControllerDefinition,
+  AnimatorEventListener,
+  AnimatorParameterValue,
+} from '../core/animator/types'
+import { AnimationType, AnimatorLease } from '../core/types'
 
 function sanitizeAnimationName(name: string): string {
   // Some GLBs contain control chars in clip names (e.g. "\brun") which breaks lookups.
@@ -96,6 +103,14 @@ export class AnimationBridge extends CoreBridge<
       case 'setSpeed':
         if (command.speed !== undefined) engine.setTimeScale(command.speed)
         break
+      case 'setParameter':
+        if (command.parameter && command.value !== undefined) {
+          engine.getAnimator()?.setParameter(command.parameter, command.value)
+        }
+        break
+      case 'trigger':
+        if (command.parameter) engine.getAnimator()?.setTrigger(command.parameter)
+        break
     }
   }
 
@@ -107,6 +122,7 @@ export class AnimationBridge extends CoreBridge<
     let snapshot = this.engineSnapshots.get(engine)
     if (!snapshot) {
       snapshot = {
+        animatorState: engine.getAnimator()?.getCurrentState() ?? null,
         currentAnimation: state.currentAnimation,
         isPlaying: state.isPlaying,
         weight: state.currentWeight,
@@ -121,6 +137,7 @@ export class AnimationBridge extends CoreBridge<
       }
       this.engineSnapshots.set(engine, snapshot)
     } else {
+      snapshot.animatorState = engine.getAnimator()?.getCurrentState() ?? null
       snapshot.currentAnimation = state.currentAnimation
       snapshot.isPlaying = state.isPlaying
       snapshot.weight = state.currentWeight
@@ -141,11 +158,51 @@ export class AnimationBridge extends CoreBridge<
   }
 
   @RequireEngineById()
-  update(type: AnimationType, deltaTime: number): void {
+  update(type: AnimationType, deltaTime: number, lease?: AnimatorLease): void {
     const engine = this.getEngine(type)
     if (engine) {
-      engine.updateAnimation(deltaTime)
+      engine.updateAnimation(deltaTime, lease)
     }
+  }
+
+  tickAnimator(type: AnimationType, deltaTime: number, lease: AnimatorLease): void {
+    this.getEngine(type)?.updateAnimation(deltaTime, lease)
+  }
+
+  acquireAnimator(type: AnimationType, definition: AnimatorControllerDefinition): AnimatorLease | null {
+    const engine = this.getEngine(type)
+    if (!engine) return null
+    try {
+      return engine.acquireAnimator(definition)
+    } catch (error) {
+      logger.error(
+        `[AnimationBridge Error]: 애니메이터 연결 실패 ${type}/${definition.id}`,
+        error instanceof Error ? error : String(error),
+      )
+      return null
+    }
+  }
+
+  releaseAnimator(type: AnimationType, lease: AnimatorLease): void {
+    this.getEngine(type)?.releaseAnimator(lease)
+  }
+
+  getAnimator(type: AnimationType): AnimatorRuntime | null {
+    return this.getEngine(type)?.getAnimator() ?? null
+  }
+
+  setAnimatorParameter(type: AnimationType, name: string, value: AnimatorParameterValue): void {
+    this.getEngine(type)?.getAnimator()?.setParameter(name, value)
+  }
+
+  setAnimatorTrigger(type: AnimationType, name: string): void {
+    this.getEngine(type)?.getAnimator()?.setTrigger(name)
+  }
+
+  onAnimatorEvent(type: AnimationType, listener: AnimatorEventListener): () => void {
+    const engine = this.getEngine(type)
+    if (!engine) return () => undefined
+    return engine.onAnimatorEvent(listener)
   }
 
   override execute(type: AnimationType, command: AnimationCommand): void {
@@ -157,6 +214,7 @@ export class AnimationBridge extends CoreBridge<
     const result = super.snapshot(type)
     if (!result) {
       return {
+        animatorState: null,
         currentAnimation: 'idle',
         isPlaying: false,
         weight: 0,

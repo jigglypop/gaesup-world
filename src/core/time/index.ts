@@ -1,5 +1,12 @@
 export * from './types';
-export { computeGameTime, realMsToGameMinutes, isNewDay, isNewHour, TIME_CONSTANTS } from './core/Clock';
+export {
+  computeGameTime,
+  dayOfTotalMinutes,
+  realMsToGameMinutes,
+  isNewDay,
+  isNewHour,
+  TIME_CONSTANTS,
+} from './core/Clock';
 export { useTimeStore } from './stores/timeStore';
 export {
   createTimePlugin,

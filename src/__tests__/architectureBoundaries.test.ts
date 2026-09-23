@@ -75,12 +75,6 @@ const LOCAL_UPWARD_EDGE_BASELINE: DependencyEdge[] = [
     target: 'src/core/world/components/Rideable/types.ts',
   },
   {
-    from: 'src/core/motions/core/movement/DirectionComponent.ts',
-    kind: 'import',
-    specifier: '@stores/slices/mode/types',
-    target: 'src/core/stores/slices/mode/types.ts',
-  },
-  {
     from: 'src/core/motions/core/services/MotionService.ts',
     kind: 'import',
     specifier: '@/core/world/components/Rideable/types',
@@ -97,12 +91,6 @@ const LOCAL_UPWARD_EDGE_BASELINE: DependencyEdge[] = [
     kind: 'import-type',
     specifier: '@core/world/components/Rideable/types',
     target: 'src/core/world/components/Rideable/types.ts',
-  },
-  {
-    from: 'src/core/motions/core/system/PhysicsSystem.ts',
-    kind: 'import',
-    specifier: '@core/motions/controller/AnimationController',
-    target: 'src/core/motions/controller/AnimationController.ts',
   },
   {
     from: 'src/core/motions/core/system/PhysicsSystem.ts',
@@ -515,7 +503,7 @@ describe('architecture dependency boundaries', () => {
   test('keeps the exact local Layer 1 and Layer 2 upward-edge baseline', () => {
     const { localUpwardEdges } = collectArchitectureDebt();
 
-    expect(LOCAL_UPWARD_EDGE_BASELINE).toHaveLength(16);
+    expect(LOCAL_UPWARD_EDGE_BASELINE).toHaveLength(14);
     expect(getBaselineDiff(localUpwardEdges, LOCAL_UPWARD_EDGE_BASELINE)).toEqual({
       additions: [],
       stale: [],

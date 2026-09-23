@@ -4,6 +4,7 @@ export {
   GameplayEventRegistry,
   createDefaultGameplayEventRegistry,
   getGameplayEventRegistry,
+  setDefaultGameplayEventServices,
 } from './registry';
 export { SEED_GAMEPLAY_EVENTS } from './data/seedEvents';
 export {
@@ -27,6 +28,8 @@ export type {
   GameplayEventId,
   GameplayEventPolicy,
   GameplayEventRuntimeState,
+  GameplayEventServices,
+  GameplayToastKind,
   GameplayEventTrigger,
   GameplayTriggerEvent,
 } from './types';

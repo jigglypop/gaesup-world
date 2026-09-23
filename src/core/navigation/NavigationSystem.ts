@@ -234,13 +234,17 @@ export class NavigationSystem {
   }
 
   worldToGrid(worldX: number, worldZ: number): [number, number] {
-    const { cellSize, worldMinX, worldMinZ } = this.config;
-    const gx = Math.floor((worldX - worldMinX) / cellSize);
-    const gz = Math.floor((worldZ - worldMinZ) / cellSize);
-    return [
-      Math.max(0, Math.min(gx, this.gridWidth - 1)),
-      Math.max(0, Math.min(gz, this.gridHeight - 1)),
-    ];
+    return [this.worldToGridX(worldX), this.worldToGridZ(worldZ)];
+  }
+
+  private worldToGridX(worldX: number): number {
+    const gx = Math.floor((worldX - this.config.worldMinX) / this.config.cellSize);
+    return Math.max(0, Math.min(gx, this.gridWidth - 1));
+  }
+
+  private worldToGridZ(worldZ: number): number {
+    const gz = Math.floor((worldZ - this.config.worldMinZ) / this.config.cellSize);
+    return Math.max(0, Math.min(gz, this.gridHeight - 1));
   }
 
   gridToWorld(gx: number, gz: number, y?: number): Waypoint {
@@ -422,8 +426,7 @@ export class NavigationSystem {
   }
 
   sampleHeight(worldX: number, worldZ: number): number {
-    const [gx, gz] = this.worldToGrid(worldX, worldZ);
-    return this.heightGrid[this.cellIndex(gx, gz)] ?? 0;
+    return this.heightGrid[this.cellIndex(this.worldToGridX(worldX), this.worldToGridZ(worldZ))] ?? 0;
   }
 
   hasNavigationConstraints(): boolean {
@@ -638,7 +641,8 @@ export class NavigationSystem {
     let prevGZ = -1;
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
-      const [gx, gz] = this.worldToGrid(startX + dx * t, startZ + dz * t);
+      const gx = this.worldToGridX(startX + dx * t);
+      const gz = this.worldToGridZ(startZ + dz * t);
       if (gx === prevGX && gz === prevGZ) continue;
       const idx = this.cellIndex(gx, gz);
       if (!(options.ignoreStart && i === 0) && !this.canOccupyCell(gx, gz, footprint)) return false;
@@ -724,8 +728,11 @@ export class NavigationSystem {
   }
 
   isWalkable(worldX: number, worldZ: number, options: NavigationAgentSize = {}): boolean {
-    const [gx, gz] = this.worldToGrid(worldX, worldZ);
-    return this.canOccupyCell(gx, gz, this.resolveAgentFootprint(options));
+    return this.canOccupyCell(
+      this.worldToGridX(worldX),
+      this.worldToGridZ(worldZ),
+      this.resolveAgentFootprint(options),
+    );
   }
 
   getGridDimensions(): { width: number; height: number; cellSize: number } {

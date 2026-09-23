@@ -13,6 +13,7 @@ import {
 } from '@react-three/rapier';
 import * as THREE from 'three';
 
+import type { AnimatorControllerDefinition } from '@core/animation/core/animator/types';
 import type { CollisionUserData } from '@core/boilerplate/hooks/useCollisionHandler';
 
 export type Part = {
@@ -54,6 +55,7 @@ export type GroundRay = {
 }
 
 export type PhysicsEntityProps = {
+  animatorController?: AnimatorControllerDefinition;
   onReady ? : () => void;
   onFrame ? : () => void;
   onDestroy ? : () => void;

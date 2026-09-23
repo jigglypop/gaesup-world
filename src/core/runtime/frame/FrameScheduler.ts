@@ -1,0 +1,171 @@
+import {
+  FRAME_PHASES,
+  type FrameCallback,
+  type FramePhase,
+  type FramePhaseMetrics,
+  type FrameSubscriptionOptions,
+} from './types';
+import { logger } from '../../utils/logger';
+
+type FrameEntry = {
+  callback: FrameCallback;
+  order: number;
+  sequence: number;
+  throttleMs: number;
+  lastRunMs: number;
+  enabled: (() => boolean) | undefined;
+  label: string;
+  active: boolean;
+  failed: boolean;
+};
+
+function compareEntries(a: FrameEntry, b: FrameEntry): number {
+  return a.order - b.order || a.sequence - b.sequence;
+}
+
+export class FrameScheduler {
+  private readonly phases = new Map<FramePhase, FrameEntry[]>();
+  private readonly metrics = new Map<FramePhase, FramePhaseMetrics>();
+  private sequence = 0;
+  private ticking = false;
+  private needsCompaction = false;
+  private metricsEnabled = false;
+
+  constructor() {
+    FRAME_PHASES.forEach((phase) => {
+      this.phases.set(phase, []);
+      this.metrics.set(phase, { calls: 0, totalMs: 0, lastMs: 0 });
+    });
+  }
+
+  add(phase: FramePhase, callback: FrameCallback, options: FrameSubscriptionOptions = {}): () => void {
+    const entries = this.phases.get(phase);
+    if (!entries) throw new Error(`[FrameScheduler Error]: 알 수 없는 프레임 단계 ${phase}`);
+    const entry: FrameEntry = {
+      callback,
+      order: options.order ?? 0,
+      sequence: this.sequence++,
+      throttleMs: Math.max(0, options.throttleMs ?? 0),
+      lastRunMs: Number.NEGATIVE_INFINITY,
+      enabled: options.enabled,
+      label: options.label ?? phase,
+      active: true,
+      failed: false,
+    };
+    if (this.ticking) {
+      entries.push(entry);
+      this.needsCompaction = true;
+    } else {
+      entries.push(entry);
+      entries.sort(compareEntries);
+    }
+    return () => {
+      if (!entry.active) return;
+      entry.active = false;
+      if (this.ticking) {
+        this.needsCompaction = true;
+        return;
+      }
+      this.compactPhase(entries);
+    };
+  }
+
+  tick(delta: number, elapsedMs: number): void {
+    this.ticking = true;
+    try {
+      for (let p = 0; p < FRAME_PHASES.length; p++) {
+        const phase = FRAME_PHASES[p]!;
+        const entries = this.phases.get(phase)!;
+        if (entries.length === 0) continue;
+        const startedAt = this.metricsEnabled ? performance.now() : 0;
+        const count = entries.length;
+        for (let i = 0; i < count; i++) {
+          this.runEntry(entries[i]!, delta, elapsedMs);
+        }
+        if (this.metricsEnabled) this.recordMetrics(phase, performance.now() - startedAt);
+      }
+    } finally {
+      this.ticking = false;
+    }
+    if (this.needsCompaction) {
+      this.needsCompaction = false;
+      this.phases.forEach((entries) => {
+        this.compactPhase(entries);
+        entries.sort(compareEntries);
+      });
+    }
+  }
+
+  private runEntry(entry: FrameEntry, delta: number, elapsedMs: number): void {
+    if (!entry.active || entry.failed) return;
+    if (entry.enabled && !entry.enabled()) return;
+    if (entry.throttleMs > 0) {
+      if (elapsedMs - entry.lastRunMs < entry.throttleMs) return;
+      entry.lastRunMs = elapsedMs;
+    }
+    try {
+      entry.callback(delta, elapsedMs);
+    } catch (error) {
+      entry.failed = true;
+      logger.error(
+        `[FrameScheduler Error]: 프레임 콜백 실패로 비활성화 ${entry.label}`,
+        error instanceof Error ? error : String(error),
+      );
+    }
+  }
+
+  private compactPhase(entries: FrameEntry[]): void {
+    let write = 0;
+    for (let read = 0; read < entries.length; read++) {
+      const entry = entries[read]!;
+      if (entry.active) entries[write++] = entry;
+    }
+    entries.length = write;
+  }
+
+  private recordMetrics(phase: FramePhase, elapsed: number): void {
+    const metrics = this.metrics.get(phase)!;
+    metrics.calls++;
+    metrics.totalMs += elapsed;
+    metrics.lastMs = elapsed;
+  }
+
+  setMetricsEnabled(enabled: boolean): void {
+    this.metricsEnabled = enabled;
+  }
+
+  getMetrics(phase: FramePhase): Readonly<FramePhaseMetrics> {
+    return this.metrics.get(phase)!;
+  }
+
+  resetMetrics(): void {
+    this.metrics.forEach((metrics) => {
+      metrics.calls = 0;
+      metrics.totalMs = 0;
+      metrics.lastMs = 0;
+    });
+  }
+
+  count(phase?: FramePhase): number {
+    let total = 0;
+    this.phases.forEach((entries, entryPhase) => {
+      if (phase && entryPhase !== phase) return;
+      for (let i = 0; i < entries.length; i++) {
+        if (entries[i]!.active) total++;
+      }
+    });
+    return total;
+  }
+
+  clear(): void {
+    this.phases.forEach((entries) => {
+      entries.forEach((entry) => {
+        entry.active = false;
+      });
+      if (!this.ticking) entries.length = 0;
+    });
+    if (this.ticking) this.needsCompaction = true;
+  }
+}
+
+export const frameScheduler = new FrameScheduler();

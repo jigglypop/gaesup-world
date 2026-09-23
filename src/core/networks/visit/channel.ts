@@ -1,4 +1,5 @@
 import type { VisitChannel, VisitChannelEvent, VisitSnapshot } from './types';
+import { MAX_VISIT_SNAPSHOT_DOMAINS, MAX_VISIT_WIRE_MESSAGE_LENGTH } from '../core/remoteInputLimits';
 
 class LocalVisitChannelImpl implements VisitChannel {
   private listeners = new Set<(event: VisitChannelEvent) => void>();
@@ -85,10 +86,12 @@ function isVisitSnapshot(value: unknown): value is VisitSnapshot {
     && value['version'] >= 1
     && isTimestamp(value['savedAt'])
     && isTimestamp(value['capturedAt'])
-    && isRecord(value['domains']);
+    && isRecord(value['domains'])
+    && Object.keys(value['domains']).length <= MAX_VISIT_SNAPSHOT_DOMAINS;
 }
 
 function tryParseWire(raw: string): WireMessage | null {
+  if (raw.length > MAX_VISIT_WIRE_MESSAGE_LENGTH) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!isRecord(parsed) || parsed['v'] !== WIRE_VERSION) return null;

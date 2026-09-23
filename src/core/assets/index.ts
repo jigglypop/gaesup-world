@@ -9,3 +9,4 @@ export {
 } from './stores/assetStore';
 export { AssetPreviewCanvas } from './components/AssetPreviewCanvas';
 export type { AssetPreviewCanvasProps } from './components/AssetPreviewCanvas';
+export * from './pipeline';

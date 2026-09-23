@@ -214,8 +214,8 @@ class GrassManager {
 
   private refreshTrample(delta: number): void {
     const bridge = BridgeFactory.getOrCreate('motion') as MotionBridge | null;
-    const ids = bridge?.getActiveEntities() ?? [];
-    const snap = ids[0] ? bridge?.snapshot(ids[0]) : null;
+    const playerId = bridge?.getPlayerEntityId() ?? null;
+    const snap = playerId ? bridge?.snapshot(playerId) : null;
     const lerp = THREE.MathUtils.clamp(delta * 6, 0, 1);
     if (snap) {
       this.trampleWorld.x += (snap.position.x - this.trampleWorld.x) * lerp;

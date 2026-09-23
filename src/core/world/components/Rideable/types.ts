@@ -1,9 +1,9 @@
-import { CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 
-import { RigidBodyProps } from '@react-three/rapier';
+import type { RigidBodyProps } from '@react-three/rapier';
 import * as THREE from 'three';
 
-import { CollisionEvent } from '@core/types/common';
+import type { CollisionEvent } from '@core/types/common';
 
 
 export type GameStatesType = {

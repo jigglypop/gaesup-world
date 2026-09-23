@@ -2,9 +2,8 @@ import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import type { RefObject } from '@core/boilerplate';
-import { AbstractSystem, SystemContext, SystemUpdateArgs } from '@core/boilerplate';
-import { HandleError, ManageRuntime, Profile } from '@core/boilerplate';
-import { AnimationController } from '@core/motions/controller/AnimationController';
+import { AbstractSystem, SystemContext, SystemUpdateArgs } from '@core/boilerplate/engine';
+import { HandleError, ManageRuntime, Profile } from '@core/boilerplate/engine';
 import { GameStatesType } from '@core/world/components/Rideable/types';
 
 import type { PhysicsCalcProps, PhysicsState } from '../../types';
@@ -70,10 +69,8 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   private directionComponent: DirectionComponent;
   private impulseComponent: ImpulseComponent;
   private gravityComponent: GravityComponent;
-  private animationController = new AnimationController();
   private forceComponents: ForceComponent[] = [];
 
-  private keyStateCache = new Map<number, { lastKeyE: boolean; lastKeyR: boolean }>();
   private isCurrentlyJumping = false;
   private lastJumpPressed = false;
   private lastMovingState = false;
@@ -145,7 +142,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
       if (didTransition) {
         this.applyModeRigidBodySettings(calcProp, physicsState, modeType);
       }
-      this.animationController.update(physicsState.gameStates);
       return;
     }
 
@@ -157,7 +153,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
       currentVelocity.z
     );
     this.checkAllStates(calcProp, physicsState);
-    this.animationController.update(physicsState.gameStates);
     switch (modeType) {
       case 'character':
         this.calculateCharacter(calcProp, physicsState);
@@ -251,11 +246,8 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
 
   @Profile()
   private checkAllStates(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
-    // Use the numeric rigid-body handle to avoid per-frame string allocations.
-    const instanceId = calcProp.rigidBodyRef.current?.handle ?? -1;
     this.checkGround(calcProp, physicsState);
     this.checkMoving(physicsState);
-    this.checkRiding(instanceId, physicsState);
   }
 
   @Profile()
@@ -351,23 +343,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
       gameStatesRef.isRunning = isRunning;
       gameStatesRef.isNotRunning = !isRunning;
     });
-  }
-
-  private checkRiding(instanceId: number = -1, physicsState: PhysicsState): void {
-    const keyboard = physicsState.keyboard;
-    if (!this.keyStateCache.has(instanceId)) {
-      this.keyStateCache.set(instanceId, { lastKeyE: false, lastKeyR: false });
-    }
-    const keyState = this.keyStateCache.get(instanceId)!;
-    const keyE = keyboard.keyE;
-    const gameStatesRef = physicsState.gameStates;
-    if (keyE && !keyState.lastKeyE) {
-      if (gameStatesRef.canRide && !gameStatesRef.isRiding) {
-      } else if (gameStatesRef.isRiding) {
-      }
-    }
-    keyState.lastKeyE = keyE;
-    keyState.lastKeyR = false;
   }
 
   private freezeInput(physicsState: PhysicsState): void {
@@ -535,7 +510,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
   protected override onDispose(): void {
     this.directionComponent.dispose();
     this.forceComponents = [];
-    this.keyStateCache.clear();
     this.groundStableCount = 0;
     this.lastGroundedY = null;
     this.lastJumpPressed = false;

@@ -94,7 +94,7 @@ export const useShopStore = create<ShopState>((set, get) => ({
       if (!wallet.spend(price)) return { ok: false, reason: 'spend failed' };
       const remaining = useInventoryStore.getState().add(itemId, count);
       if (remaining > 0) {
-        wallet.add(price);
+        wallet.refund(price);
         return { ok: false, reason: 'inventory full' };
       }
       const next = s.dailyStock.slice();

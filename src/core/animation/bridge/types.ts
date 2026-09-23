@@ -1,14 +1,17 @@
 import { AnimationType } from '../core/types';
 
 export type AnimationCommand = {
-  type: 'play' | 'stop' | 'pause' | 'setWeight' | 'setSpeed' | 'blend';
+  type: 'play' | 'stop' | 'pause' | 'setWeight' | 'setSpeed' | 'blend' | 'setParameter' | 'trigger';
   animation?: string;
   weight?: number;
   speed?: number;
   duration?: number;
+  parameter?: string;
+  value?: number | boolean;
 };
 
 export type AnimationSnapshot = {
+  animatorState?: string | null;
   currentAnimation: string;
   isPlaying: boolean;
   weight: number;

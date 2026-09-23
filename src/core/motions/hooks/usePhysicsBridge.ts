@@ -3,6 +3,7 @@ import { useRef, useEffect, useCallback, useId, useMemo, useState } from 'react'
 import { useFrame, RootState } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { BridgeFactory } from '@core/boilerplate';
 import { createInteractionInputAdapter, type InputAdapter } from '@core/interactions/core';
 import { InMemoryEventBus } from '@core/plugins';
 import {
@@ -13,6 +14,7 @@ import { useGaesupStore } from '@stores/gaesupStore';
 import { StoreState } from '@stores/types';
 
 import { updateInputState } from '../bridge';
+import type { MotionBridge } from '../bridge/MotionBridge';
 import { PhysicsBridge } from '../bridge/PhysicsBridge';
 import {
   DEFAULT_MOTIONS_RUNTIME_SERVICE_ID,
@@ -25,6 +27,7 @@ import { createInitialPhysicsState } from './state/physicsStateFactory';
 import { subscribeLegacyTeleportEvents } from './teleportEvents';
 import { getGlobalStateManager } from './useStateSystem';
 import { EntityStateManager } from '../core/system/EntityStateManager';
+import type { PhysicsUpdateArgs } from '../core/system/PhysicsSystem';
 import { PhysicsCalculationProps, PhysicsInputState, PhysicsState } from '../types';
 import { PhysicsCalcProps } from '../types';
 
@@ -105,6 +108,8 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
     mouse: inputAdapter.getMouse(),
   });
   const calcPropRef = useRef<PhysicsCalcProps | null>(null);
+  const updateArgsRef = useRef<PhysicsUpdateArgs | null>(null);
+  const motionBridgeRef = useRef<MotionBridge | null>(null);
 
   const setKeyboardInputRef = useRef((input: Partial<PhysicsInputState['keyboard']>) => {
     inputAdapterRef.current.updateKeyboard(input);
@@ -247,7 +252,7 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
       calcProp.worldContext = worldContext;
       if (props.colliderSize) {
         calcProp.colliderSize = props.colliderSize;
-      } else {
+      } else if ('colliderSize' in calcProp) {
         delete calcProp.colliderSize;
       }
       if (props.innerGroupRef) {
@@ -256,11 +261,18 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
     }
 
     // 브릿지를 통해 물리 업데이트
-    registration.bridge.updateEntity(registration.entityId, {
-      deltaTime: delta,
-      calcProp,
-      physicsState
-    });
+    let updateArgs = updateArgsRef.current;
+    if (!updateArgs) {
+      updateArgs = { deltaTime: delta, calcProp, physicsState };
+      updateArgsRef.current = updateArgs;
+    } else {
+      updateArgs.deltaTime = delta;
+      updateArgs.calcProp = calcProp;
+      updateArgs.physicsState = physicsState;
+    }
+    registration.bridge.updateEntity(registration.entityId, updateArgs);
+    motionBridgeRef.current ??= BridgeFactory.getOrCreate<MotionBridge>('motion');
+    motionBridgeRef.current?.reportGrounded(registration.entityId, physicsState.gameStates.isOnTheGround);
   }, [enabled, inputAdapter, props]);
 
   // 프레임 루프

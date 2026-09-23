@@ -14,6 +14,8 @@ export const SCENE_COMPONENT_TYPES = {
   interactable: 'gaesup.interactable',
   buildingPiece: 'gaesup.buildingPiece',
   npc: 'gaesup.npc',
+  animator: 'gaesup.animator',
+  prefabInstance: 'gaesup.prefabInstance',
 } as const;
 
 export type StandardSceneComponentType =
@@ -66,6 +68,11 @@ export interface NpcComponentData extends SceneJsonAuthoringObject {
   dialogTreeId?: string;
 }
 
+export interface AnimatorComponentData extends SceneJsonAuthoringObject {
+  controllerId: string;
+  parameters?: SceneJsonObject;
+}
+
 export type MeshRendererComponent = SceneComponent<
   typeof SCENE_COMPONENT_TYPES.meshRenderer,
   MeshRendererComponentData
@@ -91,6 +98,10 @@ export type BuildingPieceComponent = SceneComponent<
   BuildingPieceComponentData
 >;
 export type NpcComponent = SceneComponent<typeof SCENE_COMPONENT_TYPES.npc, NpcComponentData>;
+export type AnimatorComponent = SceneComponent<
+  typeof SCENE_COMPONENT_TYPES.animator,
+  AnimatorComponentData
+>;
 
 export type StandardSceneComponent =
   | MeshRendererComponent
@@ -99,7 +110,8 @@ export type StandardSceneComponent =
   | ScriptComponent
   | InteractableComponent
   | BuildingPieceComponent
-  | NpcComponent;
+  | NpcComponent
+  | AnimatorComponent;
 
 export function createMeshRendererComponent(
   data: MeshRendererComponentData = {},
@@ -152,6 +164,13 @@ export function createBuildingPieceComponent(
 export function createNpcComponent(data: NpcComponentData): NpcComponent {
   return createSceneComponent({
     type: SCENE_COMPONENT_TYPES.npc,
+    data,
+  });
+}
+
+export function createAnimatorComponent(data: AnimatorComponentData): AnimatorComponent {
+  return createSceneComponent({
+    type: SCENE_COMPONENT_TYPES.animator,
     data,
   });
 }

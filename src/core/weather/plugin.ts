@@ -1,12 +1,12 @@
-import type { GaesupPlugin, PluginContext } from '../plugins';
+import { createStoreDomainPlugin } from '../plugins';
 import { useWeatherStore } from './stores/weatherStore';
 import type { WeatherSerialized } from './types';
 
-export interface WeatherPluginOptions {
+export type WeatherPluginOptions = {
   id?: string;
   saveExtensionId?: string;
   storeServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.weather';
 const DEFAULT_SAVE_EXTENSION_ID = 'weather';
@@ -20,40 +20,19 @@ export function hydrateWeatherState(data: WeatherSerialized | null | undefined):
   useWeatherStore.getState().hydrate(data);
 }
 
-export function createWeatherPlugin(options: WeatherPluginOptions = {}): GaesupPlugin {
-  const pluginId = options.id ?? DEFAULT_PLUGIN_ID;
-  const saveExtensionId = options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID;
-  const storeServiceId = options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID;
-
-  return {
-    id: pluginId,
+export function createWeatherPlugin(options: WeatherPluginOptions = {}) {
+  return createStoreDomainPlugin({
+    id: options.id ?? DEFAULT_PLUGIN_ID,
     name: 'GaeSup Weather',
-    version: '0.1.0',
-    runtime: 'client',
+    saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
+    storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
+    store: useWeatherStore,
+    readyEvent: 'weather:ready',
     capabilities: ['weather'],
-    setup(ctx: PluginContext) {
-      ctx.save.register(saveExtensionId, {
-        key: saveExtensionId,
-        serialize: serializeWeatherState,
-        hydrate: hydrateWeatherState,
-        prepareHydrate: (data: WeatherSerialized | null | undefined) => useWeatherStore.getState().prepareHydrate(data),
-      }, pluginId);
-      ctx.services.register(storeServiceId, {
-        useStore: useWeatherStore,
-        getState: useWeatherStore.getState,
-        setState: useWeatherStore.setState,
-      }, pluginId);
-      ctx.events.emit('weather:ready', {
-        pluginId,
-        saveExtensionId,
-        storeServiceId,
-      });
-    },
-    dispose(ctx) {
-      ctx.save.remove(saveExtensionId);
-      ctx.services.remove(storeServiceId);
-    },
-  };
+    serialize: serializeWeatherState,
+    hydrate: hydrateWeatherState,
+    prepareHydrate: (data) => useWeatherStore.getState().prepareHydrate(data),
+  });
 }
 
 export const weatherPlugin = createWeatherPlugin();

@@ -196,6 +196,8 @@
     "prepare": "npm run build",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
+    "check:entries": "node scripts/check-entry-isolation.cjs src/server-contracts.ts",
+    "check:layer1": "node scripts/check-entry-isolation.cjs --layer1 --max-violations=3",
     "test": "jest",
     "test:package": "npm run build && npm run test:package:built",
     "test:package:built": "node scripts/verify-package-consumer.cjs",

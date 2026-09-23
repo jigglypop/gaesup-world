@@ -27,3 +27,4 @@ export type {
   RuntimeDomainBinding,
   RuntimePluginTarget,
 } from './types';
+export * from './frame';

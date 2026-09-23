@@ -93,3 +93,18 @@ export type GameplayActionHandler<TAction extends GameplayEventAction = Gameplay
   action: TAction,
   context: GameplayEventContext,
 ) => void | Promise<void>;
+
+export type GameplayToastKind = NonNullable<Extract<GameplayEventAction, { type: 'toast' }>['kind']>;
+
+export type GameplayEventServices = {
+  hasItem: (itemId: string, count: number) => boolean;
+  addItem: (itemId: string, count: number) => void;
+  removeItem: (itemId: string, count: number) => void;
+  questStatus: (questId: string) => string | undefined;
+  startQuest: (questId: string) => void;
+  completeQuest: (questId: string) => void;
+  notifyQuestFlag: (key: string, value: string | number | boolean) => void;
+  isEventActive: (eventId: string) => boolean;
+  showDialog: (dialogTreeId: string, npcId?: string) => void;
+  notify: (kind: GameplayToastKind, text: string) => void;
+};

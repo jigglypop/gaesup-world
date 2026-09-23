@@ -49,11 +49,12 @@ export function getClickNavigationRoute(): THREE.Vector3[] {
   return routeState.waypoints;
 }
 
-export function getClickNavigationSettings(): { threshold: number; shouldRun: boolean } {
-  return {
-    threshold: routeState.threshold,
-    shouldRun: routeState.shouldRun,
-  };
+const clickNavigationSettings = { threshold: 0, shouldRun: false };
+
+export function getClickNavigationSettings(): Readonly<{ threshold: number; shouldRun: boolean }> {
+  clickNavigationSettings.threshold = routeState.threshold;
+  clickNavigationSettings.shouldRun = routeState.shouldRun;
+  return clickNavigationSettings;
 }
 
 export function consumeReachedClickNavigationWaypoint(currentPosition: THREE.Vector3): THREE.Vector3 | null {

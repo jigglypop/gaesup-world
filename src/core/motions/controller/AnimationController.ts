@@ -2,6 +2,10 @@ import { getGlobalAnimationBridge } from "@/core/animation/hooks/useAnimationBri
 import { Profile, HandleError } from '@/core/boilerplate/decorators';
 import { GameStatesType } from "@/core/world/components/Rideable/types";
 
+/**
+ * 이동 상태로 캐릭터 클립을 직접 재생하던 이전 결정 경로다. 엔진은 더 이상 사용하지 않는다.
+ * @deprecated Animator 컨트롤러(useCharacterAnimator)를 사용한다.
+ */
 export class AnimationController {
   private animationBridge = getGlobalAnimationBridge();
   private lastAnimation = "idle";

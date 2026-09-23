@@ -1,6 +1,19 @@
 import {
+  BUILTIN_SCRIPT_IDS,
   DEFAULT_CHARACTER_EQUIPMENT_PRESETS,
+  FRAME_PHASES,
+  SCENE_COMPONENT_TYPES,
+  ScriptRuntime,
+  createFrameDriver,
+  createSceneComponent,
+  createSceneDocument,
+  createSceneDocumentController,
+  registerBuiltinScripts,
   applyCharacterEquipmentPreset,
+  createAnimatorComponent,
+  createDefaultCharacterAnimator,
+  getAnimatorController,
+  registerAnimatorController,
   createCameraCloseUpPreset,
   createCameraPlugin,
   createGaesupRuntime,
@@ -43,7 +56,73 @@ export type PackageSurfaceSubpathModules = {
   serverContracts: typeof GaesupServerContractsSurface;
 };
 
+const PACKAGE_SURFACE_ANIMATOR_ID = 'package-surface.character';
+
+function createPackageSurfaceAnimator() {
+  const controller = createDefaultCharacterAnimator(PACKAGE_SURFACE_ANIMATOR_ID);
+  const locomotion = controller.layers[0]?.states.find((state) => state.name === 'locomotion');
+  if (locomotion) {
+    locomotion.events = [
+      { name: 'footstep', time: 0.25 },
+      { name: 'footstep', time: 0.75 },
+    ];
+  }
+  controller.layers.push({
+    name: 'upperBody',
+    defaultState: 'rest',
+    weight: 0.8,
+    mask: { bones: ['Spine'], includeDescendants: true },
+    states: [
+      { name: 'rest', motion: { kind: 'clip', clip: 'idle' } },
+      { name: 'wave', motion: { kind: 'clip', clip: 'wave' } },
+    ],
+  });
+  if (!getAnimatorController(PACKAGE_SURFACE_ANIMATOR_ID)) registerAnimatorController(controller);
+  return {
+    controller,
+    component: createAnimatorComponent({ controllerId: PACKAGE_SURFACE_ANIMATOR_ID }),
+  };
+}
+
+function createPackageSurfaceScripting() {
+  const unregisterScripts = registerBuiltinScripts();
+  const controller = createSceneDocumentController(
+    createSceneDocument({
+      id: 'package-surface-scene',
+      objects: [
+        {
+          id: 'package-surface-door',
+          name: 'Door',
+          components: [
+            createSceneComponent({
+              id: 'door-script',
+              type: SCENE_COMPONENT_TYPES.script,
+              data: { scriptId: BUILTIN_SCRIPT_IDS.door, props: { openDegrees: 100 } },
+            }),
+          ],
+        },
+        {
+          id: 'package-surface-windmill',
+          name: 'Windmill',
+          components: [
+            createSceneComponent({
+              id: 'windmill-script',
+              type: SCENE_COMPONENT_TYPES.script,
+              data: { scriptId: BUILTIN_SCRIPT_IDS.rotator, props: { degreesPerSecond: 30 } },
+            }),
+          ],
+        },
+      ],
+    }),
+  );
+  const scripts = new ScriptRuntime({ controller });
+  const effectDriver = createFrameDriver<string>('effects', () => undefined);
+  return { controller, scripts, effectDriver, phases: FRAME_PHASES, unregisterScripts };
+}
+
 export function createPackageSurfaceExample() {
+  const animator = createPackageSurfaceAnimator();
+  const scripting = createPackageSurfaceScripting();
   const runtime = createGaesupRuntime({
     plugins: [createCameraPlugin()],
   });
@@ -86,6 +165,8 @@ export function createPackageSurfaceExample() {
   void DEFAULT_CHARACTER_EQUIPMENT_PRESETS;
 
   return {
+    animator,
+    scripting,
     runtime,
     closeUpPreset,
     teleportDestination,

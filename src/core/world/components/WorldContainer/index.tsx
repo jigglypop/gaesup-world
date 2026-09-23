@@ -5,6 +5,7 @@ import type { CameraOptionType } from '@/core/camera';
 import { CAMERA_DEFAULTS } from '@/core/camera/core/constants';
 import { PerformanceCollector } from '@/core/editor/components/panels/PerformanceCollector';
 import { GaesupRuntimeProvider } from '@/core/runtime';
+import { FrameSchedulerHost } from '@/core/runtime/frame/react/FrameSchedulerHost';
 import type { UrlsState } from '@/core/stores/slices/urls/types';
 import { useGaesupStore } from '@stores/gaesupStore';
 
@@ -155,6 +156,7 @@ export function GaesupWorldContent({ children, showGrid, showAxes }: {
 }) {
   return (
     <Suspense fallback={null}>
+      <FrameSchedulerHost />
       <Camera/>
       <PerformanceCollector />
       <WorldContent showGrid={showGrid ?? false} showAxes={showAxes ?? false}>

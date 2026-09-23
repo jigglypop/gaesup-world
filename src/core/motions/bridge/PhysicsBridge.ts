@@ -1,5 +1,5 @@
 import { CoreBridge, DomainBridge, EnableEventLog } from '@core/boilerplate';
-import { LogSnapshot, ValidateCommand, CacheSnapshot } from '@core/boilerplate';
+import { ValidateCommand } from '@core/boilerplate';
 
 import type { PhysicsConfigType } from '../core/config';
 import { EntityStateManager } from '../core/system/EntityStateManager';
@@ -23,6 +23,8 @@ export type PhysicsSnapshot = ReturnType<PhysicsSystem['getState']> & {
 @DomainBridge('physics')
 @EnableEventLog()
 export class PhysicsBridge extends CoreBridge<PhysicsBridgeEntity, PhysicsSnapshot, PhysicsCommand> {
+  private readonly entitySnapshots = new WeakMap<PhysicsBridgeEntity, PhysicsSnapshot>();
+
   protected buildEngine(
     _: string,
     config: PhysicsConfigType,
@@ -43,13 +45,19 @@ export class PhysicsBridge extends CoreBridge<PhysicsBridgeEntity, PhysicsSnapsh
     }
   }
 
-  @LogSnapshot()
-  @CacheSnapshot(16) // 60fps 캐싱
   protected createSnapshot(entity: PhysicsBridgeEntity): PhysicsSnapshot {
-    return {
-      ...entity.system.getState(),
-      metrics: { ...entity.system.getMetrics() },
-    };
+    const state = entity.system.getState();
+    const metrics = entity.system.getMetrics();
+    let snapshot = this.entitySnapshots.get(entity);
+    if (!snapshot) {
+      snapshot = { ...state, metrics: { ...metrics } };
+      this.entitySnapshots.set(entity, snapshot);
+      return snapshot;
+    }
+    const target = snapshot;
+    Object.assign(target, state);
+    target.metrics = Object.assign(snapshot.metrics, metrics);
+    return target;
   }
 
   updateEntity(id: string, args: PhysicsUpdateArgs): void {

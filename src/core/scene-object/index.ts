@@ -9,3 +9,6 @@ export * from './layers';
 export * from './commands';
 export * from './controller';
 export * from './saveBinding';
+export * from './componentSchemas';
+export { applySceneComponentUpdate, applySceneDocumentBatch } from './extendedCommands';
+export * from './manager';

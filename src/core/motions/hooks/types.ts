@@ -5,6 +5,8 @@ import type { ObjectMap } from '@react-three/fiber';
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
+import type { AnimatorControllerDefinition } from '../../animation/core/animator/types';
+import type { AnimationType } from '../../animation/core/types';
 import { PhysicsEntityProps } from '../entities/types';
 
 export type ResourceUrlsType = Record<string, string | undefined>;
@@ -46,3 +48,10 @@ export interface UsePhysicsEntityProps
   name?: string;
   isActive?: boolean;
 }
+
+export type UseCharacterAnimatorOptions = {
+  enabled: boolean;
+  type?: AnimationType;
+  controller?: AnimatorControllerDefinition;
+  locomotionResponse?: number;
+};

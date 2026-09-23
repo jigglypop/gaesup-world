@@ -4,6 +4,7 @@ import { useWalletStore } from '../../economy/stores/walletStore';
 import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import { useFriendshipStore } from '../../relations/stores/friendshipStore';
+import { dayOfTotalMinutes } from '../../time/core/Clock';
 import { useTimeStore } from '../../time/stores/timeStore';
 import { notify } from '../../ui/components/Toast/toastStore';
 import { getObjectiveCount } from '../core/objectiveProgress';
@@ -80,7 +81,7 @@ function applyReward(reward: QuestReward) {
     useWalletStore.getState().add(reward.amount);
     notify('reward', `+${reward.amount} B`);
   } else if (reward.type === 'friendship') {
-    const day = Math.floor(useTimeStore.getState().totalMinutes / (60 * 24));
+    const day = dayOfTotalMinutes(useTimeStore.getState().totalMinutes);
     useFriendshipStore.getState().add(reward.npcId, reward.amount, day);
   }
 }

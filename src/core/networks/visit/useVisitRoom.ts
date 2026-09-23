@@ -1,7 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { applyVisitSnapshot, serializeVisit } from './serializer';
-import type { VisitBindingProvider, VisitChannel, VisitSnapshot } from './types';
+import {
+  applyVisitSnapshot,
+  captureVisitRestorePoint,
+  serializeVisit,
+  type VisitRestorePoint,
+} from './serializer';
+import {
+  DEFAULT_VISIT_DOMAINS,
+  type VisitBindingProvider,
+  type VisitChannel,
+  type VisitSnapshot,
+} from './types';
+import { suspendAutoSave } from '../../save/core/autoSaveSuspension';
+
+type VisitIsolation = {
+  hostId: string;
+  restorePoint: VisitRestorePoint;
+  releaseAutoSave: () => void;
+};
 
 export type UseVisitRoomOptions = {
   /** Stable identifier for the local player (used as `hostId`). */
@@ -25,6 +42,11 @@ export type UseVisitRoomOptions = {
   autoApply?: boolean;
   /** Remote domain keys to apply locally. Defaults to `DEFAULT_VISIT_DOMAINS`. */
   allowedDomains?: readonly string[];
+  /**
+   * Back up local domains and suspend autosave while a remote world is applied,
+   * then restore them when the visit ends. Defaults to `true`.
+   */
+  isolateLocalWorld?: boolean;
 };
 
 export type VisitRoomController = {
@@ -40,6 +62,8 @@ export type VisitRoomController = {
   dismissRemote: () => void;
   /** Notify other peers that we are leaving the room. */
   announceLeave: () => void;
+  /** Restore the local world captured before the first remote apply. */
+  leaveVisit: () => boolean;
 };
 
 /**
@@ -57,6 +81,7 @@ export function useVisitRoom(options: UseVisitRoomOptions): VisitRoomController 
     hostMode = true,
     autoApply = false,
     allowedDomains,
+    isolateLocalWorld = true,
   } = options;
 
   const session = useMemo(() => ({ channel, hostId }), [channel, hostId]);
@@ -78,6 +103,46 @@ export function useVisitRoom(options: UseVisitRoomOptions): VisitRoomController 
   allowedRef.current = allowedDomains;
   const autoApplyRef = useRef(autoApply);
   autoApplyRef.current = autoApply;
+  const isolateRef = useRef(isolateLocalWorld);
+  isolateRef.current = isolateLocalWorld;
+  const isolationRef = useRef<VisitIsolation | null>(null);
+
+  const endIsolation = useCallback((): boolean => {
+    const isolation = isolationRef.current;
+    if (!isolation) return false;
+    isolationRef.current = null;
+    try {
+      isolation.restorePoint.restore();
+    } finally {
+      isolation.releaseAutoSave();
+    }
+    return true;
+  }, []);
+
+  const applyRemote = useCallback((snapshot: VisitSnapshot): boolean => {
+    const allowed = allowedRef.current;
+    let startedIsolation = false;
+    if (isolateRef.current && !isolationRef.current) {
+      isolationRef.current = {
+        hostId: snapshot.hostId,
+        restorePoint: captureVisitRestorePoint(bindingsRef.current, allowed ?? DEFAULT_VISIT_DOMAINS),
+        releaseAutoSave: suspendAutoSave(),
+      };
+      startedIsolation = true;
+    }
+    const result = applyVisitSnapshot(bindingsRef.current, snapshot, {
+      ...(allowed ? { allowedDomains: allowed } : {}),
+      atomic: true,
+    });
+    if (result.applied.length === 0 && startedIsolation) {
+      const isolation = isolationRef.current;
+      isolationRef.current = null;
+      isolation?.releaseAutoSave();
+    } else if (isolationRef.current) {
+      isolationRef.current.hostId = snapshot.hostId;
+    }
+    return result.applied.length > 0;
+  }, []);
 
   useEffect(() => {
     activeSession.current = session;
@@ -87,12 +152,9 @@ export function useVisitRoom(options: UseVisitRoomOptions): VisitRoomController 
       if (event.type === 'snapshot') {
         if (event.snapshot.hostId === hostId) return;
         setReceived({ session, snapshot: event.snapshot });
-        if (autoApplyRef.current) {
-          applyVisitSnapshot(bindingsRef.current, event.snapshot, {
-            ...(allowedRef.current ? { allowedDomains: allowedRef.current } : {}),
-          });
-        }
+        if (autoApplyRef.current) applyRemote(event.snapshot);
       } else if (event.type === 'leave') {
+        if (isolationRef.current?.hostId === event.hostId) endIsolation();
         setReceived((prev) =>
           prev?.session === session && prev.snapshot.hostId === event.hostId ? null : prev,
         );
@@ -102,8 +164,9 @@ export function useVisitRoom(options: UseVisitRoomOptions): VisitRoomController 
       active = false;
       activeSession.current = null;
       unsubscribe();
+      endIsolation();
     };
-  }, [channel, hostId, session]);
+  }, [applyRemote, channel, endIsolation, hostId, session]);
 
   const publishNow = useCallback((): VisitSnapshot => {
     const snapshot = serializeVisit(bindingsRef.current, {
@@ -118,11 +181,8 @@ export function useVisitRoom(options: UseVisitRoomOptions): VisitRoomController 
   const acceptRemote = useCallback((): boolean => {
     const snapshot = remoteSnapshot;
     if (!snapshot || activeSession.current !== session) return false;
-    const result = applyVisitSnapshot(bindingsRef.current, snapshot, {
-      ...(allowedRef.current ? { allowedDomains: allowedRef.current } : {}),
-    });
-    return result.applied.length > 0;
-  }, [remoteSnapshot, session]);
+    return applyRemote(snapshot);
+  }, [applyRemote, remoteSnapshot, session]);
 
   const dismissRemote = useCallback(() => {
     setReceived((prev) => (prev?.session === session ? null : prev));
@@ -140,7 +200,8 @@ export function useVisitRoom(options: UseVisitRoomOptions): VisitRoomController 
       acceptRemote,
       dismissRemote,
       announceLeave,
+      leaveVisit: endIsolation,
     }),
-    [remoteSnapshot, lastPublished, publishNow, acceptRemote, dismissRemote, announceLeave],
+    [remoteSnapshot, lastPublished, publishNow, acceptRemote, dismissRemote, announceLeave, endIsolation],
   );
 }

@@ -1,5 +1,8 @@
 import type {
   CreateSceneObjectInput,
+  SceneComponent,
+  SceneJsonObject,
+  SceneJsonValue,
   SceneObject,
   SceneObjectId,
   SceneTransform,
@@ -65,3 +68,33 @@ export interface ParsePrefabDocumentResult {
   prefab?: PrefabDocument;
   issues: PrefabValidationIssue[];
 }
+
+export type PrefabInstanceLink = {
+  prefabId: PrefabId;
+  idPrefix: string;
+};
+
+export type PrefabPropertyPath =
+  | 'name'
+  | 'tags'
+  | 'layer'
+  | 'transform.position'
+  | 'transform.rotation'
+  | 'transform.scale';
+
+export type PrefabOverride =
+  | { kind: 'property'; objectId: SceneObjectId; path: PrefabPropertyPath; value: SceneJsonValue }
+  | { kind: 'componentData'; objectId: SceneObjectId; componentId: string; data: SceneJsonObject; enabled: boolean }
+  | { kind: 'addedComponent'; objectId: SceneObjectId; component: SceneComponent }
+  | { kind: 'removedComponent'; objectId: SceneObjectId; componentId: string }
+  | { kind: 'addedObject'; object: SceneObject }
+  | { kind: 'removedObject'; objectId: SceneObjectId };
+
+export type ComputePrefabOverridesOptions = {
+  includeRootTransform?: boolean;
+};
+
+export type PrefabInstanceResult = {
+  objects: SceneObject[];
+  link: PrefabInstanceLink;
+};

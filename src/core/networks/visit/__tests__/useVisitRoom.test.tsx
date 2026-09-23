@@ -4,6 +4,7 @@ import { act, renderHook } from '@testing-library/react';
 import { createLocalVisitChannel, createWebSocketVisitChannel } from '../channel';
 import { serializeVisit } from '../serializer';
 import type { VisitChannel, VisitChannelEvent } from '../types';
+import { isAutoSaveSuspended } from '../../../save/core/autoSaveSuspension';
 import { useVisitRoom } from '../useVisitRoom';
 
 describe('visit room session lifetime', () => {
@@ -181,4 +182,101 @@ describe('visit room session lifetime', () => {
       second.close();
     },
   );
+
+  it('방문 월드를 적용하면 로컬 월드를 백업하고 오토세이브를 멈추며 떠나면 복원한다', () => {
+    const channel = createLocalVisitChannel();
+    let localValue = 'home';
+    const hydrate = jest.fn((value: unknown) => {
+      localValue = String(value);
+    });
+    const bindings = () => [{ key: 'building', serialize: () => localValue, hydrate }];
+    const remote = serializeVisit(
+      () => [{ key: 'building', serialize: () => 'remote', hydrate: jest.fn() }],
+      { hostId: 'remote-host' },
+    );
+    const { result, unmount } = renderHook(() =>
+      useVisitRoom({ channel, hostId: 'local', bindings, autoApply: true }),
+    );
+    act(() => {
+      channel.publish(remote);
+    });
+    expect(localValue).toBe('remote');
+    expect(isAutoSaveSuspended()).toBe(true);
+    let restored = false;
+    act(() => {
+      restored = result.current.leaveVisit();
+    });
+    expect(restored).toBe(true);
+    expect(localValue).toBe('home');
+    expect(isAutoSaveSuspended()).toBe(false);
+    expect(result.current.leaveVisit()).toBe(false);
+    unmount();
+    channel.close();
+  });
+
+  it('방문한 호스트가 떠나면 로컬 월드를 복원한다', () => {
+    const channel = createLocalVisitChannel();
+    let localValue = 'home';
+    const bindings = () => [{
+      key: 'building',
+      serialize: () => localValue,
+      hydrate: (value: unknown) => {
+        localValue = String(value);
+      },
+    }];
+    const remote = serializeVisit(
+      () => [{ key: 'building', serialize: () => 'remote', hydrate: jest.fn() }],
+      { hostId: 'remote-host' },
+    );
+    const { unmount } = renderHook(() =>
+      useVisitRoom({ channel, hostId: 'local', bindings, autoApply: true }),
+    );
+    act(() => {
+      channel.publish(remote);
+    });
+    expect(localValue).toBe('remote');
+    act(() => {
+      channel.leave('remote-host');
+    });
+    expect(localValue).toBe('home');
+    expect(isAutoSaveSuspended()).toBe(false);
+    unmount();
+    channel.close();
+  });
+
+  it('검증에 실패한 도메인이 있으면 어떤 도메인도 바꾸지 않는다', () => {
+    const channel = createLocalVisitChannel();
+    const buildingHydrate = jest.fn();
+    const bindings = () => [
+      { key: 'building', serialize: () => 'home', hydrate: buildingHydrate },
+      {
+        key: 'npc',
+        serialize: () => 'home',
+        hydrate: jest.fn(),
+        prepareHydrate: () => {
+          throw new Error('invalid');
+        },
+      },
+    ];
+    const remote = serializeVisit(
+      () => [
+        { key: 'building', serialize: () => 'remote', hydrate: jest.fn() },
+        { key: 'npc', serialize: () => 'remote', hydrate: jest.fn() },
+      ],
+      { hostId: 'remote-host' },
+    );
+    const { result, unmount } = renderHook(() => useVisitRoom({ channel, hostId: 'local', bindings }));
+    act(() => {
+      channel.publish(remote);
+    });
+    let accepted = true;
+    act(() => {
+      accepted = result.current.acceptRemote();
+    });
+    expect(accepted).toBe(false);
+    expect(buildingHydrate).not.toHaveBeenCalled();
+    expect(isAutoSaveSuspended()).toBe(false);
+    unmount();
+    channel.close();
+  });
 });

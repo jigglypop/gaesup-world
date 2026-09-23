@@ -3,11 +3,9 @@ import * as THREE from 'three';
 
 import { Profile } from '@/core/boilerplate/decorators';
 import type { RefObject } from '@core/boilerplate';
-import { ModeType } from '@stores/slices/mode/types';
 import {
   getCachedTrig,
   MemoizationManager,
-  shouldUpdate
 } from '@utils/memoization';
 import { calcNorm } from '@utils/vector';
 
@@ -32,8 +30,6 @@ import type { PhysicsConfigType } from '../config';
 export class DirectionComponent {
   private memoManager = MemoizationManager.getInstance();
   private vectorCache = this.memoManager.getVectorCache('direction');
-  private lastEulerY = { character: 0, vehicle: 0, airplane: 0 };
-  private lastDirectionLength = 0;
   private lastKeyboardState = {
     forward: false,
     backward: false,
@@ -103,15 +99,11 @@ export class DirectionComponent {
       this.handleKeyboardDirection(activeState, keyboard, this.config, controlMode, calcProp);
     }
     if (keyboardChanged || hasKeyboardInput) {
-      this.lastKeyboardState = {
-        forward: keyboard.forward,
-        backward: keyboard.backward,
-        leftward: keyboard.leftward,
-        rightward: keyboard.rightward,
-      };
+      this.lastKeyboardState.forward = keyboard.forward;
+      this.lastKeyboardState.backward = keyboard.backward;
+      this.lastKeyboardState.leftward = keyboard.leftward;
+      this.lastKeyboardState.rightward = keyboard.rightward;
     }
-
-    this.emitRotationUpdate(activeState, 'character');
   }
 
   @Profile()
@@ -132,8 +124,6 @@ export class DirectionComponent {
     const { sin: sinY, cos: cosY } = getCachedTrig(activeState.euler.y);
     activeState.direction.set(sinY * zAxis, 0, cosY * zAxis);
     activeState.dir.copy(activeState.direction);
-
-    this.emitRotationUpdate(activeState, 'vehicle');
   }
 
   @Profile()
@@ -169,7 +159,6 @@ export class DirectionComponent {
       Math.cos(activeState.euler.y) * boost,
     );
     activeState.dir.copy(activeState.direction).normalize();
-    this.emitRotationUpdate(activeState, 'airplane');
   }
 
   private getKeyboard(calcProp?: PhysicsCalcProps): PhysicsInputState['keyboard'] {
@@ -342,19 +331,6 @@ export class DirectionComponent {
     }
 
     return desiredMovement.normalize();
-  }
-
-  private emitRotationUpdate(
-    activeState: ActiveStateType,
-    entityType: ModeType,
-  ): void {
-    const currentDirectionLength = activeState.dir.length();
-    const eulerChanged = shouldUpdate(activeState.euler.y, this.lastEulerY[entityType], 0.001);
-    const directionChanged = shouldUpdate(currentDirectionLength, this.lastDirectionLength, 0.01);
-    if (eulerChanged || directionChanged) {
-      this.lastDirectionLength = currentDirectionLength;
-    }
-    this.lastEulerY[entityType] = activeState.euler.y;
   }
 
   dispose(): void {}

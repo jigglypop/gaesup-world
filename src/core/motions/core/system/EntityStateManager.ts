@@ -52,7 +52,21 @@ export class EntityStateManager {
   
   @Profile()
   updateActiveState(updates: Partial<ActiveStateType>): void {
-    Object.assign(this.refs.activeState, updates);
+    const target = this.refs.activeState;
+    if (updates.position) target.position.set(updates.position.x, updates.position.y, updates.position.z);
+    if (updates.velocity) target.velocity.set(updates.velocity.x, updates.velocity.y, updates.velocity.z);
+    if (updates.direction) target.direction.set(updates.direction.x, updates.direction.y, updates.direction.z);
+    if (updates.dir) target.dir.set(updates.dir.x, updates.dir.y, updates.dir.z);
+    if (updates.angular) target.angular.set(updates.angular.x, updates.angular.y, updates.angular.z);
+    if (updates.quaternion) {
+      const { x, y, z, w } = updates.quaternion;
+      target.quaternion.set(x, y, z, w);
+    }
+    if (updates.euler) {
+      const { x, y, z } = updates.euler;
+      target.euler.set(x, y, z, updates.euler.order ?? target.euler.order);
+    }
+    if (updates.isGround !== undefined) target.isGround = updates.isGround;
   }
   
   @Profile()

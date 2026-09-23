@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { logger } from '../../utils/logger';
+import { isAutoSaveSuspended } from '../core/autoSaveSuspension';
 import { getSaveSystem } from '../core/SaveSystem';
 import type { SaveSystem } from '../core/SaveSystem';
 
@@ -27,7 +28,7 @@ export function useAutoSave({
     let cancelled = false;
 
     const doSave = () => {
-      if (cancelled) return;
+      if (cancelled || isAutoSaveSuspended()) return;
       void sys.save(slot).catch((error: unknown) => {
         logger.error('Automatic save failed', error instanceof Error ? error : String(error));
       });

@@ -3,11 +3,12 @@ import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import { useQuestStore } from '../../quests/stores/questStore';
 import { useFriendshipStore } from '../../relations/stores/friendshipStore';
+import { TIME_CONSTANTS } from '../../time/core/Clock';
 import { useTimeStore } from '../../time/stores/timeStore';
 import { notify } from '../../ui/components/Toast/toastStore';
 import type { DialogRuntimeAdapter } from '../types';
 
-const MINUTES_PER_DAY = 60 * 24;
+const MINUTES_PER_DAY = TIME_CONSTANTS.MINUTES_PER_DAY;
 
 export const dialogRuntimeAdapter: DialogRuntimeAdapter = {
   countItem: (itemId) => useInventoryStore.getState().countOf(itemId),

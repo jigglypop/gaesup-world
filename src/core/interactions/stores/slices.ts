@@ -124,9 +124,30 @@ const createDefaultAutomationMetrics = (): AutomationMetrics => ({
 
 type Slice = InteractionSliceState & InteractionActions;
 
+type SliceSetter = (fn: (state: Slice) => Partial<Slice>) => void;
+
+let activeSliceSet: SliceSetter | null = null;
 let systemListenersBound = false;
 
-const ensureSystemListeners = (set: (fn: (state: Slice) => Partial<Slice>) => void): void => {
+const publishAutomationState = (): void => {
+  const set = activeSliceSet;
+  if (!set) return;
+  const system = getDefaultAutomationSystem();
+  const state = system.getState();
+  set((current) => ({
+    automation: {
+      ...state,
+      queue: { ...state.queue, actions: [...state.queue.actions] },
+      settings: { ...state.settings },
+      executionStats: { ...state.executionStats, errors: [...state.executionStats.errors] },
+    },
+    config: { ...current.config, automation: system.getConfig() },
+    metrics: { ...current.metrics, automation: { ...system.getMetrics() } },
+  }));
+};
+
+const ensureSystemListeners = (set: SliceSetter): void => {
+  activeSliceSet = set;
   if (systemListenersBound) return;
   systemListenersBound = true;
   let receivedInitialSnapshot = false;
@@ -135,8 +156,7 @@ const ensureSystemListeners = (set: (fn: (state: Slice) => Partial<Slice>) => vo
       receivedInitialSnapshot = true;
       return;
     }
-
-    set((state) => ({
+    activeSliceSet?.((state) => ({
       interaction: {
         ...state.interaction,
         keyboard,
@@ -146,24 +166,11 @@ const ensureSystemListeners = (set: (fn: (state: Slice) => Partial<Slice>) => vo
       },
     }));
   });
+  subscribeDefaultAutomation(publishAutomationState);
 };
 
 export const createInteractionSlice: StateCreator<Slice, [], [], Slice> = (set) => {
-  ensureSystemListeners(set as (fn: (state: Slice) => Partial<Slice>) => void);
-  subscribeDefaultAutomation(() => {
-    const system = getDefaultAutomationSystem();
-    const state = system.getState();
-    set((current) => ({
-      automation: {
-        ...state,
-        queue: { ...state.queue, actions: [...state.queue.actions] },
-        settings: { ...state.settings },
-        executionStats: { ...state.executionStats, errors: [...state.executionStats.errors] },
-      },
-      config: { ...current.config, automation: system.getConfig() },
-      metrics: { ...current.metrics, automation: { ...system.getMetrics() } },
-    }));
-  });
+  ensureSystemListeners(set as SliceSetter);
   return ({
   interaction: createDefaultInteractionState(),
   automation: createDefaultAutomationState(),

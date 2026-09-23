@@ -1,15 +1,15 @@
-import { RefObject } from 'react';
+import type { RefObject } from 'react';
 
-import { RootState } from '@react-three/fiber';
-import { RapierRigidBody } from '@react-three/rapier';
+import type { RootState } from '@react-three/fiber';
+import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import type { AutomationState, InteractionState } from '@core/interactions/bridge/types';
 
 import type { ActiveStateType } from './core/types';
-import { PhysicsEntityProps } from './entities';
-import { ModeType, StoreState } from '../stores/types';
-import { GameStatesType } from '../world/components/Rideable/types';
+import type { PhysicsEntityProps } from './entities';
+import type { ModeType, StoreState } from '../stores/types';
+import type { GameStatesType } from '../world/components/Rideable/types';
 
 
 

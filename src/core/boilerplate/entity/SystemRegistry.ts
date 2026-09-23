@@ -1,4 +1,5 @@
 import { BaseSystem } from './BaseSystem';
+import { logger } from '../../utils/logger';
 
 const shouldWarnOnOverwrite = process.env.NODE_ENV !== 'test';
 
@@ -19,7 +20,7 @@ class Registry {
     const existing = this.systems.get(type);
     if (existing === system) return;
     if (existing && shouldWarnOnOverwrite) {
-      console.warn(`System with type "${type}" is already registered. Overwriting.`);
+      logger.warn(`[SystemRegistry] System with type "${type}" is already registered. Overwriting.`);
     }
     this.systems.set(type, system);
   }

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 
+import { AnimatorComponentView } from './AnimatorComponentView';
+import { ScriptComponentView } from './ScriptComponentView';
 import type { EditorPanelBaseProps } from './types';
 import type {
   CreateSceneComponentInput,
@@ -9,6 +11,7 @@ import type {
   SceneObjectId,
   SceneTransform,
 } from '../../../scene-object';
+import { SCENE_COMPONENT_TYPES } from '../../../scene-object/components';
 
 export type SceneObjectPatch = Partial<Pick<SceneObject, 'name' | 'tags'>> & {
   layer?: string | undefined;
@@ -251,7 +254,13 @@ function ComponentRow({
         </div>
         <button type="button" onClick={onRemove}>삭제</button>
       </header>
-      <pre>{JSON.stringify(component.data, null, 2)}</pre>
+      {component.type === SCENE_COMPONENT_TYPES.animator ? (
+        <AnimatorComponentView data={component.data} />
+      ) : component.type === SCENE_COMPONENT_TYPES.script ? (
+        <ScriptComponentView data={component.data} />
+      ) : (
+        <pre>{JSON.stringify(component.data, null, 2)}</pre>
+      )}
     </article>
   );
 }

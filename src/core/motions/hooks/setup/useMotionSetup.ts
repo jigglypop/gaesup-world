@@ -17,7 +17,6 @@ export function useMotionSetup(
   const registeredRef = useRef<boolean>(false);
   const motionBridgeRef = useRef<MotionBridge | null>(null);
   
-  // Bridge 인스턴스 한번만 가져오기
   if (!motionBridgeRef.current) {
     motionBridgeRef.current = BridgeFactory.getOrCreate('motion') as MotionBridge | null;
   }
@@ -38,6 +37,15 @@ export function useMotionSetup(
       registeredRef.current = false;
     };
   }, [rigidBodyRef, modeType, entityId]);
+
+  useEffect(() => {
+    const bridge = motionBridgeRef.current;
+    if (!isActive || !bridge) return undefined;
+    bridge.setPlayerEntity(entityId);
+    return () => {
+      if (bridge.getPlayerEntityId() === entityId) bridge.setPlayerEntity(null);
+    };
+  }, [isActive, entityId]);
   
   const executeMotionCommand = (command: MotionCommand) => {
     if (registeredRef.current && isActive && motionBridgeRef.current) {

@@ -155,6 +155,20 @@ export type SceneObjectComponentRemoveCommand = {
   readonly componentId: SceneComponentId;
 };
 
+export type SceneObjectComponentUpdateCommand = {
+  readonly type: 'scene-object.component.update';
+  readonly objectId: SceneObjectId;
+  readonly componentId: SceneComponentId;
+  readonly data?: SceneJsonObject;
+  readonly enabled?: boolean;
+};
+
+export type SceneDocumentBatchCommand = {
+  readonly type: 'scene-document.batch';
+  readonly label?: string;
+  readonly commands: readonly SceneDocumentCommand[];
+};
+
 export type SceneDocumentCommand =
   | SceneDocumentReplaceCommand
   | SceneObjectCreateCommand
@@ -162,7 +176,9 @@ export type SceneDocumentCommand =
   | SceneObjectDeleteCommand
   | SceneObjectMoveCommand
   | SceneObjectComponentAddCommand
-  | SceneObjectComponentRemoveCommand;
+  | SceneObjectComponentRemoveCommand
+  | SceneObjectComponentUpdateCommand
+  | SceneDocumentBatchCommand;
 
 export type SceneDocumentReplacedEvent = {
   readonly type: 'scene-document.replaced';
@@ -208,6 +224,20 @@ export type SceneObjectComponentRemovedEvent = {
   readonly componentId: SceneComponentId;
 };
 
+export type SceneObjectComponentUpdatedEvent = {
+  readonly type: 'scene-object.component.updated';
+  readonly documentId: string;
+  readonly objectId: SceneObjectId;
+  readonly componentId: SceneComponentId;
+};
+
+export type SceneDocumentBatchAppliedEvent = {
+  readonly type: 'scene-document.batch-applied';
+  readonly documentId: string;
+  readonly label?: string;
+  readonly events: readonly SceneDocumentEvent[];
+};
+
 export type SceneDocumentEvent =
   | SceneDocumentReplacedEvent
   | SceneObjectCreatedEvent
@@ -215,7 +245,9 @@ export type SceneDocumentEvent =
   | SceneObjectDeletedEvent
   | SceneObjectMovedEvent
   | SceneObjectComponentAddedEvent
-  | SceneObjectComponentRemovedEvent;
+  | SceneObjectComponentRemovedEvent
+  | SceneObjectComponentUpdatedEvent
+  | SceneDocumentBatchAppliedEvent;
 
 export type SceneDocumentCommandAcceptedResult = {
   readonly accepted: true;

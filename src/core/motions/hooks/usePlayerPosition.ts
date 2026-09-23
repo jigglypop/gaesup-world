@@ -49,20 +49,15 @@ export function usePlayerPosition(
   const lastUpdateRef = useRef<number>(0);
   const lastBridgeEventRef = useRef<number>(0);
   const lastPositionSnapshot = useRef({ x: 0, y: 0, z: 0 });
-  const inferredEntityIdRef = useRef<string | undefined>(undefined);
   const bridgeRef = useRef<MotionBridge | null>(null);
   const { activeState, gameStates } = useStateSystem();
 
   const getTargetEntityId = (bridge: MotionBridge): string | undefined => {
     if (entityId) return entityId;
-    if (inferredEntityIdRef.current) return inferredEntityIdRef.current;
-    const activeEntities = bridge.getActiveEntities();
-    inferredEntityIdRef.current = activeEntities[0];
-    return inferredEntityIdRef.current;
+    return bridge.getPlayerEntityId() ?? undefined;
   };
 
   useEffect(() => {
-    inferredEntityIdRef.current = undefined;
     bridgeRef.current = BridgeFactory.getOrCreate('motion') as MotionBridge | null;
     const bridge = bridgeRef.current;
     if (!bridge) return undefined;

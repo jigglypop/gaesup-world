@@ -1,11 +1,12 @@
 import 'reflect-metadata'
+import { logger } from '../../utils/logger'
 import { ServiceTarget } from '../types'
 
 export class BridgeRegistry {
     private static registry = new Map<string, ServiceTarget>()
     static register(domain: string, constructor: ServiceTarget): void {
         if (BridgeRegistry.registry.has(domain)) {
-            console.warn(`[BridgeRegistry] Domain '${domain}' is already registered. Overwriting.`)
+            logger.warn(`[BridgeRegistry] Domain '${domain}' is already registered. Overwriting.`)
         }
         BridgeRegistry.registry.set(domain, constructor)
     }
