@@ -9,4 +9,6 @@ export type WallSystemProps = {
   onWallClick?: (wallId: string) => void;
   onWallDelete?: (wallId: string) => void;
   colliders?: boolean;
+  /** Render solid-wall batches here. `BuildingSystem` turns this off and batches solid walls for the whole world. */
+  batches?: boolean;
 } 

@@ -11,6 +11,7 @@ import type { BuildingBlockConfig, BuildingTreeKind, PlacedObject } from '../../
 import { TILE_CONSTANTS } from '../../types/constants';
 import { useBuildingVisibilityStore } from '../../visibility/store';
 import { BlockSystem } from '../BlockSystem';
+import { BuildingBatches } from '../BuildingBatches';
 import { BuildingColliders } from '../BuildingColliders';
 import { GridHelper } from '../GridHelper';
 import { BillboardBatch } from '../mesh/billboard';
@@ -155,6 +156,14 @@ export const BuildingSystem = React.memo(function BuildingSystem({
           blockEditMode={editMode === 'block'}
         />
         
+        <BuildingBatches
+          tileGroups={tileGroupsArray}
+          wallGroups={wallGroupsArray}
+          wallGroupMap={wallGroups}
+          meshes={meshes}
+          {...(onWallClick ? { onWallClick } : {})}
+        />
+
         {wallGroupsArray.map((wallGroup) => (
           <WallSystem
             key={wallGroup.id}
@@ -164,6 +173,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
             isEditMode={editMode === 'wall'}
             selectedWallId={selectedWallId}
             colliders={false}
+            batches={false}
             {...(onWallClick ? { onWallClick } : {})}
             {...(onWallDelete ? { onWallDelete } : {})}
           />
@@ -177,6 +187,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
             isEditMode={editMode === 'tile'}
             selectedTileId={selectedTileId}
             colliders={false}
+            batches={false}
             {...(onTileClick ? { onTileClick } : {})}
             {...(onTileDelete ? { onTileDelete } : {})}
           />

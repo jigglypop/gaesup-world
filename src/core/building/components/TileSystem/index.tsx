@@ -2,15 +2,16 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 import * as THREE from 'three';
 
+import { BoxTileBatchMesh, type BoxTileBatch } from './batch';
+import { createTileColliders, getRampLayout, getStairLayout, getTileShape, rotateXZ } from './layout';
 import { TileSystemProps } from './types';
+import { buildWaterPatches } from './waterPatches';
 import { getDefaultToonMode, getToonGradient } from '../../../rendering/toon';
 import { MinimapSystem } from '../../../ui/core';
 import { WorldProps } from '../../../world/components/WorldProps';
 import { MaterialManager } from '../../core/MaterialManager';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { BuildingColliderBody } from '../BuildingColliders';
-import { createTileColliders, getRampLayout, getStairLayout, getTileShape, rotateXZ } from './layout';
-import { buildWaterPatches } from './waterPatches';
 import type { BuildingColliderBox } from '../BuildingColliders/types';
 import { GrassChunks } from '../mesh/grass/chunks';
 import { SandBatch, type SandEntry } from '../mesh/sand';
@@ -30,12 +31,6 @@ type TerrainRock = {
 type TerrainBuild = {
   sideGeometry: THREE.BufferGeometry;
   rocks: TerrainRock[];
-};
-
-type BoxTileBatch = {
-  materialId: string;
-  tiles: TileLike[];
-  material: THREE.Material;
 };
 
 type TileBounds = {
@@ -396,56 +391,6 @@ function StairTileMesh({
   );
 }
 
-function BoxTileBatchMesh({
-  batch,
-  geometry,
-  dummy,
-}: {
-  batch: BoxTileBatch;
-  geometry: THREE.BufferGeometry;
-  dummy: THREE.Object3D;
-}) {
-  const ref = useRef<THREE.InstancedMesh | null>(null);
-
-  useLayoutEffect(() => {
-    const mesh = ref.current;
-    if (!mesh) return;
-
-    const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-    mesh.count = batch.tiles.length;
-
-    for (let i = 0; i < batch.tiles.length; i++) {
-      const tile = batch.tiles[i];
-      if (!tile) continue;
-      const tileMultiplier = tile.size || 1;
-      const tileSize = cellSize * tileMultiplier;
-
-      dummy.position.set(tile.position.x, tile.position.y + 0.001, tile.position.z);
-      dummy.rotation.set(0, tile.rotation ?? 0, 0);
-      dummy.scale.set(tileSize, 1, tileSize);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-    }
-
-    mesh.instanceMatrix.needsUpdate = true;
-    if (batch.tiles.length > 0) {
-      mesh.computeBoundingBox();
-      mesh.computeBoundingSphere();
-    }
-  }, [batch.tiles, dummy]);
-
-  return (
-    <instancedMesh
-      ref={ref}
-      args={[geometry, batch.material, Math.max(1, batch.tiles.length)]}
-      name={`building-batch:tile:${batch.materialId}`}
-      castShadow
-      receiveShadow
-      frustumCulled
-    />
-  );
-}
-
 export function TileSystem({ 
   tileGroup, 
   meshes, 
@@ -453,6 +398,7 @@ export function TileSystem({
   selectedTileId = null,
   onTileClick,
   colliders = true,
+  batches = true,
 }: TileSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
   const localMaterialRef = useRef<THREE.Material | null>(null);
@@ -798,7 +744,7 @@ export function TileSystem({
           );
         })}
         
-        {boxTileBatches.map((batch) => (
+        {batches && boxTileBatches.map((batch) => (
           <BoxTileBatchMesh
             key={`${tileGroup.id}-box-${batch.materialId}`}
             batch={batch}
