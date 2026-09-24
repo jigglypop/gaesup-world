@@ -1,0 +1,41 @@
+name: Frame harness
+
+# Not a PR gate: hosted runners have no GPU, SwiftShader draws /world?size=s at about 1 fps and
+# scripts/performance/frame-baseline.json is machine-specific. This records renderer counts and
+# page errors on Linux; compare frame budgets with `pnpm perf:check` on the reference machine.
+on:
+  workflow_dispatch:
+    inputs:
+      route:
+        description: Demo route to measure
+        default: /world?size=s
+      duration:
+        description: Recording time in ms
+        default: '20000'
+  push:
+    branches: [main]
+    paths:
+      - scripts/frame-harness.cjs
+      - scripts/lib/devServer.cjs
+      - .github/workflows/perf.yml
+
+permissions:
+  contents: read
+
+jobs:
+  perf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - run: corepack pnpm exec playwright install --with-deps chromium
+      - run: node scripts/frame-harness.cjs "--route=$ROUTE" "--duration=$DURATION" --software --out=frame-harness.json
+        env:
+          ROUTE: ${{ inputs.route || '/world?size=s' }}
+          DURATION: ${{ inputs.duration || '20000' }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frame-harness
+          path: frame-harness.json

@@ -33,7 +33,8 @@ function parseArgs(argv) {
     webgpu: false, runs: 1, baseline: null, tolerance: DEFAULT_TOLERANCE,
   };
   for (const arg of argv) {
-    const [name, value] = arg.split('=');
+    // Split on the first '=' only: routes carry query strings such as /world?size=s.
+    const [name, value] = arg.split(/=(.*)/s);
     if (name === '--route' && value) options.route = value;
     else if (name === '--duration' && value) options.durationMs = Number(value);
     else if (name === '--out' && value) options.out = value;
