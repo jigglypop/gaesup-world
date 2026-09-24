@@ -132,7 +132,7 @@
 - FR-11-09: bridge listener 재진입을 막는다(D-01).
 - FR-11-10: `FixedStepClock`은 이월분을 `maxSubSteps * dt`로 제한하고 초과분을 `droppedSeconds`로 보고한다. 프로젝트 설정을 생성 시 주입한다.
 - FR-11-11: 카메라 충돌은 `radius > 0`이면 sweep만, `radius === 0`이면 raycast만 한다. sweep 콜백은 모듈 수준 함수로 둔다.
-- FR-11-12: `PhysicsPresentation`은 `afterStep`에서 previous/current를 교환하고 `beforeStep` 읽기를 없앤다. 순간이동은 명시적 snap으로 처리한다.
+- FR-11-12: (보류, 2026-09-24) `beforeStep` 읽기는 step 사이 순간이동을 감지해 긴 보간 궤적을 막는 계약(`PhysicsPresentation.test.ts`)을 담당한다. 등록 pose가 캐릭터 등 소수라 이득이 작아 유지한다. `present`의 조상 체인 순회는 1회로 줄였다(11-h).
 - FR-11-13: 건물 collider는 부모 RigidBody 없는 정적 collider로 만든다(11-F12 측정 후). 같은 높이 평면 타일은 사각형으로 병합하고, 경사로는 convex 1개, 계단은 단당 box 1개로 줄인다. 편집은 id diff로 바뀐 collider만 갱신한다.
 - FR-11-14: Rapier setter는 마지막 적용값을 캐시해 바뀔 때만 호출한다. 하늘 keyframe 색은 사전 파싱해 lerp한다. 스크립트 hook은 클로저 없이 호출한다. 지면 종류·상호작용 후보 조회는 기존 인덱스(`tileIndex`, `SpatialGrid`)를 쓴다. water patch는 정수 키로 한 번 정렬한다.
 

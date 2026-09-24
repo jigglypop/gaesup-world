@@ -7,6 +7,8 @@ type Pose = { body: RapierRigidBody; visual: Object3D; previous: Vector3; curren
 export class PhysicsPresentation {
   private poses = new Set<Pose>();
   private parentRotation = new Quaternion();
+  private parentPosition = new Vector3();
+  private parentScale = new Vector3();
 
   register(body: RapierRigidBody, visual: Object3D): () => void {
     const pose: Pose = { body, visual, previous: new Vector3(), current: new Vector3(), previousRotation: new Quaternion(), rotation: new Quaternion(), ready: false };
@@ -35,10 +37,12 @@ export class PhysicsPresentation {
     for (const pose of this.poses) {
       const parent = pose.visual.parent;
       if (!pose.ready || !parent || !pose.body.isValid()) continue;
+      // One ancestor walk; worldToLocal and the decompose below reuse the updated matrixWorld.
       parent.updateWorldMatrix(true, false);
       pose.visual.position.copy(pose.previous).lerp(pose.current, alpha);
       parent.worldToLocal(pose.visual.position);
-      parent.getWorldQuaternion(this.parentRotation).invert();
+      parent.matrixWorld.decompose(this.parentPosition, this.parentRotation, this.parentScale);
+      this.parentRotation.invert();
       pose.visual.quaternion.copy(pose.previousRotation).slerp(pose.rotation, alpha).premultiply(this.parentRotation);
     }
   }
