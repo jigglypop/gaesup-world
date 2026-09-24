@@ -5,7 +5,6 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
-  useState,
 } from 'react';
 
 import { useAnimations, useGLTF } from '@react-three/drei';
@@ -19,11 +18,7 @@ import { useWorldPhysicsInterpolation } from '@core/simulation/physicsContext';
 
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
-import {
-  applyToonToScene,
-  getDefaultToonMode,
-  releaseToonFromScene,
-} from '../../../rendering/toon';
+import { useSceneToon } from '../../../rendering/useSceneToon';
 import { useGltfAndSize } from '../../hooks';
 import { PhysicsEntityProps } from '../types';
 
@@ -99,14 +94,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         }
       });
     }, [clone, props.modelHierarchy]);
-    const [toonRevision, setToonRevision] = useState(0);
     const graph = useGraph(clone);
-    useLayoutEffect(() => {
-      if (!getDefaultToonMode()) return;
-      applyToonToScene(clone);
-      setToonRevision((revision) => revision + 1);
-      return () => releaseToonFromScene(clone);
-    }, [clone]);
+    const toonRevision = useSceneToon(clone);
     const nodes = useMemo(() => ({ ...graph.nodes }), [graph.nodes, toonRevision]);
     const skeleton = useMemo(() => {
       let skel: THREE.Skeleton | null = null;

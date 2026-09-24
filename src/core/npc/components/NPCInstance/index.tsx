@@ -9,7 +9,7 @@ import { SkeletonUtils } from 'three-stdlib';
 import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
 
 import { NPCPartMeshProps, NPCInstanceProps } from './types';
-import { applyToonToScene, getDefaultToonMode } from '../../../rendering/toon';
+import { useSceneToon } from '../../../rendering/useSceneToon';
 import { useWorldPhysicsInterpolation } from '../../../simulation/physicsContext';
 import { useNPCSimulation } from '../../hooks/useNPCSimulation';
 import { useNPCStore } from '../../stores/npcStore';
@@ -89,11 +89,8 @@ function resolveNPCAssetUrl(url: string): string {
 function NPCPartGltfMesh({ part, currentAnimation }: NPCPartMeshProps) {
   const assetUrl = useMemo(() => resolveNPCAssetUrl(part.url), [part.url]);
   const gltf = useGLTF(assetUrl);
-  const clone = useMemo(() => {
-    const c = SkeletonUtils.clone(gltf.scene);
-    if (c && getDefaultToonMode()) applyToonToScene(c);
-    return c;
-  }, [gltf]);
+  const clone = useMemo(() => SkeletonUtils.clone(gltf.scene), [gltf]);
+  useSceneToon(clone);
   const { actions } = useAnimations(gltf.animations, clone);
   const activeAnimationRef = useRef<string | undefined>(undefined);
 
