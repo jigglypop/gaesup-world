@@ -1,5 +1,4 @@
-import { createMemoryInputBackend, type InputBackend, type InputBackendSnapshot, type InputStateListener } from '../interactions/core/adapter';
-import type { GamepadState, KeyboardState, MouseState, TouchState } from '../interactions/core/types';
+import { createMemoryInputBackend, type GamepadState, type InputBackend, type InputBackendSnapshot, type InputStateListener, type KeyboardState, type MouseState, type TouchState } from './core';
 import { logger } from '../utils/logger';
 
 const owners = new WeakMap<InputBackend, WorldInputBackend>();

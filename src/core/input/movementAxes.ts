@@ -1,6 +1,6 @@
 import type { Vector2 } from 'three';
 
-import type { GamepadState, KeyboardState } from '../interactions/core/types';
+import type { GamepadState, KeyboardState } from './core';
 
 /** X is right, Y is forward. Preserve analog strength and cap diagonal magnitude. */
 export function resolveMovementAxes(keyboard: Pick<KeyboardState, 'forward' | 'backward' | 'leftward' | 'rightward'>, gamepad: GamepadState | undefined, out: Vector2, normalize = true): Vector2 {

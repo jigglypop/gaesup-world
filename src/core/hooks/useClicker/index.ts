@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { V3 } from '@utils/vector';
 
 import { ClickerMoveOptions, ClickerResult } from './types';
-import type { InputAdapter } from '../../interactions/core';
+import type { InputAdapter } from '../../input/core';
 import { useInputBackend } from '../../interactions/hooks';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
 import { useNavigationSystem, useClickNavigationRoute } from '../../navigation/hooks/useNavigation';

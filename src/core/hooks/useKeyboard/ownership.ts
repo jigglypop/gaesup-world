@@ -1,4 +1,4 @@
-import type { InputAdapter } from '../../interactions/core';
+import type { InputAdapter } from '../../input/core';
 import { logger } from '../../utils/logger';
 
 const heldKeys = new WeakMap<InputAdapter, Map<string, number>>();

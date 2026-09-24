@@ -152,7 +152,7 @@ editor      editor, project-settings, blueprints/editor, admin
 | 20-e | SCC baseline 테스트 추가 | 현재값 고정, 새 도메인 간 edge 추가 시 실패 |
 | 20-f | kernel 분리(FR-20-06) | SCC 크기 감소 기록 |
 | 20-g | 도메인 내부 파일 직접 import 금지 lint | barrel import 수 기록 |
-| 20-h | 입력 타입 `input/core` 이동(FR-20-11), `WorldContainer`의 editor 경유 import 제거 | 도메인 간 edge 약 30개 감소, export snapshot 불변 |
+| 20-h | 입력 타입 `input/core` 이동(FR-20-11), `WorldContainer`의 editor 경유 import 제거. 완료(2026-09-24): 상태 타입·백엔드 계약·메모리 백엔드를 `input/core`로 옮기고 interactions는 re-export. `input`→`interactions` 파일 6→2(남은 곳은 레거시 전역 입력 fallback과 TouchControls, 22 PRD에서 제거). editor 경유 import는 13-k에서 제거 | 도메인 간 edge 감소, export snapshot 불변 |
 | 20-i | 엔진 → 게임플레이 18곳을 port로 교체(FR-20-10). 날씨(`EnvironmentState`) → 지면(`SurfaceProvider`) → 편집 모드(31-e) 순서 | 20-F08 표의 edge 0, SCC 크기 감소 기록 |
 | 20-j | 계층 규칙 반전(FR-20-12), 검사 범위 확대 | Layer 1 검사 대상 파일 비율 기록, 위반 0 |
 

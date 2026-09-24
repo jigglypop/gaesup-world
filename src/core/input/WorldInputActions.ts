@@ -1,6 +1,6 @@
+import type { InputBackend, KeyboardState } from './core';
 import { getDefaultWorldInputScope, isEditableInputEvent, type WorldInputScope } from './WorldInputScope';
-import { createInteractionInputAdapter, type InputBackend } from '../interactions/core/adapter';
-import type { KeyboardState } from '../interactions/core/types';
+import { createInteractionInputAdapter } from '../interactions/core/adapter';
 import { logger } from '../utils/logger';
 
 export type InputActionContext = { key: string; timestamp: number; sequence: number; source: 'dom' | 'backend' };

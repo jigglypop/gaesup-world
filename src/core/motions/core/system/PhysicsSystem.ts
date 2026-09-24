@@ -14,7 +14,7 @@ import { applyEnabledRotations, applyLinearDamping } from './bodySettings';
 import { EntityStateManager } from './EntityStateManager';
 import { GroundContactProbe } from './GroundContactProbe';
 import { PhysicsSystemState, PhysicsSystemMetrics, PhysicsSystemOptions } from './types';
-import type { InputAdapter } from '../../../interactions/core/adapter';
+import type { InputAdapter } from '../../../input/core';
 import type { NavigationSystem } from '../../../navigation/NavigationSystem';
 import { ForceComponent } from '../forces/ForceComponent';
 import { DirectionComponent, ImpulseComponent } from '../movement';

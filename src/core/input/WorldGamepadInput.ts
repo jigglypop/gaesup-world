@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 
 import { getBrowserGamepadHub, type BrowserGamepad, type GamepadSource } from './BrowserGamepadHub';
+import type { GamepadState, InputAdapter, KeyboardState } from './core';
 import type { WorldInputScope } from './WorldInputScope';
 import { createKeyboardOwnership } from '../hooks/useKeyboard/ownership';
-import type { InputAdapter } from '../interactions/core/adapter';
-import type { GamepadState, KeyboardState } from '../interactions/core/types';
 import { logger } from '../utils/logger';
 
 export const STANDARD_GAMEPAD_BUTTONS = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'Back', 'Start', 'LeftStick', 'RightStick', 'DPadUp', 'DPadDown', 'DPadLeft', 'DPadRight', 'Guide'] as const;

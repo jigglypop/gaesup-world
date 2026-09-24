@@ -15,7 +15,7 @@ import {
 } from './slices';
 import { GaesupState } from './types';
 import { createAnimationSlice } from '../animation/stores/slices';
-import { createMemoryInputBackend, type InputBackend } from '../interactions/core/adapter';
+import { createMemoryInputBackend, type InputBackend } from '../input/core';
 import {
   createInteractionSlice,
   createInteractionSliceWithServices,
