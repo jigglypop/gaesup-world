@@ -18,10 +18,9 @@ import type {
   SceneObjectId,
   SceneVector3,
 } from '../scene-object/types';
+import { createUniqueId } from '../utils/id';
 
 type IdMapper = (sourceId: string) => string;
-
-let prefabLinkCounter = 0;
 
 const TRANSFORM_PATHS: Array<{ path: PrefabPropertyPath; key: 'position' | 'rotation' | 'scale' }> = [
   { path: 'transform.position', key: 'position' },
@@ -65,7 +64,7 @@ export function createPrefabInstance(
   prefab: PrefabDocument,
   options: InstantiatePrefabOptions = {},
 ): PrefabInstanceResult {
-  const idPrefix = options.idPrefix ?? `${prefab.id}-instance-${++prefabLinkCounter}`;
+  const idPrefix = options.idPrefix ?? createUniqueId(`${prefab.id}-instance`);
   const link: PrefabInstanceLink = { prefabId: prefab.id, idPrefix };
   const mapId = prefixMapper(idPrefix);
   const rootIds = new Set(prefab.rootObjectIds.map(mapId));

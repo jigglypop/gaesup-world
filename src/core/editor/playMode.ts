@@ -1,3 +1,5 @@
+import { createUniqueId } from '../utils/id';
+
 export type EditorPlayMode = 'edit' | 'play' | 'paused';
 
 export interface EditorPlayModeSnapshot<TSnapshot = unknown> {
@@ -32,8 +34,6 @@ export interface CreateEditorPlayModeControllerOptions<TSnapshot> {
   onExit?: (snapshot: EditorPlayModeSnapshot<TSnapshot>) => void | Promise<void>;
 }
 
-let playModeSnapshotCounter = 0;
-
 export function createEditorPlayModeController<TSnapshot>(
   options: CreateEditorPlayModeControllerOptions<TSnapshot>,
 ): EditorPlayModeController<TSnapshot> {
@@ -53,7 +53,7 @@ export function createEditorPlayModeController<TSnapshot>(
       }
 
       const snapshot: EditorPlayModeSnapshot<TSnapshot> = {
-        id: `play-snapshot-${++playModeSnapshotCounter}`,
+        id: createUniqueId('play-snapshot'),
         createdAt: Date.now(),
         data: await options.createSnapshot(),
       };

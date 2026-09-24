@@ -69,7 +69,7 @@ describe('InspectorPanel', () => {
     expect(onAddComponent).toHaveBeenCalledWith('tree', { type: 'game.health', data: {} });
 
     fireEvent.click(screen.getByText('삭제'));
-    expect(onRemoveComponent).toHaveBeenCalledWith('tree', 'component-1');
+    expect(onRemoveComponent).toHaveBeenCalledWith('tree', document.objects[0]!.components[0]!.id);
   });
 
   test('commits finite numeric drafts and restores empty input without moving the object', () => {

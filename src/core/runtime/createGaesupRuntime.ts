@@ -60,6 +60,7 @@ import { getTimeClock, RUNTIME_TIME_STORE_SERVICE_ID } from '../time/core/timeCl
 import { createTimeStore } from '../time/stores/timeStore';
 import { createToolEvents } from '../tools/core/ToolEvents';
 import { createTownStore } from '../town/stores/townStore';
+import { createUniqueId } from '../utils/id';
 import { createWeatherStore } from '../weather/stores/weatherStore';
 import { WorldViews } from '../world/core/WorldViews';
 import { createWorldObjectStore } from '../world/stores/worldObjectStore';
@@ -75,7 +76,7 @@ function isRuntimeDomainBinding(value: unknown): value is RuntimeDomainBinding {
 }
 
 export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupRuntime {
-  const worldId = options.worldId ?? globalThis.crypto?.randomUUID?.() ?? `world-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const worldId = options.worldId ?? createUniqueId();
   if (!worldId.trim()) throw new TypeError('Runtime worldId must not be empty');
   const timeStore = createTimeStore();
   const inventoryStore = createInventoryStore();

@@ -149,7 +149,7 @@ ESM 70파일 1.95MB, CJS 70파일 1.55MB, d.ts+d.cts 2,052파일 2.08MB이다. d
 | D-17 | **구조 작업 필요** | 쓰는 쪽(`usePhysicsBridge`)과 읽는 쪽(`MotionBridge`)이 서로 모르는 인스턴스이고 `MotionBridge` 자체가 `BridgeFactory` 전역 singleton이라 단독 수정 불가. 22-b에서 runtime 스코프 bridge와 함께 처리 | - |
 | D-11 | **설계 작업 필요** | 불변 갱신으로 바꾸면 60Hz 할당이 생겨 11-F04와 충돌. 13-h(입력 경로를 store 밖으로 분리)에서 처리 | - |
 | D-19 | 작업 트리에서 해소 (2026-09-24 2차 확인) | `check-harness.mjs`, `package.json` `files`, README 참조가 작업 트리에서 정리됨. 삭제와 참조 정리를 같은 커밋에 묶어야 한다 | harness 통과, `packageFiles.test.ts` 통과 |
-| D-22 | 미착수 | 32-a. 기본 ID를 `crypto.randomUUID()`로 | - |
+| D-22 | 수정 (2026-09-24) | 공용 `utils/id.ts` `createUniqueId`(crypto.randomUUID, 세션 prefix fallback). scene object·component, prefab 인스턴스·링크, play snapshot, 건설 scope id, 네트워크 계약 id, runtime worldId에 적용 | `sceneObjectIds.test.ts`(모듈 재로드 후 저장본과 충돌 0). 수정 전 `object-1` 중복 재현 |
 | D-23 | 미착수 | 12-p. layout effect 적용·cleanup 해제, toon 재질 refcount 공유 | - |
 | D-21 | 결정됨(90 PRD G10, 2026-09-24) | CJS 제거는 major 변경(15-h) | - |
 | D-10 | 부분 수정 (2026-09-24) | 이월분을 `maxFrameSeconds`로 제한하고 초과분을 `discardedSeconds`로 보고. 기존 "이월 틱 보존" 계약 유지. 프로젝트 설정(`maxSubSteps: 4`) 연결은 기본 동작 변경이라 11-f로 이관 | `FixedStepClock.test.ts` 신규 케이스. 수정 전 이월분 8초 재현 |
