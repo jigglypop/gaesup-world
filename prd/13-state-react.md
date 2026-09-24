@@ -148,7 +148,7 @@ buildingEditorStore (zustand)
 | 13-a | placement engine identity memo(과도기), `PreviewTile`/`PreviewBlock` 호출 위치 변경 | hover sweep 중 engine 생성 = 데이터 변경 수 |
 | 13-b | NPC `onClick` 안정화, `useThree` selector, hover 구독 제거(`getState()`로 읽기). 완료(2026-09-24): `onSelect` 추가, hover·instances를 클릭 시점에 읽음 | NPC 30체 hover 중 NPCInstance render 0 |
 | 13-c | devtools opt-in, `usePlayerPosition` 변경 확인, 프롬프트 거리 양자화 | 정지 캐릭터에서 `usePlayerPosition` 소비자 render 0 |
-| 13-d | `BuildingSpatialIndex` 분리(FR-13-01), 배치 검사 후보 조회(FR-13-04) | `addTile` 10k회 연속 시간이 선형. 타일 수별 1회 비용 일정 |
+| 13-d | `BuildingSpatialIndex` 분리(FR-13-01), 배치 검사 후보 조회(FR-13-04). FR-13-01 완료(2026-09-24): 인덱스 Map 6개를 immer가 draft하지 않는 `BuildingSpatialIndex` 인스턴스로 옮기고, hydrate는 새 인스턴스를 채워 적용 시 교체한다. `addTile` 중앙값 1만 타일 5.51→1.04ms, 2만 타일 11.85→2.78ms. 남은 O(N)은 그룹 `tiles` 배열 복사(13-e, 13-j). `indexRevision`은 구독자가 생길 때 추가. FR-13-04 잔여 | `addTile` 10k회 연속 시간이 선형. 타일 수별 1회 비용 일정 |
 | 13-e | delta 발행과 driver 증분 갱신(render snapshot, visibility, navigation, minimap) | 타일 1개 추가 시 `buildBuildingRenderSnapshot` 전체 호출 0 |
 | 13-f | 에디터 패널 섹션별 구독과 memo, `hoverPosition` NPC 섹션 이동 | hover sweep 5초 동안 `BuildingPanel` render 0 |
 | 13-g | NPC `instanceIds` 구독과 개별 구독, brain side table, StudioPanel lazy 변환 | NPC 50체 decision tick 중 commit ≤ 1/tick |

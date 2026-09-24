@@ -6,6 +6,7 @@ import {
   serializeBuildingState,
   type BuildingHydrationTarget,
 } from '../persistence';
+import { BuildingSpatialIndex } from '../spatialIndex';
 
 function createTarget(): BuildingHydrationTarget {
   return {
@@ -14,12 +15,7 @@ function createTarget(): BuildingHydrationTarget {
     tileGroups: new Map(),
     blocks: [],
     objects: [],
-    tileIndex: new Map(),
-    tileCells: new Map(),
-    tileMeta: new Map(),
-    wallIndex: new Map(),
-    wallCells: new Map(),
-    wallMeta: new Map(),
+    spatialIndex: new BuildingSpatialIndex(),
     initialized: false,
     showSnow: false,
     showFog: false,
@@ -213,11 +209,11 @@ describe('building persistence helpers', () => {
       { x: 2, z: 2, level: 2 },
       { x: 2, z: 3, level: 2 },
     ]);
-    expect(target.tileMeta.get('tile')).toEqual({ x: 8, y: 2, z: 12, halfSize: 4 });
-    expect(target.tileCells.get('tile')?.length).toBeGreaterThan(0);
+    expect(target.spatialIndex.tileMeta.get('tile')).toEqual({ x: 8, y: 2, z: 12, halfSize: 4 });
+    expect(target.spatialIndex.tileCells.get('tile')?.length).toBeGreaterThan(0);
     expect(wall?.edge).toEqual({ x: 0, z: 0, level: 0, side: 'east' });
-    expect(target.wallMeta.get('wall')).toEqual({ x: 2, z: -2, rotY: 0 });
-    expect(target.wallCells.get('wall')?.length).toBeGreaterThan(0);
+    expect(target.spatialIndex.wallMeta.get('wall')).toEqual({ x: 2, z: -2, rotY: 0 });
+    expect(target.spatialIndex.wallCells.get('wall')?.length).toBeGreaterThan(0);
     expect(block?.cell).toEqual({ x: 3, z: 3, level: 1 });
   });
 

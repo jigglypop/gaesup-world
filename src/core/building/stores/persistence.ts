@@ -5,7 +5,7 @@ import {
   tilePositionToCell,
   wallTransformToEdge,
 } from '../model';
-import type { TileMeta, WallMeta } from '../model';
+import { BuildingSpatialIndex } from './spatialIndex';
 import type {
   BuildingBlockConfig,
   BuildingSerializedState,
@@ -45,12 +45,7 @@ export type BuildingHydrationTarget = {
   selectedTileGroupId?: string;
   blocks: BuildingBlockConfig[];
   objects: PlacedObject[];
-  tileIndex: Map<number, Set<string>>;
-  tileCells: Map<string, number[]>;
-  tileMeta: Map<string, TileMeta>;
-  wallIndex: Map<number, Set<string>>;
-  wallCells: Map<string, number[]>;
-  wallMeta: Map<string, WallMeta>;
+  spatialIndex: BuildingSpatialIndex;
   initialized: boolean;
   showSnow: boolean;
   showFog: boolean;
@@ -173,12 +168,8 @@ export function hydrateBuildingState(
   state.meshes.clear();
   state.wallGroups.clear();
   state.tileGroups.clear();
-  state.tileIndex.clear();
-  state.tileCells.clear();
-  state.tileMeta.clear();
-  state.wallIndex.clear();
-  state.wallCells.clear();
-  state.wallMeta.clear();
+  // A fresh index keeps prepareHydrate side-effect free until the prepared state is applied.
+  state.spatialIndex = new BuildingSpatialIndex();
 
   for (const mesh of data.meshes ?? []) {
     state.meshes.set(mesh.id, { ...mesh });
@@ -211,8 +202,7 @@ export function applyBuildingHydration(state: BuildingHydrationTarget, prepared:
   Object.assign(state, {
     meshes: prepared.meshes, wallGroups: prepared.wallGroups, tileGroups: prepared.tileGroups,
     blocks: prepared.blocks, objects: prepared.objects,
-    tileIndex: prepared.tileIndex, tileCells: prepared.tileCells, tileMeta: prepared.tileMeta,
-    wallIndex: prepared.wallIndex, wallCells: prepared.wallCells, wallMeta: prepared.wallMeta,
+    spatialIndex: prepared.spatialIndex,
     initialized: prepared.initialized, showSnow: prepared.showSnow, showFog: prepared.showFog,
     fogColor: prepared.fogColor, weatherEffect: prepared.weatherEffect, worldSurface: prepared.worldSurface,
     wallCategories: prepared.wallCategories, tileCategories: prepared.tileCategories,
@@ -247,15 +237,15 @@ function hydrateTileGroups(state: BuildingHydrationTarget, groups: TileGroupConf
         footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1),
       };
       const halfSize = tileHalfSize(tileWithCell.size || 1);
-      state.tileMeta.set(tileWithCell.id, {
+      state.spatialIndex.tileMeta.set(tileWithCell.id, {
         x: tileWithCell.position.x,
         z: tileWithCell.position.z,
         y: tileWithCell.position.y,
         halfSize,
       });
       indexAabb(
-        state.tileIndex,
-        state.tileCells,
+        state.spatialIndex.tileIndex,
+        state.spatialIndex.tileCells,
         tileWithCell.id,
         tileWithCell.position.x - halfSize,
         tileWithCell.position.x + halfSize,
@@ -277,14 +267,14 @@ function hydrateWallGroups(state: BuildingHydrationTarget, groups: WallGroupConf
         edge: wall.edge ?? wallTransformToEdge(wall.position, wall.rotation.y),
       };
       const tol = 0.5;
-      state.wallMeta.set(wallWithEdge.id, {
+      state.spatialIndex.wallMeta.set(wallWithEdge.id, {
         x: wallWithEdge.position.x,
         z: wallWithEdge.position.z,
         rotY: wallWithEdge.rotation.y,
       });
       indexAabb(
-        state.wallIndex,
-        state.wallCells,
+        state.spatialIndex.wallIndex,
+        state.spatialIndex.wallCells,
         wallWithEdge.id,
         wallWithEdge.position.x - tol,
         wallWithEdge.position.x + tol,
