@@ -38,7 +38,7 @@
 | 22-b | 전역 접지 상태(D-17), autoSaveSuspension 인스턴스화 | 22 | 구조 작업(M2 초반) |
 | 10-a | 기준 장면과 기준선 측정 | 10 | minihome WebGPU 기준선 완료(00 3.1.2). R3F GaesupWorld 장면과 seeded S/M/L은 잔여 |
 
-### 3.1 진행 기록(2026-09-24)
+### 3.1 진행 기록(2026-09-24~25)
 
 | Slice | 커밋 | 비고 |
 |---|---|---|
@@ -50,9 +50,14 @@
 | 13-c, 12-r, 13-b | b7561109, 3cac611b | NPC LOD는 히스테리시스로 설계 변경(12 PRD) |
 | 20-h, 20-b | 55b41090, e37bf6ea | Layer 1 누수 0, `check:layer1`·`check:entries`·`check:quality`를 verify에 연결 |
 | 22-a | 08efa006 | 키는 도메인별로 둔다(FR-22-01 수정) |
-| 10-a, 10-c | 3685cc03, 이번 커밋 | 1차 측정 폐기 후 재측정. harness draw 합산·WebGPU 채널·3회 중앙값·`pnpm perf:check` |
+| 10-a, 10-c | 3685cc03, c43e3894 | 1차 측정 폐기 후 재측정. harness draw 합산·WebGPU 채널·3회 중앙값·`pnpm perf:check` |
 | 23-c, 23-d | b8746c0e, ad7833c7 | G2 오류 경계, 핫패스 `@HandleError` 17개 제거 |
 | 30-a delta | b9fa2103 | `SceneObjectDelta`. 레지스트리는 30-f와 함께 |
+| 23-e, 23-f, 23-a | ff92fd7e | `@HandleError`·`@Profile` 0, 명령 경계 보고 |
+| 12-s 일부 | 1871b513 | fire·snow·weather TSL 내장 time, 날씨 uniform. flag·Grass 잔여 |
+| 13-d 일부 | 16d287b3 | `BuildingSpatialIndex`. FR-13-04 잔여 |
+| 13-e 일부 | 5083275f | 스냅샷·가시성 증분. delta 발행 보류, navigation 잔여 |
+| 30-b 일부 | 7fcfbc9c | `SceneRuntime` 행렬 캐시. 가변 `TransformSystem`은 30-c와 함께 |
 
 ### M1 측정 게이트와 저비용 개선
 
