@@ -377,51 +377,6 @@ describe('BuildingBridge 테스트', () => {
     });
   });
 
-  describe('성능 및 최적화', () => {
-    test('대량의 위치 변환이 효율적으로 처리되어야 함', () => {
-      const positions: LegacyPosition[] = [];
-      for (let i = 0; i < 1000; i++) {
-        positions.push([i * 10, i * 5, i * 20]);
-      }
-
-      const startTime = Date.now();
-      
-      positions.forEach(pos => {
-        BuildingBridge.convertLegacyPosition(pos);
-      });
-
-      const endTime = Date.now();
-      const executionTime = endTime - startTime;
-
-      // 1000개 변환이 100ms 내에 완료되어야 함
-      expect(executionTime).toBeLessThan(100);
-    });
-
-    test('대량의 벽 변환이 효율적으로 처리되어야 함', () => {
-      const walls: LegacyWall[] = [];
-      for (let i = 0; i < 500; i++) {
-        walls.push({
-          id: `wall-${i}`,
-          position: [i * 4, 0, i * 4],
-          rotation: [0, (i * Math.PI) / 180, 0],
-          wall_parent_id: `group-${i % 10}`
-        });
-      }
-
-      const startTime = Date.now();
-      
-      walls.forEach(wall => {
-        BuildingBridge.convertLegacyWall(wall);
-      });
-
-      const endTime = Date.now();
-      const executionTime = endTime - startTime;
-
-      // 500개 변환이 100ms 내에 완료되어야 함
-      expect(executionTime).toBeLessThan(100);
-    });
-  });
-
   describe('데코레이터 통합', () => {
     test('레거시 위치 변환이 예외 없이 동작해야 함', () => {
       // 레거시 변환은 부수효과 없이 값만 바꾼다

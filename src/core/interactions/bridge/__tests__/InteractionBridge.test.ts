@@ -521,10 +521,7 @@ describe('InteractionBridge 성능 테스트', () => {
       expect(inactiveEntity.onClick).not.toHaveBeenCalled();
     });
 
-    it('대량의 엔티티도 효율적으로 관리해야 함', () => {
-      const startTime = performance.now();
-
-      // 1000개의 엔티티 등록
+    it('대량의 엔티티를 등록하고 id로 찾는다', () => {
       for (let i = 0; i < 1000; i++) {
         bridge.registerInteractable({
           id: `perf-entity-${i}`,
@@ -533,19 +530,7 @@ describe('InteractionBridge 성능 테스트', () => {
         });
       }
 
-      const registrationTime = performance.now() - startTime;
-
-      // 등록 시간이 합리적이어야 함 (100ms 이하)
-      expect(registrationTime).toBeLessThan(100);
-
-      // 검색 성능 테스트
-      const searchStart = performance.now();
-      const entity = bridge.getInteractable('perf-entity-500');
-      const searchTime = performance.now() - searchStart;
-
-      expect(entity).toBeDefined();
-      // 검색 시간이 빨라야 함 (1ms 이하)
-      expect(searchTime).toBeLessThan(1);
+      expect(bridge.getInteractable('perf-entity-500')?.id).toBe('perf-entity-500');
     });
   });
 });

@@ -103,7 +103,7 @@ baseline JSON은 시나리오를 선택할 때 lazy로 `import()`한다(10-F06).
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
 | 10-a | 기준 장면 `perf-world`(S/M/L), 궤도·hover 경로, 샘플러 추가. 현재값을 00 문서 3.2절에 기록 | M 장면에서 5절 지표 전부가 JSON으로 출력 |
-| 10-b | `test/perf/measureCalls`, `measureAllocations` 추가. D-20 테스트를 호출 수 기준으로 교체 | `useBaseLifecycle` 성능 테스트가 벽시계를 쓰지 않음 |
+| 10-b | `test/perf/measureCalls`, `measureAllocations` 추가. D-20 테스트를 호출 수 기준으로 교체. 완료(2026-09-25, 25-b): 교체는 `jest.fn` 호출 수로 충분해 별도 헬퍼는 만들지 않았다 | `useBaseLifecycle` 성능 테스트가 벽시계를 쓰지 않음 |
 | 10-c | `compare.mjs`와 기준 파일, `pnpm perf:check` 스크립트 | 결정적 지표 회귀를 인위로 넣으면 실패 |
 | 10-d | `perf:check`를 CI job으로 추가(25 PRD의 CI 분리와 함께) | PR에서 자동 실행 |
 | 10-e | PerformanceLab baseline lazy import | 초기 로드에서 baseline JSON 요청 0 |

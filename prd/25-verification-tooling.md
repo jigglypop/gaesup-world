@@ -132,7 +132,7 @@ browser(nightly) : test:browser, probe-*, frame-harness(ms 지표)
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
 | 25-a | D-19 harness·docs 참조 정리(열린 질문 1 결정 후) | `node scripts/check-harness.mjs`, `jest src/__tests__/packageFiles.test.ts` 통과 |
-| 25-b | D-20 벽시계 테스트 교체, `examplePackageConsumption` Program 재사용 | 전체 jest에서 해당 파일 시간 절반 이하 |
+| 25-b | D-20 벽시계 테스트 교체, `examplePackageConsumption` Program 재사용. 완료(2026-09-25): 남은 벽시계 임계값 7파일을 호출 수·기능 단언으로 교체. `tsc -p tsconfig.json`과 중복이던 예제 전체 typecheck 테스트를 지우고 export 조회용 Program은 예제 파일만 root로 만든다(58.5→17.1s) | 전체 jest에서 해당 파일 시간 절반 이하 |
 | 25-c | `check:*`를 verify에 추가, CI 트리거 브랜치 정리, `--ignore-scripts` | PR에서 check 실행 확인 |
 | 25-d | CI 병렬 job 분리와 캐시 | PR CI 시간 기록 |
 | 25-e | jest projects(node/dom/package) | 전체 jest 시간 기록, 실패 0 |

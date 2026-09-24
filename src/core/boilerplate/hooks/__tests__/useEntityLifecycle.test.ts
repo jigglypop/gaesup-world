@@ -380,16 +380,12 @@ describe('useEntityLifecycle', () => {
   });
 
   describe('성능 테스트', () => {
-    test('빈 옵션으로 많은 훅을 생성해도 성능 문제가 없어야 함', () => {
-      const startTime = performance.now();
-      
-      // Keep this test stable across slower CI machines.
+    test('빈 옵션 훅은 프레임 루프를 등록하지 않는다', () => {
+      mockRequestAnimationFrame.mockClear();
       for (let i = 0; i < 200; i++) {
         renderHook(() => useEntityLifecycle({}));
       }
-      
-      const endTime = performance.now();
-      expect(endTime - startTime).toBeLessThan(1000); // 1초 이내
+      expect(mockRequestAnimationFrame).not.toHaveBeenCalled();
     });
   });
 }); 

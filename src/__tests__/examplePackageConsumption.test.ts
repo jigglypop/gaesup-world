@@ -326,13 +326,9 @@ function getPrivateLibraryImportFailures(
   return failures.sort();
 }
 
+/** Export lookups only need the example files and what they reach; full typechecking is `pnpm typecheck`. */
 function createProgramForExamples(files: string[]): ts.Program {
-  const parsedConfig = loadTsConfig();
-
-  return ts.createProgram({
-    rootNames: Array.from(new Set([...parsedConfig.fileNames, ...files])),
-    options: parsedConfig.options,
-  });
+  return ts.createProgram({ rootNames: files, options: loadTsConfig().options });
 }
 
 function getModuleExports(
@@ -364,27 +360,6 @@ function getModuleExports(
   }
 
   return new Set(checker.getExportsOfModule(symbol).map((item) => item.getName()));
-}
-
-function formatDiagnostic(diagnostic: ts.Diagnostic): string {
-  const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-  if (!diagnostic.file || diagnostic.start === undefined) {
-    return message;
-  }
-
-  const position = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-  return `${path.relative(ROOT, diagnostic.file.fileName)}:${position.line + 1}:${position.character + 1} - ${message}`;
-}
-
-function getExampleTypecheckFailures(program: ts.Program): string[] {
-  return ts
-    .getPreEmitDiagnostics(program)
-    .filter((diagnostic) => {
-      if (!diagnostic.file) return true;
-      const fileName = path.resolve(diagnostic.file.fileName);
-      return fileName.startsWith(EXAMPLES_ROOT) || fileName.startsWith(path.join(ROOT, 'src'));
-    })
-    .map(formatDiagnostic);
 }
 
 function getPackageImportFailures(packageImports: PackageImport[], pkg: PackageJson): string[] {
@@ -490,15 +465,7 @@ describe('examples package consumption contract', () => {
   test('examples only import names exported by public package entry points', () => {
     const files = collectExampleSourceFiles();
     const packageImports = getPublicModuleImports(files);
-    const program = createProgramForExamples(files);
 
-    expect(getNamedImportFailures(program, packageImports)).toEqual([]);
-  });
-
-  test('examples typecheck against public package aliases', () => {
-    const files = collectExampleSourceFiles();
-    const program = createProgramForExamples(files);
-
-    expect(getExampleTypecheckFailures(program)).toEqual([]);
+    expect(getNamedImportFailures(createProgramForExamples(files), packageImports)).toEqual([]);
   });
 });

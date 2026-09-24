@@ -354,40 +354,22 @@ describe('DIContainer', () => {
     });
   });
 
-  describe('성능 테스트', () => {
-    test('대량의 서비스 등록과 해결이 효율적이어야 함', () => {
-      const serviceCount = 1000;
-      
-      // 등록
-      const startRegister = performance.now();
-      for (let i = 0; i < serviceCount; i++) {
+  describe('대량 등록', () => {
+    test('서비스 1000개를 각자의 값으로 해결한다', () => {
+      for (let i = 0; i < 1000; i++) {
         container.register(`service-${i}`, () => ({ id: i }));
       }
-      const registerTime = performance.now() - startRegister;
-      
-      // 해결
-      const startResolve = performance.now();
-      for (let i = 0; i < serviceCount; i++) {
-        container.resolve(`service-${i}`);
-      }
-      const resolveTime = performance.now() - startResolve;
-      
-      expect(registerTime).toBeLessThan(100); // 100ms 이내
-      expect(resolveTime).toBeLessThan(100); // 100ms 이내
+      expect(container.resolve<{ id: number }>('service-0').id).toBe(0);
+      expect(container.resolve<{ id: number }>('service-999').id).toBe(999);
     });
 
-    test('싱글톤 인스턴스 재사용이 효율적이어야 함', () => {
-      container.register(TestService, () => new TestService());
-      
-      const start = performance.now();
-      
-      // 같은 서비스를 여러 번 해결
+    test('싱글톤은 반복 해결에도 팩토리를 한 번만 호출한다', () => {
+      const factory = jest.fn(() => new TestService());
+      container.register(TestService, factory);
       for (let i = 0; i < 1000; i++) {
         container.resolve(TestService);
       }
-      
-      const duration = performance.now() - start;
-      expect(duration).toBeLessThan(50); // 50ms 이내
+      expect(factory).toHaveBeenCalledTimes(1);
     });
   });
 
