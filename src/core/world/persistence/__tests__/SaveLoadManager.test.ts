@@ -151,6 +151,31 @@ describe('SaveLoadManager building blocks', () => {
     ]);
   });
 
+  test.each([
+    [undefined, false, 10],
+    [3, true, 3],
+    [Infinity, false, 20],
+  ])('keeps the newest saves per world (maxSlotsPerWorld %s, compress %s)', async (maxSlotsPerWorld, compress, kept) => {
+    const storage = new MemoryLegacySaveStorage();
+    const untouched = ['gaesup_world_save_other_1', 'gaesup_world_save_world_x_1', 'gaesup_world_save_world', 'unrelated'];
+    for (const key of untouched) storage.setItem(key, '{}');
+    let now = 0;
+    const manager = new SaveLoadManager({
+      storage,
+      now: () => ++now,
+      ...(maxSlotsPerWorld === undefined ? {} : { maxSlotsPerWorld }),
+    });
+
+    for (let i = 0; i < 20; i++) {
+      expect((await manager.save(createWorld([]), undefined, { compress })).success).toBe(true);
+    }
+
+    const keys = Array.from({ length: storage.length }, (_, index) => storage.key(index)!);
+    expect(keys.filter((key) => /^gaesup_world_save_world_\d+$/.test(key)))
+      .toEqual(Array.from({ length: kept }, (_, index) => `gaesup_world_save_world_${21 - kept + index}`));
+    expect(keys.filter((key) => untouched.includes(key))).toEqual(untouched);
+  });
+
   test('writes file exports through an injected file writer without creating a legacy save', async () => {
     const storage = new MemoryLegacySaveStorage();
     const writes: Array<{ filename: string; data: SaveData }> = [];

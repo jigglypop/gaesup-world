@@ -354,6 +354,52 @@ describe('persistenceSlice', () => {
     now.mockRestore();
   });
 
+  it('keeps only the newest ten SaveSystem slots of the saved world', async () => {
+    const adapter = new MemorySaveAdapter();
+    const saveSystem = new SaveSystem({ adapter });
+    saveSystem.register({ key: 'time', serialize: () => ({ version: 1 }), hydrate: () => {} });
+    await saveSystem.save('main');
+    await saveSystem.save('other_1');
+    let now = 1000;
+    const clock = jest.spyOn(Date, 'now').mockImplementation(() => ++now);
+    try {
+      const store = create<PersistenceState>()(createPersistenceSliceWithOptions({ saveSystem }));
+      const saved: string[] = [];
+      for (let i = 0; i < 20; i++) {
+        await store.getState().saveWorld('world', 'World');
+        saved.push(store.getState().currentSaveId!);
+      }
+
+      const worldSlots = [...adapter.saved.keys()].filter((key) => key.startsWith('world_'));
+      expect(worldSlots.sort()).toEqual(saved.slice(-10).sort());
+      expect(adapter.saved.has('main')).toBe(true);
+      expect(adapter.saved.has('other_1')).toBe(true);
+      expect(store.getState().saves.filter((save) => save.id.startsWith('world_'))).toHaveLength(10);
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
+  it('passes maxSlotsPerWorld to the legacy storage manager it creates', async () => {
+    localStorage.clear();
+    let now = 0;
+    const clock = jest.spyOn(Date, 'now').mockImplementation(() => ++now);
+    try {
+      const store = create<PersistenceState>()(
+        createPersistenceSliceWithOptions({ getStores: () => createStores(), maxSlotsPerWorld: 2 }),
+      );
+      const saved: string[] = [];
+      for (let i = 0; i < 5; i++) {
+        await store.getState().saveWorld('world', 'World');
+        saved.push(store.getState().currentSaveId!);
+      }
+      expect(store.getState().saves.map((save) => save.id)).toEqual(saved.slice(-2).reverse());
+    } finally {
+      clock.mockRestore();
+      localStorage.clear();
+    }
+  });
+
   it('projects the camera plugin save binding into world persistence data', async () => {
     const saveSystem = new SaveSystem({ adapter: new MemorySaveAdapter() });
     const runtime = createGaesupRuntime({

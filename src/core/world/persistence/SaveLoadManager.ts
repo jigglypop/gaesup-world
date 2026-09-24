@@ -1,6 +1,7 @@
 import { MonitorMemory, Timeout } from '@/core/boilerplate/decorators';
 import type { RuntimeValue } from '@/core/boilerplate/types';
 
+import { DEFAULT_MAX_SLOTS_PER_WORLD, selectExpiredWorldSlots } from './slots';
 import { 
   SaveData, 
   WorldSaveData, 
@@ -39,6 +40,8 @@ export interface SaveLoadManagerOptions {
   fileWriter?: SaveFileWriter;
   now?: () => number;
   version?: string;
+  /** Saves kept per world, newest first; older ones are deleted after each save. `Infinity` keeps all. */
+  maxSlotsPerWorld?: number;
 }
 
 export class SaveLoadManager {
@@ -46,12 +49,14 @@ export class SaveLoadManager {
   private readonly storage: LegacySaveStorage | undefined;
   private readonly fileWriter: SaveFileWriter | undefined;
   private readonly now: () => number;
+  private readonly maxSlotsPerWorld: number;
 
   constructor(options: SaveLoadManagerOptions = {}) {
     this.version = options.version ?? SAVE_VERSION;
     this.storage = options.storage;
     this.fileWriter = options.fileWriter;
     this.now = options.now ?? Date.now;
+    this.maxSlotsPerWorld = options.maxSlotsPerWorld ?? DEFAULT_MAX_SLOTS_PER_WORLD;
   }
 
   @Timeout(5000) // 5초 타임아웃
@@ -62,12 +67,9 @@ export class SaveLoadManager {
   ): Promise<SaveLoadResult> {
     try {
       const saveData = this.createSaveData(worldData, metadata, options);
-
-      if (options.compress) {
-        return await this.saveCompressed(saveData);
-      } else {
-        return await this.saveUncompressed(saveData);
-      }
+      const value = options.compress ? await this.compressData(saveData) : JSON.stringify(saveData);
+      this.writeSlot(saveData, value);
+      return { success: true, data: saveData };
     } catch (error) {
       return {
         success: false,
@@ -285,34 +287,27 @@ export class SaveLoadManager {
     URL.revokeObjectURL(url);
   }
 
-  private async saveUncompressed(saveData: SaveData): Promise<SaveLoadResult> {
+  private writeSlot(saveData: SaveData, value: string): void {
     const saveId = `${saveData.world.id}_${saveData.timestamp}`;
-    const storageKey = `${STORAGE_KEY_PREFIX}${saveId}`;
+    const storage = this.getStorage();
 
     try {
-      this.getStorage().setItem(storageKey, JSON.stringify(saveData));
-      return { success: true, data: saveData };
+      storage.setItem(`${STORAGE_KEY_PREFIX}${saveId}`, value);
     } catch (error) {
       if (error instanceof Error && error.name === 'QuotaExceededError') {
         throw new Error('Storage quota exceeded. Please delete some saves.');
       }
       throw error;
     }
-  }
 
-  private async saveCompressed(saveData: SaveData): Promise<SaveLoadResult> {
-    const compressed = await this.compressData(saveData);
-    const saveId = `${saveData.world.id}_${saveData.timestamp}`;
-    const storageKey = `${STORAGE_KEY_PREFIX}${saveId}`;
-
-    try {
-      this.getStorage().setItem(storageKey, compressed);
-      return { success: true, data: saveData };
-    } catch (error) {
-      if (error instanceof Error && error.name === 'QuotaExceededError') {
-        throw new Error('Storage quota exceeded. Please delete some saves.');
-      }
-      throw error;
+    // Timestamped slots would otherwise fill the storage quota; prune only after the new save landed.
+    const saveIds: string[] = [];
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
+      if (key?.startsWith(STORAGE_KEY_PREFIX)) saveIds.push(key.slice(STORAGE_KEY_PREFIX.length));
+    }
+    for (const expired of selectExpiredWorldSlots(saveIds, saveData.world.id, saveId, this.maxSlotsPerWorld)) {
+      storage.removeItem(`${STORAGE_KEY_PREFIX}${expired}`);
     }
   }
 

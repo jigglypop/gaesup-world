@@ -9,6 +9,7 @@ import {
   normalizeSaveMetadata,
   parseWorldSaveTimestamp,
 } from '../persistence/saveSystem';
+import { selectExpiredWorldSlots } from '../persistence/slots';
 import { CameraSaveData, NPCSaveData, SaveData, SaveLoadOptions, SaveMetadata, WorldSaveData } from '../persistence/types';
 
 export type StoreApi<TState> = {
@@ -49,6 +50,8 @@ export interface PersistenceSliceOptions {
   getStores?: PersistenceStoresResolver;
   saveLoadManager?: SaveLoadManager;
   saveSystem?: SaveSystem;
+  /** Saves kept per world, newest first; older ones are deleted after each save. Default 10, `Infinity` keeps all. */
+  maxSlotsPerWorld?: number;
 }
 
 const EMPTY_STORES_RESOLVER: PersistenceStoresResolver = () => ({});
@@ -212,6 +215,16 @@ async function listSaveSystemSaves(saveSystem: SaveSystem): Promise<Array<{ id: 
     .sort((a, b) => b.timestamp - a.timestamp);
 }
 
+async function pruneSaveSystemSlots(
+  saveSystem: SaveSystem,
+  worldId: string,
+  current: string,
+  maxSlots: number | undefined,
+): Promise<void> {
+  const expired = selectExpiredWorldSlots(await saveSystem.list(), worldId, current, maxSlots);
+  await Promise.all(expired.map((slot) => saveSystem.remove(slot)));
+}
+
 function downloadJsonFile(filename: string, data: unknown): void {
   if (typeof document === 'undefined' || typeof URL === 'undefined' || typeof Blob === 'undefined') {
     throw new Error('File download is not available in this environment');
@@ -257,9 +270,11 @@ export function createPersistenceSliceWithOptions(
 ): StateCreator<PersistenceState> {
   const resolveStores = options.getStores ?? EMPTY_STORES_RESOLVER;
   const saveSystem = options.saveSystem;
+  const { maxSlotsPerWorld } = options;
 
   return (set, get) => ({
-  saveLoadManager: options.saveLoadManager ?? new SaveLoadManager(),
+  saveLoadManager: options.saveLoadManager
+    ?? new SaveLoadManager(maxSlotsPerWorld === undefined ? {} : { maxSlotsPerWorld }),
   currentSaveId: null,
   saves: [],
   isSaving: false,
@@ -274,6 +289,7 @@ export function createPersistenceSliceWithOptions(
         const timestamp = Date.now();
         const saveId = `${worldId}_${timestamp}`;
         await saveSystem.save(saveId);
+        await pruneSaveSystemSlots(saveSystem, worldId, saveId, maxSlotsPerWorld);
         set({
           currentSaveId: saveId,
           saves: await listSaveSystemSaves(saveSystem),
