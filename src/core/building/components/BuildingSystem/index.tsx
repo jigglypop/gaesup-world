@@ -1,9 +1,10 @@
-import React, { Suspense, useMemo, useRef } from 'react';
+import React, { Suspense, useMemo, useRef, useState } from 'react';
 
 import type { Group } from 'three';
 
 import { BuildingSystemProps } from './types';
 import { NPCPreview } from '../../../npc/components/NPCPreview';
+import { CompileGate } from '../../../rendering/CompileGate';
 import { GpuBatchBridge } from '../../../rendering/GpuBatchBridge';
 import { WeatherEffect } from '../../../weather';
 import { useBuildingStore } from '../../stores/buildingStore';
@@ -19,6 +20,7 @@ import { FireBatch, type FireBatchEntry } from '../mesh/fire';
 import { FlagBatch } from '../mesh/flag';
 import { GrassDriver } from '../mesh/grass/GrassDriver';
 import ModelObject from '../mesh/model';
+import { LampLightPool, LampRegistry, LampRegistryContext } from '../mesh/model/lampPool';
 import { SakuraBatch, type SakuraTreeEntry } from '../mesh/sakura';
 import { Snow } from '../mesh/snow';
 import { PreviewBlock } from '../PreviewBlock';
@@ -97,6 +99,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   onBlockDelete,
 }: BuildingSystemProps) {
   const renderRoot = useRef<Group>(null);
+  const [lampRegistry] = useState(() => new LampRegistry());
   // Field-level selectors so unrelated store updates (e.g. hoverPosition)
   // don't trigger a rerender of the entire scene tree.
   const meshes = useBuildingStore((s) => s.meshes);
@@ -141,7 +144,9 @@ export const BuildingSystem = React.memo(function BuildingSystem({
 
   return (
     <Suspense fallback={null}>
+      <LampRegistryContext.Provider value={lampRegistry}>
       <group name="building-system" ref={renderRoot}>
+        <LampLightPool registry={lampRegistry} />
         <GrassDriver />
         {gpuResident && <GpuBatchBridge root={renderRoot} />}
         {(gridVisibility ?? showGrid) && <GridHelper size={gridSize} />}
@@ -209,25 +214,25 @@ export const BuildingSystem = React.memo(function BuildingSystem({
 
         {sakuraEntries.length > 0 && (
           <Suspense fallback={null}>
-            <SakuraBatch trees={sakuraEntries} />
+            <CompileGate><SakuraBatch trees={sakuraEntries} /></CompileGate>
           </Suspense>
         )}
 
         {flagObjects.length > 0 && (
           <Suspense fallback={null}>
-            <FlagBatch flags={flagObjects} />
+            <CompileGate><FlagBatch flags={flagObjects} /></CompileGate>
           </Suspense>
         )}
 
         {fireEntries.length > 0 && (
           <Suspense fallback={null}>
-            <FireBatch fires={fireEntries} />
+            <CompileGate><FireBatch fires={fireEntries} /></CompileGate>
           </Suspense>
         )}
 
         {billboardObjects.length > 0 && (
           <Suspense fallback={null}>
-            <BillboardBatch billboards={billboardObjects} />
+            <CompileGate><BillboardBatch billboards={billboardObjects} /></CompileGate>
           </Suspense>
         )}
 
@@ -238,13 +243,13 @@ export const BuildingSystem = React.memo(function BuildingSystem({
             rotation={[0, obj.rotation ?? 0, 0]}
           >
             <Suspense fallback={null}>
-              <ModelObject
+              <CompileGate><ModelObject
                 {...(obj.config?.modelUrl ? { url: obj.config.modelUrl } : {})}
                 {...(obj.config?.modelLabel ? { label: obj.config.modelLabel } : {})}
                 {...(obj.config?.modelFallbackKind ? { fallbackKind: obj.config.modelFallbackKind } : {})}
                 {...(obj.config?.modelScale ? { scale: obj.config.modelScale } : {})}
                 {...(obj.config?.modelColor ? { color: obj.config.modelColor } : {})}
-              />
+              /></CompileGate>
             </Suspense>
           </group>
         ))}
@@ -254,6 +259,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
         )}
         {showSnow && weatherEffect !== 'snow' && <Snow gpu />}
       </group>
+      </LampRegistryContext.Provider>
     </Suspense>
   );
 });

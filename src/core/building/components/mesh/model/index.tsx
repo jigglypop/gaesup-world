@@ -1,10 +1,14 @@
-import React, { Suspense, useEffect, useMemo } from 'react';
+import React, { Suspense, useContext, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
+import { LampRegistryContext } from './lampPool';
 import type { BuildingModelFallbackKind } from '../../../types';
+
+const LAMP_INTENSITY = 0.65;
+const LAMP_DISTANCE = 5;
 
 type ModelObjectProps = {
   url?: string;
@@ -113,8 +117,11 @@ function FallbackModel({
     return (
       <group>
         {cylinderGeometry([0.06, 0.08, 1.5, 12], [0, 0.75, 0], dark, 'pole')}
-        {cylinderGeometry([0.28, 0.18, 0.35, 16], [0, 1.55, 0], color, 'shade')}
-        <pointLight position={[0, 1.55, 0]} intensity={0.65} distance={5} color={light} />
+        <mesh position={[0, 1.55, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.28, 0.18, 0.35, 16]} />
+          <meshStandardMaterial color={color} emissive={light} emissiveIntensity={0.6} roughness={0.7} metalness={0.05} />
+        </mesh>
+        <LampLight color={light} />
       </group>
     );
   }
@@ -177,6 +184,22 @@ function FallbackModel({
   }
 
   return boxGeometry([1, 1, 1], [0, 0.5, 0], color, 'generic');
+}
+
+/** Inside a building world the lamp borrows a pooled light; standalone it owns one. */
+function LampLight({ color }: { color: string }) {
+  const registry = useContext(LampRegistryContext);
+  const anchor = useRef<THREE.Group>(null);
+  useLayoutEffect(() => {
+    const object = anchor.current;
+    if (!registry || !object) return undefined;
+    return registry.add({ object, color: new THREE.Color(color), intensity: LAMP_INTENSITY, distance: LAMP_DISTANCE });
+  }, [registry, color]);
+  return (
+    <group ref={anchor} position={[0, 1.55, 0]}>
+      {!registry && <pointLight intensity={LAMP_INTENSITY} distance={LAMP_DISTANCE} color={color} />}
+    </group>
+  );
 }
 
 export default function ModelObject({ url, label, fallbackKind, scale = 1, color }: ModelObjectProps) {
