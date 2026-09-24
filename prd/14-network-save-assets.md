@@ -173,12 +173,12 @@ domain.serialize() ──(owned snapshot)──► SaveSystem ──► adapter.
 |---|---|---|
 | 14-a | D-05: 아바타별 ErrorBoundary/Suspense, allowlist 전달 | 404 modelUrl 주입 시 나머지 아바타와 world 유지 |
 | 14-b | D-06 authority 직렬 큐·거부 비캐시·actor 검증, D-07 sender 검증 | 동시 `handle` 2건 테스트, 위조 `VisitLeave` 무시 테스트 |
-| 14-c | D-08 슬롯 보존 정책, D-13 wasm 재시도, D-14 공용 로더 팩토리 | 20회 저장 후 키 ≤ N. `lod0-meshopt.glb` fixture를 `gltfAssetCache.acquire`로 로드. gstatic 요청 0 |
+| 14-c | D-08 슬롯 보존 정책, D-13 wasm 재시도, D-14 공용 로더 팩토리. D-08 완료(2026-09-25, G5): `SaveLoadManager`·`createPersistenceSlice`가 저장 성공 후 같은 월드의 `${worldId}_${timestamp}` 슬롯을 최신 10개만 남긴다(`maxSlotsPerWorld`, `Infinity`면 전부 보존). 20회 저장 후 키 20→10. 메타데이터 인덱스 키(FR-14-16 후반)는 잔여 | 20회 저장 후 키 ≤ N. `lod0-meshopt.glb` fixture를 `gltfAssetCache.acquire`로 로드. gstatic 요청 0 |
 | 14-d | Update identity 분리, epsilon 비교, idle keepalive, rate limit 단일화 | ws mock에서 바이트/메시지, 메시지/s 계측 |
 | 14-e | 원격 아바타 React 재렌더 제거, 보간 일괄 채널 | mock 24명 commit 수와 frame time |
 | 14-f | half-open 감지, jitter, 재연결 시 플레이어 유지 | fake timers 테스트 |
-| 14-g | 저장 clone 1회, dirty skip, 롤백 lazy, IDB 연결 캐시 | `serialize` spy 호출 수, 10k 객체 `save()` 시간 |
-| 14-h | SceneDocument 명령 증분 검증 | 2k 객체 create 벤치가 선형 |
+| 14-g | 저장 clone 1회, dirty skip, 롤백 lazy, IDB 연결 캐시. 완료(2026-09-25): `DomainBinding`에 `owned`·`revision`을, `save(slot, { skipUnchanged })`를 추가했다. owned 스냅샷은 재복제하지 않고, 변경 없는 autosave는 직렬화·쓰기 0회다(scene-document·building revision 연결, 나머지 도메인은 revision이 없어 항상 쓴다). 롤백 스냅샷은 전 도메인 검증 후에만 만들고 IndexedDB 연결을 재사용한다(연산마다 close를 단언하던 테스트는 재연결 계약으로 바꿈). 씬 저장 validate 3→0, JSON 왕복 2→1, 저장당 전체 순회 약 9→2, 10k 객체 저장 약 740→40ms(jest) | `serialize` spy 호출 수, 10k 객체 `save()` 시간 |
+| 14-h | SceneDocument 명령 증분 검증. 완료(2026-09-25): 신뢰 스냅샷(검증·deep-freeze된 것만)에서 명령은 새·변경 객체만 정규화하고, 부모 변경은 새 부모 체인만 검사하며, id→index를 다음 스냅샷에 넘긴다. 검사가 실패하면 기존 전체 검증으로 같은 이슈를 보고한다. 2k create 정규화 2,001,000→0회, 52.8s→86ms(jest). 객체 배열 복사(O(N) native)는 남는다 | 2k 객체 create 벤치가 선형 |
 | 14-i | GLTF 캐시 통합, LRU grace, 동시 로드 제한 | 네트워크 탭 중복 요청 0 |
 | 14-j | 효과 없는 knob 정리 또는 구현, Chat rate limit, 공개 selector memo | chat 1000/s 주입 시 `setState` ≤ 제한값 |
 | 14-k | binary codec(버전 협상) | codec 왕복 테스트, 메시지 ≤ 32B |

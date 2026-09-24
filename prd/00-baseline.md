@@ -177,7 +177,7 @@ S와 M이 거의 같다. 거리 상주(12-e)로 플레이어 주변 140m만 올�
 | D-05 | 수정 (2026-09-24) | `RemotePlayer`가 모델 콘텐츠를 `GaesupErrorBoundary`(key=modelUrl, fallback 빈 group, logger 경고)와 로컬 `Suspense`로 감쌈. `RemotePlayers`의 `allowedModelOrigins` 전달은 공개 prop 추가라 14-a 잔여 | `RemotePlayer.test.tsx` 신규 2건(로드 실패·대기 시 world 유지). 격리 제거 시 2건 실패 확인. networks 328 tests 통과 |
 | D-06 | 부분 수정 (2026-09-24) | 도메인별 직렬 실행 큐로 revision 검사와 handler를 원자화. 거부 결과는 replay 캐시에서 제거해 같은 id 재시도 허용. `verifyActor` 기본 deny는 기존 소비자 동작을 바꾸므로 결정됨(90 PRD G4) | `authority.test.ts` 신규 2건. 수정 전 2건 실패 확인 |
 | D-07 | 결정됨(90 PRD G4, 2026-09-24) | visit wire(`channel.ts` `WireLeave`, snapshot)에 인증된 발신자 id가 없어 클라이언트만으로 해결 불가. channel 계약에 transport가 붙이는 `senderId` 추가 필요 | - |
-| D-08 | 결정됨(90 PRD G5, 2026-09-24) | 자동 정리는 저장 데이터를 지우는 동작. 월드당 보존 개수 N 결정 후 진행 | - |
+| D-08 | 수정 (2026-09-25) | G5대로 월드당 최신 10개 슬롯만 남긴다(`maxSlotsPerWorld`, `Infinity`면 보존). 다른 월드·`main`·timestamp 아닌 슬롯은 건드리지 않는다 | `SaveLoadManager.test.ts` 3건, `persistenceSlice.test.ts` 2건 |
 | D-14 | 부분 수정 (2026-09-24) | 공용 `createGLTFLoader()`(meshopt 디코더 설정, 내부 모듈)를 `GLTFAssetCache` 기본 로더로 사용. Draco 로컬 디코더 경로와 KTX2는 소비자 자산 호스팅 방식 결정이 필요해 14-c 잔여 | `assets/__tests__/gltfLoader.test.ts`(메모리 GLB). 공개 export 변경을 피하려고 팩토리는 barrel 밖 `assets/gltfLoader.ts`에 둠. 디코더 제거 시 `setMeshoptDecoder must be called` 실패 확인 |
 | D-18 | 결정됨(90 PRD G6, 2026-09-24) | 복제 저장으로 고치면 기존 테스트가 고정한 identity 계약(`getAllObjects()`가 입력 객체를 그대로 반환, position 없는 객체 허용)이 바뀐다. `boundingBox` JSDoc은 `updateObject` 경유를 계약으로 명시. 복제 저장 또는 계약 문서화 중 선택 필요. 시도한 변경은 되돌림 | - |
 | D-02 | 수정 (2026-09-24) | 23-b에서 `ManagedEntity`, `useManagedEntity`, `useBatchManagedEntities`, `@Autowired`와 테스트를 삭제(공개 API 아님) | 전체 jest 통과, export snapshot 불변 |
