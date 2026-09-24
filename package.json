@@ -241,6 +241,7 @@
     "assets:parts": "node scripts/build-character-parts.cjs",
     "test:browser": "playwright install chromium && node scripts/browser-smoke.cjs",
     "bench:frame": "node scripts/frame-harness.cjs",
+    "perf:check": "node scripts/frame-harness.cjs --route=/ --runs=3 --webgpu --baseline=scripts/performance/frame-baseline.json",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:memory": "jest --config jest.memory.config.js --runInBand",

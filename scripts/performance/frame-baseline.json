@@ -1,0 +1,12 @@
+{
+  "note": "Machine-specific frame-harness baseline. Regenerate on the target machine before comparing.",
+  "machine": "RTX 5060 Ti, Windows 11, chromium channel, WebGPU backend",
+  "commit": "ff92fd7e",
+  "route": "/",
+  "runs": 3,
+  "medians": {
+    "cpuScriptMs": 2.28,
+    "allocatedKBPerFrame": 112.18,
+    "drawCallsMean": 136.9
+  }
+}

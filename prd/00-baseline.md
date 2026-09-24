@@ -80,21 +80,27 @@ ESM 70파일 1.95MB, CJS 70파일 1.55MB, d.ts+d.cts 2,052파일 2.08MB이다. d
 | `check:layer1` | 위반 5(npc/core → questStore), 변화 없음 |
 | jest 로그 | `THREE_CJS_DEPRECATED` 경고가 계속 대량 출력됨(jest가 three CJS 빌드를 로드, D-21과 같은 뿌리) |
 
-### 3.1.2 브라우저 기준선 [실측] (2026-09-24, 커밋 20ea3236, 10-a 1차)
+### 3.1.2 브라우저 기준선 [실측] (2026-09-24, 커밋 ff92fd7e, 10-a·10-c)
 
-`MSYS_NO_PATHCONV=1 node scripts/frame-harness.cjs --route=/world`로 두 번 측정했다. Playwright chromium, 1280×720, seed 20260923, 20초 입력 타임라인(WASD·점프), GPU RTX 5060 Ti(ANGLE D3D11), WebGPU 렌더러.
+`pnpm perf:check`(= `node scripts/frame-harness.cjs --route=/ --runs=3 --webgpu --baseline=scripts/performance/frame-baseline.json`). Playwright chromium 채널(new headless), 1280×720, seed 20260923, 20초 입력 타임라인(WASD·점프), RTX 5060 Ti. 3회 모두 WebGPU 백엔드로 측정했고 판정값은 3회 중앙값이다. 기준 파일은 장비별이다.
 
-| 지표 | 1회 | 2회 | 비고 |
-|---|---|---|---|
-| frame time p50 / p95 / p99 | 16.7 / 16.7 / 16.8ms | 16.7 / 16.8 / 16.8ms | vsync 60Hz에 묶임. 이 장비에서는 프레임 시간으로 개선을 판정할 수 없다 |
-| frame time max, long frame(> 33ms) | 16.8ms, 0 | 50.1ms, 1 | |
-| CPU script / task | 2.37 / 2.61ms/frame | - | 판정 지표 |
-| heap 할당 | 110.79KB/frame, GC 29회/20초, 종료 156.66MB | | NFR-11-02 대상 |
-| draw call 평균 / 최대 | 15,336 / 23,923 | 9,840 / 18,363 | `renderer.info.render.calls`. 실행마다 차이가 크다. WebGPU 카운터가 섀도·후처리 pass를 포함하는지, 누적값인지 확인 필요 [미검증] |
-| triangles 평균 | 713,723 | | 같은 단서 |
-| geometries / textures / programs | 40 / 37 / 0 | | programs 0은 WebGPU 백엔드 |
+| 지표 | 중앙값(3회 범위) | 비고 |
+|---|---|---|
+| CPU script | 2.28ms/frame (1.98~2.28) | 회귀 판정 지표 |
+| heap 할당 | 112.18KB/frame (104.9~112.2), GC 6~7회/20초 | 회귀 판정 지표. NFR-11-02 대상 |
+| draw call | 137/frame (최대 203) | 회귀 판정 지표 |
+| 렌더 호출(`render()`) | 14.31/frame | 후처리·섀도 pass 수. 12-F04 조사 대상 |
+| triangles | 약 714,000/frame | |
+| frame time p50 / p99 / max | 16.7 / 16.8 / 16.9ms, long frame 0 | vsync 60Hz에 묶여 판정에 쓰지 않는다 |
 
-Git Bash에서는 `MSYS_NO_PATHCONV=1` 없이 `--route=/world`가 Windows 경로로 바뀌어 실패한다. 10-c 비교 스크립트는 draw call 편차를 줄이도록 측정 구간을 고정하고 3회 중앙값을 쓴다.
+1차 측정(2026-09-24 오전)은 세 가지가 틀려 폐기했다.
+- **draw call:** 공통 렌더러의 누적값인 `render.calls`를 읽어 15,336·9,840으로 기록됐다. harness가 이제 `info.reset`마다 pass별 카운터를 프레임 단위로 합산한다.
+- **경로:** `/world`는 `examples/main.tsx`에 없어 minihome으로 fallback했다. 기본 경로를 `/`로 바꿨다.
+- **백엔드:** chrome-headless-shell은 Windows에서 WebGPU device를 만들지 못해(dxil.dll) WebGL2 fallback이었다. `--webgpu`는 chromium 채널로 실행한다.
+
+측정 공백도 있다. 예제에 R3F `GaesupWorld` 경로가 없어서, 프레임 스케줄러·물리·카메라 같은 라이브러리 핫패스는 이 기준선에 거의 드러나지 않는다. PerformanceLab 시나리오를 harness 경로로 연결하는 작업이 10-a 잔여다.
+
+Git Bash에서는 `MSYS_NO_PATHCONV=1` 없이 `--route=/...`가 Windows 경로로 바뀐다.
 
 ### 3.2 미측정 기준선
 

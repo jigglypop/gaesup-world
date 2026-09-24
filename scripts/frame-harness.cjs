@@ -4,7 +4,8 @@ const { chromium } = require('@playwright/test');
 
 const { startDevServer, wait } = require('./lib/devServer.cjs');
 
-const DEFAULT_ROUTE = '/world';
+// examples/main.tsx serves minihome at the root; unknown paths such as /world fall back to it.
+const DEFAULT_ROUTE = '/';
 const DEFAULT_DURATION_MS = 20_000;
 const WARMUP_MS = 8_000;
 const CANVAS_TIMEOUT_MS = 90_000;
@@ -15,6 +16,8 @@ const GC_DROP_BYTES = 1024 * 1024;
 const BYTES_PER_KB = 1024;
 const BYTES_PER_MB = 1024 * 1024;
 const SECONDS_TO_MS = 1000;
+// Relative regression allowed per compared metric before --baseline fails the run.
+const DEFAULT_TOLERANCE = 0.15;
 const INPUT_TIMELINE = [
   { key: 'KeyW', holdMs: 3000 },
   { key: 'KeyD', holdMs: 1500 },
@@ -25,19 +28,26 @@ const INPUT_TIMELINE = [
 ];
 
 function parseArgs(argv) {
-  const options = { route: DEFAULT_ROUTE, durationMs: DEFAULT_DURATION_MS, out: null, software: false };
+  const options = {
+    route: DEFAULT_ROUTE, durationMs: DEFAULT_DURATION_MS, out: null, software: false,
+    webgpu: false, runs: 1, baseline: null, tolerance: DEFAULT_TOLERANCE,
+  };
   for (const arg of argv) {
     const [name, value] = arg.split('=');
     if (name === '--route' && value) options.route = value;
     else if (name === '--duration' && value) options.durationMs = Number(value);
     else if (name === '--out' && value) options.out = value;
     else if (name === '--software') options.software = true;
+    else if (name === '--webgpu') options.webgpu = true;
+    else if (name === '--runs' && value) options.runs = Math.max(1, Number(value));
+    else if (name === '--baseline' && value) options.baseline = value;
+    else if (name === '--tolerance' && value) options.tolerance = Number(value);
   }
   return options;
 }
 
-function browserArgs(software) {
-  const memory = ['--enable-precise-memory-info'];
+function browserArgs(software, webgpu) {
+  const memory = ['--enable-precise-memory-info', ...(webgpu ? ['--enable-unsafe-webgpu'] : [])];
   if (software) return [...memory, '--use-angle=swiftshader', '--enable-unsafe-swiftshader'];
   const angle = process.platform === 'win32' ? ['--use-angle=d3d11'] : [];
   return [...memory, ...angle, '--ignore-gpu-blocklist', '--enable-gpu'];
@@ -52,24 +62,27 @@ function installProbe(seed) {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-  const harness = { recording: false, frames: [], heap: [], calls: [], triangles: [], renderer: null };
+  const harness = {
+    recording: false, frames: [], heap: [], calls: [], renderCalls: [], triangles: [], renderer: null,
+    frameDraws: 0, frameRenders: 0, frameTriangles: 0,
+  };
   window.__frameHarness = harness;
   const devtools = new EventTarget();
   devtools.addEventListener('observe', (event) => {
     const target = event.detail;
-    if (!target) return;
-    if (target.isWebGLRenderer || target.isRenderer) harness.renderer = target;
-    if (target.isScene && !harness.sceneHooked) {
-      harness.sceneHooked = true;
-      const previous = target.onAfterRender;
-      target.onAfterRender = function onAfterRender(renderer, ...rest) {
-        if (harness.recording) {
-          harness.calls.push(renderer.info.render.calls);
-          harness.triangles.push(renderer.info.render.triangles);
-        }
-        return previous.call(this, renderer, ...rest);
-      };
-    }
+    if (!target || harness.renderer || !(target.isWebGLRenderer || target.isRenderer)) return;
+    harness.renderer = target;
+    // render.calls is cumulative on the common renderer. Sum the per-pass counters at every reset into the rAF frame,
+    // which is correct whether the renderer resets once per frame or once per render() call.
+    const info = target.info;
+    const reset = info.reset.bind(info);
+    info.reset = () => {
+      const render = info.render;
+      harness.frameDraws += typeof render.drawCalls === 'number' ? render.drawCalls : render.calls;
+      harness.frameRenders += typeof render.frameCalls === 'number' ? render.frameCalls : 1;
+      harness.frameTriangles += render.triangles;
+      return reset();
+    };
   });
   window.__THREE_DEVTOOLS__ = devtools;
   const sample = (time) => {
@@ -77,7 +90,13 @@ function installProbe(seed) {
       harness.frames.push(time);
       const memory = performance.memory;
       if (memory) harness.heap.push(memory.usedJSHeapSize);
+      harness.calls.push(harness.frameDraws);
+      harness.renderCalls.push(harness.frameRenders);
+      harness.triangles.push(harness.frameTriangles);
     }
+    harness.frameDraws = 0;
+    harness.frameRenders = 0;
+    harness.frameTriangles = 0;
     requestAnimationFrame(sample);
   };
   requestAnimationFrame(sample);
@@ -134,6 +153,7 @@ function summarize(samples, cpu, durationMs) {
     },
     longFrames: deltas.filter((delta) => delta > LONG_FRAME_MS).length,
     drawCalls: { mean: round(mean(samples.calls), 1), max: Math.max(0, ...samples.calls) },
+    renderCallsPerFrame: round(mean(samples.renderCalls)),
     triangles: { mean: Math.round(mean(samples.triangles)) },
     heap: {
       allocatedKBPerFrame: frames === 0 ? 0 : round(allocated / frames / BYTES_PER_KB),
@@ -154,12 +174,11 @@ async function readCpu(cdp) {
   return { script: value('ScriptDuration'), task: value('TaskDuration') };
 }
 
-async function main() {
-  const options = parseArgs(process.argv.slice(2));
-  const { url, stop } = await startDevServer();
+async function measure(options, url) {
   let browser;
   try {
-    browser = await chromium.launch({ headless: true, args: browserArgs(options.software) });
+    // chrome-headless-shell cannot create a WebGPU device on Windows (dxil.dll); the full chromium channel can.
+    browser = await chromium.launch({ headless: true, ...(options.webgpu ? { channel: 'chromium' } : {}), args: browserArgs(options.software, options.webgpu) });
     const page = await browser.newPage({ viewport: VIEWPORT });
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -180,14 +199,22 @@ async function main() {
       harness.recording = false;
       const info = harness.renderer?.info;
       const gl = harness.renderer?.getContext?.();
-      const debug = gl?.getExtension('WEBGL_debug_renderer_info');
+      // WebGPU returns a GPUCanvasContext here, which has no WebGL extensions.
+      const debug = typeof gl?.getExtension === 'function' ? gl.getExtension('WEBGL_debug_renderer_info') : null;
+      const adapterInfo = harness.renderer?.backend?.device?.adapterInfo;
       return {
         frames: harness.frames,
         heap: harness.heap,
         calls: harness.calls,
+        renderCalls: harness.renderCalls,
         triangles: harness.triangles,
         renderer: {
-          gpu: debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : 'unknown',
+          backend: harness.renderer?.backend?.isWebGPUBackend
+            ? 'webgpu'
+            : harness.renderer?.backend?.isWebGLBackend ? 'webgl2-fallback' : harness.renderer?.isWebGLRenderer ? 'webgl' : 'unknown',
+          gpu: debug
+            ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL)
+            : adapterInfo ? `${adapterInfo.vendor} ${adapterInfo.architecture}`.trim() : 'unknown',
           programs: info?.programs?.length ?? 0,
           geometries: info?.memory?.geometries ?? 0,
           textures: info?.memory?.textures ?? 0,
@@ -203,12 +230,52 @@ async function main() {
       ...summarize(samples, cpu, options.durationMs),
       pageErrors,
     };
+    return report;
+  } finally {
+    if (browser) await browser.close();
+  }
+}
+
+// vsync hides CPU wins on fast GPUs, so regressions are judged on CPU time, allocation and draws.
+const COMPARED_METRICS = [
+  ['cpuScriptMs', (report) => report.cpuMsPerFrame.script],
+  ['allocatedKBPerFrame', (report) => report.heap.allocatedKBPerFrame],
+  ['drawCallsMean', (report) => report.drawCalls.mean],
+];
+
+function median(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted.length === 0 ? 0 : sorted[Math.floor(sorted.length / 2)];
+}
+
+function findRegressions(baselineFile, medians, tolerance) {
+  const baseline = JSON.parse(fs.readFileSync(baselineFile, 'utf8')).medians ?? {};
+  return COMPARED_METRICS
+    .map(([name]) => name)
+    .filter((name) => baseline[name] > 0 && medians[name] > baseline[name] * (1 + tolerance))
+    .map((name) => `${name}: ${baseline[name]} -> ${medians[name]}`);
+}
+
+async function main() {
+  const options = parseArgs(process.argv.slice(2));
+  const { url, stop } = await startDevServer();
+  try {
+    const runs = [];
+    for (let run = 0; run < options.runs; run++) runs.push(await measure(options, url));
+    const medians = Object.fromEntries(COMPARED_METRICS.map(([name, read]) => [name, round(median(runs.map(read)))]));
+    const report = { route: options.route, runs: options.runs, medians, reports: runs };
     const json = JSON.stringify(report, null, 2);
     console.log(json);
     if (options.out) fs.writeFileSync(options.out, `${json}\n`);
-    if (pageErrors.length > 0) process.exitCode = 1;
+    if (runs.some((entry) => entry.pageErrors.length > 0)) process.exitCode = 1;
+    if (options.baseline) {
+      const regressions = findRegressions(options.baseline, medians, options.tolerance);
+      if (regressions.length > 0) {
+        console.error(`frame harness regression (> ${options.tolerance * 100}%):\n  ${regressions.join('\n  ')}`);
+        process.exitCode = 1;
+      }
+    }
   } finally {
-    if (browser) await browser.close();
     stop();
   }
 }
