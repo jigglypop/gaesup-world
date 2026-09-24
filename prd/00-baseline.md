@@ -80,6 +80,22 @@ ESM 70파일 1.95MB, CJS 70파일 1.55MB, d.ts+d.cts 2,052파일 2.08MB이다. d
 | `check:layer1` | 위반 5(npc/core → questStore), 변화 없음 |
 | jest 로그 | `THREE_CJS_DEPRECATED` 경고가 계속 대량 출력됨(jest가 three CJS 빌드를 로드, D-21과 같은 뿌리) |
 
+### 3.1.2 브라우저 기준선 [실측] (2026-09-24, 커밋 20ea3236, 10-a 1차)
+
+`MSYS_NO_PATHCONV=1 node scripts/frame-harness.cjs --route=/world`로 두 번 측정했다. Playwright chromium, 1280×720, seed 20260923, 20초 입력 타임라인(WASD·점프), GPU RTX 5060 Ti(ANGLE D3D11), WebGPU 렌더러.
+
+| 지표 | 1회 | 2회 | 비고 |
+|---|---|---|---|
+| frame time p50 / p95 / p99 | 16.7 / 16.7 / 16.8ms | 16.7 / 16.8 / 16.8ms | vsync 60Hz에 묶임. 이 장비에서는 프레임 시간으로 개선을 판정할 수 없다 |
+| frame time max, long frame(> 33ms) | 16.8ms, 0 | 50.1ms, 1 | |
+| CPU script / task | 2.37 / 2.61ms/frame | - | 판정 지표 |
+| heap 할당 | 110.79KB/frame, GC 29회/20초, 종료 156.66MB | | NFR-11-02 대상 |
+| draw call 평균 / 최대 | 15,336 / 23,923 | 9,840 / 18,363 | `renderer.info.render.calls`. 실행마다 차이가 크다. WebGPU 카운터가 섀도·후처리 pass를 포함하는지, 누적값인지 확인 필요 [미검증] |
+| triangles 평균 | 713,723 | | 같은 단서 |
+| geometries / textures / programs | 40 / 37 / 0 | | programs 0은 WebGPU 백엔드 |
+
+Git Bash에서는 `MSYS_NO_PATHCONV=1` 없이 `--route=/world`가 Windows 경로로 바뀌어 실패한다. 10-c 비교 스크립트는 draw call 편차를 줄이도록 측정 구간을 고정하고 3회 중앙값을 쓴다.
+
 ### 3.2 미측정 기준선
 
 아래 수치는 이번 분석에서 얻지 못했다. [10](10-perf-budget.md) slice 10-a에서 측정해 이 표를 채운다.
