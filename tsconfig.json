@@ -51,12 +51,11 @@
       "gaesup-world/plugins": ["./src/plugins.ts"],
       "gaesup-world/runtime": ["./src/runtime.ts"],
       "gaesup-world/server-contracts": ["./src/server-contracts.ts"],
+      "gaesup-world/style.css": ["./src/core/editor/styles/theme.css"],
       "@core/*": ["./src/core/*"],
       "@hooks/*": ["./src/core/hooks/*"],
       "@stores/*": ["./src/core/stores/*"],
-      "@constants/*": ["./src/core/constants/*"],
       "@utils/*": ["./src/core/utils/*"],
-      "@types/*": ["./src/core/types/*"],
       "@motions/*": ["./src/core/motions/*"]
     },
     "emitDecoratorMetadata": false

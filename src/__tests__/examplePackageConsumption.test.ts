@@ -40,7 +40,6 @@ const EXAMPLES_ROOT = path.join(ROOT, 'examples');
 const SRC_ROOT = path.join(ROOT, 'src');
 const PACKAGE_JSON = path.join(ROOT, 'package.json');
 const TSCONFIG_JSON = path.join(ROOT, 'tsconfig.json');
-const VITE_CONFIG = path.join(ROOT, 'vite.config.ts');
 const EXAMPLES_APP = path.join(EXAMPLES_ROOT, 'App.tsx');
 const PACKAGE_SURFACE = path.join(EXAMPLES_ROOT, 'engine/packageSurface.ts');
 const PACKAGE_NAME = 'gaesup-world';
@@ -226,49 +225,6 @@ function matchesPathPattern(moduleName: string, pattern: string): boolean {
   );
 }
 
-function getVitePrivateAliases(): string[] {
-  const sourceFile = ts.createSourceFile(
-    VITE_CONFIG,
-    fs.readFileSync(VITE_CONFIG, 'utf8'),
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.TS,
-  );
-  const aliases = new Set<string>();
-
-  const visit = (node: ts.Node): void => {
-    if (ts.isObjectLiteralExpression(node)) {
-      const findProperty = node.properties.find(
-        (property): property is ts.PropertyAssignment =>
-          ts.isPropertyAssignment(property) &&
-          ((ts.isIdentifier(property.name) && property.name.text === 'find') ||
-            (ts.isStringLiteralLike(property.name) && property.name.text === 'find')),
-      );
-      const replacementProperty = node.properties.find(
-        (property): property is ts.PropertyAssignment =>
-          ts.isPropertyAssignment(property) &&
-          ((ts.isIdentifier(property.name) && property.name.text === 'replacement') ||
-            (ts.isStringLiteralLike(property.name) && property.name.text === 'replacement')),
-      );
-
-      if (
-        findProperty &&
-        replacementProperty &&
-        ts.isStringLiteralLike(findProperty.initializer) &&
-        findProperty.initializer.text.startsWith('@') &&
-        replacementProperty.getText(sourceFile).includes("'src")
-      ) {
-        aliases.add(findProperty.initializer.text);
-      }
-    }
-
-    ts.forEachChild(node, visit);
-  };
-
-  visit(sourceFile);
-  return [...aliases].sort();
-}
-
 function isWithinDirectory(directory: string, file: string): boolean {
   const relative = path.relative(directory, path.resolve(file));
   return (
@@ -288,7 +244,6 @@ function getPrivateLibraryImportFailures(
   const privatePathPatterns = Object.keys(parsedConfig.options.paths ?? {}).filter(
     (pattern) => pattern !== PACKAGE_NAME && !pattern.startsWith(`${PACKAGE_NAME}/`),
   );
-  const vitePrivateAliases = getVitePrivateAliases();
   const resolutionCache = ts.createModuleResolutionCache(
     ROOT,
     (fileName) => (ts.sys.useCaseSensitiveFileNames ? fileName : fileName.toLowerCase()),
@@ -299,11 +254,9 @@ function getPrivateLibraryImportFailures(
   for (const reference of moduleReferences) {
     if (getPackageSubpath(reference.moduleName)) continue;
 
-    const usesPrivateAlias =
-      privatePathPatterns.some((pattern) => matchesPathPattern(reference.moduleName, pattern)) ||
-      vitePrivateAliases.some(
-        (alias) => reference.moduleName === alias || reference.moduleName.startsWith(`${alias}/`),
-      );
+    const usesPrivateAlias = privatePathPatterns.some((pattern) =>
+      matchesPathPattern(reference.moduleName, pattern),
+    );
     const resolved = ts.resolveModuleName(
       reference.moduleName,
       reference.file,
@@ -425,13 +378,13 @@ describe('examples package consumption contract', () => {
       { file: EXAMPLES_APP, kind: 'import', moduleName: './packageSurface' },
       { file: EXAMPLES_APP, kind: 'import', moduleName: '../src/index' },
       { file: EXAMPLES_APP, kind: 'dynamic-import', moduleName: '@core/does-not-exist' },
-      { file: EXAMPLES_APP, kind: 'import-type', moduleName: '@world/private-type' },
+      { file: EXAMPLES_APP, kind: 'import-type', moduleName: '@stores/private-type' },
     ];
 
     expect(getPrivateLibraryImportFailures(references, loadTsConfig())).toEqual([
       'examples/App.tsx uses private library specifier ../src/index via import -> src/index.ts',
       'examples/App.tsx uses private library specifier @core/does-not-exist via dynamic-import',
-      'examples/App.tsx uses private library specifier @world/private-type via import-type',
+      'examples/App.tsx uses private library specifier @stores/private-type via import-type',
     ]);
   });
 

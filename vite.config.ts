@@ -70,88 +70,16 @@ function serveDemoGltfAssets(): Plugin {
 export default defineConfig(({ mode }) => {
   const isLibraryBuild = mode === 'esm' || mode === 'cjs';
 
-  let alias = [
-    { find: /^gaesup-world\/avatar$/, replacement: path.resolve(import.meta.dirname, 'src/avatar.ts') },
-    { find: /^gaesup-world$/, replacement: path.resolve(import.meta.dirname, 'src/index.ts') },
-    {
-      find: /^gaesup-world\/style\.css$/,
-      replacement: path.resolve(import.meta.dirname, 'src/core/editor/styles/theme.css'),
-    },
-    {
-      find: /^gaesup-world\/admin$/,
-      replacement: path.resolve(import.meta.dirname, 'src/admin-entry.ts'),
-    },
-    {
-      find: /^gaesup-world\/assets$/,
-      replacement: path.resolve(import.meta.dirname, 'src/assets.ts'),
-    },
-    {
-      find: /^gaesup-world\/blueprints$/,
-      replacement: path.resolve(import.meta.dirname, 'src/blueprints/index.ts'),
-    },
-    {
-      find: /^gaesup-world\/blueprints\/editor$/,
-      replacement: path.resolve(import.meta.dirname, 'src/blueprints/editor.ts'),
-    },
-    {
-      find: /^gaesup-world\/building$/,
-      replacement: path.resolve(import.meta.dirname, 'src/building.ts'),
-    },
-    {
-      find: /^gaesup-world\/editor$/,
-      replacement: path.resolve(import.meta.dirname, 'src/editor.ts'),
-    },
-    {
-      find: /^gaesup-world\/gameplay$/,
-      replacement: path.resolve(import.meta.dirname, 'src/gameplay.ts'),
-    },
-    {
-      find: /^gaesup-world\/navigation$/,
-      replacement: path.resolve(import.meta.dirname, 'src/navigation.ts'),
-    },
-    {
-      find: /^gaesup-world\/network$/,
-      replacement: path.resolve(import.meta.dirname, 'src/network.ts'),
-    },
-    { find: /^gaesup-world\/next$/, replacement: path.resolve(import.meta.dirname, 'src/next.ts') },
-    {
-      find: /^gaesup-world\/postprocessing$/,
-      replacement: path.resolve(import.meta.dirname, 'src/postprocessing.ts'),
-    },
-    {
-      find: /^gaesup-world\/plugins$/,
-      replacement: path.resolve(import.meta.dirname, 'src/plugins.ts'),
-    },
-    {
-      find: /^gaesup-world\/runtime$/,
-      replacement: path.resolve(import.meta.dirname, 'src/runtime.ts'),
-    },
-    {
-      find: /^gaesup-world\/server-contracts$/,
-      replacement: path.resolve(import.meta.dirname, 'src/server-contracts.ts'),
-    },
-    { find: '@', replacement: path.resolve(import.meta.dirname, 'src') },
-    { find: '@core', replacement: path.resolve(import.meta.dirname, 'src/core') },
-    { find: '@hooks', replacement: path.resolve(import.meta.dirname, 'src/core/hooks') },
-    { find: '@stores', replacement: path.resolve(import.meta.dirname, 'src/core/stores') },
-    { find: '@world', replacement: path.resolve(import.meta.dirname, 'src/core/world') },
-    {
-      find: '@interactions',
-      replacement: path.resolve(import.meta.dirname, 'src/core/interactions'),
-    },
-    { find: '@ui', replacement: path.resolve(import.meta.dirname, 'src/core/ui') },
-    { find: '@constants', replacement: path.resolve(import.meta.dirname, 'src/core/constants') },
-    { find: '@utils', replacement: path.resolve(import.meta.dirname, 'src/core/utils') },
-    { find: '@motions', replacement: path.resolve(import.meta.dirname, 'src/core/motions') },
-  ];
+  // Source aliases, gaesup-world subpaths included, come from tsconfig `paths` via resolve.tsconfigPaths.
+  // A published-consumer build maps the subpaths to that install instead; aliases resolve before tsconfig paths.
+  let alias: { find: RegExp; replacement: string }[] = [];
   if (!isLibraryBuild && process.env['GAESUP_PACKAGE_ROOT']) {
     const packageRoot = path.resolve(process.env['GAESUP_PACKAGE_ROOT']);
     const published = JSON.parse(readFileSync(path.join(packageRoot, 'package.json'), 'utf8'));
-    const publishedAliases = Object.entries(published.exports as Record<string, string | { import: { default: string } }>).map(([subpath, value]) => ({
+    alias = Object.entries(published.exports as Record<string, string | { import: { default: string } }>).map(([subpath, value]) => ({
       find: new RegExp(`^${(subpath === '.' ? 'gaesup-world' : `gaesup-world/${subpath.slice(2)}`).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`),
       replacement: path.resolve(packageRoot, typeof value === 'string' ? value : value.import.default),
     }));
-    alias = [...publishedAliases, ...alias.filter(entry => !(entry.find instanceof RegExp && entry.find.source.startsWith('^gaesup-world')))];
   }
   if (isLibraryBuild) {
     return {
@@ -175,7 +103,6 @@ export default defineConfig(({ mode }) => {
       ],
       resolve: {
         tsconfigPaths: true,
-        alias,
       },
       build: {
         lib: {

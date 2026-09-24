@@ -1,34 +1,24 @@
+import { readFileSync } from 'node:fs';
+
+// tsconfig `paths` is the only alias list; Vite reads it through resolve.tsconfigPaths.
+const { paths } = JSON.parse(readFileSync(new URL('./tsconfig.json', import.meta.url), 'utf8')).compilerOptions;
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const pathAliases = Object.fromEntries(
+  Object.entries(paths).map(([alias, [target]]) => [
+    `^${escapeRegExp(alias).replace('\\*', '(.*)')}$`,
+    `<rootDir>/${target.replace(/^\.\//, '').replace('*', '$1')}`,
+  ]),
+);
+
 /** Options shared by every project and by jest.memory.config.js. */
 export const base = {
   preset: 'ts-jest',
+  // Asset and style stubs come first so an aliased .css or .glsl import never loads the raw file.
   moduleNameMapper: {
-    '^gaesup-world$': '<rootDir>/src/index.ts',
-    '^gaesup-world/admin$': '<rootDir>/src/admin-entry.ts',
-    '^gaesup-world/assets$': '<rootDir>/src/assets.ts',
-    '^gaesup-world/avatar$': '<rootDir>/src/avatar.ts',
-    '^gaesup-world/blueprints$': '<rootDir>/src/blueprints/index.ts',
-    '^gaesup-world/blueprints/editor$': '<rootDir>/src/blueprints/editor.ts',
-    '^gaesup-world/building$': '<rootDir>/src/building.ts',
-    '^gaesup-world/editor$': '<rootDir>/src/editor.ts',
-    '^gaesup-world/gameplay$': '<rootDir>/src/gameplay.ts',
-    '^gaesup-world/navigation$': '<rootDir>/src/navigation.ts',
-    '^gaesup-world/network$': '<rootDir>/src/network.ts',
-    '^gaesup-world/next$': '<rootDir>/src/next.ts',
-    '^gaesup-world/postprocessing$': '<rootDir>/src/postprocessing.ts',
-    '^gaesup-world/plugins$': '<rootDir>/src/plugins.ts',
-    '^gaesup-world/runtime$': '<rootDir>/src/runtime.ts',
-    '^gaesup-world/server-contracts$': '<rootDir>/src/server-contracts.ts',
-    '^@react-three/postprocessing$': '<rootDir>/test/mocks/reactThreePostprocessing.tsx',
-    '^@/(.*)$': '<rootDir>/src/$1',
-    '^@core/(.*)$': '<rootDir>/src/core/$1',
-    '^@hooks/(.*)$': '<rootDir>/src/core/hooks/$1',
-    '^@stores/(.*)$': '<rootDir>/src/core/stores/$1',
-    '^@constants/(.*)$': '<rootDir>/src/core/constants/$1',
-    '^@utils/(.*)$': '<rootDir>/src/core/utils/$1',
-    '^@types/(.*)$': '<rootDir>/src/core/types/$1',
-    '^@motions/(.*)$': '<rootDir>/src/core/motions/$1',
     '\\.(glsl|vert|frag|wasm|glb)$': '<rootDir>/test/mocks/assetModule.ts',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '^@react-three/postprocessing$': '<rootDir>/test/mocks/reactThreePostprocessing.tsx',
+    ...pathAliases,
   },
   transform: {
     '^.+\\.m?js$': ['ts-jest', { tsconfig: { allowJs: true, checkJs: false, module: 'CommonJS' }, diagnostics: false }],

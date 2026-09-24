@@ -2,15 +2,10 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const ALIASES = [
-  ['@/', 'src/'],
-  ['@core/', 'src/core/'],
-  ['@hooks/', 'src/core/hooks/'],
-  ['@stores/', 'src/core/stores/'],
-  ['@constants/', 'src/core/constants/'],
-  ['@utils/', 'src/core/utils/'],
-  ['@motions/', 'src/core/motions/'],
-];
+// Wildcard tsconfig paths, e.g. ['@core/', 'src/core/']; tsconfig is the only alias list.
+const ALIASES = Object.entries(JSON.parse(fs.readFileSync(path.join(ROOT, 'tsconfig.json'), 'utf8')).compilerOptions.paths)
+  .filter(([alias]) => alias.endsWith('/*'))
+  .map(([alias, [target]]) => [alias.slice(0, -1), target.replace(/^\.\//, '').slice(0, -1)]);
 const FORBIDDEN = [/^react$/, /^react\//, /^react-dom/, /^zustand/, /^@react-three\//];
 const LAYER_ONE_ALLOWED = [/^@react-three\/rapier$/];
 let allowed = [];

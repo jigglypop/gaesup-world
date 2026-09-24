@@ -30,6 +30,13 @@ function readPackageJson(): PackageJson {
   return JSON.parse(fs.readFileSync(PACKAGE_JSON, 'utf8')) as PackageJson;
 }
 
+function readTsconfigPaths(): Record<string, string[]> {
+  const tsconfig = JSON.parse(fs.readFileSync(TSCONFIG_JSON, 'utf8')) as {
+    compilerOptions?: { paths?: Record<string, string[]> };
+  };
+  return tsconfig.compilerOptions?.paths ?? {};
+}
+
 function normalizePackagePath(filePath: string): string {
   return filePath.replace(/^\.\//, '').replace(/\\/g, '/');
 }
@@ -228,9 +235,8 @@ describe('package export map', () => {
     expect(copyScript).toContain('Missing declaration source');
   });
 
-  test('style CSS export is packaged and has a Vite development alias', () => {
+  test('style CSS export is packaged and has a source path alias', () => {
     const pkg = readPackageJson();
-    const viteConfig = fs.readFileSync(VITE_CONFIG, 'utf8');
     const styleExport = pkg.exports['./style.css'];
 
     expect(typeof styleExport).toBe('string');
@@ -238,8 +244,7 @@ describe('package export map', () => {
       throw new Error('Expected ./style.css to be a string export');
     expect(styleExport).toBe('./dist/index.css');
     expect(isIncludedByPackageFiles(styleExport, pkg.files)).toBe(true);
-    expect(viteConfig).toContain('find: /^gaesup-world\\/style\\.css$/');
-    expect(viteConfig).toContain('src/core/editor/styles/theme.css');
+    expect(readTsconfigPaths()['gaesup-world/style.css']).toEqual(['./src/core/editor/styles/theme.css']);
   });
 
   test('all exported package artifacts are included in npm files', () => {
@@ -265,10 +270,7 @@ describe('package export map', () => {
 
   test('JS package exports have matching TypeScript path aliases', () => {
     const pkg = readPackageJson();
-    const tsconfig = JSON.parse(fs.readFileSync(TSCONFIG_JSON, 'utf8')) as {
-      compilerOptions?: { paths?: Record<string, string[]> };
-    };
-    const paths = tsconfig.compilerOptions?.paths ?? {};
+    const paths = readTsconfigPaths();
     const missing = getJsExportEntries(pkg)
       .map((entry) => entry.specifier)
       .filter((specifier) => !Object.prototype.hasOwnProperty.call(paths, specifier));
@@ -276,24 +278,14 @@ describe('package export map', () => {
     expect(missing).toEqual([]);
   });
 
-  test('JS package exports have matching Jest module aliases', () => {
-    const pkg = readPackageJson();
-    const jestConfig = fs.readFileSync(JEST_CONFIG, 'utf8');
-    const missing = getJsExportEntries(pkg)
-      .map((entry) => entry.specifier)
-      .filter((specifier) => !jestConfig.includes(`'^${specifier}$'`));
-
-    expect(missing).toEqual([]);
-  });
-
-  test('JS package exports have matching Vite dev aliases', () => {
-    const pkg = readPackageJson();
+  test('Vite and Jest take aliases from tsconfig paths instead of their own lists', () => {
     const viteConfig = fs.readFileSync(VITE_CONFIG, 'utf8');
-    const missing = getJsExportEntries(pkg)
-      .map((entry) => entry.specifier)
-      .filter((specifier) => !viteConfig.includes(`find: /^${specifier.replace(/\//g, '\\/')}$`));
+    const jestConfig = fs.readFileSync(JEST_CONFIG, 'utf8');
 
-    expect(missing).toEqual([]);
+    expect(viteConfig.match(/tsconfigPaths: true/g)).toHaveLength(2);
+    expect(viteConfig).not.toMatch(/find: ['/]\^?@/);
+    expect(jestConfig).toContain("new URL('./tsconfig.json', import.meta.url)");
+    expect(jestConfig).not.toMatch(/'\^@\w*\//);
   });
 
   test('JS package exports have matching Vite library build entries', () => {
