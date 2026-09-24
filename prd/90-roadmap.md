@@ -26,17 +26,33 @@
 
 | Slice | 내용 | PRD | 상태(2026-09-24 2차) |
 |---|---|---|---|
-| 25-a | harness·docs 참조 정리(D-19) | 25 | 작업 트리에서 해소, 0-a 커밋 대기 |
+| 25-a | harness·docs 참조 정리(D-19) | 25 | 완료(0635e00c) |
 | 25-b, 10-b | 벽시계 테스트 교체(D-20), 느린 테스트 Program 재사용 | 25, 10 | 부분. 벽시계 패턴 9곳 잔여 |
 | 11-a | automation 재귀(D-01), 이월 상한(D-10) | 11 | D-01 완료. D-10 부분(설정 주입은 11-f) |
 | 12-a | collider 가시성 분리(D-03), bounding sphere(D-15) | 12 | 완료 |
-| 12-p | NPC toon 재질 누수(D-23) | 12 | 신규 |
-| 32-a | 자동 ID UUID화(D-22) | 32 | 신규 |
-| 23-a, 23-b, 23-c | ratchet 카운터, 미사용 decorator·ManagedEntity 삭제(D-02), `reportError` | 23 | D-12, D-16 완료. D-02는 G3, D-04는 G2 대기 |
+| 12-p | NPC toon 재질 누수(D-23) | 12 | 완료(11615abe) |
+| 32-a | 자동 ID UUID화(D-22) | 32 | 완료(58dc1fec) |
+| 23-a, 23-b, 23-c | ratchet 카운터, 미사용 decorator·ManagedEntity 삭제(D-02), `reportError` | 23 | 23-b(ee38c581), 23-c(b8746c0e) 완료. 23-d 핫패스 `@HandleError` 제거(ad7833c7). 23-a 잔여 |
 | 14-a, 14-b, 14-c | 원격 아바타 격리(D-05), authority·visit(D-06, D-07), 슬롯·wasm·로더(D-08, D-13, D-14) | 14 | D-05, D-13 완료. D-06, D-14 부분. D-07은 G4, D-08은 G5 대기 |
 | 21-a | canonical ADR, D-09, D-18 | 21 | D-09 완료. D-18은 G6 대기 |
 | 22-b | 전역 접지 상태(D-17), autoSaveSuspension 인스턴스화 | 22 | 구조 작업(M2 초반) |
 | 10-a | 기준 장면과 기준선 측정 | 10 | 1차 완료: /world 기준선(00 3.1.2). seeded S/M/L 장면과 draw call 카운터 검증은 잔여 |
+
+### 3.1 진행 기록(2026-09-24)
+
+| Slice | 커밋 | 비고 |
+|---|---|---|
+| 0-a | 0635e00c, 446a54d3, d7faf543, 69422eda | 작업 트리 4묶음 분리 |
+| 32-a, 12-p | 58dc1fec, 11615abe | D-22, D-23 |
+| 12-q, 13-k, 11-j | 0ba14667, b1fd7b47, 384eec19 | M1 묶음 2 |
+| 11-h 일부, 11-l 일부 | 934b3205, 585bb879, b23aa430 | 물리 step 전 읽기, 발소리 인덱스는 보류(11 PRD) |
+| 24-e, 23-b | 140c74ad, ee38c581 | M1 묶음 1 |
+| 13-c, 12-r, 13-b | b7561109, 3cac611b | NPC LOD는 히스테리시스로 설계 변경(12 PRD) |
+| 20-h, 20-b | 55b41090, e37bf6ea | Layer 1 누수 0, `check:layer1`·`check:entries`·`check:quality`를 verify에 연결 |
+| 22-a | 08efa006 | 키는 도메인별로 둔다(FR-22-01 수정) |
+| 10-a 1차 | 3685cc03 | /world 기준선(00 3.1.2) |
+| 23-c, 23-d | b8746c0e, ad7833c7 | G2 오류 경계, 핫패스 `@HandleError` 17개 제거 |
+| 30-a delta | b9fa2103 | `SceneObjectDelta`. 레지스트리는 30-f와 함께 |
 
 ### M1 측정 게이트와 저비용 개선
 
