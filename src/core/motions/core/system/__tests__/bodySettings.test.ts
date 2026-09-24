@@ -1,6 +1,4 @@
-import type { RapierRigidBody } from '@react-three/rapier';
-
-import { applyEnabledRotations, applyGravityScale, applyLinearDamping } from '../bodySettings';
+import { applyEnabledRotations, applyGravityScale, applyLinearDamping, type BodySettingsTarget } from '../bodySettings';
 
 function createBody() {
   return {
@@ -12,7 +10,7 @@ function createBody() {
 
 test('mode settings reach Rapier only when the value changes', () => {
   const mock = createBody();
-  const body = mock as unknown as RapierRigidBody;
+  const body: BodySettingsTarget = mock;
   for (let i = 0; i < 60; i++) {
     applyLinearDamping(body, 0.9);
     applyEnabledRotations(body, false, false, false);
@@ -34,8 +32,8 @@ test('mode settings reach Rapier only when the value changes', () => {
 test('each body keeps its own applied values', () => {
   const a = createBody();
   const b = createBody();
-  applyLinearDamping(a as unknown as RapierRigidBody, 0.9);
-  applyLinearDamping(b as unknown as RapierRigidBody, 0.9);
+  applyLinearDamping(a, 0.9);
+  applyLinearDamping(b, 0.9);
   expect(a.setLinearDamping).toHaveBeenCalledTimes(1);
   expect(b.setLinearDamping).toHaveBeenCalledTimes(1);
 });
