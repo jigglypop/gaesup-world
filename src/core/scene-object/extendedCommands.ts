@@ -1,9 +1,15 @@
 import { validateSceneComponentData } from './componentSchemas';
-import { isCanonicalSceneJsonObject } from './core';
+import { createSceneComponent, isCanonicalSceneJsonObject } from './core';
 import { deepFreezeOwned } from './ownership';
 import { parseSceneDocument } from './serialization';
-import { trustSceneSnapshot } from './trustedSnapshots';
+import {
+  getIndexedSceneObject,
+  isTrustedSceneSnapshot,
+  replaceSceneObject,
+  trustSceneSnapshot,
+} from './trustedSnapshots';
 import type {
+  SceneComponent,
   SceneDocument,
   SceneDocumentBatchCommand,
   SceneDocumentCommand,
@@ -32,7 +38,11 @@ export function applySceneComponentUpdate(
   command: SceneObjectComponentUpdateCommand,
 ): SceneDocumentCommandResult {
   const { objectId, componentId } = command;
-  const object = document.objects.find((entry) => entry.id === objectId);
+  // A trusted snapshot needs only the edited component checked.
+  const trusted = isTrustedSceneSnapshot(document);
+  const object = trusted
+    ? getIndexedSceneObject(document, objectId)
+    : document.objects.find((entry) => entry.id === objectId);
   if (!object) {
     return reject(document, [
       { code: 'missing-object', objectId, message: `Scene object "${objectId}" does not exist.` },
@@ -59,12 +69,11 @@ export function applySceneComponentUpdate(
       { code: 'invalid-scene-command', objectId, componentId, message: 'Component enabled must be boolean.' },
     ]);
   }
+  const invalidData: SceneValidationIssue = {
+    code: 'invalid-component-data', objectId, componentId, message: 'Component data must be canonical JSON.',
+  };
   if (command.data !== undefined) {
-    if (!isCanonicalSceneJsonObject(command.data)) {
-      return reject(document, [
-        { code: 'invalid-component-data', objectId, componentId, message: 'Component data must be canonical JSON.' },
-      ]);
-    }
+    if (!isCanonicalSceneJsonObject(command.data)) return reject(document, [invalidData]);
     const schemaMessage = validateSceneComponentData(component.type, command.data);
     if (schemaMessage) {
       return reject(document, [
@@ -77,25 +86,41 @@ export function applySceneComponentUpdate(
     ...(command.data !== undefined ? { data: command.data } : {}),
     ...(command.enabled !== undefined ? { enabled: command.enabled } : {}),
   };
-  const nextObject = {
-    ...object,
-    components: object.components.map((entry) => (entry.id === componentId ? nextComponent : entry)),
-  };
-  const parsed = parseSceneDocument({
-    version: document.version,
-    id: document.id,
-    ...(document.name !== undefined ? { name: document.name } : {}),
-    objects: document.objects.map((entry) => (entry.id === objectId ? nextObject : entry)),
-  });
-  if (!parsed.ok || !parsed.document) return reject(document, parsed.issues);
-  // The fresh parse is validated and becomes deep-frozen below.
-  trustSceneSnapshot(parsed.document);
-  return accept(parsed.document, {
+  let next: SceneDocument;
+  if (trusted) {
+    let owned: SceneComponent;
+    try {
+      // Only this component changed and its values are checked above; the copy keeps the snapshot immutable.
+      owned = createSceneComponent(nextComponent);
+    } catch {
+      return reject(document, [invalidData]);
+    }
+    next = replaceSceneObject(document, {
+      ...object,
+      components: object.components.map((entry) => (entry.id === componentId ? owned : entry)),
+    });
+  } else {
+    const nextObject = {
+      ...object,
+      components: object.components.map((entry) => (entry.id === componentId ? nextComponent : entry)),
+    };
+    const parsed = parseSceneDocument({
+      version: document.version,
+      id: document.id,
+      ...(document.name !== undefined ? { name: document.name } : {}),
+      objects: document.objects.map((entry) => (entry.id === objectId ? nextObject : entry)),
+    });
+    if (!parsed.ok || !parsed.document) return reject(document, parsed.issues);
+    next = parsed.document;
+  }
+  const result = accept(next, {
     type: 'scene-object.component.updated',
-    documentId: parsed.document.id,
+    documentId: next.id,
     objectId,
     componentId,
   });
+  trustSceneSnapshot(next);
+  return result;
 }
 
 export function applySceneDocumentBatch(

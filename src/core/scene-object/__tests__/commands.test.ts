@@ -2,9 +2,12 @@ import {
   applySceneDocumentCommand,
   createSceneComponent,
   createSceneDocument,
+  createSceneDocumentController,
   createSceneObject,
+  parseSceneDocument,
 } from '..';
 import type { SceneDocument, SceneDocumentCommand, SceneJsonObject } from '..';
+import * as core from '../core';
 
 function createHierarchyDocument(): SceneDocument {
   return createSceneDocument({
@@ -57,6 +60,76 @@ describe('applySceneDocumentCommand', () => {
     const deleted = applySceneDocumentCommand(current, { type: 'scene-object.delete', objectId: 'root' });
     expect(deleted.accepted).toBe(true);
     expect(deleted.document.objects.map(object => object.id)).toEqual(['other']);
+  });
+
+  test('a create reads only its own object, so building a document scales linearly', () => {
+    const creates = Array.from({ length: 50 }, (_, index) => ({
+      type: 'scene-object.create',
+      object: createSceneObject({
+        id: `new-${index}`,
+        name: 'New',
+        parentId: 'seed-0',
+        components: [createSceneComponent({ id: 'mesh', type: 'mesh', data: { size: [1, 2, 3] } })],
+        tags: ['created'],
+      }),
+    }) as const);
+    const measure = (size: number) => {
+      const controller = createSceneDocumentController(createSceneDocument({
+        id: 'scene',
+        objects: Array.from({ length: size }, (_, index) => ({ id: `seed-${index}`, ...(index ? { parentId: 'seed-0' } : {}) })),
+      }));
+      const before = controller.getSnapshot();
+      const reads = jest.spyOn(Object, 'getOwnPropertyDescriptor');
+      const validate = jest.spyOn(core, 'validateSceneDocument');
+      try {
+        for (const command of creates) expect(controller.dispatch(command).accepted).toBe(true);
+        expect(validate).not.toHaveBeenCalled();
+        return reads.mock.calls.length;
+      } finally {
+        reads.mockRestore();
+        validate.mockRestore();
+        const after = controller.getSnapshot();
+        expect(after.objects).toHaveLength(size + creates.length);
+        expect(after.objects.slice(0, size).every((object, index) => object === before.objects[index])).toBe(true);
+      }
+    };
+    expect(measure(2000)).toBe(measure(1000));
+  });
+
+  test('incremental commands produce the fully parsed document and keep branches independent', () => {
+    const controller = createSceneDocumentController(createHierarchyDocument());
+    const commands: SceneDocumentCommand[] = [
+      { type: 'scene-object.create', object: createSceneObject({ id: 'crate', name: 'Crate', parentId: 'child', components: [createSceneComponent({ id: 'hp', type: 'game.health', data: { hp: 3 } })] }) },
+      { type: 'scene-object.update', objectId: 'crate', patch: { name: 'Box', tags: ['prop'], transform: { position: [1, 2, 3] } } },
+      { type: 'scene-object.move', objectId: 'crate', parentId: 'other' },
+      { type: 'scene-object.update', objectId: 'grandchild', patch: { parentId: null, layer: 'ui' } },
+      { type: 'scene-object.component.add', objectId: 'crate', component: createSceneComponent({ id: 'tag', type: 'game.tag', data: { label: 'a' } }) },
+      { type: 'scene-object.component.update', objectId: 'crate', componentId: 'hp', data: { hp: 5 }, enabled: false },
+      { type: 'scene-object.component.remove', objectId: 'crate', componentId: 'tag' },
+      { type: 'scene-document.batch', commands: [
+        { type: 'scene-object.create', object: createSceneObject({ id: 'leaf', name: 'Leaf', parentId: 'crate' }) },
+        { type: 'scene-object.delete', objectId: 'other' },
+      ] },
+    ];
+    for (const command of commands) {
+      const result = controller.dispatch(command);
+      expect(result.accepted).toBe(true);
+      const reparsed = parseSceneDocument(JSON.parse(JSON.stringify(result.document)));
+      expect(reparsed).toEqual({ ok: true, document: result.document, issues: [] });
+    }
+    expect(controller.getSnapshot().objects.map((object) => object.id)).toEqual(['root', 'child', 'grandchild']);
+
+    const base = controller.getSnapshot();
+    const left = applySceneDocumentCommand(base, { type: 'scene-object.create', object: createSceneObject({ id: 'left', parentId: 'child' }) });
+    const right = applySceneDocumentCommand(base, { type: 'scene-object.create', object: createSceneObject({ id: 'right', parentId: 'left' }) });
+    const renamed = applySceneDocumentCommand(base, { type: 'scene-object.update', objectId: 'grandchild', patch: { name: 'Renamed' } });
+    expect(left.accepted).toBe(true);
+    expect(right).toMatchObject({ accepted: false, issues: [expect.objectContaining({ code: 'missing-parent' })] });
+    expect(renamed.document.objects.map((object) => object.id)).toEqual(['root', 'child', 'grandchild']);
+    if (!left.accepted) throw new Error('Expected left branch.');
+    const cycle = applySceneDocumentCommand(left.document, { type: 'scene-object.move', objectId: 'child', parentId: 'left' });
+    expect(cycle).toMatchObject({ accepted: false, document: left.document });
+    expect(cycle.accepted ? [] : cycle.issues.map((issue) => issue.code)).toContain('parent-cycle');
   });
 
   test('validates hostile patches even for trusted snapshots', () => {

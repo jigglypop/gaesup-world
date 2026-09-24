@@ -1,9 +1,18 @@
-import { SCENE_DOCUMENT_VERSION, isCanonicalSceneJsonObject } from './core';
+import { SCENE_DOCUMENT_VERSION, createSceneComponent, isCanonicalSceneJsonObject } from './core';
 import { applySceneComponentUpdate, applySceneDocumentBatch } from './extendedCommands';
 import { deepFreezeOwned } from './ownership';
 import { parseSceneDocument } from './serialization';
-import { isTrustedSceneSnapshot, trustSceneSnapshot } from './trustedSnapshots';
+import {
+  appendSceneObject,
+  getIndexedSceneObject,
+  getSceneObjectIndex,
+  isTrustedSceneSnapshot,
+  removeSceneObjects,
+  replaceSceneObject,
+  trustSceneSnapshot,
+} from './trustedSnapshots';
 import type {
+  SceneComponent,
   SceneDocument,
   SceneDocumentCommand,
   SceneDocumentCommandAcceptedResult,
@@ -23,9 +32,10 @@ import type {
 const MISSING_PROPERTY = Symbol('missing-scene-command-property');
 
 type SceneCommandMutation = {
-  candidate: unknown;
-  /** Owned, validated input with only locally validated, non-structural changes. */
-  validatedDocument?: SceneDocument;
+  /** Next snapshot when local checks of the changed objects prove the whole document valid. */
+  document?: SceneDocument;
+  /** Otherwise full validation decides this candidate and reports its issues. */
+  candidate: () => unknown;
   createEvent: (document: SceneDocument) => SceneDocumentEvent;
 };
 
@@ -58,7 +68,8 @@ export function applySceneDocumentCommand(
     if (!parsedCurrent.ok || !parsedCurrent.document) {
       return createRejectedResult(document, parsedCurrent.issues);
     }
-    current = parsedCurrent.document;
+    // Commands check only what they change, so they start from an immutable validated copy.
+    current = trustSceneSnapshot(deepFreezeOwned(parsedCurrent.document));
   }
   const result = applyToCanonicalDocument(current, command);
   return result.accepted
@@ -91,9 +102,9 @@ function applyToCanonicalDocument(
     return createRejectedResult(document, [issue]);
   }
 
-  let nextDocument = mutation.validatedDocument;
+  let nextDocument = mutation.document;
   if (!nextDocument) {
-    const parsedCandidate = parseSceneDocument(mutation.candidate);
+    const parsedCandidate = parseSceneDocument(mutation.candidate());
     if (!parsedCandidate.ok || !parsedCandidate.document) {
       return createRejectedResult(document, parsedCandidate.issues);
     }
@@ -125,8 +136,8 @@ function createMutation(
       const trusted = isTrustedSceneSnapshot(replacement as SceneDocument);
       if (!trusted) assertCanonicalSceneDocument(replacement, 'Replacement scene document');
       return {
-        candidate: replacement,
-        ...(trusted ? { validatedDocument: replacement as SceneDocument } : {}),
+        ...(trusted ? { document: replacement as SceneDocument } : {}),
+        candidate: () => replacement,
         createEvent: (nextDocument) => ({
           type: 'scene-document.replaced',
           documentId: nextDocument.id,
@@ -135,14 +146,19 @@ function createMutation(
     }
     case 'scene-object.create': {
       assertOnlyKeys(command, ['type', 'object'], 'Create scene object command');
-      const object = readRequiredProperty(command, 'object', 'Created scene object');
-      const objectId = assertMaterializedSceneObject(object);
+      const input = readRequiredProperty(command, 'object', 'Created scene object');
+      const object = assertMaterializedSceneObject(input);
+      const index = getSceneObjectIndex(document);
+      // A new object has no children, so it cannot close a parent cycle.
+      const valid = !index.has(object.id) && hasUniqueComponentIds(object)
+        && (object.parentId === undefined || (object.parentId !== object.id && index.has(object.parentId)));
       return {
-        candidate: withObjects(document, [...document.objects, object]),
+        ...(valid ? { document: appendSceneObject(document, ownComponents(object)) } : {}),
+        candidate: () => withObjects(document, [...document.objects, input]),
         createEvent: (nextDocument) => ({
           type: 'scene-object.created',
           documentId: nextDocument.id,
-          objectId,
+          objectId: object.id,
         }),
       };
     }
@@ -153,16 +169,13 @@ function createMutation(
       const patch = normalizeCommandPatch(
         readRequiredProperty(command, 'patch', 'Scene object patch'),
       );
+      // normalizeCommandPatch owns and validates every edited value; only a new parent needs a check.
       const nextObject = applyCommandPatch(object, patch);
-      const candidate: SceneDocument = {
-        ...document,
-        objects: document.objects.map((entry) => (entry.id === objectId ? nextObject : entry)),
-      };
       return {
-        candidate,
-        // ID, components and hierarchy are unchanged. normalizeCommandPatch owns and
-        // validates all edited values. Unchanged objects can retain snapshot identity.
-        ...(!('parentId' in patch) ? { validatedDocument: candidate } : {}),
+        ...(!('parentId' in patch) || canReparent(document, objectId, nextObject.parentId)
+          ? { document: replaceSceneObject(document, nextObject) }
+          : {}),
+        candidate: () => withReplacedObject(document, nextObject),
         createEvent: (nextDocument) => ({
           type: 'scene-object.updated',
           documentId: nextDocument.id,
@@ -175,12 +188,11 @@ function createMutation(
       const objectId = readRequiredIdentifier(command, 'objectId', 'Scene object id');
       findRequiredObject(document, objectId);
       const deletedIds = collectDescendantIds(document, objectId);
-      const deletedIdSet = new Set(deletedIds);
+      // Removing a whole subtree cannot orphan, duplicate or cycle the remaining objects.
+      const next = removeSceneObjects(document, new Set(deletedIds));
       return {
-        candidate: withObjects(
-          document,
-          document.objects.filter((object) => !deletedIdSet.has(object.id)),
-        ),
+        document: next,
+        candidate: () => next,
         createEvent: (nextDocument) => ({
           type: 'scene-object.deleted',
           documentId: nextDocument.id,
@@ -195,10 +207,10 @@ function createMutation(
       const parentId = readNullableIdentifier(command, 'parentId', 'Scene parent id');
       const nextObject = applyCommandPatch(object, { parentId });
       return {
-        candidate: withObjects(
-          document,
-          document.objects.map((entry) => (entry.id === objectId ? nextObject : entry)),
-        ),
+        ...(canReparent(document, objectId, nextObject.parentId)
+          ? { document: replaceSceneObject(document, nextObject) }
+          : {}),
+        candidate: () => withReplacedObject(document, nextObject),
         createEvent: (nextDocument) => ({
           type: 'scene-object.moved',
           documentId: nextDocument.id,
@@ -211,19 +223,19 @@ function createMutation(
       assertOnlyKeys(command, ['type', 'objectId', 'component'], 'Add scene component command');
       const objectId = readRequiredIdentifier(command, 'objectId', 'Scene object id');
       const object = findRequiredObject(document, objectId);
-      const component = readRequiredProperty(command, 'component', 'Scene component');
-      const componentId = assertMaterializedSceneComponent(component);
-      const nextObject = { ...object, components: [...object.components, component] };
+      const input = readRequiredProperty(command, 'component', 'Scene component');
+      const component = assertMaterializedSceneComponent(input);
+      const valid = !object.components.some((entry) => entry.id === component.id);
       return {
-        candidate: withObjects(
-          document,
-          document.objects.map((entry) => (entry.id === objectId ? nextObject : entry)),
-        ),
+        ...(valid
+          ? { document: replaceSceneObject(document, { ...object, components: [...object.components, ownComponent(component)] }) }
+          : {}),
+        candidate: () => withReplacedObject(document, { ...object, components: [...object.components, input] }),
         createEvent: (nextDocument) => ({
           type: 'scene-object.component.added',
           documentId: nextDocument.id,
           objectId,
-          componentId,
+          componentId: component.id,
         }),
       };
     }
@@ -244,15 +256,13 @@ function createMutation(
           message: `Scene object "${objectId}" does not contain component "${componentId}".`,
         });
       }
-      const nextObject = {
+      const next = replaceSceneObject(document, {
         ...object,
         components: object.components.filter((component) => component.id !== componentId),
-      };
+      });
       return {
-        candidate: withObjects(
-          document,
-          document.objects.map((entry) => (entry.id === objectId ? nextObject : entry)),
-        ),
+        document: next,
+        candidate: () => next,
         createEvent: (nextDocument) => ({
           type: 'scene-object.component.removed',
           documentId: nextDocument.id,
@@ -275,8 +285,27 @@ function withObjects(document: SceneDocument, objects: readonly unknown[]): unkn
   };
 }
 
+function withReplacedObject<T extends { id: SceneObjectId }>(document: SceneDocument, object: T): unknown {
+  return withObjects(document, document.objects.map((entry) => (entry.id === object.id ? object : entry)));
+}
+
+/** The document is acyclic, so only the new parent's chain can lead back to the moved object. */
+function canReparent(document: SceneDocument, objectId: SceneObjectId, parentId: SceneObjectId | undefined): boolean {
+  for (let current = parentId; current !== undefined;) {
+    if (current === objectId) return false;
+    const parent = getIndexedSceneObject(document, current);
+    if (!parent) return false;
+    current = parent.parentId;
+  }
+  return true;
+}
+
+function hasUniqueComponentIds(object: SceneObject): boolean {
+  return new Set(object.components.map((component) => component.id)).size === object.components.length;
+}
+
 function findRequiredObject(document: SceneDocument, objectId: SceneObjectId): SceneObject {
-  const object = document.objects.find((entry) => entry.id === objectId);
+  const object = getIndexedSceneObject(document, objectId);
   if (!object) {
     throw new SceneCommandIssueError({
       code: 'missing-object',
@@ -397,7 +426,8 @@ function normalizeVector3(input: unknown, label: string): SceneVector3 | SceneEu
   return output;
 }
 
-function assertMaterializedSceneObject(input: unknown): SceneObjectId {
+/** Returns the object rebuilt from its validated reads; vectors and tags are fresh, component data is not. */
+function assertMaterializedSceneObject(input: unknown): SceneObject {
   const object = assertPlainDataRecord(input, 'Created scene object');
   assertOnlyKeys(
     object,
@@ -405,39 +435,52 @@ function assertMaterializedSceneObject(input: unknown): SceneObjectId {
     'Created scene object',
   );
   const id = readRequiredIdentifier(object, 'id', 'Created scene object id');
-  readRequiredString(object, 'name', 'Created scene object name');
+  const name = readRequiredString(object, 'name', 'Created scene object name');
 
   const transform = assertPlainDataRecord(
     readRequiredProperty(object, 'transform', 'Created scene object transform'),
     'Created scene object transform',
   );
   assertOnlyKeys(transform, ['position', 'rotation', 'scale'], 'Created scene object transform');
-  normalizeVector3(
+  const position = normalizeVector3(
     readRequiredProperty(transform, 'position', 'Created scene object position'),
     'Created scene object position',
   );
-  normalizeVector3(
+  const rotation = normalizeVector3(
     readRequiredProperty(transform, 'rotation', 'Created scene object rotation'),
     'Created scene object rotation',
   );
-  normalizeVector3(
+  const scale = normalizeVector3(
     readRequiredProperty(transform, 'scale', 'Created scene object scale'),
     'Created scene object scale',
   );
 
-  for (const component of readDenseDataArray(
+  const components = readDenseDataArray(
     readRequiredProperty(object, 'components', 'Created scene object components'),
     'Created scene object components',
-  )) {
-    assertMaterializedSceneComponent(component);
-  }
-  normalizeTags(readRequiredProperty(object, 'tags', 'Created scene object tags'));
+  ).map(assertMaterializedSceneComponent);
+  const tags = normalizeTags(readRequiredProperty(object, 'tags', 'Created scene object tags'));
 
   const parentId = readOwnDataProperty(object, 'parentId');
-  if (parentId !== MISSING_PROPERTY) assertIdentifier(parentId, 'Created scene parent id');
   const layer = readOwnDataProperty(object, 'layer');
-  if (layer !== MISSING_PROPERTY) assertString(layer, 'Created scene layer');
-  return id;
+  return {
+    id,
+    name,
+    ...(parentId !== MISSING_PROPERTY ? { parentId: assertIdentifier(parentId, 'Created scene parent id') } : {}),
+    transform: { position, rotation, scale },
+    components,
+    tags,
+    ...(layer !== MISSING_PROPERTY ? { layer: assertString(layer, 'Created scene layer') } : {}),
+  };
+}
+
+/** Owns the caller's component data, which parsing would otherwise copy. */
+function ownComponents(object: SceneObject): SceneObject {
+  return { ...object, components: object.components.map(ownComponent) };
+}
+
+function ownComponent(component: SceneComponent): SceneComponent {
+  return createSceneComponent(component);
 }
 
 function assertCanonicalSceneDocument(input: unknown, label: string): void {
@@ -458,18 +501,18 @@ function assertCanonicalSceneDocument(input: unknown, label: string): void {
   }
 }
 
-function assertMaterializedSceneComponent(input: unknown): string {
+function assertMaterializedSceneComponent(input: unknown): SceneComponent {
   const component = assertPlainDataRecord(input, 'Scene component');
   assertOnlyKeys(component, ['id', 'type', 'enabled', 'data'], 'Scene component');
   const id = readRequiredIdentifier(component, 'id', 'Scene component id');
-  readRequiredIdentifier(component, 'type', 'Scene component type');
+  const type = readRequiredIdentifier(component, 'type', 'Scene component type');
   const enabled = readRequiredProperty(component, 'enabled', 'Scene component enabled');
   if (typeof enabled !== 'boolean') throw new TypeError('Scene component enabled must be boolean.');
   const data = readRequiredProperty(component, 'data', 'Scene component data');
   if (!isCanonicalSceneJsonObject(data)) {
     throw new TypeError('Scene component data must contain only canonical JSON values.');
   }
-  return id;
+  return { id, type, enabled, data };
 }
 
 function assertPlainDataRecord(input: unknown, label: string): object {
