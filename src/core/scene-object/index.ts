@@ -11,6 +11,7 @@ export * from './layers';
 export * from './collisionGroups';
 export * from './commands';
 export * from './controller';
+export * from './delta';
 export * from './saveBinding';
 export * from './componentSchemas';
 export { applySceneComponentUpdate, applySceneDocumentBatch } from './extendedCommands';

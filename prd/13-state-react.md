@@ -157,7 +157,7 @@ buildingEditorStore (zustand)
 | 13-j | buildingStore 분할(FR-13-12), npcStore 분할(FR-13-13) | 파일 500줄 이하, 공개 hook 불변, export snapshot 불변 |
 | 13-k | `PerformanceCollector` 조건부 마운트, editor 경유 import 제거(FR-13-14) | 기본 설정 world에서 `setPerformance` 호출 0 |
 
-13-e의 delta 형식은 30 PRD FR-30-03의 objectId delta와 같게 정한다(30-a 이후 착수).
+13-e의 delta 형식은 30 PRD FR-30-03의 objectId delta와 같게 정한다. 형식은 `scene-object/delta.ts`의 `SceneObjectDelta`(reset·added·removed·updated)로 확정(2026-09-24)되었고, building은 그룹 id를 같은 집합에 담는다.
 
 ## 7. 공개 API 영향
 

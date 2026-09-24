@@ -117,7 +117,7 @@ SceneProjector ──► EntityWorld (runtime projection)
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| 30-a | `ComponentTypeRegistry`, `defineComponent`, objectId delta 계약, `registerSceneComponentSchema` adapter | scene-object 테스트 통과. delta 계약 테스트. 13-e가 같은 형식 사용 |
+| 30-a | `ComponentTypeRegistry`, `defineComponent`, objectId delta 계약, `registerSceneComponentSchema` adapter. delta 완료(2026-09-24): `scene-object/delta.ts` `SceneObjectDelta`(reset·added·removed·updated), `toSceneObjectDelta`, `subscribeSceneObjectDelta`. batch 안 생성 후 삭제는 상쇄, 삭제 후 재생성은 updated. 레지스트리는 인스펙터 작업(30-f)과 함께 | scene-object 테스트 통과. delta 계약 테스트. 13-e가 같은 형식 사용 |
 | 30-b | `TransformSystem`(캐시, dirty), `SceneRuntime.getWorldMatrix` 대체 | 깊이 8 계층 1k 객체에서 `getWorldMatrix` 할당 0, 결과 동일 |
 | 30-c | `EntityWorld`(NextWorld 일반화), `SceneProjector`, runtime 서비스 등록 | 명령 1회 반영 시 전체 순회 0(호출 수 테스트) |
 | 30-d | `collider`/`rigidBody` 시스템(`SceneObjectBody` 대체), `meshRenderer` 시스템(12-f batch) | minihome probe 동작 동일 |
