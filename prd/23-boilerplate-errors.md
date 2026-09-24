@@ -114,8 +114,6 @@ decorator 제거는 동작 변경이 있는 slice와 없는 slice를 나눈다. 
 |---|---|---|
 | 23-a | `check-quality-ratchet.cjs`에 `handleErrorDecorators`, `profileDecorators`, `reflectMetadataImports` 카운터 추가 | 현재값(67, 67, 14)에서 감소만 허용 |
 | 23-b | 사용 0 decorator, `SystemRegistry`, `@ManageRuntime`, `ManagedEntity` 계열과 테스트 삭제(D-02) | export snapshot 불변, 테스트 약 1,240줄 이상 감소 |
-
-23-b 완료(2026-09-24): `ManagedEntity`, `useManagedEntity`, `useBaseFrame`, `useBaseLifecycle`, `SystemRegistry`, `@RegisterSystem`, `@ManageRuntime`, `@Autowired`, `LogInitialization`, `Log`, `Delay`, `RateLimit`, `Hook`, `MemoryProfile`, `TrackCalls`, `Validate`, `DebugLog`, `PerformanceLog`, `Singleton`, `RegisterBridge`, `RequireEngine`, `Blueprint`/`BlueprintProperty`/`FromBlueprint`, `BridgeDecorators`의 `DomainBridge`/`Command` 사본을 삭제했다. 39파일, 약 5,470줄 감소(대부분 테스트). `useEntityLifecycle`은 `useEntity`가 쓰므로 유지한다. export snapshot 불변.
 | 23-c | `reportError`와 runtime `onError`, phase·명령 경계 catch | 예외 전파 단위 테스트, production 모드 sink 호출 테스트 |
 | 23-d | hot path `@HandleError` 제거 | 예외가 phase 경계에서 보고되는지 테스트 |
 | 23-e | async `@HandleError` 제거, `@Timeout` 제거 또는 수정(D-16) | rejection 전파 테스트 |
@@ -123,6 +121,8 @@ decorator 제거는 동작 변경이 있는 slice와 없는 slice를 나눈다. 
 | 23-g | bridge 등록 명시 목록화, 캐시 단일화(D-12) | `BridgeRegistry.list()` 결과 동일, dispose 후 재생성 테스트 |
 | 23-h | `reflect-metadata`, `experimentalDecorators` 제거 | `grep -r "reflect-metadata" src` 0 |
 | 23-i | `GaesupError` 계층, catch 정리, 인코딩 복원 | 빈 catch 0 |
+
+23-b 완료(2026-09-24): `ManagedEntity`, `useManagedEntity`, `useBaseFrame`, `useBaseLifecycle`, `SystemRegistry`, `@RegisterSystem`, `@ManageRuntime`, `@Autowired`, `LogInitialization`, `Log`, `Delay`, `RateLimit`, `Hook`, `MemoryProfile`, `TrackCalls`, `Validate`, `DebugLog`, `PerformanceLog`, `Singleton`, `RegisterBridge`, `RequireEngine`, `Blueprint`/`BlueprintProperty`/`FromBlueprint`, `BridgeDecorators`의 `DomainBridge`/`Command` 사본을 삭제했다. 39파일, 약 5,470줄 감소(대부분 테스트). `useEntityLifecycle`은 `useEntity`가 쓰므로 유지한다. export snapshot 불변.
 
 ## 7. 공개 API 영향
 
