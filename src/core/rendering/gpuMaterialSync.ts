@@ -15,11 +15,17 @@ export function createMaterialSynchronizer(source: Material, target: Material): 
   const generated = target as unknown as Record<string, unknown>;
   const keys = Object.keys(source).filter(key => !ownedProperties.has(key)
     && !key.startsWith('is') && typeof original[key] !== 'function');
+  let version = source.version;
   const sync = () => {
     for (const key of keys) {
       // Share value objects such as Color/Vector2/Texture; rendering never mutates them.
       // Scalar replacement and replacement of a whole value object also propagate.
       if (generated[key] !== original[key]) generated[key] = original[key];
+    }
+    // A source recompile (new map, defines, side) rebuilds the generated pipeline, not the whole batch.
+    if (source.version !== version) {
+      version = source.version;
+      target.needsUpdate = true;
     }
   };
   sync();

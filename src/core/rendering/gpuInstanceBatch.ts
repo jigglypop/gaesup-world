@@ -5,7 +5,18 @@ import type { NodeMaterial, WebGPURenderer } from 'three/webgpu';
 import { isGpuBatchRevision } from './gpuBatchRevision';
 import { createMaterialSynchronizer, supportsGpuBatchMaterial } from './gpuMaterialSync';
 
-/** Renderer-owned acceleration. Source instances remain the picking/physics/shadow authority. */
+const MATRIX_SIZE = 16;
+
+function matrixChanged(from: ArrayLike<number>, to: Float32Array, offset: number): boolean {
+  for (let i = offset, end = offset + MATRIX_SIZE; i < end; i++) if (from[i] !== to[i]) return true;
+  return false;
+}
+
+/**
+ * Renderer-owned acceleration. Source instances remain the picking/physics/shadow authority.
+ * GPU buffers are sized by the source's instance capacity, so count changes and edits upload only the instances
+ * that changed instead of rebuilding the batch.
+ */
 export async function createGpuInstanceBatch(renderer: WebGPURenderer, source: InstancedMesh) {
   const owner = renderer as unknown as {
     _attributes?: { delete(attribute: BufferAttribute): unknown };
@@ -22,15 +33,15 @@ export async function createGpuInstanceBatch(renderer: WebGPURenderer, source: I
   if (originals.some(material => !supportsGpuBatchMaterial(material)))
     return null;
   const [gpu, t] = await Promise.all([import('three/webgpu'), import('three/tsl')]);
-  const count = source.count;
-  const matrices = new gpu.StorageBufferAttribute(new Float32Array(count * 16), 16);
-  const bounds = new gpu.StorageBufferAttribute(new Float32Array(count * 4), 4);
-  const visible = new gpu.StorageBufferAttribute(new Uint32Array(count), 1);
-  const visibleNode = t.storage(visible, 'uint', count);
-  const matrixNode = t.storage(matrices, 'mat4', count).toReadOnly();
-  const boundsNode = t.storage(bounds, 'vec4', count).toReadOnly();
+  const capacity = source.instanceMatrix.count;
+  const matrices = new gpu.StorageBufferAttribute(new Float32Array(capacity * MATRIX_SIZE), MATRIX_SIZE);
+  const bounds = new gpu.StorageBufferAttribute(new Float32Array(capacity * 4), 4);
+  const visible = new gpu.StorageBufferAttribute(new Uint32Array(capacity), 1);
+  const visibleNode = t.storage(visible, 'uint', capacity);
+  const matrixNode = t.storage(matrices, 'mat4', capacity).toReadOnly();
+  const boundsNode = t.storage(bounds, 'vec4', capacity).toReadOnly();
   const colors = source.instanceColor
-    ? new gpu.StorageBufferAttribute(new Float32Array(count * 4), 4)
+    ? new gpu.StorageBufferAttribute(new Float32Array(capacity * 4), 4)
     : null;
   const planes = Array.from({ length: 6 }, () => new Vector4());
   const planeNode = t.uniformArray<'vec4'>(planes, 'vec4');
@@ -66,7 +77,7 @@ export async function createGpuInstanceBatch(renderer: WebGPURenderer, source: I
     for (const material of materials) material.dispose();
     for (const allocation of allocations) owner._attributes!.delete(allocation);
   };
-  const indexNode = t.storage(visible, 'uint', count).toReadOnly().element(t.instanceIndex);
+  const indexNode = t.storage(visible, 'uint', capacity).toReadOnly().element(t.instanceIndex);
   const instanceMatrix = matrixNode.element(indexNode);
   try {
     for (const group of groups) {
@@ -94,7 +105,7 @@ export async function createGpuInstanceBatch(renderer: WebGPURenderer, source: I
       );
       if (colors)
         material.colorNode = t.materialColor.mul(
-          t.storage(colors, 'vec4', count).toReadOnly().element(indexNode).xyz,
+          t.storage(colors, 'vec4', capacity).toReadOnly().element(indexNode).xyz,
         );
       const geometry = source.geometry.clone();
       geometry.clearGroups();
@@ -150,39 +161,65 @@ export async function createGpuInstanceBatch(renderer: WebGPURenderer, source: I
         for (let i = 1; i < args.length; i++) t.atomicAdd(args[i]!.element(1), 1);
       });
     })()
-    .compute(count);
+    .compute(source.count);
   const kernels = [reset, cull];
   const local = new Matrix4();
   const world = new Matrix4();
   const sphere = new Sphere();
   const previousWorld = new Matrix4();
   const previousPlanes = new Float32Array(24);
+  const matrixArray = matrices.array as Float32Array;
+  const boundsArray = bounds.array as Float32Array;
   let version = -1;
   let colorVersion = -1;
+  let count = -1;
   let initialized = false;
   let disposed = false;
   source.geometry.computeBoundingSphere();
+  const writeBounds = (i: number) => {
+    source.getMatrixAt(i, local);
+    world.multiplyMatrices(source.matrixWorld, local);
+    sphere.copy(source.geometry.boundingSphere!).applyMatrix4(world);
+    boundsArray[i * 4] = sphere.center.x;
+    boundsArray[i * 4 + 1] = sphere.center.y;
+    boundsArray[i * 4 + 2] = sphere.center.z;
+    boundsArray[i * 4 + 3] = sphere.radius;
+  };
   return {
     source,
     meshes: parts.map((part) => part.mesh),
-    count,
+    get count() {
+      return count;
+    },
     update(frustum: Float32Array): boolean {
       if (disposed) return false;
       source.updateWorldMatrix(true, false);
-      const changed =
-        version !== source.instanceMatrix.version || !previousWorld.equals(source.matrixWorld);
+      const moved = !previousWorld.equals(source.matrixWorld);
+      const changed = moved || version !== source.instanceMatrix.version || count !== source.count;
       if (changed) {
-        (matrices.array as Float32Array).set(source.instanceMatrix.array.subarray(0, count * 16));
+        count = Math.min(source.count, capacity);
+        const from = source.instanceMatrix.array;
+        let first = count;
+        let last = -1;
         for (let i = 0; i < count; i++) {
-          source.getMatrixAt(i, local);
-          world.multiplyMatrices(source.matrixWorld, local);
-          sphere.copy(source.geometry.boundingSphere!).applyMatrix4(world);
-          (bounds.array as Float32Array).set(
-            [sphere.center.x, sphere.center.y, sphere.center.z, sphere.radius],
-            i * 4,
-          );
+          const offset = i * MATRIX_SIZE;
+          if (!matrixChanged(from, matrixArray, offset)) {
+            if (moved) writeBounds(i);
+            continue;
+          }
+          for (let j = offset; j < offset + MATRIX_SIZE; j++) matrixArray[j] = from[j]!;
+          writeBounds(i);
+          if (i < first) first = i;
+          last = i;
         }
-        matrices.needsUpdate = bounds.needsUpdate = true;
+        if (last >= first) {
+          matrices.addUpdateRange(first * MATRIX_SIZE, (last - first + 1) * MATRIX_SIZE);
+          matrices.needsUpdate = true;
+        }
+        if (moved) bounds.clearUpdateRanges();
+        else if (last >= first) bounds.addUpdateRange(first * 4, (last - first + 1) * 4);
+        if (moved || last >= first) bounds.needsUpdate = true;
+        cull.count = count;
         version = source.instanceMatrix.version;
         previousWorld.copy(source.matrixWorld);
       }

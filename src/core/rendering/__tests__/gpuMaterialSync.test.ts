@@ -34,3 +34,16 @@ test('ordered transparency and unsupported normal deformation keep the original 
   material.normalMap = new Texture();
   expect(supportsGpuBatchMaterial(material)).toBe(false);
 });
+
+test('a source recompile marks the generated material for one pipeline rebuild', () => {
+  const source = new MeshStandardMaterial();
+  const target = source.clone();
+  const sync = createMaterialSynchronizer(source, target);
+  const version = target.version;
+  source.map = new Texture(); source.needsUpdate = true;
+  sync();
+  expect(target.map).toBe(source.map);
+  expect(target.version).toBe(version + 1);
+  sync();
+  expect(target.version).toBe(version + 1);
+});

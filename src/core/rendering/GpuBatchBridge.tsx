@@ -64,10 +64,10 @@ function supportsAllGpuBatchMaterials(material: InstancedMesh['material']): bool
   return true;
 }
 
-function materialsChanged(materials: Material[], versions: number[], current: InstancedMesh['material']): boolean {
+function materialsReplaced(materials: Material[], current: InstancedMesh['material']): boolean {
+  if (Array.isArray(current) ? current.length !== materials.length : materials.length !== 1) return true;
   for (let i = 0; i < materials.length; i++) {
-    const material = materials[i]!;
-    if (material.version !== versions[i] || material !== (Array.isArray(current) ? current[i] : current)) return true;
+    if (materials[i] !== (Array.isArray(current) ? current[i] : current)) return true;
   }
   return false;
 }
@@ -101,11 +101,9 @@ export function GpuBatchBridge({
       {
         geometry: InstancedMesh['geometry'];
         material: InstancedMesh['material'];
-        count: number;
         matrix: InstancedMesh['instanceMatrix'];
         color: InstancedMesh['instanceColor'];
         materials: Material[];
-        versions: number[];
       }
     >();
     const unsupported = new Set<InstancedMesh>();
@@ -158,15 +156,16 @@ export function GpuBatchBridge({
           release(source);
           continue;
         }
+        // Count, instance and material-version changes update the batch in place; only a new geometry, material
+        // or instance buffer (capacity growth) rebuilds it.
         const signature = signatures.get(source);
         if (
           signature &&
           (signature.geometry !== source.geometry ||
             signature.material !== source.material ||
-            signature.count !== source.count ||
             signature.matrix !== source.instanceMatrix ||
             signature.color !== source.instanceColor ||
-            materialsChanged(signature.materials, signature.versions, source.material))
+            materialsReplaced(signature.materials, source.material))
         )
           release(source);
         const batch = batches.get(source);
@@ -188,11 +187,9 @@ export function GpuBatchBridge({
           signatures.set(source, {
             geometry: source.geometry,
             material: source.material,
-            count: source.count,
             matrix: source.instanceMatrix,
             color: source.instanceColor,
             materials,
-            versions: materials.map((material) => material.version),
           });
           void createGpuInstanceBatch(renderer, source)
             .then((created) => {
