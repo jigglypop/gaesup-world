@@ -128,6 +128,61 @@ function getYPosition(x: number, z: number): number {
   return 0.05 * noise2D(x / 50, z / 50) + 0.05 * noise2D(x / 100, z / 100);
 }
 
+/** Lifts ground vertices onto the noise field and paints meadow patches, dirt scuffs included. */
+function paintGround(geometry: THREE.BufferGeometry, baseColor: THREE.Color, accentColor: THREE.Color): void {
+  const positions = geometry.getAttribute("position") as THREE.BufferAttribute;
+  const colors = new Float32Array(positions.count * 3);
+  const tmp = new THREE.Color();
+  for (let k = 0; k < positions.count; k++) {
+    const x = positions.getX(k);
+    const z = positions.getZ(k);
+    positions.setY(k, positions.getY(k) + getYPosition(x, z));
+
+    // Two-octave noise gives natural patchiness; an extra tight noise
+    // sprinkles dirt scuffs so the ground reads as a real meadow.
+    const n0 = 0.5 + 0.5 * noise2D(x * 0.18, z * 0.18);
+    const n1 = 0.5 + 0.5 * noise2D(x * 0.04 + 11.3, z * 0.04 - 7.7);
+    const n2 = 0.5 + 0.5 * noise2D(x * 0.55 - 3.1, z * 0.55 + 9.4);
+
+    const tint = THREE.MathUtils.clamp(n0 * 0.65 + n1 * 0.45, 0, 1);
+    tmp.copy(baseColor).multiplyScalar(0.58 + tint * 0.42).lerp(accentColor, n1 * 0.28);
+    if (n2 > 0.86) {
+      tmp.lerp(GROUND_DIRT, (n2 - 0.86) * 4.0);
+    }
+
+    const ci = k * 3;
+    colors[ci]     = tmp.r;
+    colors[ci + 1] = tmp.g;
+    colors[ci + 2] = tmp.b;
+  }
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.computeVertexNormals();
+}
+
+/** One indexed geometry with a ground patch under every cell, so a chunk's ground is a single draw. */
+function createCellGround(cells: ReadonlyArray<readonly [number, number, number?]>, cellSize: number): THREE.BufferGeometry {
+  const segments = Math.max(2, Math.min(16, Math.round(cellSize * 1.5)));
+  const plane = new THREE.PlaneGeometry(cellSize, cellSize, segments, segments).rotateX(-Math.PI / 2);
+  const source = plane.getAttribute("position");
+  const sourceIndex = plane.index!;
+  const positions = new Float32Array(cells.length * source.count * 3);
+  const indices = new Uint32Array(cells.length * sourceIndex.count);
+  cells.forEach(([x, z, y = 0], cell) => {
+    const base = cell * source.count;
+    for (let v = 0; v < source.count; v++) {
+      positions[(base + v) * 3] = source.getX(v) + x;
+      positions[(base + v) * 3 + 1] = source.getY(v) + y;
+      positions[(base + v) * 3 + 2] = source.getZ(v) + z;
+    }
+    for (let i = 0; i < sourceIndex.count; i++) indices[cell * sourceIndex.count + i] = sourceIndex.getX(i) + base;
+  });
+  plane.dispose();
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+  return geometry;
+}
+
 type GrassAttributeData = {
   offsets: Float32Array;
   orientations: Float32Array;
@@ -392,36 +447,12 @@ const GrassContent: FC<GrassMeshProps> = memo(
       // Ground tessellation must scale with width so the noise-driven elevation
       // stays smooth on big tiles instead of degenerating into flat quads.
       const groundSegs = Math.max(8, Math.min(128, Math.round(width * 1.5)));
-      const gg = new THREE.PlaneGeometry(width, width, groundSegs, groundSegs).rotateX(-Math.PI / 2);
-      const positions = gg.getAttribute("position") as THREE.BufferAttribute;
-      const colors = new Float32Array(positions.count * 3);
-      const tmp = new THREE.Color();
-      for (let k = 0; k < positions.count; k++) {
-        const x = positions.getX(k);
-        const z = positions.getZ(k);
-        positions.setY(k, getYPosition(x, z));
-
-        // Two-octave noise gives natural patchiness; an extra tight noise
-        // sprinkles dirt scuffs so the ground reads as a real meadow.
-        const n0 = 0.5 + 0.5 * noise2D(x * 0.18, z * 0.18);
-        const n1 = 0.5 + 0.5 * noise2D(x * 0.04 + 11.3, z * 0.04 - 7.7);
-        const n2 = 0.5 + 0.5 * noise2D(x * 0.55 - 3.1, z * 0.55 + 9.4);
-
-        const tint = THREE.MathUtils.clamp(n0 * 0.65 + n1 * 0.45, 0, 1);
-        tmp.copy(baseGroundColor).multiplyScalar(0.58 + tint * 0.42).lerp(accentGroundColor, n1 * 0.28);
-        if (n2 > 0.86) {
-          tmp.lerp(GROUND_DIRT, (n2 - 0.86) * 4.0);
-        }
-
-        const ci = k * 3;
-        colors[ci]     = tmp.r;
-        colors[ci + 1] = tmp.g;
-        colors[ci + 2] = tmp.b;
-      }
-      gg.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-      gg.computeVertexNormals();
+      const gg = cells
+        ? createCellGround(cells, cellSize)
+        : new THREE.PlaneGeometry(width, width, groundSegs, groundSegs).rotateX(-Math.PI / 2);
+      paintGround(gg, baseGroundColor, accentGroundColor);
       return [bg, gg];
-    }, [accentGroundColor, bW, bH, baseGroundColor, joints, width]);
+    }, [accentGroundColor, bW, bH, baseGroundColor, joints, width, cells, cellSize]);
     useEffect(() => {
       return () => {
         baseGeom.dispose();

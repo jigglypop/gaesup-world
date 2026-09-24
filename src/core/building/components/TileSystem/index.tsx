@@ -9,13 +9,13 @@ import { WorldProps } from '../../../world/components/WorldProps';
 import { MaterialManager } from '../../core/MaterialManager';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { BuildingColliderBody } from '../BuildingColliders';
+import { createTileColliders, getRampLayout, getStairLayout, getTileShape, rotateXZ } from './layout';
+import { buildWaterPatches } from './waterPatches';
 import type { BuildingColliderBox } from '../BuildingColliders/types';
+import { GrassChunks } from '../mesh/grass/chunks';
 import { SandBatch, type SandEntry } from '../mesh/sand';
 import { SnowfieldBatch, type SnowfieldEntry } from '../mesh/snowfield';
 import Water from '../mesh/water';
-import { TileObject } from '../TileObject';
-import { createTileColliders, getRampLayout, getStairLayout, getTileShape, rotateXZ } from './layout';
-import { buildWaterPatches } from './waterPatches';
 
 type TileLike = TileSystemProps['tileGroup']['tiles'][number];
 
@@ -675,17 +675,8 @@ export function TileSystem({
     [snowfieldTiles],
   );
 
-  const tileObjects = useMemo(
-    () =>
-      tileGroup.tiles.filter(
-        (t) =>
-          t.objectType &&
-          t.objectType !== 'none' &&
-          getTileShape(t) === 'box' &&
-          t.objectType !== 'water' &&
-          t.objectType !== 'sand' &&
-          t.objectType !== 'snowfield',
-      ),
+  const grassTiles = useMemo(
+    () => tileGroup.tiles.filter((t) => t.objectType === 'grass' && getTileShape(t) === 'box'),
     [tileGroup.tiles],
   );
 
@@ -894,9 +885,7 @@ export function TileSystem({
           </group>
         ))}
         
-        {tileObjects.map((tile) => (
-          <TileObject key={`${tile.id}-object`} tile={tile} tiles={waterTiles} />
-        ))}
+        {grassTiles.length > 0 && <GrassChunks tiles={grassTiles} />}
 
         {sandEntries.length > 0 && <SandBatch entries={sandEntries} />}
 

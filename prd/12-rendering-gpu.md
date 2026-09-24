@@ -184,7 +184,7 @@ TSL은 WebGL2 backend에서도 동작하므로 TSL을 canonical로 둔다. GLSL 
 | 12-c | 품질 프로파일 적용(dpr, 섀도 맵, 후처리 preset, antialias) | dpr 1/1.5/2별 GPU timestamp 비교 기록 |
 | 12-d | `MaterialCache`와 텍스처 refcount 캐시 | M 장면 `info.memory.textures`가 그룹 수와 무관 |
 | 12-e | 가시성 bitset과 batch 기반 컬링(5.1). 마운트 분리 완료(2026-09-25): `BuildingVisibilityDriver`는 프러스텀 대신 거리로 상주 그룹을 정한다(진입 140m, 이탈 +20m 히스테리시스, 카메라 1m 미만 이동은 재계산 없음). 화면 밖 draw는 three의 객체별 프러스텀 컬링이 맡고, 바위 InstancedMesh도 bounding sphere를 갱신한다. 회전은 결과를 바꾸지 않아 궤도 중 mount·commit이 0이다. GPU readback 예산으로 그룹 목록을 앞에서부터 자르던 clamp(보이는 그룹과 무관)는 삭제했다. bitset과 world-level batch는 12-f와 함께 | 궤도 중 geometry churn 0, commit ≤ 2/s |
-| 12-f | 단위 geometry 공유, world-level InstancedMesh, grass `cells` 병합, 벽 단일 재질 | M 장면 draw call 50% 감소 |
+| 12-f | 단위 geometry 공유, world-level InstancedMesh, grass `cells` 병합, 벽 단일 재질. grass 병합 완료(2026-09-25): 타일마다 `TileObject`→`Grass`(blade·ground 메시 2개, 텍스처 로드)이던 것을 4×4 타일 chunk마다 `Grass` 하나(`cells`, 셀별 ground를 한 geometry로)로 바꿨다. 밀도(1㎡당 blade 수)는 같고 chunk key는 위치·크기·밀도·색만 써서 편집은 그 chunk만 다시 만든다. `TileObject`는 삭제. `/world?size=m`: 14.7→37.8fps, script 64.3→15.5ms, geometries 2,091→401, textures 954→98, draw 528→231 | M 장면 draw call 50% 감소 |
 | 12-g | water 반사 opt-in·공유, glass transmission 품질 옵션 | glass 벽 1개 추가 전후 `render.calls` 2배 증가 없음 |
 | 12-h | `GpuBatchBridge` capacity 할당, 부분 업로드, geometry 참조, 재질 version 동기화 | 편집 연타 중 long task 수, `info.memory.geometries` 불변 |
 | 12-i | readback culling 제거 또는 교체, WebGL에서 mirror/upload 미마운트. 마운트 제거 완료(2026-09-25, 12-e): `BuildingController`가 mirror·upload·culling·indirect draw·args 드라이버를 마운트하지 않는다(소비자 0). 공개 export와 코드 삭제는 2.0 | `world-render-state` 시나리오 commit 수와 CPU ms 감소 |
