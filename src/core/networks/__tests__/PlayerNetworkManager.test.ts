@@ -570,6 +570,102 @@ describe('PlayerNetworkManager', () => {
     });
   });
 
+  describe('connection liveness', () => {
+    const peer = (x: number) => ({ name: 'peer', color: '#fff', position: [x, 0, 0], rotation: [1, 0, 0, 0] });
+    const create = (options: Partial<ConstructorParameters<typeof PlayerNetworkManager>[0]> = {}) => {
+      manager = new PlayerNetworkManager({
+        url: 'ws://localhost:9999', roomId: 'room', playerName: 'p', playerColor: '#fff',
+        reconnectAttempts: 3, reconnectDelay: 100, ...options,
+      });
+      manager.connect();
+      jest.advanceTimersByTime(1);
+      return MockWebSocket.lastCreated!;
+    };
+
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => {
+      manager.disconnect();
+      jest.useRealTimers();
+    });
+
+    test('a socket whose server stopped answering pings is dropped without waiting for close', () => {
+      const onDisconnect = jest.fn();
+      const first = create({ pingInterval: 1000, onDisconnect });
+      jest.advanceTimersByTime(1000);
+      first.simulateMessage(JSON.stringify({ type: 'Pong', ts: Date.now() }));
+      jest.advanceTimersByTime(1000);
+      expect(onDisconnect).not.toHaveBeenCalled();
+      // The second ping is never answered; the next tick gives up on the socket.
+      jest.advanceTimersByTime(1000);
+      expect(onDisconnect).toHaveBeenCalledWith({ reconnecting: true });
+      expect(first.readyState).toBe(MockWebSocket.CLOSED);
+      jest.advanceTimersByTime(100);
+      expect(MockWebSocket.lastCreated).not.toBe(first);
+      expect(manager.getConnectionStatus()).toBe(true);
+    });
+
+    test('a server that never answers pings is not treated as half-open', () => {
+      const first = create({ pingInterval: 1000 });
+      jest.advanceTimersByTime(10_000);
+      expect(MockWebSocket.lastCreated).toBe(first);
+      expect(first.sentMessages.filter((raw) => JSON.parse(raw).type === 'Ping')).toHaveLength(10);
+    });
+
+    test('the reconnect delay is jittered between half and all of the backoff', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.5);
+      const first = create();
+      first.simulateClose(1006);
+      jest.advanceTimersByTime(74);
+      expect(MockWebSocket.lastCreated).toBe(first);
+      jest.advanceTimersByTime(1);
+      expect(MockWebSocket.lastCreated).not.toBe(first);
+    });
+
+    test('remote players survive a short drop and the next Welcome reconciles them', () => {
+      const onPlayerJoin = jest.fn();
+      const onPlayerUpdate = jest.fn();
+      const onPlayerLeave = jest.fn();
+      const onDisconnect = jest.fn();
+      const first = create({ onPlayerJoin, onPlayerUpdate, onPlayerLeave, onDisconnect });
+      first.simulateMessage(JSON.stringify({ type: 'Welcome', client_id: 'me', room_state: { stay: peer(1), gone: peer(2) } }));
+      first.simulateClose(1006);
+      expect(onDisconnect).toHaveBeenCalledWith({ reconnecting: true });
+      expect([...manager.getPlayers().keys()].sort()).toEqual(['gone', 'stay']);
+
+      jest.advanceTimersByTime(100);
+      const second = MockWebSocket.lastCreated!;
+      expect(second).not.toBe(first);
+      second.simulateMessage(JSON.stringify({ type: 'Welcome', client_id: 'me-2', room_state: { stay: peer(5), fresh: peer(6) } }));
+      expect(onPlayerLeave.mock.calls).toEqual([['gone']]);
+      expect(onPlayerJoin.mock.calls.map(([id]) => id)).toEqual(['stay', 'gone', 'fresh']);
+      expect(onPlayerUpdate).toHaveBeenCalledWith('stay', expect.objectContaining({ position: [5, 0, 0] }));
+      expect([...manager.getPlayers().keys()].sort()).toEqual(['fresh', 'stay']);
+      jest.advanceTimersByTime(10_000);
+      expect(onPlayerLeave).toHaveBeenCalledTimes(1);
+    });
+
+    test('players kept through a drop leave when reconnecting takes longer than the grace period', () => {
+      const onPlayerLeave = jest.fn();
+      const first = create({ reconnectDelay: 30_000, onPlayerLeave });
+      first.simulateMessage(JSON.stringify({ type: 'PlayerJoined', client_id: 'peer', state: peer(1) }));
+      first.simulateClose(1006);
+      jest.advanceTimersByTime(9_999);
+      expect(onPlayerLeave).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(1);
+      expect(onPlayerLeave).toHaveBeenCalledWith('peer');
+      expect(manager.getPlayers().size).toBe(0);
+    });
+
+    test('a final close still clears players at once', () => {
+      const onDisconnect = jest.fn();
+      const first = create({ reconnectAttempts: 0, onDisconnect });
+      first.simulateMessage(JSON.stringify({ type: 'PlayerJoined', client_id: 'peer', state: peer(1) }));
+      first.simulateClose(1006);
+      expect(onDisconnect).toHaveBeenCalledWith({ reconnecting: false });
+      expect(manager.getPlayers().size).toBe(0);
+    });
+  });
+
   describe('getPlayers', () => {
     test('복사본을 반환한다', () => {
       const p1 = manager.getPlayers();

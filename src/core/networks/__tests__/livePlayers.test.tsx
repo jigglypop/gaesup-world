@@ -151,6 +151,25 @@ describe('useMultiplayer remote state', () => {
     }
   });
 
+  test('a reconnecting drop keeps remote players; a final one clears them', () => {
+    const view = renderHook(() => useMultiplayer({ config: defaultMultiplayerConfig }));
+    try {
+      act(() => view.result.current.connect({ roomId: 'room', playerName: 'me', playerColor: '#000' }));
+      const options = lastManagerOptions();
+      act(() => options.onPlayerJoin?.('peer', player(0)));
+      const joined = view.result.current.players;
+      act(() => options.onDisconnect?.({ reconnecting: true }));
+      expect(view.result.current.players).toBe(joined);
+      expect(view.result.current.connectionStatus).toBe('connecting');
+      expect(view.result.current.isConnected).toBe(false);
+      act(() => options.onDisconnect?.({ reconnecting: false }));
+      expect(view.result.current.players.size).toBe(0);
+      expect(view.result.current.connectionStatus).toBe('disconnected');
+    } finally {
+      view.unmount();
+    }
+  });
+
   test('disconnect clears remote players and cancels a pending status refresh', () => {
     jest.useFakeTimers();
     const view = renderHook(() => useMultiplayer({ config: defaultMultiplayerConfig }));

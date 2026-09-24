@@ -8,6 +8,9 @@ import { NetworkPayload, PlayerState } from '../types';
 
 type PlayerNetworkLogLevel = 'none' | 'error' | 'warn' | 'info' | 'debug';
 
+/** `reconnecting` disconnects keep remote players until the next Welcome reconciles them. */
+export type PlayerDisconnectInfo = { reconnecting: boolean };
+
 export interface PlayerNetworkManagerOptions {
   url: string;
   roomId: string;
@@ -17,6 +20,10 @@ export interface PlayerNetworkManagerOptions {
   modelUrl?: string;
   reconnectAttempts?: number;
   reconnectDelay?: number;
+  /**
+   * Once the server has answered a ping, a ping still unanswered when the next one is due
+   * marks the socket half-open: it is dropped and reconnected without waiting for TCP.
+   */
   pingInterval?: number;
   sendRateLimit?: number;
   offlineQueueSize?: number;
@@ -31,7 +38,7 @@ export interface PlayerNetworkManagerOptions {
    */
   acceptModelUrl?: (url: string) => boolean;
   onConnect?: () => void;
-  onDisconnect?: () => void;
+  onDisconnect?: (info?: PlayerDisconnectInfo) => void;
   onWelcome?: (localPlayerId: string, roomState?: Record<string, PlayerState>) => void;
   onPlayerJoin?: (playerId: string, state: PlayerState) => void;
   onPlayerUpdate?: (playerId: string, state: PlayerState) => void;
@@ -56,6 +63,11 @@ const isTextReadablePayload = (value: WebSocketMessageData): value is TextReadab
 type StickyField = 'name' | 'color' | 'modelUrl' | 'animation';
 /** Receivers merge updates, so these ride along only when they differ from what the connection already sent. */
 const STICKY_FIELDS: readonly StickyField[] = ['name', 'color', 'modelUrl', 'animation'];
+/** Remote players survive a reconnect for this long before they are dropped. */
+const DISCONNECT_GRACE_MS = 10_000;
+const MAX_RECONNECT_DELAY_MS = 30_000;
+/** Application close code for a socket abandoned after a missed pong. */
+const PONG_TIMEOUT_CLOSE_CODE = 4000;
 
 export class PlayerNetworkManager {
   private ws: WebSocket | null = null;
@@ -79,6 +91,10 @@ export class PlayerNetworkManager {
   private pingIntervalMs: number;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private lastPingSentAt: number = 0;
+  /** 0 until the server answers a ping on the current connection; half-open detection starts then. */
+  private lastPongAt: number = 0;
+  private retainedIds: Set<string> = new Set();
+  private retainTimer: ReturnType<typeof setTimeout> | null = null;
 
   private updateRateLimitMs: number;
   private lastUpdateSentAt: number = 0;
@@ -101,7 +117,7 @@ export class PlayerNetworkManager {
   
   // 콜백 함수들
   private onConnect?: () => void;
-  private onDisconnect?: () => void;
+  private onDisconnect?: (info?: PlayerDisconnectInfo) => void;
   private onWelcome?: (localPlayerId: string, roomState?: Record<string, PlayerState>) => void;
   private onPlayerJoin?: (playerId: string, state: PlayerState) => void;
   private onPlayerUpdate?: (playerId: string, state: PlayerState) => void;
@@ -305,25 +321,30 @@ export class PlayerNetworkManager {
     ws.onclose = (event) => {
       if (this.ws !== ws) return;
       this.info('[PlayerNetworkManager] WebSocket closed', { code: event.code, reason: event.reason });
-      this.isConnected = false;
-      this.isConnecting = false;
-      this.stopPingLoop();
-      this.pausePendingAcks();
-      this.players.clear();
-      this.localPlayerId = null;
-      if (this.onDisconnect) {
-        this.onDisconnect();
-      }
-
-      // Do not reconnect on normal closures.
-      if (event.code === 1000 || event.code === 1001) {
-        this.shouldReconnect = false;
-      }
-
-      // If the socket was closed (network drop), retry automatically when configured.
-      // disconnect() disables shouldReconnect so it won't loop.
-      this.tryReconnect();
+      this.handleClosed(event.code);
     };
+  }
+
+  /** Shared by real closes and abandoned half-open sockets. */
+  private handleClosed(code: number): void {
+    this.isConnected = false;
+    this.isConnecting = false;
+    this.stopPingLoop();
+    this.pausePendingAcks();
+    this.localPlayerId = null;
+
+    // Do not reconnect on normal closures.
+    if (code === 1000 || code === 1001) {
+      this.shouldReconnect = false;
+    }
+
+    // If the socket was closed (network drop), retry automatically when configured.
+    // disconnect() disables shouldReconnect so it won't loop.
+    const reconnecting = this.tryReconnect();
+    // A short drop keeps remote avatars mounted; the next Welcome reconciles them.
+    if (reconnecting) this.retainPlayers();
+    else this.clearPlayers();
+    this.onDisconnect?.({ reconnecting });
   }
 
   disconnect(): void {
@@ -336,20 +357,17 @@ export class PlayerNetworkManager {
     this.pendingChats = [];
 
     if (!this.ws) {
-      this.players.clear();
+      this.clearPlayers();
       this.isConnected = false;
       this.isConnecting = false;
       this.localPlayerId = null;
-      this.onDisconnect?.();
+      this.onDisconnect?.({ reconnecting: false });
       return;
     }
 
     const ws = this.ws;
     // Detach handlers first to avoid late events calling callbacks after disconnect().
-    ws.onopen = null;
-    ws.onmessage = null;
-    ws.onerror = null;
-    ws.onclose = null;
+    detachHandlers(ws);
 
     if (ws.readyState === WebSocket.OPEN) {
         try {
@@ -365,11 +383,11 @@ export class PlayerNetworkManager {
     }
 
     this.ws = null;
-    this.players.clear();
+    this.clearPlayers();
     this.isConnected = false;
     this.isConnecting = false;
     this.localPlayerId = null;
-    this.onDisconnect?.();
+    this.onDisconnect?.({ reconnecting: false });
   }
 
   updateLocalPlayer(state: Partial<PlayerState>): void {
@@ -457,6 +475,7 @@ export class PlayerNetworkManager {
         break;
       }
       case 'Pong': {
+        this.lastPongAt = Date.now();
         if (typeof message.ts === 'number' && message.ts > 0) {
           const rtt = Math.max(0, Date.now() - message.ts);
           this.onPing?.(rtt);
@@ -476,15 +495,16 @@ export class PlayerNetworkManager {
           }
         }
         this.onWelcome?.(this.localPlayerId, roomState);
+        this.releaseRetained(roomState);
 
         if (roomState) {
           for (const [id, state] of Object.entries(roomState)) {
-            if (id !== this.localPlayerId) {
-              this.players.set(id, state);
-              if (this.onPlayerJoin) {
-                this.onPlayerJoin(id, state);
-              }
-            }
+            if (id === this.localPlayerId) continue;
+            // Players kept through a reconnect are updated in place instead of joining again.
+            const known = this.players.has(id);
+            this.players.set(id, state);
+            if (known) this.onPlayerUpdate?.(id, state);
+            else this.onPlayerJoin?.(id, state);
           }
         }
         break;
@@ -569,7 +589,7 @@ export class PlayerNetworkManager {
 
   setCallbacks(callbacks: {
     onConnect?: () => void;
-    onDisconnect?: () => void;
+    onDisconnect?: (info?: PlayerDisconnectInfo) => void;
     onWelcome?: (localPlayerId: string, roomState?: Record<string, PlayerState>) => void;
     onPlayerJoin?: (playerId: string, state: PlayerState) => void;
     onPlayerUpdate?: (playerId: string, state: PlayerState) => void;
@@ -602,12 +622,19 @@ export class PlayerNetworkManager {
   }
 
   private startPingLoop(): void {
+    this.lastPingSentAt = 0;
+    this.lastPongAt = 0;
     if (this.pingIntervalMs <= 0) return;
     this.stopPingLoop();
 
     this.pingTimer = setInterval(() => {
       const ws = this.ws;
       if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      // A server that answers pings but let the last one go a whole interval unanswered is half-open.
+      if (this.lastPongAt > 0 && this.lastPongAt < this.lastPingSentAt) {
+        this.abandonSocket(ws);
+        return;
+      }
       const ts = Date.now();
       this.lastPingSentAt = ts;
       try {
@@ -622,6 +649,49 @@ export class PlayerNetworkManager {
     if (!this.pingTimer) return;
     clearInterval(this.pingTimer);
     this.pingTimer = null;
+  }
+
+  /** Closing a half-open socket can take minutes, so it is detached and treated as closed now. */
+  private abandonSocket(ws: WebSocket): void {
+    this.warn('[PlayerNetworkManager] Pong timeout; reconnecting');
+    detachHandlers(ws);
+    try {
+      ws.close(PONG_TIMEOUT_CLOSE_CODE, 'pong timeout');
+    } catch {
+      // ignore
+    }
+    this.handleClosed(PONG_TIMEOUT_CLOSE_CODE);
+  }
+
+  private retainPlayers(): void {
+    for (const id of this.players.keys()) this.retainedIds.add(id);
+    if (this.retainTimer || this.retainedIds.size === 0) return;
+    this.retainTimer = setTimeout(() => {
+      this.retainTimer = null;
+      this.releaseRetained();
+    }, DISCONNECT_GRACE_MS);
+  }
+
+  /** Players kept through a reconnect leave unless the new room state still lists them. */
+  private releaseRetained(room?: Record<string, PlayerState>): void {
+    this.clearRetainTimer();
+    for (const id of this.retainedIds) {
+      if (room && Object.hasOwn(room, id) && id !== this.localPlayerId) continue;
+      if (this.players.delete(id)) this.onPlayerLeave?.(id);
+    }
+    this.retainedIds.clear();
+  }
+
+  private clearRetainTimer(): void {
+    if (!this.retainTimer) return;
+    clearTimeout(this.retainTimer);
+    this.retainTimer = null;
+  }
+
+  private clearPlayers(): void {
+    this.clearRetainTimer();
+    this.retainedIds.clear();
+    this.players.clear();
   }
 
   private clearUpdateFlushTimer(): void {
@@ -667,16 +737,19 @@ export class PlayerNetworkManager {
     }
   }
 
-  private tryReconnect(): void {
-    if (!this.shouldReconnect) return;
-    if (this.reconnectAttemptsMax <= 0) return;
-    if (this.reconnectAttemptsUsed >= this.reconnectAttemptsMax) return;
-    if (this.isConnecting) return;
+  /** Schedules the next attempt; returns false when this disconnect is final. */
+  private tryReconnect(): boolean {
+    if (!this.shouldReconnect) return false;
+    if (this.reconnectAttemptsMax <= 0) return false;
+    if (this.reconnectAttemptsUsed >= this.reconnectAttemptsMax) return false;
+    if (this.isConnecting) return false;
 
     const attempt = this.reconnectAttemptsUsed + 1;
-    // Exponential backoff, capped to keep UI responsive.
+    // Exponential backoff, capped to keep UI responsive. Jitter in [0.5, 1) spreads clients
+    // that lost the same server so they do not all return at once.
     const base = this.reconnectDelayMs || 0;
-    const delay = Math.min(30000, Math.floor(base * Math.pow(2, this.reconnectAttemptsUsed)));
+    const backoff = Math.min(MAX_RECONNECT_DELAY_MS, base * Math.pow(2, this.reconnectAttemptsUsed));
+    const delay = Math.floor(backoff * (0.5 + Math.random() * 0.5));
     this.reconnectAttemptsUsed = attempt;
 
     this.warn('[PlayerNetworkManager] Reconnecting...', { attempt, delay });
@@ -685,6 +758,7 @@ export class PlayerNetworkManager {
       if (!this.shouldReconnect) return;
       this.connect();
     }, delay);
+    return true;
   }
 
   private nextAckId(): string {
@@ -851,6 +925,14 @@ type AckMessage = {
 };
 
 type ServerMessage = WelcomeMessage | PlayerJoinedMessage | PlayerLeftMessage | PlayerUpdateMessage | ChatMessage | PongMessage | AckMessage;
+
+/** Late events from a socket we gave up on must not reach callbacks. */
+function detachHandlers(ws: WebSocket): void {
+  ws.onopen = null;
+  ws.onmessage = null;
+  ws.onerror = null;
+  ws.onclose = null;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);

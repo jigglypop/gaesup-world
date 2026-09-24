@@ -215,7 +215,18 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
           lastUpdate: Date.now()
         }));
       },
-      onDisconnect: () => {
+      onDisconnect: (info) => {
+        if (info?.reconnecting) {
+          // Remote avatars stay mounted through a short drop; the next Welcome reconciles them.
+          setState(prev => ({
+            ...prev,
+            isConnected: false,
+            connectionStatus: 'connecting',
+            localPlayerId: null,
+            lastUpdate: Date.now(),
+          }));
+          return;
+        }
         commitPlayers(new LivePlayerMap(), {
           isConnected: false,
           connectionStatus: 'disconnected',
