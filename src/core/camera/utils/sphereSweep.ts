@@ -12,6 +12,8 @@ const segmentBox = new Box3();
 const instanceMatrix = new Matrix4();
 const worldMatrix = new Matrix4();
 const morphProxies = new WeakMap<InstancedMesh, Mesh>();
+const boundsCenter = new Vector3();
+const segmentPoint = new Vector3();
 const batchRange = { vertexStart: 0, vertexCount: 0, reservedVertexCount: 0, indexStart: 0, indexCount: 0, reservedIndexCount: 0, start: 0, count: 0 };
 
 /** Reject static meshes before matrix inversion, raycast and triangle traversal.
@@ -66,6 +68,12 @@ export function sweepSphereBounds(mesh: Mesh, ray: Ray, radius: number, maxDista
   if (time < 0 || time > maxDistance) return Infinity;
   point.copy(ray.origin).addScaledVector(ray.direction, time);
   return time;
+}
+
+/** Whether a sphere comes within `reach` of the segment origin → origin + direction * maxDistance. */
+function segmentNearSphere(ray: Ray, maxDistance: number, sphereCenter: Vector3, reach: number): boolean {
+  const along = Math.min(Math.max(segmentPoint.subVectors(sphereCenter, ray.origin).dot(ray.direction), 0), maxDistance);
+  return segmentPoint.copy(ray.direction).multiplyScalar(along).add(ray.origin).distanceToSquared(sphereCenter) <= reach * reach;
 }
 
 function vertexTime(ray: Ray, vertex: Vector3, radius: number): number {
@@ -151,6 +159,8 @@ export function sweepSphereMesh(mesh: Mesh, ray: Ray, radius: number, maxDistanc
   }
   const animated = 'isSkinnedMesh' in mesh || Boolean(mesh.morphTargetInfluences?.length);
   if (!animated && !geometry.boundingBox) geometry.computeBoundingBox();
+  if (!animated && !geometry.boundingSphere) geometry.computeBoundingSphere();
+  const bounds = animated || instanced?.morphTexture ? null : geometry.boundingSphere;
   segmentBox.set(ray.origin, ray.origin).expandByPoint(center.copy(ray.origin).addScaledVector(ray.direction, maxDistance));
   let nearest = Infinity;
   const visit = (start: number, end: number) => {
@@ -186,8 +196,9 @@ export function sweepSphereMesh(mesh: Mesh, ray: Ray, radius: number, maxDistanc
       worldMatrix.multiplyMatrices(mesh.matrixWorld, instanceMatrix);
       if (instanced.morphTexture) instanced.getMorphAt(instance, vertices);
     } else worldMatrix.copy(mesh.matrixWorld);
-    if (!animated && !instanced?.morphTexture && geometry.boundingBox
-      && !box.copy(geometry.boundingBox).applyMatrix4(worldMatrix).expandByScalar(radius).intersectsBox(segmentBox)) continue;
+    // One matrix-vector product per instance; transforming eight box corners here dominated floor batches.
+    if (bounds && !segmentNearSphere(ray, maxDistance,
+      boundsCenter.copy(bounds.center).applyMatrix4(worldMatrix), bounds.radius * worldMatrix.getMaxScaleOnAxis() + radius)) continue;
     if (Array.isArray(mesh.material)) {
       for (const group of geometry.groups) {
         if (mesh.material[group.materialIndex ?? 0]) visit(Math.max(drawStart, group.start), Math.min(drawEnd, group.start + group.count));
