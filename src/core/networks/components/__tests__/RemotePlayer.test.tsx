@@ -3,7 +3,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
-import { frameScheduler } from '../../../runtime/frame';
+import { frameScheduler, getSharedFrameEntryCount } from '../../../runtime/frame';
 import type { PlayerState } from '../../types';
 import { RemotePlayer } from '../RemotePlayer';
 
@@ -340,6 +340,30 @@ describe('RemotePlayer', () => {
       expect(translation.x).toBeLessThan(5);
       expect(vectors).toHaveBeenCalledTimes(initialVectors);
       expect(quaternions).toHaveBeenCalledTimes(initialQuaternions);
+    } finally {
+      act(() => renderer?.unmount());
+    }
+  });
+
+  test('avatars share one frame entry and transform-only states never re-render the model', () => {
+    const avatars = (x: number, firstName = 'a') => ['a', 'b', 'c'].map((id) => (
+      <RemotePlayer
+        key={id}
+        playerId={id}
+        state={{ ...PLAYER_STATE, name: id === 'a' ? firstName : id, position: [x, 2, 3] }}
+        characterUrl="/shared.glb"
+      />
+    ));
+    let renderer: ReactTestRenderer | undefined;
+    try {
+      act(() => { renderer = create(<>{avatars(1)}</>); });
+      expect(frameScheduler.count('prePhysics')).toBe(1);
+      expect(getSharedFrameEntryCount(frameScheduler, { phase: 'prePhysics', label: 'network:remote-player' })).toBe(3);
+      const modelRenders = mockedUseGLTF.mock.calls.length;
+      for (let x = 2; x <= 21; x++) act(() => { renderer?.update(<>{avatars(x)}</>); });
+      expect(mockedUseGLTF).toHaveBeenCalledTimes(modelRenders);
+      act(() => { renderer?.update(<>{avatars(21, 'renamed')}</>); });
+      expect(mockedUseGLTF).toHaveBeenCalledTimes(modelRenders + 1);
     } finally {
       act(() => renderer?.unmount());
     }

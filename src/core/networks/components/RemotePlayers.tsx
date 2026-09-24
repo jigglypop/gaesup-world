@@ -2,9 +2,10 @@ import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore, type
 
 import type { RapierRigidBody } from '@react-three/rapier';
 
-import { RemotePlayer } from './RemotePlayer';
+import { RemoteAvatar } from './RemotePlayer';
 import { useEngineFrame } from '../../runtime/frame';
 import { isLivePlayerMap } from '../core/LivePlayerMap';
+import { createRemoteMotion, DEFAULT_REMOTE_VELOCITY_THRESHOLD, syncRemoteMotion } from '../core/remoteMotion';
 import type { MultiplayerConfig, PlayerState } from '../types';
 
 const PROXIMITY_SAMPLE_INTERVAL_FRAMES = 6;
@@ -61,27 +62,41 @@ const LiveRemotePlayer = React.memo(function LiveRemotePlayer({
   config,
   speechText,
 }: LiveRemotePlayerProps) {
+  const [motion] = useState(createRemoteMotion);
+  const threshold = config?.tracking?.velocityThreshold ?? DEFAULT_REMOTE_VELOCITY_THRESHOLD;
+  // Transforms go straight into the motion; React re-reads only for an appearance change or departure.
   const subscribe = useMemo(
-    () => (isLivePlayerMap(players) ? (listener: () => void) => players.subscribePlayer(playerId, listener) : noSubscription),
-    [players, playerId],
+    () => (isLivePlayerMap(players)
+      ? (onChange: () => void) => players.subscribePlayer(playerId, () => {
+        const state = players.get(playerId);
+        if (!state || syncRemoteMotion(motion, state, threshold)) onChange();
+      })
+      : noSubscription),
+    [players, playerId, motion, threshold],
   );
-  const read = () => players.get(playerId);
-  const state = useSyncExternalStore(subscribe, read, read);
-  if (!state) return null;
+  const read = () => {
+    const state = players.get(playerId);
+    if (!state) return null;
+    syncRemoteMotion(motion, state, threshold);
+    return motion.appearance;
+  };
+  const appearance = useSyncExternalStore(subscribe, read, read);
+  if (!appearance) return null;
   return (
-    <RemotePlayer
-      playerId={playerId}
-      state={state}
-      {...(characterUrl !== undefined ? { characterUrl } : {})}
-      {...(config !== undefined ? { config } : {})}
-      {...(speechText ? { speechText } : {})}
+    <RemoteAvatar
+      motion={motion}
+      appearance={appearance}
+      characterUrl={characterUrl}
+      config={config}
+      speechText={speechText}
     />
   );
 });
 
 /**
- * Mounts remote avatars inside the Canvas. Transform updates re-render only the moving avatar,
- * and proximity is sampled from the frame loop so the surrounding scene never re-renders for it.
+ * Mounts remote avatars inside the Canvas. Transform updates never render: they land in each
+ * avatar's motion and one shared frame channel moves the bodies. Proximity is sampled from the
+ * frame loop so the surrounding scene never re-renders for it.
  */
 export function RemotePlayers({
   players,

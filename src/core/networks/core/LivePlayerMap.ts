@@ -10,7 +10,7 @@ type Channel = {
 /**
  * Remote players keyed by id. The map identity changes only when players join or leave;
  * transform updates replace the entry in place and notify that player's subscribers only,
- * so a 20 Hz network stream re-renders one remote avatar instead of the whole scene tree.
+ * so a 20 Hz network stream never re-renders the scene tree around the avatars.
  * Copies made for membership changes share subscriptions and the latest published states.
  */
 export class LivePlayerMap extends Map<string, PlayerState> {
@@ -72,7 +72,8 @@ export class LivePlayerMap extends Map<string, PlayerState> {
   notify(id: string): void {
     const listeners = this.channel.listeners.get(id);
     if (!listeners) return;
-    for (const listener of [...listeners]) listener();
+    // Set iteration tolerates unsubscribes during the loop, so no per-message copy is needed.
+    for (const listener of listeners) listener();
   }
 }
 

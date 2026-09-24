@@ -1,13 +1,15 @@
-import type { RefObject } from 'react';
+import { Profiler, type RefObject } from 'react';
 
 import type { RapierRigidBody } from '@react-three/rapier';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import { act, renderHook } from '@testing-library/react';
 
+import type { RemoteAvatarProps } from '../components/RemotePlayer';
 import { RemotePlayers } from '../components/RemotePlayers';
 import { defaultMultiplayerConfig } from '../config/defaultConfig';
 import { LivePlayerMap } from '../core/LivePlayerMap';
 import { PlayerNetworkManager, type PlayerNetworkManagerOptions } from '../core/PlayerNetworkManager';
+import type { RemoteMotion } from '../core/remoteMotion';
 import { useMultiplayer } from '../hooks/useMultiplayer';
 import type { PlayerState } from '../types';
 
@@ -24,10 +26,12 @@ jest.mock('../core/PlayerNetworkManager', () => ({
 }));
 
 const remoteRenders: string[] = [];
+const motions = new Map<string, RemoteMotion>();
 jest.mock('../components/RemotePlayer', () => ({
-  RemotePlayer: ({ playerId, state }: { playerId: string; state: PlayerState }) => {
-    remoteRenders.push(playerId);
-    return <group name={`remote-${playerId}`} position={state.position} />;
+  RemoteAvatar: ({ motion, appearance }: RemoteAvatarProps) => {
+    remoteRenders.push(appearance.name);
+    motions.set(appearance.name, motion);
+    return <group name={`remote-${appearance.name}`} />;
   },
 }));
 
@@ -43,6 +47,7 @@ function lastManagerOptions(): PlayerNetworkManagerOptions {
 
 beforeEach(() => {
   remoteRenders.length = 0;
+  motions.clear();
   jest.mocked(PlayerNetworkManager).mockClear();
 });
 
@@ -165,20 +170,43 @@ describe('useMultiplayer remote state', () => {
 });
 
 describe('RemotePlayers', () => {
-  test('a transform update re-renders only the moving avatar', async () => {
-    const players = new LivePlayerMap([['a', player(0, 'a')], ['b', player(1, 'b')]]);
-    const renderer = await ReactThreeTestRenderer.create(<RemotePlayers players={players} />);
+  test('transform messages from 24 peers commit nothing; an appearance change renders only that avatar', async () => {
+    const ids = Array.from({ length: 24 }, (_, index) => `p${index}`);
+    const players = new LivePlayerMap(ids.map((id, index) => [id, player(index, id)]));
+    let commits = 0;
+    const renderer = await ReactThreeTestRenderer.create(
+      <Profiler id="remote-players" onRender={() => { commits++; }}>
+        <RemotePlayers players={players} />
+      </Profiler>,
+    );
     try {
-      expect(remoteRenders.sort()).toEqual(['a', 'b']);
+      expect(remoteRenders).toHaveLength(24);
       remoteRenders.length = 0;
+      commits = 0;
+
+      // One act per message, as each WebSocket message arrives in its own task. Speeds stay at a walk
+      // (at most the run threshold), so the derived animation stays idle.
+      for (let tick = 1; tick <= 5; tick++) {
+        for (const id of ids) {
+          await ReactThreeTestRenderer.act(async () => {
+            players.publish(id, { ...player(tick, id), rotation: [0, 0, 1, 0], velocity: [tick / 10, 0, 0] });
+          });
+        }
+      }
+      expect(commits).toBe(0);
+      expect(remoteRenders).toEqual([]);
+      const motion = motions.get('p3')!;
+      expect(motion.target.x).toBe(5);
+      expect(motion.velocity.x).toBe(0.5);
+      expect(motion.targetRotation.toArray()).toEqual([0, 1, 0, 0]);
 
       await ReactThreeTestRenderer.act(async () => {
-        players.publish('a', player(4, 'a'));
+        players.publish('p3', { ...player(6, 'p3'), animation: 'wave' });
       });
-
-      expect(remoteRenders).toEqual(['a']);
-      const moved = renderer.scene.findByProps({ name: 'remote-a' });
-      expect(moved.instance.position.x).toBe(4);
+      expect(commits).toBe(1);
+      expect(remoteRenders).toEqual(['p3']);
+      expect(motion.appearance.animation).toBe('wave');
+      expect(motion.target.x).toBe(6);
     } finally {
       await renderer.unmount();
     }

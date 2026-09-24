@@ -1,19 +1,25 @@
 import React, { Suspense, useCallback, useRef, useEffect, useMemo, useState } from 'react';
 
 import { useGLTF, useAnimations } from '@react-three/drei';
-import { useThree } from '@react-three/fiber';
 import { CapsuleCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import { Text } from '@/core/rendering/legacyDrei';
-import { useEngineFrame } from '@core/runtime/frame';
-import { weightFromDistance } from '@core/utils/sfe';
+import { useSharedFrame, type SharedFrameChannel } from '@core/runtime/frame';
 
 import { GaesupErrorBoundary } from '../../error';
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
 import { logger } from '../../utils/logger';
 import { isTrustedRemoteModelUrl } from '../core/remoteInputLimits';
+import {
+  createRemoteMotion,
+  DEFAULT_REMOTE_VELOCITY_THRESHOLD,
+  stepRemoteMotion,
+  syncRemoteMotion,
+  type RemoteAppearance,
+  type RemoteMotion,
+} from '../core/remoteMotion';
 import { PlayerState, MultiplayerConfig } from '../types';
 
 interface RemotePlayerProps {
@@ -25,8 +31,18 @@ interface RemotePlayerProps {
   allowedModelOrigins?: readonly string[];
 }
 
+export type RemoteAvatarProps = {
+  motion: RemoteMotion;
+  appearance: RemoteAppearance;
+  characterUrl?: string | undefined;
+  config?: MultiplayerConfig | undefined;
+  speechText?: string | undefined;
+  allowedModelOrigins?: readonly string[] | undefined;
+};
+
 type RemotePlayerContentProps = {
-  state: PlayerState;
+  motion: RemoteMotion;
+  appearance: RemoteAppearance;
   config: MultiplayerConfig | undefined;
   speechText: string | undefined;
   modelUrl: string;
@@ -37,81 +53,44 @@ type ColorableMaterial = THREE.Material & { color: THREE.Color };
 const REMOTE_MODEL_FALLBACK = <group name="remote-player-model-fallback" />;
 /** Remote avatars never block the camera or other ray probes, matching the local player. */
 const INTANGIBLE = { intangible: true };
+/** Every remote avatar interpolates inside this one scheduler entry. */
+const REMOTE_PLAYER_FRAME: SharedFrameChannel = { phase: 'prePhysics', label: 'network:remote-player' };
+const CAPSULE_ARGS: [number, number] = [0.5, 0.5];
+const CAPSULE_OFFSET: [number, number, number] = [0, 1.5, 0];
 
 function isColorableMaterial(material: THREE.Material): material is ColorableMaterial {
   return 'color' in material && material.color instanceof THREE.Color;
 }
 
-function RemotePlayerContent({ state, config, speechText, modelUrl }: RemotePlayerContentProps) {
-  const getThreeState = useThree((threeState) => threeState.get);
+function normalizeHexColor(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') return null;
+  const v = value.trim();
+  if (!v) return null;
+  const withHash = v.startsWith('#') ? v : `#${v}`;
+  // Accept #RGB and #RRGGBB
+  if (/^#[0-9a-fA-F]{3}$/.test(withHash)) return withHash;
+  if (/^#[0-9a-fA-F]{6}$/.test(withHash)) return withHash;
+  return null;
+}
+
+/** Kinematic bodies are driven through the next-kinematic setters, never through props. */
+function placeBody(body: RapierRigidBody, motion: RemoteMotion): void {
+  body.setNextKinematicTranslation(motion.position);
+  body.setNextKinematicRotation(motion.rotation);
+}
+
+const RemotePlayerContent = React.memo(function RemotePlayerContent({
+  motion,
+  appearance,
+  config,
+  speechText,
+  modelUrl,
+}: RemotePlayerContentProps) {
   const bodyRef = useRef<RapierRigidBody | null>(null);
   const meshRef = useRef<THREE.Group | null>(null);
   const animationRootRef = useRef<THREE.Group | null>(null);
-  const initialPosition = useRef<[number, number, number] | null>(null);
-  if (!initialPosition.current) {
-    initialPosition.current = [state.position[0], state.position[1], state.position[2]];
-  }
-  
-  const [{
-    targetPosition,
-    targetRotation,
-    currentVelocity,
-    tmpPos,
-    tmpRot,
-    predictedPos,
-    smoothPos,
-    smoothVel,
-    smoothRot,
-    sdChange,
-    sdTemp,
-    sdOrigTo,
-    sdAdjustedTarget,
-    sdV1,
-    sdV2,
-    speechPos,
-    nextTranslation,
-    nextRotation,
-  }] = useState(() => ({
-    targetPosition: new THREE.Vector3(),
-    targetRotation: new THREE.Quaternion(),
-    currentVelocity: new THREE.Vector3(),
-    tmpPos: new THREE.Vector3(),
-    tmpRot: new THREE.Quaternion(),
-    predictedPos: new THREE.Vector3(),
-    smoothPos: new THREE.Vector3(),
-    smoothVel: new THREE.Vector3(),
-    smoothRot: new THREE.Quaternion(),
-    sdChange: new THREE.Vector3(),
-    sdTemp: new THREE.Vector3(),
-    sdOrigTo: new THREE.Vector3(),
-    sdAdjustedTarget: new THREE.Vector3(),
-    sdV1: new THREE.Vector3(),
-    sdV2: new THREE.Vector3(),
-    speechPos: new THREE.Vector3(),
-    nextTranslation: { x: 0, y: 0, z: 0 },
-    nextRotation: { x: 0, y: 0, z: 0, w: 1 },
-  }));
-
-  const lastNetUpdateAt = useRef<number>(performance.now());
-
-  // Critically-damped smoothing state (stable across FPS).
-  const smoothInit = useRef(false);
-
-  // LOD/throttle state (SFE-style suppression w = exp(-sigma(distance))).
-  const lodAccum = useRef<number>(0);
-  const lodInterval = useRef<number>(0);
-  
-  const normalizeHexColor = (value: string | null | undefined): string | null => {
-    if (typeof value !== 'string') return null;
-    const v = value.trim();
-    if (!v) return null;
-    const withHash = v.startsWith('#') ? v : `#${v}`;
-    // Accept #RGB and #RRGGBB
-    if (/^#[0-9a-fA-F]{3}$/.test(withHash)) return withHash;
-    if (/^#[0-9a-fA-F]{6}$/.test(withHash)) return withHash;
-    return null;
-  };
-  const playerColor = useMemo(() => normalizeHexColor(state.color), [state.color]);
+  const [initialPosition] = useState((): [number, number, number] => [motion.position.x, motion.position.y, motion.position.z]);
+  const playerColor = useMemo(() => normalizeHexColor(appearance.color), [appearance.color]);
   
   // 설정값 가져오기
   const interpolationSpeed = config?.tracking?.interpolationSpeed || 0.15;
@@ -209,72 +188,12 @@ function RemotePlayerContent({ state, config, speechText, modelUrl }: RemotePlay
     return keys[0] ? (actions[keys[0]] ?? null) : null;
   };
 
-  const smoothDampVec3 = (
-    current: THREE.Vector3,
-    target: THREE.Vector3,
-    currentVelocity: THREE.Vector3,
-    smoothTime: number,
-    maxSpeed: number,
-    deltaTime: number,
-    out: THREE.Vector3,
-  ): void => {
-    // Port of Unity's SmoothDamp (critically damped spring), adapted for Vector3.
-    const st = Math.max(0.0001, smoothTime);
-    const dt = Math.max(0, deltaTime);
-    const omega = 2 / st;
-    const x = omega * dt;
-    const exp = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
-
-    sdOrigTo.copy(target);
-    sdChange.copy(current).sub(target);
-
-    // Clamp maximum change (prevents extreme overshoot after long stalls).
-    const maxChange = maxSpeed * st;
-    const changeLen = sdChange.length();
-    if (changeLen > maxChange && changeLen > 0) {
-      sdChange.multiplyScalar(maxChange / changeLen);
-    }
-
-    sdAdjustedTarget.copy(current).sub(sdChange);
-
-    // Integrate velocity.
-    // temp = (currentVelocity + omega * change) * dt
-    sdTemp.copy(currentVelocity).addScaledVector(sdChange, omega).multiplyScalar(dt);
-    // currentVelocity = (currentVelocity - omega * temp) * exp
-    currentVelocity.addScaledVector(sdTemp, -omega).multiplyScalar(exp);
-
-    // out = adjustedTarget + (change + temp) * exp
-    out.copy(sdChange).add(sdTemp).multiplyScalar(exp).add(sdAdjustedTarget);
-
-    // Prevent overshooting the target.
-    sdV1.copy(sdOrigTo).sub(current);
-    sdV2.copy(out).sub(sdOrigTo);
-    if (sdV1.dot(sdV2) > 0) {
-      out.copy(sdOrigTo);
-      currentVelocity.set(0, 0, 0);
-    }
-  };
-  
   // 애니메이션 업데이트 (stop-all 금지: 끊김/튐 원인)
   useEffect(() => {
     if (!actions) return;
 
-    const base = config?.tracking?.velocityThreshold ?? 0.5;
-    const runThreshold = base;
-    const idleThreshold = base * 0.6;
     const minSwitchMs = 180;
-
-    const speed = state.velocity
-      ? Math.hypot(state.velocity[0], state.velocity[1], state.velocity[2])
-      : currentVelocity.length();
-
-    const requested = state.animation?.trim();
-    const fallback =
-      (currentAnimRef.current ?? 'idle') === 'run'
-        ? (speed < idleThreshold ? 'idle' : 'run')
-        : (speed > runThreshold ? 'run' : 'idle');
-
-    const nextName = (requested && requested.length > 0 ? requested : fallback) || 'idle';
+    const nextName = appearance.animation || 'idle';
     if (currentAnimRef.current === nextName) return;
 
     const next = pickAction(nextName);
@@ -304,147 +223,20 @@ function RemotePlayerContent({ state, config, speechText, modelUrl }: RemotePlay
     }
     const timer = setTimeout(play, delay);
     return () => clearTimeout(timer);
-  }, [actions, state.animation, state.velocity, config?.tracking?.velocityThreshold]);
+  }, [actions, appearance.animation]);
 
-  // 상태 업데이트 시 목표값 설정
+  // The first network state already placed the motion; snap the new body there.
   useEffect(() => {
-    lastNetUpdateAt.current = performance.now();
-    targetPosition.set(
-      state.position[0],
-      state.position[1], 
-      state.position[2]
-    );
-    speechPos.set(state.position[0], state.position[1], state.position[2]);
-    const [w, x, y, z] = state.rotation;
-    targetRotation.set(x, y, z, w);
-
-    // First network state: snap smoothing state to avoid "slide from origin".
-    if (!smoothInit.current && bodyRef.current) {
-      const p = targetPosition;
-      smoothInit.current = true;
-      smoothPos.copy(p);
-      smoothVel.set(0, 0, 0);
-      smoothRot.copy(targetRotation);
-
-      const body = bodyRef.current;
-      const t = nextTranslation;
-      t.x = p.x;
-      t.y = p.y;
-      t.z = p.z;
-      body.setNextKinematicTranslation(t);
-
-      const q = nextRotation;
-      q.x = targetRotation.x;
-      q.y = targetRotation.y;
-      q.z = targetRotation.z;
-      q.w = targetRotation.w;
-      body.setNextKinematicRotation(q);
-    }
-    
-    // 속도 업데이트
-    if (state.velocity) {
-      currentVelocity.set(
-        state.velocity[0],
-        state.velocity[1],
-        state.velocity[2]
-      );
-    }
-  }, [state.position, state.rotation, state.velocity]);
-
-  // 부드러운 보간
-  useEngineFrame('prePhysics', (delta) => {
-    if (!bodyRef.current || !meshRef.current) return;
-
-    // Distance-based throttling: far objects update less frequently.
-    // Use the last chosen interval for early returns to avoid doing distance math every frame.
-    const currentInterval = lodInterval.current;
-    lodAccum.current += Math.max(0, delta);
-    if (lodAccum.current < currentInterval) return;
-    const elapsed = lodAccum.current;
-    lodAccum.current = 0;
-
-    // Update the interval at the same cadence as the simulation update.
-    const approx = smoothInit.current ? smoothPos : targetPosition;
-    const cameraDist = getThreeState().camera.position.distanceTo(approx);
-    const w = smoothInit.current ? weightFromDistance(cameraDist, 25, 140, 4) : 1;
-    lodInterval.current =
-      w >= 0.7
-        ? 0
-        : w >= 0.4
-        ? 1 / 30
-        : w >= 0.2
-        ? 1 / 15
-        : 1 / 8;
-
-    // Short prediction to hide network jitter (up to 120ms).
-    const sinceNet = (performance.now() - lastNetUpdateAt.current) / 1000;
-    const predictT = Math.max(0, Math.min(0.12, sinceNet));
-    predictedPos.copy(targetPosition).addScaledVector(currentVelocity, predictT);
-
-    // Initialize smoothing state from current body transform.
-    if (!smoothInit.current) {
-      // Only query Rapier transforms when we actually need them; translation()/rotation()
-      // allocate in the JS/WASM boundary on some builds.
-      const pos = bodyRef.current.translation();
-      const rot = bodyRef.current.rotation();
-      smoothInit.current = true;
-      smoothPos.set(pos.x, pos.y, pos.z);
-      smoothVel.set(0, 0, 0);
-      smoothRot.set(rot.x, rot.y, rot.z, rot.w);
-    }
-
-    // Smooth time mapping: higher interpolationSpeed => shorter time constant.
-    const base = Math.max(0.01, Math.min(0.9, interpolationSpeed));
-    const smoothTime = Math.max(0.03, Math.min(0.22, 0.03 + (1 - base) * 0.19));
-    const maxSpeed = 120; // world units/sec; effectively "no clamp" but avoids blow-ups on stalls.
-
-    // Snap if far behind (teleports / missed packets / long frame stall).
-    const dist = smoothPos.distanceTo(predictedPos);
-    if (dist > 10 || elapsed > 0.25) {
-      smoothPos.copy(predictedPos);
-      smoothVel.set(0, 0, 0);
-      smoothRot.copy(targetRotation);
-    } else {
-      smoothDampVec3(
-        smoothPos,
-        predictedPos,
-        smoothVel,
-        smoothTime,
-        maxSpeed,
-        elapsed,
-        tmpPos,
-      );
-      smoothPos.copy(tmpPos);
-
-      // Rotation uses exponential smoothing (stable across FPS).
-      const rotTime = Math.max(0.025, smoothTime * 0.7);
-      const rotAlpha = 1 - Math.exp(-elapsed / rotTime);
-      tmpRot.copy(smoothRot).slerp(targetRotation, rotAlpha);
-      smoothRot.copy(tmpRot);
-    }
-
-    // Keep speech position tracking the smoothed body position (no rerender needed).
-    speechPos.copy(smoothPos);
-
-    // RigidBody 업데이트
-    // Rapier kinematic bodies should be driven via "next kinematic" setters.
     const body = bodyRef.current;
+    if (body) placeBody(body, motion);
+  }, [motion]);
 
-    const t = nextTranslation;
-    t.x = smoothPos.x;
-    t.y = smoothPos.y;
-    t.z = smoothPos.z;
-    body.setNextKinematicTranslation(t);
-
-    const q = nextRotation;
-    q.x = smoothRot.x;
-    q.y = smoothRot.y;
-    q.z = smoothRot.z;
-    q.w = smoothRot.w;
-    body.setNextKinematicRotation(q);
-    
-    // Animation switching is handled in the effect above (with hysteresis).
-  }, { label: 'network:remote-player' });
+  // 부드러운 보간: network messages only write targets; the pose moves here, never through React.
+  useSharedFrame(REMOTE_PLAYER_FRAME, (delta, _elapsedSeconds, three) => {
+    const body = bodyRef.current;
+    if (!body || !meshRef.current) return;
+    if (stepRemoteMotion(motion, delta, three.camera.position, interpolationSpeed)) placeBody(body, motion);
+  });
 
   return (
     <group userData={INTANGIBLE}>
@@ -453,10 +245,10 @@ function RemotePlayerContent({ state, config, speechText, modelUrl }: RemotePlay
         type="kinematicPosition"
         // Important: do NOT bind position to network state.
         // Kinematic bodies are driven by setNextKinematicTranslation/Rotation in the frame loop.
-        position={initialPosition.current ?? undefined}
+        position={initialPosition}
         colliders={false}
       >
-        <CapsuleCollider args={[0.5, 0.5]} position={[0, 1.5, 0]} />
+        <CapsuleCollider args={CAPSULE_ARGS} position={CAPSULE_OFFSET} />
         <group ref={meshRef}>
           <group ref={animationRootRef} scale={[characterScale, characterScale, characterScale]}>
             <primitive object={clone} />
@@ -473,7 +265,7 @@ function RemotePlayerContent({ state, config, speechText, modelUrl }: RemotePlay
           outlineWidth={0.05}
           outlineColor="black"
         >
-          {state.name}
+          {appearance.name}
         </Text>
       </RigidBody>
 
@@ -481,22 +273,24 @@ function RemotePlayerContent({ state, config, speechText, modelUrl }: RemotePlay
       {speechText ? (
         <SpeechBalloon
           text={speechText}
-          position={speechPos}
+          position={motion.position}
         />
       ) : null}
     </group>
   );
-}
+});
 
-export const RemotePlayer = React.memo(function RemotePlayer({
-  state,
+/** One avatar driven by a motion its owner keeps current; renders again only when its props change. */
+export const RemoteAvatar = React.memo(function RemoteAvatar({
+  motion,
+  appearance,
   characterUrl,
   config,
   speechText,
   allowedModelOrigins,
-}: RemotePlayerProps) {
+}: RemoteAvatarProps) {
   const remoteModelUrl =
-    state.modelUrl && isTrustedRemoteModelUrl(state.modelUrl, allowedModelOrigins) ? state.modelUrl : '';
+    appearance.modelUrl && isTrustedRemoteModelUrl(appearance.modelUrl, allowedModelOrigins) ? appearance.modelUrl : '';
   const modelUrl = characterUrl || remoteModelUrl;
   const handleModelError = useCallback((error: Error) => {
     logger.warn(`[RemotePlayer] model failed to load: ${modelUrl}`, error);
@@ -508,12 +302,35 @@ export const RemotePlayer = React.memo(function RemotePlayer({
     <GaesupErrorBoundary key={modelUrl} fallback={REMOTE_MODEL_FALLBACK} onError={handleModelError}>
       <Suspense fallback={null}>
         <RemotePlayerContent
-          state={state}
+          motion={motion}
+          appearance={appearance}
           config={config}
           speechText={speechText}
           modelUrl={modelUrl}
         />
       </Suspense>
     </GaesupErrorBoundary>
+  );
+});
+
+export const RemotePlayer = React.memo(function RemotePlayer({
+  state,
+  characterUrl,
+  config,
+  speechText,
+  allowedModelOrigins,
+}: RemotePlayerProps) {
+  const [motion] = useState(createRemoteMotion);
+  // Each new state lands in the motion; the avatar below re-renders only when its appearance changes.
+  syncRemoteMotion(motion, state, config?.tracking?.velocityThreshold ?? DEFAULT_REMOTE_VELOCITY_THRESHOLD);
+  return (
+    <RemoteAvatar
+      motion={motion}
+      appearance={motion.appearance}
+      characterUrl={characterUrl}
+      config={config}
+      speechText={speechText}
+      allowedModelOrigins={allowedModelOrigins}
+    />
   );
 });
