@@ -72,7 +72,7 @@ function loadBladeTexture(url: string, fallbackUrl: string, fallbackTexture: THR
   return load(url).catch(() => (url === fallbackUrl ? fallbackTexture : load(fallbackUrl).catch(() => fallbackTexture)));
 }
 
-function getGroundMaterial(toon: boolean): THREE.Material {
+export function getGrassGroundMaterial(toon: boolean): THREE.Material {
   if (toon) {
     if (!_grassGroundToon) {
       _grassGroundToon = createToonMaterial({
@@ -159,7 +159,18 @@ function paintGround(geometry: THREE.BufferGeometry, baseColor: THREE.Color, acc
   geometry.computeVertexNormals();
 }
 
-/** One indexed geometry with a ground patch under every cell, so a chunk's ground is a single draw. */
+/** Noise-lifted, vertex-colored meadow ground under the given cells as one indexed geometry (one draw). */
+export function createGrassGround(
+  cells: ReadonlyArray<readonly [number, number, number?]>,
+  cellSize: number,
+  groundColor?: string,
+  groundAccentColor?: string,
+): THREE.BufferGeometry {
+  const geometry = createCellGround(cells, cellSize);
+  paintGround(geometry, new THREE.Color(groundColor ?? GROUND_LIGHT), new THREE.Color(groundAccentColor ?? GROUND_ACCENT));
+  return geometry;
+}
+
 function createCellGround(cells: ReadonlyArray<readonly [number, number, number?]>, cellSize: number): THREE.BufferGeometry {
   const segments = Math.max(2, Math.min(16, Math.round(cellSize * 1.5)));
   const plane = new THREE.PlaneGeometry(cellSize, cellSize, segments, segments).rotateX(-Math.PI / 2);
@@ -387,7 +398,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
     }, [instances, density, width, maxInstances, instanceScale, cells, cellSize]);
     const maxCellHeight = useMemo(() => cells?.reduce((max, cell) => Math.max(max, Math.abs(cell[2] ?? 0)), 0) ?? 0, [cells]);
     const useToon = toon ?? getDefaultToonMode();
-    const groundMat = getGroundMaterial(useToon);
+    const groundMat = getGrassGroundMaterial(useToon);
     const baseGroundColor = useMemo(() => new THREE.Color(groundColor ?? GROUND_LIGHT), [groundColor]);
     const accentGroundColor = useMemo(() => new THREE.Color(groundAccentColor ?? GROUND_ACCENT), [groundAccentColor]);
     const tipBladeColor = useMemo(
@@ -442,8 +453,9 @@ const GrassContent: FC<GrassMeshProps> = memo(
       [resolvedInstances, width, wasmModule, cells, cellSize],
     );
 
-    const [baseGeom, groundGeo] = useMemo(() => {
-      const bg = new THREE.PlaneGeometry(bW, bH, 1, joints).translate(0, bH / 2, 0);
+    const baseGeom = useMemo(() => new THREE.PlaneGeometry(bW, bH, 1, joints).translate(0, bH / 2, 0), [bH, bW, joints]);
+    const groundGeo = useMemo(() => {
+      if (!ground) return null;
       // Ground tessellation must scale with width so the noise-driven elevation
       // stays smooth on big tiles instead of degenerating into flat quads.
       const groundSegs = Math.max(8, Math.min(128, Math.round(width * 1.5)));
@@ -451,14 +463,10 @@ const GrassContent: FC<GrassMeshProps> = memo(
         ? createCellGround(cells, cellSize)
         : new THREE.PlaneGeometry(width, width, groundSegs, groundSegs).rotateX(-Math.PI / 2);
       paintGround(gg, baseGroundColor, accentGroundColor);
-      return [bg, gg];
-    }, [accentGroundColor, bW, bH, baseGroundColor, joints, width, cells, cellSize]);
-    useEffect(() => {
-      return () => {
-        baseGeom.dispose();
-        groundGeo.dispose();
-      };
-    }, [baseGeom, groundGeo]);
+      return gg;
+    }, [accentGroundColor, baseGroundColor, width, cells, cellSize, ground]);
+    useEffect(() => () => baseGeom.dispose(), [baseGeom]);
+    useEffect(() => () => groundGeo?.dispose(), [groundGeo]);
 
     useEffect(() => {
       const geo = geometryRef.current;
@@ -574,7 +582,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
           />}
           {!useNodes && <GrassDepthMaterial source={materialRef} />}
         </mesh>
-        {ground && <mesh
+        {groundGeo && <mesh
           position={[0, 0, 0]}
           material={groundMat}
           receiveShadow
