@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useMailStore, type MailStore } from './stores/mailStore';
+import { useMailStore, type MailStore, MAIL_STORE_SERVICE } from './stores/mailStore';
 import type { MailSerialized } from './types';
 
 export interface MailPluginOptions {
@@ -27,7 +27,7 @@ export function createMailPlugin(options: MailPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useMailStore,
-    resolveStore: context => context.services.get<MailStore>('gaesup.runtime.mail-store') ?? useMailStore,
+    resolveStore: context => context.services.get(MAIL_STORE_SERVICE) ?? useMailStore,
     readyEvent: 'mail:ready',
     capabilities: ['mail'],
     serialize: serializeMailState,

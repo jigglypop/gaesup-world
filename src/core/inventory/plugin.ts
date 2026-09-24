@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useInventoryStore, type InventoryStore } from './stores/inventoryStore';
+import { useInventoryStore, type InventoryStore, INVENTORY_STORE_SERVICE } from './stores/inventoryStore';
 import type { InventorySerialized } from './types';
 
 export interface InventoryPluginOptions {
@@ -27,7 +27,7 @@ export function createInventoryPlugin(options: InventoryPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useInventoryStore,
-    resolveStore: ctx => ctx.services.get<InventoryStore>('gaesup.runtime.inventory-store') ?? useInventoryStore,
+    resolveStore: ctx => ctx.services.get(INVENTORY_STORE_SERVICE) ?? useInventoryStore,
     readyEvent: 'inventory:ready',
     capabilities: ['inventory'],
     serialize: serializeInventoryState,

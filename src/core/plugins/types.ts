@@ -1,3 +1,5 @@
+import type { ServiceKey } from './serviceKey';
+
 export type PluginRuntime = 'client' | 'server' | 'both' | 'editor';
 
 export type PluginStatus =
@@ -64,14 +66,17 @@ export type KnownExtensionId<TMap extends object> = Extract<keyof TMap, string>;
 
 export interface ExtensionRegistry<TValue = unknown, TMap extends object = Record<never, never>> {
   register<TId extends KnownExtensionId<TMap>>(id: TId, value: TMap[TId], pluginId?: string): void;
+  register<TKeyed>(key: ServiceKey<TKeyed>, value: TKeyed, pluginId?: string): void;
   register<TId extends string>(
     id: TId,
     value: TId extends KnownExtensionId<TMap> ? never : TValue,
     pluginId?: string,
   ): void;
   get<TId extends KnownExtensionId<TMap>>(id: TId): TMap[TId] | undefined;
+  get<TKeyed>(key: ServiceKey<TKeyed>): TKeyed | undefined;
   get<TResolved extends TValue = TValue>(id: string): TResolved | undefined;
   require<TId extends KnownExtensionId<TMap>>(id: TId): TMap[TId];
+  require<TKeyed>(key: ServiceKey<TKeyed>): TKeyed;
   require<TResolved extends TValue = TValue>(id: string): TResolved;
   has(id: string): boolean;
   remove(id: string): boolean;

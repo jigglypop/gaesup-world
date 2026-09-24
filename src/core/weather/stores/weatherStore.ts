@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { createScopedStoreHook } from '../../stores/scopedStore';
 import type { WeatherEntry, WeatherKind, WeatherSerialized } from '../types';
@@ -111,6 +112,7 @@ export function createWeatherStore() {
 }
 
 export type WeatherStore = ReturnType<typeof createWeatherStore>;
+export const WEATHER_STORE_SERVICE = runtimeStoreServiceKey<WeatherStore>('weather');
 export const { useStore: useWeatherStore, useStoreApi: useWeatherStoreApi } = createScopedStoreHook(
   createWeatherStore(), () => useGaesupRuntime()?.weatherStore,
 );

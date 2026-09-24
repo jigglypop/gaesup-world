@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useTownStore, type TownStore } from './stores/townStore';
+import { useTownStore, type TownStore, TOWN_STORE_SERVICE } from './stores/townStore';
 import type { TownSerialized } from './types';
 
 export interface TownPluginOptions {
@@ -27,7 +27,7 @@ export function createTownPlugin(options: TownPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useTownStore,
-    resolveStore: context => context.services.get<TownStore>('gaesup.runtime.town-store') ?? useTownStore,
+    resolveStore: context => context.services.get(TOWN_STORE_SERVICE) ?? useTownStore,
     readyEvent: 'town:ready',
     capabilities: ['town'],
     serialize: serializeTownState,

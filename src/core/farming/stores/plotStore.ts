@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { createScopedStoreHook } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
@@ -216,6 +217,7 @@ export function createPlotStore(inventoryStore: InventoryStore) {
 }
 
 export type PlotStore = ReturnType<typeof createPlotStore>;
+export const FARMING_STORE_SERVICE = runtimeStoreServiceKey<PlotStore>('farming');
 export const { useStore: usePlotStore, useStoreApi: usePlotStoreApi } = createScopedStoreHook(
   createPlotStore(useInventoryStore), () => useGaesupRuntime()?.plotStore,
 );

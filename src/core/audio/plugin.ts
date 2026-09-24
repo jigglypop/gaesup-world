@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin, type GaesupPlugin } from '../plugins';
-import { useAudioStore, type AudioStore } from './stores/audioStore';
+import { useAudioStore, type AudioStore, AUDIO_STORE_SERVICE } from './stores/audioStore';
 import type { AudioSerialized } from './types';
 
 export type AudioPluginOptions = {
@@ -10,7 +10,6 @@ export type AudioPluginOptions = {
 
 const DEFAULT_PLUGIN_ID = 'gaesup.audio';
 const DEFAULT_SAVE_EXTENSION_ID = 'audio';
-const RUNTIME_STORE_SERVICE_ID = 'gaesup.runtime.audio-store';
 const DEFAULT_STORE_SERVICE_ID = 'audio.store';
 
 export function serializeAudioState(store: AudioStore = useAudioStore): AudioSerialized {
@@ -30,7 +29,7 @@ export function createAudioPlugin(options: AudioPluginOptions = {}): GaesupPlugi
     store: useAudioStore,
     readyEvent: 'audio:ready',
     capabilities: ['audio'],
-    resolveStore: (ctx) => ctx.services.get<AudioStore>(RUNTIME_STORE_SERVICE_ID) ?? useAudioStore,
+    resolveStore: (ctx) => ctx.services.get<AudioStore>(AUDIO_STORE_SERVICE) ?? useAudioStore,
     serialize: serializeAudioState,
     hydrate: hydrateAudioState,
     prepareHydrate: (data, store) => store.getState().prepareHydrate(data),

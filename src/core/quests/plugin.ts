@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useQuestStore, type QuestStore } from './stores/questStore';
+import { useQuestStore, type QuestStore, QUESTS_STORE_SERVICE } from './stores/questStore';
 import type { QuestSerialized } from './types';
 
 export interface QuestsPluginOptions {
@@ -27,7 +27,7 @@ export function createQuestsPlugin(options: QuestsPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useQuestStore,
-    resolveStore: ctx => ctx.services.get<QuestStore>('gaesup.runtime.quests-store') ?? useQuestStore,
+    resolveStore: ctx => ctx.services.get(QUESTS_STORE_SERVICE) ?? useQuestStore,
     readyEvent: 'quests:ready',
     capabilities: ['quests'],
     serialize: serializeQuestsState,

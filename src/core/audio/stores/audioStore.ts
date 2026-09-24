@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { createScopedStoreHook } from '../../stores/scopedStore';
 import { createAudioEngine, getAudioEngine, type AudioEngine } from '../core/AudioEngine';
@@ -114,6 +115,7 @@ return create<State>((set, get) => ({
 }
 
 export type AudioStore = ReturnType<typeof createAudioStore>;
+export const AUDIO_STORE_SERVICE = runtimeStoreServiceKey<AudioStore>('audio');
 export const { useStore: useAudioStore, useStoreApi: useAudioStoreApi } = createScopedStoreHook(
   createAudioStore(getAudioEngine()), () => useGaesupRuntime()?.audioStore,
 );

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import type { ItemId } from '../../items/types';
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { createScopedStoreHook } from '../../stores/scopedStore';
 import {
@@ -215,6 +216,7 @@ export function createInventoryStore() {
 }
 
 export type InventoryStore = ReturnType<typeof createInventoryStore>;
+export const INVENTORY_STORE_SERVICE = runtimeStoreServiceKey<InventoryStore>('inventory');
 export const { useStore: useInventoryStore, useStoreApi: useInventoryStoreApi } = createScopedStoreHook(
   createInventoryStore(), () => useGaesupRuntime()?.inventoryStore,
 );

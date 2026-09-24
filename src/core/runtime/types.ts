@@ -39,6 +39,7 @@ import type { NPCSimulation } from '../npc/core/NPCSimulation';
 import type { ReinforcementAdapter } from '../npc/core/reinforcement';
 import type { NPCStoreApi } from '../npc/stores/npcStore';
 import type { GaesupPlugin, PluginLogger, PluginRegistry, PluginRuntimeTarget } from '../plugins';
+import type { ServiceKey } from '../plugins/serviceKey';
 import type { QuestStore } from '../quests/stores/questStore';
 import type { FriendshipStore } from '../relations/stores/friendshipStore';
 import type { DomainBinding, SaveSystem, SaveSystemOptions, SerializedDomainValue } from '../save';
@@ -140,8 +141,8 @@ export type GaesupRuntime = {
   save: SaveSystem;
   saveDiagnostics: RuntimeSaveDiagnosticsService;
   loadAssets: () => Promise<void>;
-  getService: <TService = unknown>(id: string) => TService | undefined;
-  requireService: <TService = unknown>(id: string) => TService;
+  getService: <TService = unknown>(id: string | ServiceKey<TService>) => TService | undefined;
+  requireService: <TService = unknown>(id: string | ServiceKey<TService>) => TService;
   setup: () => Promise<void>;
   dispose: () => Promise<void>;
 };

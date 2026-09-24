@@ -4,6 +4,7 @@ import { useWalletStore, type WalletStore } from './walletStore';
 import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import type { ItemId } from '../../items/types';
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { createScopedStoreHook } from '../../stores/scopedStore';
 import type { ShopOffer, ShopSerialized } from '../types';
@@ -170,6 +171,7 @@ export function createShopStore(inventoryStore: InventoryStore, walletStore: Wal
 }
 
 export type ShopStore = ReturnType<typeof createShopStore>;
+export const SHOP_STORE_SERVICE = runtimeStoreServiceKey<ShopStore>('shop');
 export const { useStore: useShopStore, useStoreApi: useShopStoreApi } = createScopedStoreHook(
   createShopStore(useInventoryStore, useWalletStore), () => useGaesupRuntime()?.shopStore,
 );

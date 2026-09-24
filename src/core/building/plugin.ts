@@ -8,7 +8,7 @@ import {
   tileToPlacementEntry,
   wallToPlacementEntry,
 } from './model';
-import { useBuildingStore, type BuildingStoreApi } from './stores/buildingStore';
+import { useBuildingStore, BUILDING_STORE_SERVICE } from './stores/buildingStore';
 import type { BuildingSerializedState } from './types';
 
 export interface BuildingPlacementExtension {
@@ -65,7 +65,7 @@ export function createBuildingPlugin(options: BuildingPluginOptions = {}): Gaesu
   const storeServiceId = options.storeServiceId ?? DEFAULT_BUILDING_STORE_SERVICE_ID;
 
   const register = (ctx: PluginContext): void => {
-    const store = ctx.services.get<BuildingStoreApi>('gaesup.runtime.building-store') ?? useBuildingStore;
+    const store = ctx.services.get(BUILDING_STORE_SERVICE) ?? useBuildingStore;
     ctx.grid.register(gridExtensionId, buildingGridAdapter, pluginId);
     ctx.placement.register(
       placementExtensionId,

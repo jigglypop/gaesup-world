@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin, type GaesupPlugin } from '../plugins';
-import { useWeatherStore, type WeatherStore } from './stores/weatherStore';
+import { useWeatherStore, type WeatherStore, WEATHER_STORE_SERVICE } from './stores/weatherStore';
 import type { WeatherSerialized } from './types';
 
 export type WeatherPluginOptions = {
@@ -10,7 +10,6 @@ export type WeatherPluginOptions = {
 
 const DEFAULT_PLUGIN_ID = 'gaesup.weather';
 const DEFAULT_SAVE_EXTENSION_ID = 'weather';
-const RUNTIME_STORE_SERVICE_ID = 'gaesup.runtime.weather-store';
 const DEFAULT_STORE_SERVICE_ID = 'weather.store';
 
 export function serializeWeatherState(store: WeatherStore = useWeatherStore): WeatherSerialized {
@@ -30,7 +29,7 @@ export function createWeatherPlugin(options: WeatherPluginOptions = {}): GaesupP
     store: useWeatherStore,
     readyEvent: 'weather:ready',
     capabilities: ['weather'],
-    resolveStore: (ctx) => ctx.services.get<WeatherStore>(RUNTIME_STORE_SERVICE_ID) ?? useWeatherStore,
+    resolveStore: (ctx) => ctx.services.get<WeatherStore>(WEATHER_STORE_SERVICE) ?? useWeatherStore,
     serialize: serializeWeatherState,
     hydrate: hydrateWeatherState,
     prepareHydrate: (data, store) => store.getState().prepareHydrate(data),

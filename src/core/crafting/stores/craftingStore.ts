@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { useWalletStore, type WalletStore } from '../../economy/stores/walletStore';
 import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { createScopedStoreHook } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
@@ -116,6 +117,7 @@ export function createCraftingStore(inventoryStore: InventoryStore, walletStore:
 }
 
 export type CraftingStore = ReturnType<typeof createCraftingStore>;
+export const CRAFTING_STORE_SERVICE = runtimeStoreServiceKey<CraftingStore>('crafting');
 export const { useStore: useCraftingStore, useStoreApi: useCraftingStoreApi } = createScopedStoreHook(
   createCraftingStore(useInventoryStore, useWalletStore), () => useGaesupRuntime()?.craftingStore,
 );

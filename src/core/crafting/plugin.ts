@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useCraftingStore, type CraftingStore } from './stores/craftingStore';
+import { useCraftingStore, type CraftingStore, CRAFTING_STORE_SERVICE } from './stores/craftingStore';
 import type { CraftingSerialized } from './types';
 
 export interface CraftingPluginOptions {
@@ -27,7 +27,7 @@ export function createCraftingPlugin(options: CraftingPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useCraftingStore,
-    resolveStore: context => context.services.get<CraftingStore>('gaesup.runtime.crafting-store') ?? useCraftingStore,
+    resolveStore: context => context.services.get(CRAFTING_STORE_SERVICE) ?? useCraftingStore,
     readyEvent: 'crafting:ready',
     capabilities: ['crafting'],
     serialize: serializeCraftingState,

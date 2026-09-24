@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useSceneStore, type SceneStore } from './stores/sceneStore';
+import { useSceneStore, type SceneStore, SCENE_STORE_SERVICE } from './stores/sceneStore';
 import type { SceneSerialized } from './types';
 
 export interface ScenePluginOptions {
@@ -27,7 +27,7 @@ export function createScenePlugin(options: ScenePluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useSceneStore,
-    resolveStore: context => context.services.get<SceneStore>('gaesup.runtime.scene-store') ?? useSceneStore,
+    resolveStore: context => context.services.get(SCENE_STORE_SERVICE) ?? useSceneStore,
     readyEvent: 'scene:ready',
     capabilities: ['scene'],
     serialize: serializeSceneState,

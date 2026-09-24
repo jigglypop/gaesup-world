@@ -2,6 +2,7 @@ import { enableMapSet, produce } from 'immer';
 import { create, useStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import {
   blockToPlacementEntry,
@@ -1651,6 +1652,7 @@ export function createBuildingStore() {
 }
 
 export type BuildingStoreApi = ReturnType<typeof createBuildingStore>;
+export const BUILDING_STORE_SERVICE = runtimeStoreServiceKey<BuildingStoreApi>('building');
 const legacyStore = createBuildingStore();
 export function useBuildingStoreApi(): BuildingStoreApi {
   return useGaesupRuntime()?.buildingStore ?? useBuildingStore;

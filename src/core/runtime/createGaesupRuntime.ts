@@ -8,22 +8,22 @@ import {
 } from './saveDiagnostics';
 import type { GaesupRuntime, GaesupRuntimeOptions, RuntimeDomainBinding } from './types';
 import { createAudioEngine } from '../audio/core/AudioEngine';
-import { createAudioStore } from '../audio/stores/audioStore';
+import { AUDIO_STORE_SERVICE, createAudioStore } from '../audio/stores/audioStore';
 import { createGrassManager } from '../building/components/mesh/grass/manager';
 import { createBuildingCullingStore } from '../building/render/cullingStore';
 import { createBuildingRenderStore } from '../building/render/store';
-import { createBuildingStore } from '../building/stores/buildingStore';
+import { BUILDING_STORE_SERVICE, createBuildingStore } from '../building/stores/buildingStore';
 import { createBuildingVisibilityStore } from '../building/visibility/store';
 import { createCameraCinematicPlayer } from '../camera/cinematic';
-import { createCatalogStore } from '../catalog/stores/catalogStore';
-import { createCharacterStore } from '../character/stores/characterStore';
-import { createCraftingStore } from '../crafting/stores/craftingStore';
-import { createDialogStore } from '../dialog/stores/dialogStore';
+import { CATALOG_STORE_SERVICE, createCatalogStore } from '../catalog/stores/catalogStore';
+import { CHARACTER_STORE_SERVICE, createCharacterStore } from '../character/stores/characterStore';
+import { CRAFTING_STORE_SERVICE, createCraftingStore } from '../crafting/stores/craftingStore';
+import { DIALOG_STORE_SERVICE, createDialogStore } from '../dialog/stores/dialogStore';
 import { createDialogRuntimeAdapter } from '../dialog/stores/runtimeAdapter';
-import { createShopStore } from '../economy/stores/shopStore';
-import { createWalletStore } from '../economy/stores/walletStore';
-import { createEventsStore } from '../events/stores/eventsStore';
-import { createPlotStore } from '../farming/stores/plotStore';
+import { SHOP_STORE_SERVICE, createShopStore } from '../economy/stores/shopStore';
+import { WALLET_STORE_SERVICE, createWalletStore } from '../economy/stores/walletStore';
+import { EVENTS_STORE_SERVICE, createEventsStore } from '../events/stores/eventsStore';
+import { FARMING_STORE_SERVICE, createPlotStore } from '../farming/stores/plotStore';
 import { createStoreGameplayEventServices } from '../gameplay/events/clientServices';
 import { GameplayEventEngine } from '../gameplay/events/engine';
 import { createDefaultGameplayEventRegistry } from '../gameplay/events/registry';
@@ -33,8 +33,8 @@ import { WorldInputBackend } from '../input/WorldInputBackend';
 import { createWorldInputScope } from '../input/WorldInputScope';
 import { DEFAULT_INTERACTION_INPUT_EXTENSION_ID, type InputBackendExtension } from '../interactions/core/adapter';
 import { createInteractablesStore } from '../interactions/stores/interactablesStore';
-import { createInventoryStore } from '../inventory/stores/inventoryStore';
-import { createMailStore } from '../mail/stores/mailStore';
+import { INVENTORY_STORE_SERVICE, createInventoryStore } from '../inventory/stores/inventoryStore';
+import { MAIL_STORE_SERVICE, createMailStore } from '../mail/stores/mailStore';
 import { MotionBridge } from '../motions/bridge/MotionBridge';
 import { PhysicsBridge } from '../motions/bridge/PhysicsBridge';
 import { EntityStateManager } from '../motions/core/system/EntityStateManager';
@@ -47,21 +47,22 @@ import { createNPCBrainAdapterRegistry } from '../npc/core/brain';
 import { createNPCScheduler } from '../npc/core/NPCScheduler';
 import { NPCSimulation } from '../npc/core/NPCSimulation';
 import { attachReinforcementAdapter, createReinforcementAdapter } from '../npc/core/reinforcement';
-import { createNPCStore } from '../npc/stores/npcStore';
+import { NPC_STORE_SERVICE, createNPCStore } from '../npc/stores/npcStore';
 import { createPluginLogger, createPluginRegistry, filterPluginsForRuntime } from '../plugins';
-import { createQuestStore } from '../quests/stores/questStore';
-import { createFriendshipStore } from '../relations/stores/friendshipStore';
+import type { ServiceKey } from '../plugins/serviceKey';
+import { QUESTS_STORE_SERVICE, createQuestStore } from '../quests/stores/questStore';
+import { RELATIONS_STORE_SERVICE, createFriendshipStore } from '../relations/stores/friendshipStore';
 import { DuplicateSaveDomainBindingError, SaveSystem, createDefaultSaveSystem } from '../save';
 import type { DomainBinding, SaveSystemOptions, SerializedDomainValue } from '../save';
 import { createRoomVisibilityStore } from '../scene/stores/roomVisibilityStore';
-import { createSceneStore } from '../scene/stores/sceneStore';
+import { SCENE_STORE_SERVICE, createSceneStore } from '../scene/stores/sceneStore';
 import { createGaesupStore, RUNTIME_GAESUP_STORE_SERVICE_ID } from '../stores/gaesupStore';
 import { getTimeClock, RUNTIME_TIME_STORE_SERVICE_ID } from '../time/core/timeClock';
 import { createTimeStore } from '../time/stores/timeStore';
 import { createToolEvents } from '../tools/core/ToolEvents';
-import { createTownStore } from '../town/stores/townStore';
+import { TOWN_STORE_SERVICE, createTownStore } from '../town/stores/townStore';
 import { createUniqueId } from '../utils/id';
-import { createWeatherStore } from '../weather/stores/weatherStore';
+import { WEATHER_STORE_SERVICE, createWeatherStore } from '../weather/stores/weatherStore';
 import { WorldViews } from '../world/core/WorldViews';
 import { createWorldObjectStore } from '../world/stores/worldObjectStore';
 
@@ -103,7 +104,6 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   const gameplayEventRegistry = createDefaultGameplayEventRegistry(createStoreGameplayEventServices({ dialogStore, eventsStore, inventoryStore, questStore, emit: (name, payload) => plugins.context.events.emit(name, payload) }));
   const gameplayEvents = new GameplayEventEngine({ registry: gameplayEventRegistry });
   toolEvents.suspend(); gameplayEvents.suspend();
-  const gameplayStores = { audio: audioStore, character: characterStore, scene: sceneStore, inventory: inventoryStore, wallet: walletStore, shop: shopStore, relations: friendshipStore, weather: weatherStore, farming: plotStore, quests: questStore, dialog: dialogStore, catalog: catalogStore, crafting: craftingStore, mail: mailStore, town: townStore, events: eventsStore };
   const inputScope = createWorldInputScope();
   inputScope.suspend();
   const inputAdapter = new WorldInputBackend();
@@ -376,6 +376,11 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
     return hasError ? { failed: true, error: firstError } : { failed: false };
   };
 
+  const registerOwnedService = <TService>(key: ServiceKey<TService>, service: TService): void => {
+    plugins.context.services.register(key, service, 'gaesup.runtime');
+    ownedDomainServiceIds.add(key);
+  };
+
   const setup = async (): Promise<void> => {
     if (lifecycleState === 'active') return;
     lifecycleState = 'setting-up';
@@ -388,18 +393,27 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
       ownsWorldStoreService = true;
       plugins.context.services.register(RUNTIME_OWNED_MOTIONS_SERVICE_ID, { create: getMotions, inputExtensionId }, 'gaesup.runtime');
       ownsMotionsService = true;
-      plugins.context.services.register('gaesup.runtime.building-store', buildingStore, 'gaesup.runtime');
-      ownedDomainServiceIds.add('gaesup.runtime.building-store');
-      plugins.context.services.register('gaesup.runtime.npc-store', npcStore, 'gaesup.runtime');
-      ownedDomainServiceIds.add('gaesup.runtime.npc-store');
+      registerOwnedService(BUILDING_STORE_SERVICE, buildingStore);
+      registerOwnedService(NPC_STORE_SERVICE, npcStore);
       for (const [id, service] of Object.entries({ 'gaesup.runtime.npc-brain-adapters': npcBrainAdapters, 'gaesup.runtime.npc-reinforcement': npcReinforcement, 'gaesup.runtime.interactables-store': interactablesStore, 'gaesup.runtime.input-actions': inputActions, 'gaesup.runtime.gamepad': gamepad, 'gaesup.runtime.cinematics': cinematics })) {
         plugins.context.services.register(id, service, 'gaesup.runtime'); ownedDomainServiceIds.add(id);
       }
-      for (const [name, domainStore] of Object.entries(gameplayStores)) {
-        const id = `gaesup.runtime.${name}-store`;
-        plugins.context.services.register(id, domainStore, 'gaesup.runtime');
-        ownedDomainServiceIds.add(id);
-      }
+      registerOwnedService(AUDIO_STORE_SERVICE, audioStore);
+      registerOwnedService(CHARACTER_STORE_SERVICE, characterStore);
+      registerOwnedService(SCENE_STORE_SERVICE, sceneStore);
+      registerOwnedService(INVENTORY_STORE_SERVICE, inventoryStore);
+      registerOwnedService(WALLET_STORE_SERVICE, walletStore);
+      registerOwnedService(SHOP_STORE_SERVICE, shopStore);
+      registerOwnedService(RELATIONS_STORE_SERVICE, friendshipStore);
+      registerOwnedService(WEATHER_STORE_SERVICE, weatherStore);
+      registerOwnedService(FARMING_STORE_SERVICE, plotStore);
+      registerOwnedService(QUESTS_STORE_SERVICE, questStore);
+      registerOwnedService(DIALOG_STORE_SERVICE, dialogStore);
+      registerOwnedService(CATALOG_STORE_SERVICE, catalogStore);
+      registerOwnedService(CRAFTING_STORE_SERVICE, craftingStore);
+      registerOwnedService(MAIL_STORE_SERVICE, mailStore);
+      registerOwnedService(TOWN_STORE_SERVICE, townStore);
+      registerOwnedService(EVENTS_STORE_SERVICE, eventsStore);
       for (const [id, service] of Object.entries({ 'gaesup.runtime.world-object-store': worldObjectStore, 'gaesup.runtime.world-bridge': worldBridge, 'gaesup.runtime.world-views': worldViews, 'gaesup.runtime.input-scope': inputScope, 'gaesup.runtime.tool-events': toolEvents, 'gaesup.runtime.gameplay-event-registry': gameplayEventRegistry, 'gaesup.runtime.gameplay-events': gameplayEvents })) {
         plugins.context.services.register(id, service, 'gaesup.runtime');
         ownedDomainServiceIds.add(id);

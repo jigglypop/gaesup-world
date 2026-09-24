@@ -1,7 +1,7 @@
 import { createStoreDomainPlugin } from '../plugins';
 import type { PluginContext } from '../plugins';
 import { acquireFarmingClock } from './stores/clock';
-import { usePlotStore, type PlotStore } from './stores/plotStore';
+import { usePlotStore, type PlotStore, FARMING_STORE_SERVICE } from './stores/plotStore';
 import type { FarmingSerialized } from './types';
 import type { SaveSystem } from '../save/core/SaveSystem';
 import { RUNTIME_TIME_STORE_SERVICE_ID } from '../time/core/timeClock';
@@ -32,7 +32,7 @@ export function createFarmingPlugin(options: FarmingPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: usePlotStore,
-    resolveStore: ctx => ctx.services.get<PlotStore>('gaesup.runtime.farming-store') ?? usePlotStore,
+    resolveStore: ctx => ctx.services.get(FARMING_STORE_SERVICE) ?? usePlotStore,
     readyEvent: 'farming:ready',
     capabilities: ['farming'],
     serialize: serializeFarmingState,
@@ -44,7 +44,7 @@ export function createFarmingPlugin(options: FarmingPluginOptions = {}) {
     ...plugin,
     async setup(context: PluginContext) {
       await plugin.setup?.(context);
-      if (!releases.has(context)) releases.set(context, acquireFarmingClock(context.services.get<TimeStore>(RUNTIME_TIME_STORE_SERVICE_ID), context.services.get<PlotStore>('gaesup.runtime.farming-store'), () => !context.services.get<SaveSystem>('gaesup.runtime.save-system')?.isRestoring()));
+      if (!releases.has(context)) releases.set(context, acquireFarmingClock(context.services.get<TimeStore>(RUNTIME_TIME_STORE_SERVICE_ID), context.services.get(FARMING_STORE_SERVICE), () => !context.services.get<SaveSystem>('gaesup.runtime.save-system')?.isRestoring()));
     },
     async dispose(context: PluginContext) {
       releases.get(context)?.();

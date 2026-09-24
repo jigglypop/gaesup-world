@@ -98,6 +98,8 @@ legacy 경로 = getDefaultRuntime() (lazy, dev 경고)
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
 | 22-a | typed 서비스 키(`defineService<T>`), fallback dev 경고 | 문자열 literal 서비스 키 0 |
+
+22-a 진행(2026-09-24): `plugins/serviceKey.ts`(`ServiceKey<T>`, `defineService`, `runtimeStoreServiceKey`, import 0)와 registry·`runtime.getService` 키 overload를 추가했다. 도메인 store 18종이 자기 모듈에서 키를 export하고 runtime 등록과 plugin 조회가 같은 키를 쓴다(`runtime/__tests__/serviceKeys.test.ts`). 키를 kernel 한 곳에 모으면 그 모듈이 모든 도메인 store 타입을 import해 SCC가 커지므로 도메인별로 둔다. 남은 literal: runtime 내부 비-store 서비스 13개, world·time store 상수(이미 단일 상수). fallback dev 경고는 plugin 단독 사용이 정상 경로라 보류.
 | 22-b | D-17 groundContacts, autoSaveSuspension 인스턴스화 | runtime 2개 접지 상태 분리 테스트 |
 | 22-c | legacy store lazy 생성, import 부수효과 제거(구독 등록을 runtime 생성으로) | 모듈 import 후 전역 구독 0 테스트 |
 | 22-d | 순수 전역 store 4종 runtime 스코프 이동 | runtime 2개 toast·editor 상태 분리 |

@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useEventsStore, type EventsStore } from './stores/eventsStore';
+import { useEventsStore, type EventsStore, EVENTS_STORE_SERVICE } from './stores/eventsStore';
 import type { EventsSerialized } from './types';
 
 export interface EventsPluginOptions {
@@ -27,7 +27,7 @@ export function createEventsPlugin(options: EventsPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useEventsStore,
-    resolveStore: context => context.services.get<EventsStore>('gaesup.runtime.events-store') ?? useEventsStore,
+    resolveStore: context => context.services.get(EVENTS_STORE_SERVICE) ?? useEventsStore,
     readyEvent: 'events:ready',
     capabilities: ['events'],
     serialize: serializeEventsState,

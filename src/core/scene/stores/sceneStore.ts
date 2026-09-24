@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { createScopedStoreHook } from '../../stores/scopedStore';
 import { logger } from '../../utils/logger';
@@ -182,6 +183,7 @@ return create<SceneState>((set, get) => ({
 }
 
 export type SceneStore = ReturnType<typeof createSceneStore>;
+export const SCENE_STORE_SERVICE = runtimeStoreServiceKey<SceneStore>('scene');
 export const { useStore: useSceneStore, useStoreApi: useSceneStoreApi } = createScopedStoreHook(
   createSceneStore(), () => useGaesupRuntime()?.sceneStore,
 );

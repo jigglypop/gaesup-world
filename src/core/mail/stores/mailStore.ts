@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import { useWalletStore, type WalletStore } from '../../economy/stores/walletStore';
 import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { createScopedStoreHook } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
@@ -147,6 +148,7 @@ export function createMailStore(inventoryStore: InventoryStore, walletStore: Wal
 }
 
 export type MailStore = ReturnType<typeof createMailStore>;
+export const MAIL_STORE_SERVICE = runtimeStoreServiceKey<MailStore>('mail');
 export const { useStore: useMailStore, useStoreApi: useMailStoreApi } = createScopedStoreHook(
   createMailStore(useInventoryStore, useWalletStore), () => useGaesupRuntime()?.mailStore,
 );

@@ -1,6 +1,6 @@
 import type { GaesupPlugin, PluginContext } from '../plugins';
 import { findNPCSimulation } from './core/NPCSimulation';
-import { useNPCStore, type NPCStoreApi } from './stores/npcStore';
+import { useNPCStore, type NPCStoreApi, NPC_STORE_SERVICE } from './stores/npcStore';
 import type {
   ClothingCategory,
   ClothingSet,
@@ -112,7 +112,7 @@ export function createNPCPlugin(options: NPCPluginOptions = {}): GaesupPlugin {
     runtime: 'client',
     capabilities: ['npc'],
     setup(ctx: PluginContext) {
-      const store = ctx.services.get<NPCStoreApi>('gaesup.runtime.npc-store') ?? useNPCStore;
+      const store = ctx.services.get(NPC_STORE_SERVICE) ?? useNPCStore;
       ctx.save.register(saveExtensionId, {
         key: saveExtensionId,
         serialize: () => serializeNPCState(store),

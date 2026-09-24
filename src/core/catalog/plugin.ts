@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useCatalogStore, type CatalogStore } from './stores/catalogStore';
+import { useCatalogStore, type CatalogStore, CATALOG_STORE_SERVICE } from './stores/catalogStore';
 import type { CatalogSerialized } from './types';
 
 export interface CatalogPluginOptions {
@@ -27,7 +27,7 @@ export function createCatalogPlugin(options: CatalogPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useCatalogStore,
-    resolveStore: context => context.services.get<CatalogStore>('gaesup.runtime.catalog-store') ?? useCatalogStore,
+    resolveStore: context => context.services.get(CATALOG_STORE_SERVICE) ?? useCatalogStore,
     readyEvent: 'catalog:ready',
     capabilities: ['catalog'],
     serialize: serializeCatalogState,

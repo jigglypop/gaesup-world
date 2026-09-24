@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useFriendshipStore, type FriendshipStore } from './stores/friendshipStore';
+import { useFriendshipStore, type FriendshipStore, RELATIONS_STORE_SERVICE } from './stores/friendshipStore';
 import type { RelationsSerialized } from './types';
 
 export interface RelationsPluginOptions {
@@ -27,7 +27,7 @@ export function createRelationsPlugin(options: RelationsPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useFriendshipStore,
-    resolveStore: ctx => ctx.services.get<FriendshipStore>('gaesup.runtime.relations-store') ?? useFriendshipStore,
+    resolveStore: ctx => ctx.services.get(RELATIONS_STORE_SERVICE) ?? useFriendshipStore,
     readyEvent: 'relations:ready',
     capabilities: ['relations'],
     serialize: serializeRelationsState,

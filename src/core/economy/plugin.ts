@@ -1,6 +1,6 @@
 import type { GaesupPlugin, PluginContext } from '../plugins';
-import { useShopStore, type ShopStore } from './stores/shopStore';
-import { useWalletStore, type WalletStore } from './stores/walletStore';
+import { useShopStore, type ShopStore, SHOP_STORE_SERVICE } from './stores/shopStore';
+import { useWalletStore, type WalletStore, WALLET_STORE_SERVICE } from './stores/walletStore';
 import type { ShopSerialized, WalletSerialized } from './types';
 
 export interface EconomyPluginOptions {
@@ -47,8 +47,8 @@ export function createEconomyPlugin(options: EconomyPluginOptions = {}): GaesupP
     runtime: 'client',
     capabilities: ['economy', 'wallet', 'shop'],
     setup(ctx: PluginContext) {
-      const shop = ctx.services.get<ShopStore>('gaesup.runtime.shop-store') ?? useShopStore;
-      const wallet = ctx.services.get<WalletStore>('gaesup.runtime.wallet-store') ?? useWalletStore;
+      const shop = ctx.services.get(SHOP_STORE_SERVICE) ?? useShopStore;
+      const wallet = ctx.services.get(WALLET_STORE_SERVICE) ?? useWalletStore;
       ctx.save.register(walletSaveExtensionId, {
         key: walletSaveExtensionId,
         serialize: () => serializeWalletState(wallet),

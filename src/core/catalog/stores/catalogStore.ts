@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import type { ItemId } from '../../items/types';
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { createScopedStoreHook } from '../../stores/scopedStore';
 import type { CatalogEntry, CatalogSerialized } from '../types';
@@ -61,6 +62,7 @@ export function createCatalogStore() {
 }
 
 export type CatalogStore = ReturnType<typeof createCatalogStore>;
+export const CATALOG_STORE_SERVICE = runtimeStoreServiceKey<CatalogStore>('catalog');
 export const { useStore: useCatalogStore, useStoreApi: useCatalogStoreApi } = createScopedStoreHook(
   createCatalogStore(), () => useGaesupRuntime()?.catalogStore,
 );

@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useCharacterStore, type CharacterStore } from './stores/characterStore';
+import { useCharacterStore, type CharacterStore, CHARACTER_STORE_SERVICE } from './stores/characterStore';
 import type {
   CharacterSerialized,
   CharacterSerializedV1,
@@ -34,7 +34,7 @@ export function createCharacterPlugin(options: CharacterPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useCharacterStore,
-    resolveStore: context => context.services.get<CharacterStore>('gaesup.runtime.character-store') ?? useCharacterStore,
+    resolveStore: context => context.services.get(CHARACTER_STORE_SERVICE) ?? useCharacterStore,
     readyEvent: 'character:ready',
     capabilities: ['character'],
     serialize: serializeCharacterState,

@@ -1,3 +1,4 @@
+import type { ServiceKey } from './serviceKey';
 import type { ExtensionRegistry, KnownExtensionId, RegistryEntry } from './types';
 
 export class DuplicateExtensionError extends Error {
@@ -46,6 +47,7 @@ export class InMemoryExtensionRegistry<
   }
 
   register<TId extends KnownExtensionId<TMap>>(id: TId, value: TMap[TId], pluginId?: string): void;
+  register<TKeyed>(key: ServiceKey<TKeyed>, value: TKeyed, pluginId?: string): void;
   register<TId extends string>(
     id: TId,
     value: TId extends KnownExtensionId<TMap> ? never : TValue,
@@ -69,12 +71,14 @@ export class InMemoryExtensionRegistry<
   }
 
   get<TId extends KnownExtensionId<TMap>>(id: TId): TMap[TId] | undefined;
+  get<TKeyed>(key: ServiceKey<TKeyed>): TKeyed | undefined;
   get<TResolved extends TValue = TValue>(id: string): TResolved | undefined;
   get<TResolved extends TValue = TValue>(id: string): TResolved | undefined {
     return this.entries.get(id)?.value as TResolved | undefined;
   }
 
   require<TId extends KnownExtensionId<TMap>>(id: TId): TMap[TId];
+  require<TKeyed>(key: ServiceKey<TKeyed>): TKeyed;
   require<TResolved extends TValue = TValue>(id: string): TResolved;
   require<TResolved extends TValue = TValue>(id: string): TResolved {
     const value = this.entries.get(id)?.value as TResolved | undefined;

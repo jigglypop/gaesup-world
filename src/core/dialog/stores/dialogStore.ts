@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { dialogRuntimeAdapter } from './runtimeAdapter';
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useQuestStore, type QuestStore } from '../../quests/stores/questStore';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { createScopedStoreHook } from '../../stores/scopedStore';
@@ -71,6 +72,7 @@ export function createDialogStore(quests: QuestStore, adapter: DialogRuntimeAdap
 }
 
 export type DialogStore = ReturnType<typeof createDialogStore>;
+export const DIALOG_STORE_SERVICE = runtimeStoreServiceKey<DialogStore>('dialog');
 export const { useStore: useDialogStore, useStoreApi: useDialogStoreApi } = createScopedStoreHook(
   createDialogStore(useQuestStore, dialogRuntimeAdapter), () => useGaesupRuntime()?.dialogStore,
 );
