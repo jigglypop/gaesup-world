@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { loadBaselines } from './baselines';
+import { hasBaselines, loadBaselines } from './baselines';
 import { DEFAULT_CONFIG, comparisonProblems, improvementPercent, parseRun, repetitionSummary, type LabConfig, type LabRun, type Metric } from './model';
 import { requirements } from './requirements';
 import { runScenario } from './runner';
@@ -33,10 +33,13 @@ function Trace({ metric }: { metric: Metric | undefined }) {
 }
 
 export default function PerformanceLab() {
-  const [scenarioId, setScenarioId] = useState(() => {
+  const [requestedScenarioId] = useState(() => {
     const requested = new URLSearchParams(location.search).get('scenario');
-    return scenarios.some(scenario => scenario.id === requested) ? requested! : 'metrics';
+    return scenarios.some(scenario => scenario.id === requested) ? requested : null;
   });
+  const [scenarioId, setScenarioId] = useState(requestedScenarioId ?? 'metrics');
+  // Recorded runs download per scenario once one is opened (or linked); the default view fetches none.
+  const [baselineScenarioId, setBaselineScenarioId] = useState(requestedScenarioId);
   const [config, setConfig] = useState<LabConfig>(DEFAULT_CONFIG);
   const [role, setRole] = useState<LabRun['role']>('baseline');
   const [runs, setRuns] = useState<LabRun[]>([]);
@@ -66,8 +69,12 @@ export default function PerformanceLab() {
     setRuns(runRef.current);
   }, []);
   useEffect(() => {
-    for (const load of [loadBaselines, loadRuns]) void load().then(addRuns).catch((e: unknown) => setError(String(e)));
+    void loadRuns().then(addRuns).catch((e: unknown) => setError(String(e)));
   }, [addRuns]);
+  useEffect(() => {
+    if (baselineScenarioId) void loadBaselines(baselineScenarioId).then(addRuns).catch((e: unknown) => setError(String(e)));
+  }, [addRuns, baselineScenarioId]);
+  const selectScenario = (id: string) => { setScenarioId(id); setBaselineScenarioId(id); setSelectedRunId(''); };
   useEffect(() => () => abort.current?.abort(), []);
 
   const execute = useCallback(async (request: RunRequest = {}) => {
@@ -80,7 +87,7 @@ export default function PerformanceLab() {
     for (const key of ['width', 'height', 'dpr', 'durationMs'] as const) if (!Number.isFinite(nextConfig[key]) || nextConfig[key] <= 0) throw new Error(`잘못된 ${key}`);
     if (!Number.isFinite(nextConfig.warmupMs) || nextConfig.warmupMs < 0) throw new Error('잘못된 warmup');
     const controller = new AbortController(); abort.current = controller;
-    setBusy(true); setError(''); setScenarioId(target.id); setConfig(nextConfig); setRole(request.role ?? role); setProgress('현재 소스 식별값 확인 중');
+    setBusy(true); setError(''); setScenarioId(target.id); setBaselineScenarioId(target.id); setConfig(nextConfig); setRole(request.role ?? role); setProgress('현재 소스 식별값 확인 중');
     host.current.replaceChildren();
     try {
       const run = await runScenario(target, nextConfig, request.role ?? role, host.current, controller.signal, setProgress);
@@ -122,7 +129,7 @@ export default function PerformanceLab() {
     <div className="lab-summary">
       <span>구현 <b>{core.filter((entry) => entry.implementation === 'implemented').length}/{core.length}</b></span>
       <span>시나리오 연결 <b>{linked.length}/{core.length}</b></span>
-      <span>전후 기능 비교 <b>{core.filter(entry => entry.evidence && runs.some(run => run.runId === entry.evidence?.candidateRunId) && runs.some(run => run.runId === entry.evidence?.baselineRunId)).length}/{core.length}</b></span>
+      <span>전후 기능 비교 <b>{core.filter(entry => entry.evidence).length}/{core.length}</b></span>
       <span>전체 조건 검증 <b>{core.filter((entry) => entry.acceptedRunIds.length > 0).length}/{core.length}</b></span>
       <span>저장된 실행 <b>{runs.length}</b></span>
     </div>
@@ -131,9 +138,9 @@ export default function PerformanceLab() {
         {requirements.map((entry) => {
           const available = scenarios.some((s) => s.id === entry.scenarioId);
           const latest = runs.find((run) => run.requirementIds.includes(entry.id));
-          return <button key={entry.id} disabled={!available || busy} className={scenario.requirementIds.includes(entry.id) ? 'selected' : ''} onClick={() => { setScenarioId(entry.scenarioId); setSelectedRunId(''); }}>
+          return <button key={entry.id} disabled={!available || busy} className={scenario.requirementIds.includes(entry.id) ? 'selected' : ''} onClick={() => selectScenario(entry.scenarioId)}>
             <span>{entry.id} · {entry.stage}</span><strong>{entry.title}</strong>
-            <small>{entry.implementation === 'implemented' ? '구현됨' : entry.implementation === 'working' ? '일부 구현' : '미착수'} · {latest ? statusText[latest.status] : available ? '연결됨 · 미측정' : '시나리오 예정'}</small>
+            <small>{entry.implementation === 'implemented' ? '구현됨' : entry.implementation === 'working' ? '일부 구현' : '미착수'} · {latest ? statusText[latest.status] : !available ? '시나리오 예정' : hasBaselines(entry.scenarioId) ? '연결됨 · 기록 있음' : '연결됨 · 미측정'}</small>
             {latest && <small>{latest.startedAt.slice(0, 10)} · {latest.runId.slice(0, 8)}</small>}
           </button>;
         })}
@@ -142,7 +149,7 @@ export default function PerformanceLab() {
         <div className="lab-card"><h2>{scenario.title}</h2><p>{scenario.description}</p>
           {requirements.filter(entry => scenario.requirementIds.includes(entry.id) && entry.evidence).map(entry => <p className="lab-note" key={entry.id}>{entry.evidence!.note}</p>)}
           <fieldset disabled={busy} className="lab-controls">
-            <label>시나리오<select aria-label="재현 시나리오" value={scenarioId} onChange={(e) => { setScenarioId(e.target.value); setSelectedRunId(''); }}>{scenarios.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+            <label>시나리오<select aria-label="재현 시나리오" value={scenarioId} onChange={(e) => selectScenario(e.target.value)}>{scenarios.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
             <label>Backend<select value={config.backend} onChange={(e) => setConfig({ ...config, backend: e.target.value as LabConfig['backend'] })}><option value="webgpu">WebGPU 요청</option><option value="webgl">WebGL</option></select></label>
             <label>객체 수<input type="number" min="1" max="100000" value={config.count} onChange={(e) => setConfig({ ...config, count: Number(e.target.value) })} /></label>
             <label>Warmup (초)<input type="number" min="0" value={config.warmupMs / 1000} onChange={(e) => setConfig({ ...config, warmupMs: Number(e.target.value) * 1000 })} /></label>
