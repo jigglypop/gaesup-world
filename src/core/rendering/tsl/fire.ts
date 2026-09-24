@@ -14,14 +14,10 @@ import {
   vec2,
   vec3,
 } from 'three/tsl';
+import { time as nodeTime } from 'three/tsl';
 import { AdditiveBlending, Color, SpriteNodeMaterial } from 'three/webgpu';
 
 export class FireSpriteNodeMaterial extends SpriteNodeMaterial {
-  private readonly timeValue = uniform(0);
-
-  get time(): number { return this.timeValue.value; }
-  set time(value: number) { this.timeValue.value = value; }
-
   constructor() {
     super({ transparent: true, depthWrite: false, toneMapped: false, blending: AdditiveBlending });
     const coords = uv();
@@ -33,7 +29,7 @@ export class FireSpriteNodeMaterial extends SpriteNodeMaterial {
     const speed = attribute<'float'>('fireSpeed', 'float');
     const offset = attribute<'float'>('fireTimeOffset', 'float');
     const tint = attribute<'vec3'>('fireTint', 'vec3');
-    const animatedTime = this.timeValue.mul(speed).add(offset);
+    const animatedTime = nodeTime.mul(speed).add(offset);
     const noise = mx_noise_float(vec3(coords.x.mul(4).add(seed.mul(3)), coords.y.mul(6).sub(animatedTime), animatedTime.mul(0.35)))
       .mul(0.5).add(0.5);
     const skew = lean.mul(pow(y, 1.2));
@@ -56,18 +52,13 @@ export class FireSpriteNodeMaterial extends SpriteNodeMaterial {
 }
 
 export class EmberSpriteNodeMaterial extends SpriteNodeMaterial {
-  private readonly timeValue = uniform(0);
-
-  get time(): number { return this.timeValue.value; }
-  set time(value: number) { this.timeValue.value = value; }
-
   constructor() {
     super({ transparent: true, depthWrite: false, toneMapped: false, blending: AdditiveBlending });
     const life = attribute<'float'>('emberLife', 'float');
     const speed = attribute<'float'>('emberSpeed', 'float');
     const drift = attribute<'float'>('emberDrift', 'float');
     const base = attribute<'vec3'>('emberBase', 'vec3');
-    const cycle = fract(this.timeValue.mul(speed).add(life));
+    const cycle = fract(nodeTime.mul(speed).add(life));
     const angle = cycle.mul(8).add(drift);
     const radius = cycle.mul(0.2).add(0.08);
     this.positionNode = base.add(vec3(
@@ -81,7 +72,7 @@ export class EmberSpriteNodeMaterial extends SpriteNodeMaterial {
     const heat = cycle.mul(0.85).oneMinus();
     let emberColor = mix(vec3(0.75, 0.12, 0.02), vec3(1, 0.5, 0.08), heat);
     emberColor = mix(emberColor, vec3(1, 0.92, 0.65), heat.mul(heat));
-    const flicker = sin(this.timeValue.mul(14).add(drift.mul(4))).mul(0.25).add(0.75);
+    const flicker = sin(nodeTime.mul(14).add(drift.mul(4))).mul(0.25).add(0.75);
     this.colorNode = emberColor.mul(glow).mul(1.4);
     this.opacityNode = cycle.oneMinus().mul(cycle.oneMinus()).mul(0.9).mul(flicker).mul(glow);
     this.alphaTestNode = uniform(0.001);

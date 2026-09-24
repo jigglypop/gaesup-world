@@ -30,10 +30,9 @@ export default function NodeGpuSnow({ followCamera, count, halfRange, height }: 
     return object;
   }, [count, halfRange, height]);
   useEffect(() => () => { sprite.geometry.dispose(); sprite.material.dispose(); }, [sprite]);
-  useSharedFrame(NODE_SNOW_FRAME, (_, elapsedSeconds, three) => {
+  useSharedFrame(NODE_SNOW_FRAME, (_delta, _elapsedSeconds, three) => {
     if (sprite.parent && !sprite.parent.visible) return;
     const material = sprite.material as SnowNodeMaterial;
-    material.time = elapsedSeconds;
     material.pixelScale = three.gl.domElement.height * 0.5;
     if (followCamera) material.origin.copy(three.camera.position);
   });

@@ -197,7 +197,7 @@ TSL은 WebGL2 backend에서도 동작하므로 TSL을 canonical로 둔다. GLSL 
 | 12-p | D-23 toon 해제, toon 재질 refcount 공유(FR-12-17) | NPC 파츠 mount/unmount 100회 후 `MeshToonMaterial` 수 불변 |
 | 12-q | `ShadowDepthMaterials` WebGPU 미마운트, WebGL 변경 기반 갱신(FR-12-16) | WebGPU에서 `scene.traverse` 0. WebGL 정지 장면에서 순회 0 |
 | 12-r | NPC LOD 히스테리시스, 안정 `onSelect`(FR-12-18). 완료(2026-09-24) | 경계 왕복 시 재마운트 0(`NPCSystem/__tests__/lod.test.ts`) |
-| 12-s | TSL 내장 time, 파라미터 uniform화, Grass 공통 uniform(FR-12-19) | time 프레임 콜백 0, 날씨 파라미터 변경 시 program 증가 0, Grass 프레임당 invert 0 |
+| 12-s | TSL 내장 time, 파라미터 uniform화, Grass 공통 uniform(FR-12-19). 부분 완료(2026-09-24): fire·ember·snow·weather 재질이 TSL `time` 노드를 쓰고 fire time 콜백과 weather time 콜백을 제거, weather area·height·wind는 uniform이라 wind 변경에 재질·파이프라인을 다시 만들지 않는다. flag(GLSL·TSL 공용 인스턴스 타입)와 Grass는 잔여 | time 프레임 콜백 0, 날씨 파라미터 변경 시 program 증가 0, Grass 프레임당 invert 0 |
 
 12-f의 world-level batch는 building 전용이 아니라 `(geometry, material)` 키의 공용 batch로 만든다. 30 PRD의 `meshRenderer` 시스템(30-d)이 같은 batch를 쓴다.
 
