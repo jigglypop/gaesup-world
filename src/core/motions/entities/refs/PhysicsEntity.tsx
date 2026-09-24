@@ -20,6 +20,7 @@ import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
 import { useSceneToon } from '../../../rendering/useSceneToon';
 import { useGltfAndSize } from '../../hooks';
+import { useScopedStateManager } from '../../hooks/useStateSystem';
 import { PhysicsEntityProps } from '../types';
 
 const EMPTY_GLTF_DATA_URI =
@@ -50,7 +51,9 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
   (props, forwardedRef) => {
     const { world: physicsWorld } = useRapier();
     const rigidBodyRef = useRef<RapierRigidBody>(null!);
-    const interpolatedVisual = useWorldPhysicsInterpolation(rigidBodyRef);
+    const stateManager = useScopedStateManager();
+    // The controlled character publishes its interpolated pose so cameras follow what is drawn, not the last tick.
+    const interpolatedVisual = useWorldPhysicsInterpolation(rigidBodyRef, props.isActive ? stateManager.getActiveState() : undefined);
     useImperativeHandle(forwardedRef, () => rigidBodyRef.current);
     const { size } = useGltfAndSize({ url: props.url || '' });
     const modelUrl = props.url?.trim() ? props.url : EMPTY_GLTF_DATA_URI;

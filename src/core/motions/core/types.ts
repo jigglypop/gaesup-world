@@ -22,6 +22,8 @@ export type airplaneConfigType = Pick<PhysicsConfigType,
 export interface ActiveStateType {
   euler: THREE.Euler;
   position: THREE.Vector3;
+  /** Interpolated position between fixed physics ticks while the body is presented; cameras follow it. */
+  presentedPosition?: THREE.Vector3;
   quaternion: THREE.Quaternion;
   isGround: boolean;
   velocity: THREE.Vector3;

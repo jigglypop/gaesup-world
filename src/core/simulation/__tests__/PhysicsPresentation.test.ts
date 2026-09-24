@@ -34,3 +34,15 @@ test('removed Rapier bodies are never read during deferred renderer cleanup', ()
   presentation.beforeStep(); presentation.afterStep(); valid = false; read.mockClear();
   presentation.beforeStep(); presentation.afterStep(); presentation.present(0.5); expect(read).not.toHaveBeenCalled();
 });
+
+test('a presentation target receives the interpolated world position while registered', () => {
+  const position = new Vector3(0, 0, 0); const rotation = new Quaternion();
+  const body = { translation: () => position, rotation: () => rotation, isValid: () => true } as unknown as RapierRigidBody;
+  const parent = new Group(); const visual = new Group(); parent.add(visual);
+  const target: { presentedPosition?: Vector3 } = {};
+  const presentation = new PhysicsPresentation(); const off = presentation.register(body, visual, target);
+  expect(target.presentedPosition?.toArray()).toEqual([0, 0, 0]);
+  presentation.beforeStep(); position.set(4, 0, 0); presentation.afterStep(); presentation.present(0.25);
+  expect(target.presentedPosition?.x).toBeCloseTo(1);
+  off(); expect(target.presentedPosition).toBeUndefined();
+});

@@ -5,7 +5,7 @@ import type { RapierRigidBody } from '@react-three/rapier';
 import type { Group } from 'three';
 
 import type { FixedStepClock } from './FixedStepClock';
-import type { PhysicsPresentation } from './PhysicsPresentation';
+import type { PhysicsPresentation, PresentationTarget } from './PhysicsPresentation';
 
 export type WorldPhysicsClock = {
   clock: FixedStepClock;
@@ -35,13 +35,16 @@ export function useWorldPhysicsStep(update: (state: RootState, delta: number) =>
   return context !== null;
 }
 
-/** Attach the returned ref to a group containing visuals, beside the body's colliders. */
-export function useWorldPhysicsInterpolation(body: RefObject<RapierRigidBody | null>): RefObject<Group> {
+/**
+ * Attach the returned ref to a group containing visuals, beside the body's colliders. A `target` receives the
+ * interpolated world position as `presentedPosition` while the visual is presented.
+ */
+export function useWorldPhysicsInterpolation(body: RefObject<RapierRigidBody | null>, target?: PresentationTarget): RefObject<Group> {
   const context = useContext(WorldPhysicsContext);
   const visual = useRef<Group>(null!);
   useEffect(() => {
     if (!context || !body.current || !visual.current) return;
-    return context.presentation.register(body.current, visual.current);
-  }, [body, context]);
+    return context.presentation.register(body.current, visual.current, target);
+  }, [body, context, target]);
   return visual;
 }

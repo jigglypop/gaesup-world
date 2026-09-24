@@ -5,11 +5,13 @@ import { act, render } from '@testing-library/react';
 import { WorldPhysics } from '..';
 import { GaesupRuntimeProvider } from '../../../../runtime/context';
 import { createGaesupRuntime } from '../../../../runtime/createGaesupRuntime';
+import { frameScheduler, useEngineFrame } from '../../../../runtime/frame';
 import { useWorldPhysicsStep } from '../../../../simulation/physicsContext';
 
 const mockStep = jest.fn();
 const mockGet = () => ({});
-jest.mock('@react-three/fiber', () => ({ useFrame: () => {}, useThree: (selector: (state: object) => unknown) => selector({ get: mockGet }) }));
+let mockFrameloop = 'never';
+jest.mock('@react-three/fiber', () => ({ useFrame: () => {}, useThree: (selector: (state: object) => unknown) => selector({ get: mockGet, frameloop: mockFrameloop }) }));
 jest.mock('@react-three/rapier', () => ({
   Physics: ({ children, paused, timeStep }: { children: ReactNode; paused: boolean; timeStep: number }) => {
     expect(paused).toBe(true); expect(timeStep).toBe(1 / 60); return children;
@@ -75,4 +77,24 @@ test('multiple physics scenes share one world driver, and disposing another worl
     expect(updateA).toHaveBeenCalledTimes(60); expect(updateB).toHaveBeenCalledTimes(120);
     expect(mockStep).toHaveBeenCalledTimes(240);
   } finally { view.unmount(); await a.dispose(); await b.dispose(); }
+});
+
+test('a canvas rendering every frame advances the fixed clock between prePhysics and postPhysics', async () => {
+  const runtime = createGaesupRuntime(); await runtime.setup();
+  const order: string[] = [];
+  mockStep.mockImplementation(() => order.push('physics'));
+  function Probe() {
+    useEngineFrame('prePhysics', () => order.push('input'));
+    useEngineFrame('postPhysics', () => order.push('postPhysics'));
+    useEngineFrame('camera', () => order.push('camera'));
+    return null;
+  }
+  mockFrameloop = 'always';
+  const view = render(<GaesupRuntimeProvider runtime={runtime}><WorldPhysics><Probe /></WorldPhysics></GaesupRuntimeProvider>);
+  try {
+    expect(runtime.clockLoop.ownerCount).toBe(1);
+    expect(jest.getTimerCount()).toBe(0);
+    frameScheduler.tick(1 / 60, 0);
+    expect(order).toEqual(['input', 'physics', 'postPhysics', 'camera']);
+  } finally { mockFrameloop = 'never'; view.unmount(); await runtime.dispose(); }
 });

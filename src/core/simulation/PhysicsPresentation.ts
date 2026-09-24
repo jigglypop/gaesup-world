@@ -1,7 +1,14 @@
 import type { RapierRigidBody } from '@react-three/rapier';
 import { Object3D, Quaternion, Vector3 } from 'three';
 
-type Pose = { body: RapierRigidBody; visual: Object3D; previous: Vector3; current: Vector3; previousRotation: Quaternion; rotation: Quaternion; ready: boolean };
+type Pose = {
+  body: RapierRigidBody; visual: Object3D; previous: Vector3; current: Vector3; previousRotation: Quaternion; rotation: Quaternion; ready: boolean;
+  /** Interpolated world position, published on the target while registered. */
+  world: Vector3; target: PresentationTarget | undefined;
+};
+
+/** Receives the interpolated world position, e.g. the active character's state that cameras follow. */
+export type PresentationTarget = { presentedPosition?: Vector3 };
 
 /** Interpolates child visuals only. Rapier bodies and collision transforms remain authoritative. */
 export class PhysicsPresentation {
@@ -10,10 +17,19 @@ export class PhysicsPresentation {
   private parentPosition = new Vector3();
   private parentScale = new Vector3();
 
-  register(body: RapierRigidBody, visual: Object3D): () => void {
-    const pose: Pose = { body, visual, previous: new Vector3(), current: new Vector3(), previousRotation: new Quaternion(), rotation: new Quaternion(), ready: false };
+  register(body: RapierRigidBody, visual: Object3D, target?: PresentationTarget): () => void {
+    const pose: Pose = {
+      body, visual, previous: new Vector3(), current: new Vector3(), previousRotation: new Quaternion(), rotation: new Quaternion(), ready: false,
+      world: new Vector3(), target,
+    };
+    if (target && body.isValid()) pose.world.copy(body.translation());
     this.poses.add(pose);
-    return () => { this.poses.delete(pose); visual.position.set(0, 0, 0); visual.quaternion.identity(); };
+    if (target) target.presentedPosition = pose.world;
+    return () => {
+      this.poses.delete(pose);
+      visual.position.set(0, 0, 0); visual.quaternion.identity();
+      if (target?.presentedPosition === pose.world) delete target.presentedPosition;
+    };
   }
 
   beforeStep(): void {
@@ -39,8 +55,8 @@ export class PhysicsPresentation {
       if (!pose.ready || !parent || !pose.body.isValid()) continue;
       // One ancestor walk; worldToLocal and the decompose below reuse the updated matrixWorld.
       parent.updateWorldMatrix(true, false);
-      pose.visual.position.copy(pose.previous).lerp(pose.current, alpha);
-      parent.worldToLocal(pose.visual.position);
+      pose.world.copy(pose.previous).lerp(pose.current, alpha);
+      parent.worldToLocal(pose.visual.position.copy(pose.world));
       parent.matrixWorld.decompose(this.parentPosition, this.parentRotation, this.parentScale);
       this.parentRotation.invert();
       pose.visual.quaternion.copy(pose.previousRotation).slerp(pose.rotation, alpha).premultiply(this.parentRotation);

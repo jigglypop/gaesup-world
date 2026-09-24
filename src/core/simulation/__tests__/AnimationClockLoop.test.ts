@@ -83,3 +83,30 @@ describe('AnimationClockLoop', () => {
     release(); releaseSink();
   });
 });
+
+describe('AnimationClockLoop frame drivers', () => {
+  it('lets the first attached driver advance instead of its own RAF and resumes the RAF after release', () => {
+    const { clock, loop, frame, pending } = fixture();
+    const release = loop.acquire();
+    expect(pending.size).toBe(1);
+    const first = loop.attachDriver(); const second = loop.attachDriver();
+    expect(pending.size).toBe(0); expect(loop.ownerCount).toBe(1);
+    first.advance(1 / 60); second.advance(1 / 60);
+    expect(clock.tick).toBe(1);
+    first.release(); second.advance(1 / 60);
+    expect(clock.tick).toBe(2); expect(pending.size).toBe(0);
+    second.release(); second.advance(1 / 60);
+    expect(clock.tick).toBe(2); expect(pending.size).toBe(1);
+    frame(0); frame(1000 / 60); expect(clock.tick).toBe(3);
+    release();
+  });
+
+  it('does not advance without consumers or while suspended', () => {
+    const { clock, loop } = fixture();
+    const driver = loop.attachDriver();
+    driver.advance(1 / 60); expect(clock.tick).toBe(0); expect(loop.ownerCount).toBe(0);
+    const release = loop.acquire(); loop.suspend(); driver.advance(1 / 60); expect(clock.tick).toBe(0);
+    loop.resume(); driver.advance(1 / 60); expect(clock.tick).toBe(1);
+    release(); driver.release();
+  });
+});

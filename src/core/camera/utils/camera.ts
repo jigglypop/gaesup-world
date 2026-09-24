@@ -349,7 +349,7 @@ export const vectorUtils = {
 
 export const activeStateUtils = {
   getPosition: (activeState: ActiveStateType): THREE.Vector3 => {
-    return activeState?.position ? activeState.position : fallbackPosition.set(0, 0, 0);
+    return activeState?.presentedPosition ?? activeState?.position ?? fallbackPosition.set(0, 0, 0);
   },
 
   getEuler: (activeState: ActiveStateType): THREE.Euler => {
