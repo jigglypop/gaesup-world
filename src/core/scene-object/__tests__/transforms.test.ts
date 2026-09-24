@@ -39,3 +39,22 @@ test('preserves shear through multiple ancestors and rejects lossy TRS conversio
   runtime.getWorldMatrix('leaf')!.forEach((value, index) => expect(value).toBeCloseTo(expected.elements[index]!, 10));
   expect(() => runtime.getWorldTransform('leaf')).toThrow('Sheared');
 });
+
+test('world matrices of a deep hierarchy match Three.js and are computed once', () => {
+  const objects = Array.from({ length: 1000 }, (_, index) => ({
+    id: `o${index}`,
+    ...(index % 8 === 0 ? {} : { parentId: `o${index - 1}` }),
+    transform: { position: [index % 7, 1, -1] as [number, number, number], rotation: [0.1, index * 0.01, 0] as [number, number, number], scale: [1, 1.01, 1] as [number, number, number] },
+  }));
+  const document = createSceneDocument({ id: 'deep', objects });
+  const runtime = loadSceneRuntime(document).runtime!;
+  const expected = new Matrix4();
+  document.objects.forEach((object, index) => {
+    if (index % 8 === 0) expected.identity();
+    expected.multiply(reference(object.transform));
+    runtime.getWorldMatrix(object.id)!.forEach((value, element) => expect(value).toBeCloseTo(expected.elements[element]!, 9));
+  });
+  const leaf = runtime.getWorldMatrix('o999');
+  expect(runtime.getWorldMatrix('o999')).toBe(leaf);
+  expect(Object.isFrozen(leaf)).toBe(true);
+});

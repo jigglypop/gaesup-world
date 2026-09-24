@@ -118,7 +118,7 @@ SceneProjector ──► EntityWorld (runtime projection)
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
 | 30-a | `ComponentTypeRegistry`, `defineComponent`, objectId delta 계약, `registerSceneComponentSchema` adapter. delta 완료(2026-09-24): `scene-object/delta.ts` `SceneObjectDelta`(reset·added·removed·updated), `toSceneObjectDelta`, `subscribeSceneObjectDelta`. batch 안 생성 후 삭제는 상쇄, 삭제 후 재생성은 updated. 레지스트리는 인스펙터 작업(30-f)과 함께 | scene-object 테스트 통과. delta 계약 테스트. 13-e가 같은 형식 사용 |
-| 30-b | `TransformSystem`(캐시, dirty), `SceneRuntime.getWorldMatrix` 대체 | 깊이 8 계층 1k 객체에서 `getWorldMatrix` 할당 0, 결과 동일 |
+| 30-b | `TransformSystem`(캐시, dirty), `SceneRuntime.getWorldMatrix` 대체. `SceneRuntime` 부분 완료(2026-09-25): 불변 스냅샷이라 dirty 없이 가장 가까운 캐시 조상부터 위→아래로 한 번씩 계산해 동결 공유한다. 1k 객체 깊이 8에서 반복 조회 1.42→0.056ms(순수 Node), 결과는 Three.js 합성과 1e-9 이내. 남은 비용은 문서 변경마다 `loadSceneRuntime` 재파싱(4.5ms)이라 30-c `SceneProjector` 몫이다. 가변 `TransformSystem`(SoA, dirty)은 첫 가변 소비자인 `EntityWorld`와 함께 30-c에서 만든다 | 깊이 8 계층 1k 객체에서 `getWorldMatrix` 할당 0, 결과 동일 |
 | 30-c | `EntityWorld`(NextWorld 일반화), `SceneProjector`, runtime 서비스 등록 | 명령 1회 반영 시 전체 순회 0(호출 수 테스트) |
 | 30-d | `collider`/`rigidBody` 시스템(`SceneObjectBody` 대체), `meshRenderer` 시스템(12-f batch) | minihome probe 동작 동일 |
 | 30-e | `animator`, `interactable`, `npc` 컴포넌트 시스템 | 도메인 테스트 통과 |

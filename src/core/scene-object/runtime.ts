@@ -49,6 +49,25 @@ export function loadSceneRuntime(document: SceneDocument): LoadSceneRuntimeResul
     children.set(parentKey, list);
   }
 
+  // The runtime is an immutable snapshot and parsing rejects parent cycles, so every world matrix is computed
+  // once, top-down from the nearest cached ancestor, and shared by later calls.
+  const worldMatrices = new Map<SceneObjectId, SceneMatrix>();
+  const worldMatrixOf = (object: SceneObject): SceneMatrix => {
+    const chain: SceneObject[] = [];
+    let matrix: SceneMatrix | undefined;
+    for (let current: SceneObject | undefined = object; current; current = current.parentId ? objects.get(current.parentId) : undefined) {
+      matrix = worldMatrices.get(current.id);
+      if (matrix) break;
+      chain.push(current);
+    }
+    for (let index = chain.length - 1; index >= 0; index--) {
+      const local = sceneTransformToMatrix(chain[index]!.transform);
+      matrix = Object.freeze(matrix ? multiplySceneMatrices(matrix, local) : local);
+      worldMatrices.set(chain[index]!.id, matrix);
+    }
+    return matrix!;
+  };
+
   const runtime: SceneRuntime = {
     document: ownedDocument,
     objects,
@@ -60,11 +79,11 @@ export function loadSceneRuntime(document: SceneDocument): LoadSceneRuntimeResul
       const object = objects.get(id);
       if (!object) return undefined;
       if (!object.parentId) return object.transform;
-      return sceneMatrixToTransform(computeWorldMatrix(object, objects));
+      return sceneMatrixToTransform(worldMatrixOf(object));
     },
     getWorldMatrix: (id) => {
       const object = objects.get(id);
-      return object ? computeWorldMatrix(object, objects) : undefined;
+      return object ? worldMatrixOf(object) : undefined;
     },
   };
 
@@ -92,20 +111,4 @@ export function composeSceneTransforms(
   child: SceneTransform,
 ): SceneTransform {
   return sceneMatrixToTransform(multiplySceneMatrices(sceneTransformToMatrix(parent), sceneTransformToMatrix(child)));
-}
-
-function computeWorldMatrix(
-  object: SceneObject,
-  objects: ReadonlyMap<SceneObjectId, SceneObject>,
-): SceneMatrix {
-  let matrix = sceneTransformToMatrix(object.transform);
-  const visited = new Set([object.id]);
-  let parent = object.parentId ? objects.get(object.parentId) : undefined;
-  while (parent) {
-    if (visited.has(parent.id)) throw new RangeError('Scene hierarchy contains a cycle.');
-    visited.add(parent.id);
-    matrix = multiplySceneMatrices(sceneTransformToMatrix(parent.transform), matrix);
-    parent = parent.parentId ? objects.get(parent.parentId) : undefined;
-  }
-  return matrix;
 }
