@@ -133,8 +133,12 @@ const DEFAULT_NPC_VOLUME = {
   interactionRadius: 1.6,
 } as const;
 
-export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMode, onClick }: NPCInstanceProps) {
+export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMode, onClick: onClickProp, onSelect }: NPCInstanceProps) {
   const simulation = useNPCSimulation();
+  const onClick = useMemo(
+    () => (onSelect ? () => { onClickProp?.(); onSelect(instance.id); } : onClickProp),
+    [instance.id, onClickProp, onSelect],
+  );
   const groupRef = useRef<GroupWithHandlers>(null);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const detachBody = useRef<(() => void) | undefined>(undefined);

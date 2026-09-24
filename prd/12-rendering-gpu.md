@@ -139,7 +139,7 @@ typed array 스냅샷, dirty-range 업로드, readback 없는 GPU-driven 인스�
 - FR-12-15: 지면류는 receiveShadow만 한다. 섀도 카메라는 플레이어를 따라가며 texel snapping을 적용한다.
 - FR-12-16: `ShadowDepthMaterials`는 WebGL 렌더러에서만 마운트한다. WebGL에서도 주기 순회 대신 객체 add/remove 또는 렌더 revision 변경 시에만 갱신하고, 메시별 결과를 `(material.version, geometry.id)` 키로 캐시한다.
 - FR-12-17: toon 재질 적용은 layout effect에서 하고 cleanup에서 해제한다(D-23). toon 재질은 원본 재질 키 refcount 캐시로 공유한다.
-- FR-12-18: NPC 거리 LOD는 mount/unmount 대신 `visible` 토글과 mixer 일시정지로 처리한다. 가시 상태는 React state가 아니라 ref로 전달한다.
+- FR-12-18: (2026-09-24 수정) NPC 거리 LOD의 mount/unmount는 먼 NPC의 mixer·물리 바디를 없애는 스트리밍 역할을 하므로 유지한다. 대신 경계 왕복 재마운트를 막는 히스테리시스(표시 후 far + 15m까지 유지)를 둔다. 목록은 안정 `onSelect`로 NPCInstance memo를 살린다.
 - FR-12-19: TSL 재질은 내장 `time` 노드를 쓰고 JS time 콜백을 없앤다. 그래프에 굽는 파라미터는 uniform으로 바꾸고, 같은 설정은 재질 하나를 공유한다. Grass 공통 uniform은 타일 간 공유하고 trample은 world 좌표로 전달한다.
 
 **NFR**
@@ -196,7 +196,7 @@ TSL은 WebGL2 backend에서도 동작하므로 TSL을 canonical로 둔다. GLSL 
 | 12-o | demand 렌더 옵션, TRAA 리셋 RT 재할당 제거, 3.3절 Low 항목 | 정지 상태 GPU 사용률 감소 기록 |
 | 12-p | D-23 toon 해제, toon 재질 refcount 공유(FR-12-17) | NPC 파츠 mount/unmount 100회 후 `MeshToonMaterial` 수 불변 |
 | 12-q | `ShadowDepthMaterials` WebGPU 미마운트, WebGL 변경 기반 갱신(FR-12-16) | WebGPU에서 `scene.traverse` 0. WebGL 정지 장면에서 순회 0 |
-| 12-r | NPC LOD `visible` 토글(FR-12-18) | 경계 왕복 시 `SkeletonUtils.clone`·collider 생성 0 |
+| 12-r | NPC LOD 히스테리시스, 안정 `onSelect`(FR-12-18). 완료(2026-09-24) | 경계 왕복 시 재마운트 0(`NPCSystem/__tests__/lod.test.ts`) |
 | 12-s | TSL 내장 time, 파라미터 uniform화, Grass 공통 uniform(FR-12-19) | time 프레임 콜백 0, 날씨 파라미터 변경 시 program 증가 0, Grass 프레임당 invert 0 |
 
 12-f의 world-level batch는 building 전용이 아니라 `(geometry, material)` 키의 공용 batch로 만든다. 30 PRD의 `meshRenderer` 시스템(30-d)이 같은 batch를 쓴다.

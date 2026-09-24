@@ -146,7 +146,7 @@ buildingEditorStore (zustand)
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
 | 13-a | placement engine identity memo(과도기), `PreviewTile`/`PreviewBlock` 호출 위치 변경 | hover sweep 중 engine 생성 = 데이터 변경 수 |
-| 13-b | NPC `onClick` 안정화, `useThree` selector, hover 구독 제거(`getState()`로 읽기) | NPC 30체 hover 중 NPCInstance render 0 |
+| 13-b | NPC `onClick` 안정화, `useThree` selector, hover 구독 제거(`getState()`로 읽기). 완료(2026-09-24): `onSelect` 추가, hover·instances를 클릭 시점에 읽음 | NPC 30체 hover 중 NPCInstance render 0 |
 | 13-c | devtools opt-in, `usePlayerPosition` 변경 확인, 프롬프트 거리 양자화 | 정지 캐릭터에서 `usePlayerPosition` 소비자 render 0 |
 | 13-d | `BuildingSpatialIndex` 분리(FR-13-01), 배치 검사 후보 조회(FR-13-04) | `addTile` 10k회 연속 시간이 선형. 타일 수별 1회 비용 일정 |
 | 13-e | delta 발행과 driver 증분 갱신(render snapshot, visibility, navigation, minimap) | 타일 1개 추가 시 `buildBuildingRenderSnapshot` 전체 호출 0 |
