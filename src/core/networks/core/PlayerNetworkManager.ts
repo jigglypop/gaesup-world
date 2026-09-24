@@ -1,8 +1,10 @@
 import {
   clampRemoteString,
   MAX_REMOTE_CHAT_TEXT_LENGTH,
+  MAX_REMOTE_CHATS_PER_SECOND,
   MAX_REMOTE_MODEL_URL_LENGTH,
   MAX_REMOTE_WIRE_MESSAGE_LENGTH,
+  PeerRateLimiter,
 } from './remoteInputLimits';
 import { NetworkPayload, PlayerState } from '../types';
 
@@ -26,6 +28,11 @@ export interface PlayerNetworkManagerOptions {
    */
   pingInterval?: number;
   sendRateLimit?: number;
+  /**
+   * Per remote peer: PlayerUpdate and Chat messages beyond this rate are dropped (token bucket).
+   * 0 or unset accepts every message. Chat also has its own, lower per-peer budget.
+   */
+  maxMessagesPerSecond?: number;
   offlineQueueSize?: number;
   enableAck?: boolean;
   reliableTimeout?: number;
@@ -95,6 +102,8 @@ export class PlayerNetworkManager {
   private lastPongAt: number = 0;
   private retainedIds: Set<string> = new Set();
   private retainTimer: ReturnType<typeof setTimeout> | null = null;
+  private peerLimiter: PeerRateLimiter | null;
+  private chatLimiter = new PeerRateLimiter(MAX_REMOTE_CHATS_PER_SECOND);
 
   private updateRateLimitMs: number;
   private lastUpdateSentAt: number = 0;
@@ -137,6 +146,8 @@ export class PlayerNetworkManager {
     this.reconnectDelayMs = Math.max(0, Math.floor(options.reconnectDelay ?? 1000));
     this.pingIntervalMs = Math.max(0, Math.floor(options.pingInterval ?? 0));
     this.updateRateLimitMs = Math.max(0, Math.floor(options.sendRateLimit ?? 0));
+    const maxMessagesPerSecond = options.maxMessagesPerSecond ?? 0;
+    this.peerLimiter = maxMessagesPerSecond > 0 ? new PeerRateLimiter(maxMessagesPerSecond) : null;
     this.offlineQueueSize = Math.max(0, Math.floor(options.offlineQueueSize ?? 50));
     this.enableAck = !!options.enableAck;
     this.reliableTimeoutMs = Math.max(0, Math.floor(options.reliableTimeout ?? 5000));
@@ -524,6 +535,8 @@ export class PlayerNetworkManager {
       case 'PlayerLeft':
         this.debug('[PlayerNetworkManager] PlayerLeft', message.client_id);
         this.players.delete(message.client_id);
+        this.peerLimiter?.forget(message.client_id);
+        this.chatLimiter.forget(message.client_id);
         if (this.onPlayerLeave) {
           this.onPlayerLeave(message.client_id);
         }
@@ -531,6 +544,7 @@ export class PlayerNetworkManager {
 
       case 'PlayerUpdate':
         this.debug('[PlayerNetworkManager] PlayerUpdate', message.client_id);
+        if (!this.allowPeerMessage(message.client_id)) break;
         {
           const update = this.copyPlayerState(message.state);
           const existingPlayer = this.players.get(message.client_id);
@@ -552,6 +566,8 @@ export class PlayerNetworkManager {
         break;
 
       case 'Chat':
+        // A flooding peer must not turn into unbounded UI state updates.
+        if (!this.allowPeerMessage(message.client_id) || !this.chatLimiter.allow(message.client_id, Date.now())) break;
         this.onChat?.(message.client_id, message.text.slice(0, MAX_REMOTE_CHAT_TEXT_LENGTH), message.timestamp);
         break;
 
@@ -559,6 +575,10 @@ export class PlayerNetworkManager {
         // Ignore unknown message types for forward compatibility.
         break;
     }
+  }
+
+  private allowPeerMessage(peerId: string): boolean {
+    return this.peerLimiter?.allow(peerId, Date.now()) ?? true;
   }
 
   /** Copies only known, bounded fields so peers cannot inject extra keys or oversized values. */
@@ -692,6 +712,8 @@ export class PlayerNetworkManager {
     this.clearRetainTimer();
     this.retainedIds.clear();
     this.players.clear();
+    this.peerLimiter?.clear();
+    this.chatLimiter.clear();
   }
 
   private clearUpdateFlushTimer(): void {

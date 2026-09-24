@@ -1,8 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { act, renderHook } from '@testing-library/react';
+
 import { SEED_ASSETS } from '../data/seedAssets';
-import { useAssetStore } from '../stores/assetStore';
+import { selectAssetsByKind, selectAssetsBySlot, useAssetStore } from '../stores/assetStore';
 import type { AssetSource } from '../types';
 
 const ROOT = path.resolve(__dirname, '../../../..');
@@ -100,6 +102,34 @@ describe('assetStore', () => {
 
     expect(store.listAssets({ kind: 'weapon' }).every((asset) => asset.kind === 'weapon')).toBe(true);
     expect(store.listAssets({ slot: 'hat' }).every((asset) => asset.slot === 'hat')).toBe(true);
+  });
+
+  it('public selectors return the same array per query until the catalog changes', () => {
+    const weapons = selectAssetsByKind('weapon')(useAssetStore.getState());
+    expect(selectAssetsByKind('weapon')(useAssetStore.getState())).toBe(weapons);
+    expect(selectAssetsBySlot('hat')(useAssetStore.getState())).toBe(selectAssetsBySlot('hat')(useAssetStore.getState()));
+    useAssetStore.getState().selectAsset('unrelated');
+    expect(selectAssetsByKind('weapon')(useAssetStore.getState())).toBe(weapons);
+
+    useAssetStore.getState().registerAssets([{ id: 'memo-sword', name: 'Memo Sword', kind: 'weapon' }]);
+    const next = selectAssetsByKind('weapon')(useAssetStore.getState());
+    expect(next).not.toBe(weapons);
+    expect(next.map((asset) => asset.id)).toContain('memo-sword');
+  });
+
+  it('a component can subscribe through a public selector without re-rendering on its own', () => {
+    let renders = 0;
+    const { result, unmount } = renderHook(() => {
+      renders++;
+      return useAssetStore(selectAssetsByKind('tile'));
+    });
+    try {
+      expect(result.current.every((asset) => asset.kind === 'tile')).toBe(true);
+      act(() => useAssetStore.getState().setFilter({ kind: 'tile' }));
+      expect(renders).toBe(1);
+    } finally {
+      unmount();
+    }
   });
 
   it('registers local generated cloth GLB color variants', () => {

@@ -36,6 +36,10 @@ class WireSocket {
     this.sent.push(raw);
   }
 
+  receive(message: object): void {
+    this.onmessage?.({ data: JSON.stringify(message) });
+  }
+
   close(): void {
     this.readyState = 3;
   }
@@ -105,4 +109,32 @@ test('sendRateLimit is the only send cap: 20 Hz samples leave at 10 Hz when it i
   const tracking = { ...defaultMultiplayerConfig.tracking, sendRateLimit: 100 };
   const updates = streamUpdates(body(walking), { ...defaultMultiplayerConfig, tracking });
   expect(updates).toHaveLength(100);
+});
+
+test('a peer flooding 1000 chats in a second causes a bounded number of state updates', () => {
+  jest.useFakeTimers();
+  let renders = 0;
+  const view = renderHook(() => {
+    renders++;
+    return useMultiplayer({ config: defaultMultiplayerConfig });
+  });
+  try {
+    act(() => view.result.current.connect({ roomId: 'room', playerName: 'player', playerColor: '#ff8800' }));
+    act(() => { jest.advanceTimersByTime(1); });
+    const socket = WireSocket.last!;
+    const before = renders;
+    // Each message is its own task, as it would be off a real socket.
+    for (let index = 0; index < 1000; index++) {
+      act(() => {
+        socket.receive({ type: 'Chat', client_id: 'spammer', text: `spam ${index}`, timestamp: index });
+        jest.advanceTimersByTime(1);
+      });
+    }
+    // Chat budget per peer: a burst of 4 plus 4 per second.
+    expect(renders - before).toBeLessThanOrEqual(8);
+    expect(view.result.current.speechByPlayerId.get('spammer')).toMatch(/^spam \d+$/);
+  } finally {
+    view.unmount();
+    jest.useRealTimers();
+  }
 });

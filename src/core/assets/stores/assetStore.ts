@@ -179,5 +179,23 @@ export const useAssetStore = create<AssetState>((set, get) => ({
   },
 }));
 
-export const selectAssetsByKind = (kind: AssetKind) => (state: AssetState) => state.listAssets({ kind });
-export const selectAssetsBySlot = (slot: AssetSlot) => (state: AssetState) => state.listAssets({ slot });
+type CachedAssetList = { records: AssetState['records']; ids: string[]; assets: AssetRecord[] };
+
+/**
+ * Keeps one result per query value until the catalog changes. zustand v5 compares selections with
+ * Object.is, so a fresh array per call would re-render `useAssetStore(selectAssetsByKind(kind))` forever.
+ * Callers must not mutate the returned array.
+ */
+function memoizeAssetQuery<K extends string>(toQuery: (value: K) => AssetQuery) {
+  const cache = new Map<K, CachedAssetList>();
+  return (value: K) => (state: AssetState): AssetRecord[] => {
+    const cached = cache.get(value);
+    if (cached && cached.records === state.records && cached.ids === state.ids) return cached.assets;
+    const assets = state.listAssets(toQuery(value));
+    cache.set(value, { records: state.records, ids: state.ids, assets });
+    return assets;
+  };
+}
+
+export const selectAssetsByKind = memoizeAssetQuery((kind: AssetKind) => ({ kind }));
+export const selectAssetsBySlot = memoizeAssetQuery((slot: AssetSlot) => ({ slot }));

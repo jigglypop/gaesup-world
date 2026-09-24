@@ -137,6 +137,7 @@ export interface NetworkConfig {
   // 최적화 설정
   enableBatching: boolean;
   batchSize: number;
+  /** @deprecated Has no effect. WebSocket compression is negotiated by the browser and server (permessage-deflate). */
   compressionLevel: number;
   connectionPoolSize: number;
   
@@ -168,8 +169,11 @@ export interface NetworkConfig {
   maxLogEntries: number;
   
   // 보안 설정
+  /** @deprecated Has no effect. Use a `wss://` URL for transport encryption. */
   enableEncryption: boolean;
+  /** Multiplayer drops PlayerUpdate and Chat messages beyond `maxMessagesPerSecond` from each remote peer. */
   enableRateLimit: boolean;
+  /** Per remote peer token-bucket budget used when `enableRateLimit` is on. */
   maxMessagesPerSecond: number;
   
   // 메모리 관리

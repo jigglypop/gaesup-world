@@ -1,5 +1,10 @@
 import { PlayerNetworkManager, type PlayerNetworkManagerOptions } from '../core/PlayerNetworkManager';
-import { MAX_REMOTE_CHAT_TEXT_LENGTH, MAX_REMOTE_WIRE_MESSAGE_LENGTH } from '../core/remoteInputLimits';
+import {
+  MAX_REMOTE_CHAT_TEXT_LENGTH,
+  MAX_REMOTE_CHATS_PER_SECOND,
+  MAX_REMOTE_WIRE_MESSAGE_LENGTH,
+  PeerRateLimiter,
+} from '../core/remoteInputLimits';
 import type { PlayerState } from '../types';
 
 class InboundSocket {
@@ -180,6 +185,55 @@ describe('PlayerNetworkManager inbound peer state', () => {
     const roomState = onWelcome.mock.calls[0]?.[1];
     expect(roomState?.['peer-1'] && Object.keys(roomState['peer-1']).sort()).toEqual(['color', 'name', 'position', 'rotation']);
     expect(received.joins.get('peer-1')).toEqual(roomState?.['peer-1']);
+    manager.disconnect();
+  });
+});
+
+describe('per-peer inbound budgets', () => {
+  beforeEach(() => jest.useFakeTimers({ now: 0 }));
+  afterEach(() => jest.useRealTimers());
+
+  test('a peer gets a burst, then refills at the configured rate, independently of other peers', () => {
+    const limiter = new PeerRateLimiter(4);
+    expect([0, 0, 0, 0, 0].map((now) => limiter.allow('a', now))).toEqual([true, true, true, true, false]);
+    expect(limiter.allow('b', 0)).toBe(true);
+    expect(limiter.allow('a', 125)).toBe(false);
+    expect(limiter.allow('a', 250)).toBe(true);
+    limiter.forget('a');
+    expect(limiter.allow('a', 250)).toBe(true);
+  });
+
+  test('1000 chats a second from one peer reach onChat within the chat budget; other peers still chat', () => {
+    const { manager, socket, received } = connect();
+    for (let index = 0; index < 1000; index++) {
+      socket.receive({ type: 'Chat', client_id: 'spammer', text: `spam ${index}`, timestamp: index });
+      jest.advanceTimersByTime(1);
+    }
+    // A burst plus one second of refill.
+    expect(received.chats.length).toBeGreaterThanOrEqual(MAX_REMOTE_CHATS_PER_SECOND);
+    expect(received.chats.length).toBeLessThanOrEqual(MAX_REMOTE_CHATS_PER_SECOND * 2);
+    socket.receive({ type: 'Chat', client_id: 'calm', text: 'hello', timestamp: 1 });
+    expect(received.chats.at(-1)).toBe('hello');
+    manager.disconnect();
+  });
+
+  test('maxMessagesPerSecond caps player updates per peer', () => {
+    const flood: number[] = [];
+    const { manager, socket, received } = connect({
+      maxMessagesPerSecond: 10,
+      onPlayerUpdate: (id, state) => {
+        if (id === 'flood') flood.push(state.position[0]);
+        received.updates.set(id, state);
+      },
+    });
+    for (let index = 0; index < 100; index++) {
+      socket.receive({ type: 'PlayerUpdate', client_id: 'flood', state: { position: [index, 0, 0] } });
+      jest.advanceTimersByTime(10);
+    }
+    socket.receive({ type: 'PlayerUpdate', client_id: 'calm', state: { position: [1, 0, 0] } });
+    expect(flood.length).toBeGreaterThanOrEqual(10);
+    expect(flood.length).toBeLessThanOrEqual(20);
+    expect(received.updates.get('calm')?.position).toEqual([1, 0, 0]);
     manager.disconnect();
   });
 });

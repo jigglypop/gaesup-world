@@ -53,6 +53,21 @@ test('runtime connection overrides survive equivalent renders and apply to the n
   } finally { view.unmount(); }
 });
 
+test('enableRateLimit hands the per-peer maxMessagesPerSecond budget to the manager', () => {
+  jest.clearAllMocks();
+  const view = renderHook(({ enableRateLimit }) => useMultiplayer({
+    config: { ...defaultMultiplayerConfig, enableRateLimit, maxMessagesPerSecond: 30 },
+  }), { initialProps: { enableRateLimit: true } });
+  const options = { roomId: 'room', playerName: 'player', playerColor: '#fff' };
+  try {
+    act(() => view.result.current.connect(options));
+    expect(jest.mocked(PlayerNetworkManager).mock.calls.at(-1)?.[0].maxMessagesPerSecond).toBe(30);
+    view.rerender({ enableRateLimit: false });
+    act(() => view.result.current.connect(options));
+    expect(jest.mocked(PlayerNetworkManager).mock.calls.at(-1)?.[0].maxMessagesPerSecond).toBe(0);
+  } finally { view.unmount(); }
+});
+
 test('chat range follows prop changes until explicitly overridden and accepts zero', () => {
   jest.clearAllMocks();
   const view = renderHook(({ proximityRange }) => useMultiplayer({
