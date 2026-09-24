@@ -1,6 +1,6 @@
 {
   "name": "gaesup-world",
-  "version": "1.0.32",
+  "version": "1.1.0",
   "type": "module",
   "description": "Web 3D Character Controller and World Platform Library",
   "exports": {
@@ -358,7 +358,7 @@
   },
   "packageManager": "pnpm@9.15.1+sha512.1acb565e6193efbebda772702950469150cf12bcc764262e7587e71d19dc98a423dff9536e57ea44c49bdf790ff694e83c27be5faa23d67e0c033b583be4bfcf",
   "gaesupRelease": {
-    "version": "1.0.32",
-    "sourceCommit": "a0c8a3b5a7d7aa32117409c6807e4d0a044a17c0"
+    "version": "1.1.0",
+    "sourceCommit": "159ad3730dd5d365908f55e64cb40690de35f2e8"
   }
 }
