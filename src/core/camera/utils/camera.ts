@@ -138,16 +138,19 @@ function sweepCameraPath(
         mesh.updateMatrixWorld(true);
         for (const bone of mesh.skeleton.bones) bone.updateWorldMatrix(true, false);
       }
-      collisionIntersections.length = 0;
-      collisionRaycaster.intersectObject(mesh, false, collisionIntersections);
-      const hit = collisionIntersections[0];
-      const sweptDistance = radius > 0
-        ? sweepSphereMesh(mesh, collisionRaycaster.ray, radius, distance, collisionContact) : Infinity;
-      if (Number.isFinite(sweptDistance)) {
+      // A swept sphere contains its center ray, so the ray narrow phase only runs for zero-radius probes.
+      if (radius > 0) {
+        const sweptDistance = sweepSphereMesh(mesh, collisionRaycaster.ray, radius, distance, collisionContact);
+        if (!Number.isFinite(sweptDistance)) continue;
         blocked = true;
         safeDistance = Math.min(safeDistance, sweptDistance);
         obstacles?.push({ object: mesh, distance: from.distanceTo(collisionContact), point: collisionContact.clone() });
-      } else if (hit) {
+        continue;
+      }
+      collisionIntersections.length = 0;
+      collisionRaycaster.intersectObject(mesh, false, collisionIntersections);
+      const hit = collisionIntersections[0];
+      if (hit) {
         blocked = true;
         safeDistance = Math.min(safeDistance, Math.max(0, hit.distance - radius));
         obstacles?.push({ object: mesh, distance: hit.distance, point: hit.point.clone() });

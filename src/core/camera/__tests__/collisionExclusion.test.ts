@@ -39,11 +39,12 @@ test('inherits collision exclusion from ancestors and observes later changes', (
   const from = new THREE.Vector3();
   const to = new THREE.Vector3(0, 0, 10);
   try {
+    // Zero radius keeps the ray narrow phase observable through mesh.raycast.
     group.userData['intangible'] = true;
-    expect(cameraUtils.improvedCollisionCheck(from, to, scene).safe).toBe(true);
+    expect(cameraUtils.improvedCollisionCheck(from, to, scene, 0).safe).toBe(true);
     expect(raycast).not.toHaveBeenCalled();
     group.userData['intangible'] = false;
-    expect(cameraUtils.improvedCollisionCheck(from, to, scene).safe).toBe(false);
+    expect(cameraUtils.improvedCollisionCheck(from, to, scene, 0).safe).toBe(false);
     expect(raycast).toHaveBeenCalledTimes(1);
     raycast.mockClear();
     expect(cameraUtils.improvedCollisionCheck(from, to, scene, 0.5, [group]).safe).toBe(true);

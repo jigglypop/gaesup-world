@@ -24,11 +24,26 @@ test('bounding-sphere broadphase skips far meshes without raycasting them', () =
   // Spying on mesh.raycast would itself look like a custom raycast, so observe the raycaster instead.
   const intersectObject = jest.spyOn(THREE.Raycaster.prototype, 'intersectObject');
 
-  const result = cameraUtils.improvedCollisionCheck(new THREE.Vector3(), new THREE.Vector3(0, 0, 10), scene, 0.5);
+  // Zero radius uses the ray narrow phase, which makes the broadphase observable.
+  const result = cameraUtils.improvedCollisionCheck(new THREE.Vector3(), new THREE.Vector3(0, 0, 10), scene, 0);
 
   expect(result.safe).toBe(false);
   expect(result.obstacles.map((obstacle) => obstacle.object)).toEqual([blocker]);
   expect(intersectObject.mock.calls.map(([object]) => object)).toEqual([blocker]);
+});
+
+test('a positive radius sweeps without a second ray narrow phase', () => {
+  const scene = new THREE.Scene();
+  const blocker = new THREE.Mesh(geometry, material);
+  blocker.position.z = 5;
+  scene.add(blocker);
+  const intersectObject = jest.spyOn(THREE.Raycaster.prototype, 'intersectObject');
+
+  const result = cameraUtils.improvedCollisionCheck(new THREE.Vector3(), new THREE.Vector3(0, 0, 10), scene, 0.5);
+
+  expect(result.safe).toBe(false);
+  expect(result.obstacles.map((obstacle) => obstacle.object)).toEqual([blocker]);
+  expect(intersectObject).not.toHaveBeenCalled();
 });
 
 test('the broadphase is conservative for scaled parents, sweep radius and segment ends', () => {
