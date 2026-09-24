@@ -84,9 +84,9 @@ try {
     .map((file) => fs.readFileSync(path.join(assetsDir, file), 'utf8'))
     .join('\n');
   for (const selector of [
-    '.home-book',
+    '.world-stage',
     '.miniroom-view',
-    '.home-tabs',
+    '.world-status',
     '.viewport',
     '.scene-card',
     '.lab',
