@@ -58,7 +58,7 @@
 | 13-d 일부 | 16d287b3 | `BuildingSpatialIndex`. FR-13-04 잔여 |
 | 13-e 일부 | 5083275f | 스냅샷·가시성 증분. delta 발행 보류, navigation 잔여 |
 | 30-b 일부 | 7fcfbc9c | `SceneRuntime` 행렬 캐시. 가변 `TransformSystem`은 30-c와 함께 |
-| 12-e 일부, 12-i 일부 | f5963596 | 거리 상주와 히스테리시스, readback 예산 clamp와 드라이버 마운트 제거 |
+| 12-e 일부, 12-i 일부 | c7dadfe4 | 거리 상주와 히스테리시스, readback 예산 clamp와 드라이버 마운트 제거 |
 
 ### M1 측정 게이트와 저비용 개선
 
