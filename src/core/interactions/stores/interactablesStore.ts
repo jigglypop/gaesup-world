@@ -73,7 +73,8 @@ export function createInteractablesStore(active = true) {
     if (!enabled || (t && !get().entries.has(t.id))) t = null;
     const cur = get().current;
     if (cur === t) return;
-    if (cur && t && cur.id === t.id && cur.label === t.label && cur.key === t.key && Math.abs(cur.distance - t.distance) < 0.05) return;
+    // Prompts show one decimal; skip updates that would render the same text.
+    if (cur && t && cur.id === t.id && cur.label === t.label && cur.key === t.key && Math.round(cur.distance * 10) === Math.round(t.distance * 10)) return;
     set({ current: t });
   },
   activateCurrent: () => {

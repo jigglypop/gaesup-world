@@ -23,6 +23,9 @@ import {
 import { createWorldInteractions } from '../interactions/stores/worldInteractions';
 import { createWorldSlice } from '../world/stores/slices/worldStates/slice';
 
+/** Redux devtools serializes THREE-heavy state on every update; opt in with `globalThis.__GAESUP_DEVTOOLS__ = true`. */
+const isDevtoolsEnabled = () => (globalThis as { __GAESUP_DEVTOOLS__?: boolean }).__GAESUP_DEVTOOLS__ === true;
+
 function buildGaesupStore(interactions = createInteractionSlice) {
   return create<GaesupState>()(
     devtools(
@@ -38,6 +41,7 @@ function buildGaesupStore(interactions = createInteractionSlice) {
         ...interactions(...a),
         ...createWorldSlice(...a),
       })),
+      { name: 'gaesup-world', enabled: isDevtoolsEnabled() },
     ),
   );
 }

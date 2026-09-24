@@ -41,3 +41,11 @@ test('stopped worlds retain registered definitions but do not select or execute 
   state.suspend(); expect(store.getState().current).toBeNull(); expect(state.activateCurrent()).toBe(false); expect(store.getState().entries.size).toBe(1);
   state.resume(); expect(state.activateCurrent()).toBe(false); state.track(new Vector3(), 0); expect(state.activateCurrent()).toBe(true);
 });
+
+test('prompt distance updates only when the displayed tenth changes', () => {
+  const store = createInteractablesStore(); const state = store.getState(); state.register(entry());
+  const listener = jest.fn(); const off = store.subscribe(listener);
+  for (const distance of [1.0, 1.02, 1.04, 1.06, 1.08, 1.12]) state.setCurrent({ id: 'same', label: 'first', key: 'e', distance });
+  expect(listener).toHaveBeenCalledTimes(2); expect(store.getState().current?.distance).toBe(1.06);
+  off();
+});

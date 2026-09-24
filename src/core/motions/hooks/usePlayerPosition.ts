@@ -9,6 +9,7 @@ import { useWorldMotionBridge } from './useWorldMotionBridge';
 import { MotionBridge } from '../bridge/MotionBridge';
 
 const POSITION_CHANGE_EPSILON_SQ = 0.000001;
+const ROTATION_CHANGE_EPSILON = 0.0001;
 
 type MotionSnapshotRead = ReturnType<MotionBridge['snapshot']>;
 type SharedSnapshotRead = { scheduler: FrameScheduler; frame: number; entityId: string; snapshot: MotionSnapshotRead };
@@ -32,14 +33,32 @@ function readFrameSnapshot(bridge: MotionBridge, entityId: string, scheduler: Fr
   return snapshot;
 }
 
-function consumePositionChange(last: { x: number; y: number; z: number }, next: THREE.Vector3): boolean {
-  const dx = next.x - last.x;
-  const dy = next.y - last.y;
-  const dz = next.z - last.z;
-  if (dx * dx + dy * dy + dz * dz <= POSITION_CHANGE_EPSILON_SQ) return false;
-  last.x = next.x;
-  last.y = next.y;
-  last.z = next.z;
+type ObservedPlayerState = { x: number; y: number; z: number; rx: number; ry: number; rz: number; moving: boolean; grounded: boolean };
+
+const createObservedPlayerState = (): ObservedPlayerState => ({ x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, moving: false, grounded: false });
+
+/** Reactive consumers re-render only when position, facing, or movement flags actually change. */
+function consumeObservableChange(last: ObservedPlayerState, next: UsePlayerPositionResult): boolean {
+  const { position, rotation } = next;
+  const dx = position.x - last.x;
+  const dy = position.y - last.y;
+  const dz = position.z - last.z;
+  if (
+    dx * dx + dy * dy + dz * dz <= POSITION_CHANGE_EPSILON_SQ
+    && Math.abs(rotation.x - last.rx) <= ROTATION_CHANGE_EPSILON
+    && Math.abs(rotation.y - last.ry) <= ROTATION_CHANGE_EPSILON
+    && Math.abs(rotation.z - last.rz) <= ROTATION_CHANGE_EPSILON
+    && next.isMoving === last.moving
+    && next.isGrounded === last.grounded
+  ) return false;
+  last.x = position.x;
+  last.y = position.y;
+  last.z = position.z;
+  last.rx = rotation.x;
+  last.ry = rotation.y;
+  last.rz = rotation.z;
+  last.moving = next.isMoving;
+  last.grounded = next.isGrounded;
   return true;
 }
 
@@ -84,7 +103,7 @@ export function usePlayerPosition(
   const [, forceUpdate] = useState(0);
   const lastUpdateRef = useRef<number>(0);
   const lastBridgeEventRef = useRef<number>(0);
-  const lastPositionSnapshot = useRef({ x: 0, y: 0, z: 0 });
+  const lastObserved = useRef<ObservedPlayerState>(createObservedPlayerState());
   const bridgeRef = useRef<MotionBridge | null>(null);
   const scheduler = useCanvasFrameScheduler();
   const { activeState, gameStates } = useStateSystem();
@@ -118,7 +137,7 @@ export function usePlayerPosition(
       result.speed = snapshot.speed;
       result.height = 2.0;
 
-      if (reactive) forceUpdate((v) => v + 1);
+      if (reactive && consumeObservableChange(lastObserved.current, result)) forceUpdate((v) => v + 1);
     });
 
     return () => {
@@ -150,7 +169,7 @@ export function usePlayerPosition(
           result.height = 2.0;
 
           lastUpdateRef.current = now;
-          if (reactive && consumePositionChange(lastPositionSnapshot.current, result.position)) forceUpdate((v) => v + 1);
+          if (reactive && consumeObservableChange(lastObserved.current, result)) forceUpdate((v) => v + 1);
           return;
         }
       }
@@ -174,7 +193,7 @@ export function usePlayerPosition(
       result.height = 2.0;
 
       lastUpdateRef.current = now;
-      if (reactive && consumePositionChange(lastPositionSnapshot.current, result.position)) forceUpdate((v) => v + 1);
+      if (reactive && consumeObservableChange(lastObserved.current, result)) forceUpdate((v) => v + 1);
     }
   }, { order: AFTER_MOTION_FRAME_ORDER, label: 'motions:player-position' });
 
