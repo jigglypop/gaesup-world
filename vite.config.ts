@@ -260,6 +260,9 @@ export default defineConfig(({ mode }) => {
       host: '127.0.0.1',
       port: 5174,
       open: true,
+      // Tools that truncate then write a file can be read mid-write; the empty transform is then cached and the
+      // importer fails with "does not provide an export". Emit changes only after the size stops changing.
+      watch: { awaitWriteFinish: { stabilityThreshold: 50, pollInterval: 10 } },
     },
     build: {
       outDir: 'demo-dist',
