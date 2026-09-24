@@ -296,6 +296,16 @@ interface BuildingStore extends BuildingSystemState {
 }
 
 export function createBuildingStore() {
+  // Hover checks reuse one placement engine until the building data it indexes changes identity.
+  let engine: ReturnType<typeof createBuildingPlacementEngine> | undefined;
+  let engineSource: readonly unknown[] = [];
+  const placementEngine = ({ tileGroups, wallGroups, blocks }: BuildingStore) => {
+    if (!engine || engineSource[0] !== tileGroups || engineSource[1] !== wallGroups || engineSource[2] !== blocks) {
+      engine = createBuildingPlacementEngine(tileGroups.values(), wallGroups.values(), { blocks });
+      engineSource = [tileGroups, wallGroups, blocks];
+    }
+    return engine;
+  };
 
   return create<BuildingStore>()(
   immer((set, get) => ({
@@ -1288,9 +1298,6 @@ export function createBuildingStore() {
         currentTileShape,
         selectedTileGroupId,
         selectedTileObjectType,
-        blocks,
-        tileGroups,
-        wallGroups,
       } = get();
       const groupId = selectedTileGroupId ?? '__candidate_group__';
       const cell = tilePositionToCell(position);
@@ -1305,9 +1312,7 @@ export function createBuildingStore() {
         cell,
         footprint: createTileFootprint(cell, currentTileMultiplier),
       });
-      const engine = createBuildingPlacementEngine(tileGroups.values(), wallGroups.values(), {
-        blocks,
-      });
+      const engine = placementEngine(get());
       const request = {
         subject: entry.subject,
         coord: entry.coord,
@@ -1320,17 +1325,13 @@ export function createBuildingStore() {
     },
 
     checkBlockPosition: (block) => {
-      const { blocks, tileGroups, wallGroups } = get();
       const candidate = blockToPlacementEntry({
         id: '__candidate_block__',
         position: block.position,
         ...(block.cell ? { cell: block.cell } : {}),
         ...(block.size ? { size: block.size } : {}),
       });
-      const engine = createBuildingPlacementEngine(tileGroups.values(), wallGroups.values(), {
-        blocks,
-      });
-      return !engine.canPlace({
+      return !placementEngine(get()).canPlace({
         subject: candidate.subject,
         coord: candidate.coord,
         footprint: candidate.footprint,

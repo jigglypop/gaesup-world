@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 
 import * as THREE from 'three';
 
+import { tilePositionToCell } from '../../model';
 import { useBuildingStore } from '../../stores/buildingStore';
 import { TILE_CONSTANTS } from '../../types/constants';
 import './styles.css';
@@ -10,6 +11,9 @@ export function PreviewTile() {
   const editMode = useBuildingStore((s) => s.editMode);
   const hoverPosition = useBuildingStore((s) => s.hoverPosition);
   const checkTilePosition = useBuildingStore((s) => s.checkTilePosition);
+  // Occupancy only changes with building data, so these identities key the placement check.
+  const tileGroups = useBuildingStore((s) => s.tileGroups);
+  const blocks = useBuildingStore((s) => s.blocks);
   const currentTileMultiplier = useBuildingStore((s) => s.currentTileMultiplier);
   const currentTileHeight = useBuildingStore((s) => s.currentTileHeight);
   const currentTileShape = useBuildingStore((s) => s.currentTileShape);
@@ -48,18 +52,23 @@ export function PreviewTile() {
 
   useEffect(() => () => { rampGeometry.dispose(); }, [rampGeometry]);
 
+  const hoverY = hoverPosition?.y ?? 0;
+  const placementY =
+    editMode === 'tile' && (currentTileShape === 'box' || currentTileShape === 'round')
+      ? hoverY + currentTileHeight * TILE_CONSTANTS.HEIGHT_STEP
+      : hoverY;
+  const probe = editMode === 'tile' && hoverPosition ? { x: hoverPosition.x, y: placementY, z: hoverPosition.z } : null;
+  const cell = probe && tilePositionToCell(probe);
+  // The result depends only on the hovered cell, so pointer moves inside a cell and unrelated re-renders skip it.
+  const isOccupied = useMemo(
+    () => probe !== null && checkTilePosition(probe),
+    [cell?.x, cell?.z, cell?.level, currentTileMultiplier, tileGroups, blocks, checkTilePosition],
+  );
+
   if ((editMode !== 'tile' && editMode !== 'object') || !hoverPosition) {
     return null;
   }
 
-  const placementY =
-    editMode === 'tile' && (currentTileShape === 'box' || currentTileShape === 'round')
-      ? hoverPosition.y + currentTileHeight * TILE_CONSTANTS.HEIGHT_STEP
-      : hoverPosition.y;
-  const isOccupied =
-    editMode === 'tile'
-      ? checkTilePosition({ x: hoverPosition.x, y: placementY, z: hoverPosition.z })
-      : false;
   const color = isOccupied ? '#f3b95f' : '#7dd3fc';
   const previewOpacity = isOccupied ? 0.3 : 0.38;
   const previewEmissive = isOccupied ? 0.08 : 0.12;

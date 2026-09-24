@@ -1,3 +1,6 @@
+import { useMemo } from 'react';
+
+import { tilePositionToCell } from '../../model';
 import { useBuildingStore } from '../../stores/buildingStore';
 import { TILE_CONSTANTS } from '../../types/constants';
 
@@ -12,17 +15,23 @@ export function PreviewBlock() {
   const editMode = useBuildingStore((s) => s.editMode);
   const hoverPosition = useBuildingStore((s) => s.hoverPosition);
   const checkBlockPosition = useBuildingStore((s) => s.checkBlockPosition);
+  // Occupancy only changes with building data, so these identities key the placement check.
+  const tileGroups = useBuildingStore((s) => s.tileGroups);
+  const blocks = useBuildingStore((s) => s.blocks);
   const currentTileMultiplier = useBuildingStore((s) => s.currentTileMultiplier);
   const currentTileHeight = useBuildingStore((s) => s.currentTileHeight);
-  if (editMode !== 'block' || !hoverPosition) return null;
   const sizeCells = Math.max(1, Math.round(currentTileMultiplier));
+  const placementY = (hoverPosition?.y ?? 0) + currentTileHeight * TILE_CONSTANTS.HEIGHT_STEP;
+  const probe = editMode === 'block' && hoverPosition ? { x: hoverPosition.x, y: placementY, z: hoverPosition.z } : null;
+  const cell = probe && tilePositionToCell(probe);
+  // The result depends only on the hovered cell, so pointer moves inside a cell and unrelated re-renders skip it.
+  const isOccupied = useMemo(
+    () => probe !== null && checkBlockPosition({ position: probe, size: { x: sizeCells, y: 1, z: sizeCells } }),
+    [cell?.x, cell?.z, cell?.level, sizeCells, tileGroups, blocks, checkBlockPosition],
+  );
+  if (editMode !== 'block' || !hoverPosition) return null;
   const width = TILE_CONSTANTS.GRID_CELL_SIZE * sizeCells;
   const height = TILE_CONSTANTS.HEIGHT_STEP;
-  const placementY = hoverPosition.y + currentTileHeight * TILE_CONSTANTS.HEIGHT_STEP;
-  const isOccupied = checkBlockPosition({
-    position: { x: hoverPosition.x, y: placementY, z: hoverPosition.z },
-    size: { x: sizeCells, y: 1, z: sizeCells },
-  });
   const color = isOccupied ? OCCUPIED_COLOR : AVAILABLE_COLOR;
   const opacity = isOccupied ? OCCUPIED_OPACITY : AVAILABLE_OPACITY;
   const emissiveIntensity = isOccupied ? OCCUPIED_EMISSIVE_INTENSITY : AVAILABLE_EMISSIVE_INTENSITY;
