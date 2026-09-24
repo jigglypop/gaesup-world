@@ -15,20 +15,20 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+# verify:full split into parallel jobs; check-harness fails if a verify gate is missing here.
 jobs:
-  verify:
+  checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          package-manager-cache: false
-      - run: npm install --global corepack
-      # prepare is `build`; verify builds once itself.
-      - run: corepack pnpm install --frozen-lockfile --ignore-scripts
-      - run: corepack pnpm run verify:full
+      - uses: ./.github/actions/setup
+      - run: corepack pnpm run test:harness
+      - run: corepack pnpm run typecheck
+      - run: corepack pnpm run lint
+      - run: corepack pnpm run check:layer1
+      - run: corepack pnpm run check:entries
+      - run: corepack pnpm run check:quality
       - run: corepack pnpm run audit:core
       - uses: actions/upload-artifact@v4
         with:
@@ -36,8 +36,43 @@ jobs:
           path: .artifacts/performance/inventory
           include-hidden-files: true
 
+  jest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      # Transform cache keyed by toolchain; entries are content-hashed, so a stale cache only misses.
+      - uses: actions/cache@v4
+        with:
+          path: .jest-cache
+          key: jest-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'jest.config.js', 'tsconfig*.json') }}
+      - run: corepack pnpm exec jest --cacheDirectory=.jest-cache
+      - run: corepack pnpm run test:memory:ci
+      - run: corepack pnpm run test:asset-tools
+      - run: corepack pnpm run test:minihome:service
+
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - run: corepack pnpm run build
+      - run: corepack pnpm exec publint
+      - run: corepack pnpm run test:package:built
+
+  demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      # Builds the demo itself and checks the initial chunk surface.
+      - run: corepack pnpm run test:demo
+
   release:
-    needs: verify
+    needs: [checks, jest, package, demo]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -94,12 +129,7 @@ jobs:
       url: ${{ steps.pages.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          package-manager-cache: false
-      - run: npm install --global corepack
-      - run: corepack pnpm install --frozen-lockfile --ignore-scripts
+      - uses: ./.github/actions/setup
       - uses: actions/download-artifact@v4
         with:
           name: release-manifest

@@ -14,6 +14,7 @@ node_modules
 # Test coverage
 coverage/
 .tmp/
+.jest-cache/
 
 # Editor directories and files
 .vscode/*

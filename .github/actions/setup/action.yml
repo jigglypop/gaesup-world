@@ -1,0 +1,15 @@
+name: Setup
+description: Node 24 and a frozen pnpm install without lifecycle scripts.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '24'
+        package-manager-cache: false
+    - run: npm install --global corepack
+      shell: bash
+    # prepare is `build`; jobs that need dist build it once themselves.
+    - run: corepack pnpm install --frozen-lockfile --ignore-scripts
+      shell: bash

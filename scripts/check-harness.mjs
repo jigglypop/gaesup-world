@@ -14,6 +14,13 @@ for (const gate of ['test:harness', 'typecheck', 'lint', 'check:layer1', 'check:
 for (const gate of ['verify', 'test:memory:ci', 'test:package:built', 'test:demo']) {
   assert.ok(scripts['verify:full'].includes(gate), `verify:full must invoke ${gate}`);
 }
+// CI runs verify:full as parallel jobs instead of one chain; every gate must still appear there.
+const workflow = read('.github/workflows/release.yml');
+for (const step of `${scripts.verify} && ${scripts['verify:full']}`.split('&&')) {
+  const [, kind, gate] = step.trim().match(/^pnpm (run|exec) (\S+)/) ?? [];
+  if (!gate || gate === 'verify') continue;
+  assert.match(workflow, new RegExp(`pnpm ${kind} ${gate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s|$)`), `CI must run ${gate}`);
+}
 const tsconfig = JSON.parse(read('tsconfig.json'));
 for (const flag of ['strict', 'noUncheckedIndexedAccess', 'exactOptionalPropertyTypes']) {
   assert.equal(tsconfig.compilerOptions[flag], true, `Required TypeScript contract: ${flag}`);
