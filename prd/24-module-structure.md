@@ -130,6 +130,8 @@
 
 24-a(knip baseline)와 24-e(미사용 28파일 삭제)는 구조 변경보다 먼저 한다. 삭제된 코드는 이후 slice에서 옮길 필요가 없다.
 
+24-e 1차 완료(2026-09-24): 참조 0 파일 28개와 운영 참조 없는 `BloomRenderer`, `constants/index.ts`, `RiderRef`, `stores/domain/*`를 테스트와 함께 삭제했다. `utils/result.ts`(FR-21-05 기반), `CascadedSun`(진행 중 기능), `NodeTreeParticles`(12-n), `src/next` 코어(30 PRD 기반)는 유지한다. 품질 지표: interface 493→486, console 27→26, 초과 컴포넌트 47→46.
+
 ## 6. 공개 API 영향
 
 - `networkStateStore`, `networkConfigStore`, `BuildingBridge` 등 공개지만 내부 미사용 심볼은 `@deprecated` 후 major 제거.

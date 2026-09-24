@@ -9,7 +9,6 @@ import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 import { disposeToonGradients, setDefaultToonMode } from '../../../../rendering/toon';
 import { PartsGroupRef } from '../PartsGroupRef';
 import { PhysicsEntity } from '../PhysicsEntity';
-import RiderRef from '../RiderRef';
 
 type MockGltf = {
   animations: THREE.AnimationClip[];
@@ -137,10 +136,6 @@ function physicsEntity(url: string): ReactElement {
   return <PhysicsEntity url={url} isActive={false} isNotColliding componentType="character" />;
 }
 
-function rider(url: string): ReactElement {
-  return <RiderRef url={url} />;
-}
-
 function verifyLifecycle(buildSubject: (url: string) => ReactElement): void {
   const firstUrl = '/first.glb';
   const secondUrl = '/second.glb';
@@ -250,13 +245,8 @@ describe('GLTF clone toon ownership', () => {
     }
   });
 
-  test('RiderRef owns committed StrictMode generations across URL switch and unmount', () => {
-    verifyLifecycle(rider);
-  });
-
   test.each([
     ['PhysicsEntity', physicsEntity],
-    ['RiderRef', rider],
   ])('leaves %s clone materials untouched when default toon mode is disabled', (_name, build) => {
     setDefaultToonMode(false);
     const url = '/plain.glb';

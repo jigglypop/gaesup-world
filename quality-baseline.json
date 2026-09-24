@@ -1,8 +1,8 @@
 {
-  "interfaceDeclarations": 493,
-  "consoleCalls": 27,
+  "interfaceDeclarations": 486,
+  "consoleCalls": 26,
   "anyUsages": 0,
   "rawUseFrame": 5,
-  "oversizedComponents": 47,
+  "oversizedComponents": 46,
   "oversizedModules": 16
 }

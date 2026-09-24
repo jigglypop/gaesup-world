@@ -39,11 +39,6 @@ export type ModelRendererProps = {
 
 export type { PartsGroupRefProps } from './refs/types';
 
-export type riderRefType = {
-  url: string;
-  children ? : React.ReactNode;
-  offset ? : THREE.Vector3;
-}
 export type GroundRay = {
   origin: THREE.Vector3;
   direction: THREE.Vector3;
