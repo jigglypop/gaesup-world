@@ -341,7 +341,7 @@ describe('BuildingBridge 테스트', () => {
 
   describe('에러 처리', () => {
     test('잘못된 레거시 위치 데이터에 대해 예외가 처리되어야 함', () => {
-      // @HandleError 데코레이터가 있어서 예외가 throw되지 않아야 함
+      // 레거시 변환기는 잘못된 입력에 throw하지 않고 reportError로 보고한다
       expect(() => {
         // @ts-expect-error -- 런타임 레거시 데이터의 null 입력 처리 검증
         BuildingBridge.convertLegacyPosition(null);
@@ -423,8 +423,8 @@ describe('BuildingBridge 테스트', () => {
   });
 
   describe('데코레이터 통합', () => {
-    test('@Profile 데코레이터가 적용되어야 함', () => {
-      // Profile 데코레이터는 성능 측정을 위한 것이므로
+    test('레거시 위치 변환이 예외 없이 동작해야 함', () => {
+      // 레거시 변환은 부수효과 없이 값만 바꾼다
       // 실제 동작에는 영향을 주지 않아야 함
       const legacyPosition: LegacyPosition = [1, 2, 3];
 
@@ -433,8 +433,8 @@ describe('BuildingBridge 테스트', () => {
       }).not.toThrow();
     });
 
-    test('@HandleError 데코레이터가 모든 메서드에 적용되어야 함', () => {
-      // HandleError 데코레이터는 예외를 잡아서 처리하므로
+    test('잘못된 레거시 입력은 예외 대신 보고하고 undefined를 반환해야 함', () => {
+      // 레거시 변환기는 잘못된 입력을 reportError로 보고하고
       // 잘못된 데이터가 들어와도 예외가 발생하지 않아야 함
       expect(() => {
         // @ts-expect-error -- 잘못된 런타임 입력 처리 검증

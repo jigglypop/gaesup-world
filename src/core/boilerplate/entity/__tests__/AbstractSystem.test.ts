@@ -222,7 +222,7 @@ describe('AbstractSystem initialization', () => {
     const previousFrameTime = previousMetrics.frameTime;
     shouldFailMetrics = true;
 
-    expect(() => system.reset()).not.toThrow();
+    expect(() => system.reset()).toThrow('metrics initialization failed');
     expect(system.getState()).toBe(previousState);
     expect(system.getMetrics()).toBe(previousMetrics);
     expect(system.getState()).toEqual({

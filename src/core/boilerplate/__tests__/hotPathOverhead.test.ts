@@ -3,7 +3,6 @@ import 'reflect-metadata';
 import { logger } from '../../utils/logger';
 import { AbstractBridge } from '../bridge/AbstractBridge';
 import { LogSnapshot } from '../decorators/bridge';
-import { Profile } from '../decorators/monitoring';
 
 type Engine = { value: number; dispose: () => void };
 type Snapshot = { value: number };
@@ -30,7 +29,6 @@ class ProbeBridge extends AbstractBridge<Engine, Snapshot, { type: 'noop' }> {
 class Profiled {
   calls = 0;
 
-  @Profile()
   step(): number {
     return ++this.calls;
   }
@@ -66,7 +64,7 @@ test('snapshots skip building bridge events when nobody observes them', () => {
   expect(bridge.emitted).toBe(2);
 });
 
-test('profiling decorators do not time or format messages while log level output is off', () => {
+test('snapshot logging does not time or format messages while log level output is off', () => {
   const now = jest.spyOn(performance, 'now');
   const console = jest.spyOn(globalThis.console, 'log').mockImplementation(() => {});
   const probe = new Profiled();
@@ -83,7 +81,6 @@ test('profiling decorators do not time or format messages while log level output
   expect(probe.step()).toBe(2);
   expect(probe.snapshot()).toBe(2);
   expect(now).toHaveBeenCalled();
-  expect(console).toHaveBeenCalledWith(expect.stringContaining('[Profile] Profiled.step executed in'));
   expect(console).toHaveBeenCalledWith(expect.stringContaining('[Profiled] snapshot snapshot processed in'));
 });
 

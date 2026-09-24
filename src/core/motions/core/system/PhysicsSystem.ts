@@ -3,7 +3,6 @@ import * as THREE from 'three';
 
 import type { RefObject } from '@core/boilerplate';
 import { AbstractSystem, SystemContext, SystemUpdateArgs } from '@core/boilerplate/engine';
-import { HandleError, Profile } from '@core/boilerplate/engine';
 import { GameStatesType } from '@core/world/components/Rideable/types';
 
 import type { ClickNavigationRoute } from '../../../navigation/ClickNavigationRoute';
@@ -101,12 +100,10 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     this.gravityComponent = new GravityComponent(this.config);
   }
 
-  @HandleError()
   public updateConfig(newConfig: Partial<PhysicsConfigType>): void {
     Object.assign(this.config, createOwnedPhysicsConfig(newConfig));
   }
 
-  @Profile()
   protected performUpdate(args: PhysicsUpdateArgs): void {
     if (args.stage === 'drive') {
       this.drive(args.calcProp, args.physicsState);
@@ -122,7 +119,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     throw new Error('PhysicsSystem requires updateWithArgs().');
   }
 
-  @Profile()
   protected override updateMetrics(deltaTime: number): void {
     void deltaTime;
     this.state.isJumping = this.isCurrentlyJumping;
@@ -134,7 +130,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     this.performUpdateWithArgs(args);
   }
 
-  @Profile()
   calculate(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
     if (!physicsState || !calcProp.rigidBodyRef.current) return;
     const didTransition = this.normalizeModeTransition(calcProp, physicsState);
@@ -212,7 +207,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     return true;
   }
 
-  @Profile()
   private applyModeRigidBodySettings(
     calcProp: PhysicsCalcProps,
     physicsState: PhysicsState,
@@ -255,7 +249,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     }
   }
 
-  @Profile()
   private checkGround(prop: PhysicsCalcProps, physicsState: PhysicsState): void {
     const { rigidBodyRef } = prop;
     const gameStatesRef = physicsState.gameStates;
@@ -281,7 +274,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     this.copyVector3(activeStateRef.velocity, velocity);
   }
 
-  @Profile()
   private checkMoving(physicsState: PhysicsState): void {
     const gameStatesRef = physicsState.gameStates;
     const keyboard = physicsState.keyboard;
@@ -337,7 +329,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     physicsState.gameStates.isJumping = false;
   }
 
-  @Profile()
   private calculateCharacter(
     calcProp: PhysicsCalcProps,
     physicsState: PhysicsState
@@ -355,7 +346,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     }
   }
 
-  @Profile()
   private calculateVehicle(
     calcProp: PhysicsCalcProps,
     physicsState: PhysicsState
@@ -377,7 +367,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     }
   }
 
-  @Profile()
   private calculateAirplane(
     calcProp: PhysicsCalcProps,
     physicsState: PhysicsState
@@ -416,7 +405,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     rigidBody.setLinvel(this.tempVector, true);
   }
 
-  @Profile()
   public calculateMovement(
     input: {
       forward: boolean;
@@ -454,7 +442,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     return this.jumpScratch.set(0, config.jumpSpeed ?? 0, 0);
   }
 
-  @Profile()
   private updateForces(rigidBodyRef: RefObject<RapierRigidBody>, delta: number): void {
     if (!rigidBodyRef.current || this.forceComponents.length === 0) return;
     const body = rigidBodyRef.current;

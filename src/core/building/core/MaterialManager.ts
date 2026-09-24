@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { Profile, HandleError, MonitorMemory } from '@/core/boilerplate/decorators';
+import { MonitorMemory } from '@/core/boilerplate/decorators';
 import { getDefaultToonMode, getToonGradient } from '@/core/rendering/toon';
 
 import { MeshConfig } from '../types';
@@ -17,8 +17,6 @@ export class MaterialManager {
     this.textureLoader = new THREE.TextureLoader();
   }
 
-  @HandleError()
-  @Profile()
   getMaterial(meshConfig: MeshConfig): THREE.Material {
     const key = this.createMaterialKey(meshConfig);
     const cached = this.materials.get(key);
@@ -49,8 +47,6 @@ export class MaterialManager {
     ].join('|');
   }
 
-  @HandleError()
-  @Profile()
   private createMaterial(meshConfig: MeshConfig): THREE.Material {
     const color = meshConfig.color ?? meshConfig.materialParams?.color ?? '#ffffff';
     const roughness = meshConfig.roughness ?? meshConfig.materialParams?.roughness ?? 0.5;
@@ -104,7 +100,6 @@ export class MaterialManager {
     return new THREE.MeshStandardMaterial(baseOptions);
   }
 
-  @HandleError()
   @MonitorMemory(20) // 텍스처는 메모리를 많이 사용할 수 있음
   private loadTexture(url: string): THREE.Texture {
     const cached = this.textures.get(url);
@@ -118,8 +113,6 @@ export class MaterialManager {
     return texture;
   }
 
-  @HandleError()
-  @Profile()
   updateMaterial(meshId: string, updates: Partial<MeshConfig>): void {
     const entries = this.materialsById.get(meshId);
     if (!entries) return;
@@ -162,7 +155,6 @@ export class MaterialManager {
     }
   }
 
-  @HandleError()
   dispose(): void {
     for (const entries of this.materialsById.values()) for (const { material } of entries) material.dispose();
     this.materialsById.clear();

@@ -128,6 +128,8 @@ decorator 제거는 동작 변경이 있는 slice와 없는 slice를 나눈다. 
 
 23-d 완료(2026-09-24): PhysicsSystem(calculate·drive·resolve·모드별 계산·applyForce·calculateMovement·calculateJump), MotionSystem(update*·setGrounded·calculateJump·applyForce), `BaseController.update`, `AnimationController.update`의 `@HandleError` 17개를 제거했다. 예외는 frame/clock 경계에서 보고된다. 반환 타입이 거짓이던 `calculateJump(): Vector3`도 정상화. 남은 `@HandleError` 50개는 설정·dispose·async 수명주기·bridge 명령 경로로 23-e에서 처리.
 
+23-e·23-f·23-a 완료(2026-09-24): 남은 `@HandleError` 50개와 `@Profile` 적용을 모두 제거하고 두 decorator 정의(`decorators/system.ts`, `Profile`)를 삭제했다. async 메서드의 `@HandleError`는 원래 rejection을 잡지 못해 효과가 없었다. 명령 진입점 `InteractionBridge.executeCommand`는 try/catch + `reportError`(source `command:interaction`)로 명령 경계를 둔다. 공개 `BuildingBridge` 변환기는 잘못된 입력에 throw하지 않는 기존 계약을 `reportError` 보고와 함께 명시적으로 유지하고 `@deprecated`를 붙였다. `AbstractSystem.reset`은 초기화 실패를 호출자에게 전달한다(원자성은 유지). quality ratchet에 `handleErrorDecorators`(0), `profileDecorators`(0), `reflectMetadataImports`(11) 카운터를 추가했다. 남은 23 작업: 23-g bridge 등록 명시 목록화, 23-h `reflect-metadata` 제거, 23-i 오류 계층·catch 정리.
+
 ## 7. 공개 API 영향
 
 - `@HandleError` 제거로 기존에 `undefined`를 받던 호출자가 예외를 받는다. runtime `onError` 추가와 함께 minor 릴리스 노트에 명시한다(열린 질문 1).

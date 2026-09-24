@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-import { Profile, HandleError } from '@core/boilerplate/decorators';
 import { BaseSystem, SystemContext } from '@core/boilerplate/entity/BaseSystem';
 import type { RuntimeRecord } from '@core/boilerplate/types';
 
@@ -59,20 +58,16 @@ export class WorldSystem implements BaseSystem {
   private nearbyIds: string[] = [];
   private nearbyIds2: string[] = [];
 
-  @HandleError()
   async init(): Promise<void> {
     // Reserved for future async world initialization.
   }
 
-  @Profile()
-  @HandleError()
   update(context: SystemContext): void {
     void context;
     // 월드 업데이트 로직
     // 예: checkCollisions 등 주기적인 검사가 필요할 때 여기에 로직 추가
   }
 
-  @HandleError()
   dispose(): void {
     this.cleanup();
   }

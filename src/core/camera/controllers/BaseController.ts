@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-import { Profile } from '@/core/boilerplate/decorators';
 
 import { ICameraController, CameraCalcProps, CameraSystemState, CameraSystemConfig } from '../core/types';
 import { activeStateUtils, cameraUtils, resolveCollisionPosition } from '../utils/camera';
@@ -54,7 +53,6 @@ export abstract class BaseController implements ICameraController {
     }
   }
   
-  @Profile()
   calculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
     void state;
     return activeStateUtils.getPosition(props.activeState);
@@ -94,7 +92,6 @@ export abstract class BaseController implements ICameraController {
     return offset;
   }
   
-  @Profile()
   update(props: CameraCalcProps, state: CameraSystemState): void {
     const { camera, deltaTime, activeState } = props;
     if (!activeState) return;

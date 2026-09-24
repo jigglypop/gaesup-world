@@ -20,6 +20,10 @@ const METRICS = {
     file.endsWith('.tsx') && lineCount(source) > COMPONENT_LINE_LIMIT ? 1 : 0,
   oversizedModules: (source, file) =>
     file.endsWith('.ts') && lineCount(source) > MODULE_LINE_LIMIT ? 1 : 0,
+  // PRD 23: error-swallowing and profiling decorators stay removed; reflect-metadata only shrinks.
+  handleErrorDecorators: (source) => count(source, /@HandleError\(/g),
+  profileDecorators: (source) => count(source, /@Profile\(/g),
+  reflectMetadataImports: (source) => count(source, /^import ['"]reflect-metadata['"]/gm),
 };
 
 function count(source, pattern) {

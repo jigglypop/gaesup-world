@@ -19,61 +19,6 @@ const identityMethodDecorator = (
   return descriptor;
 };
 
-const isPromiseLike = (value: DecoratedValue): value is Promise<DecoratedValue> => {
-  if (typeof value !== 'object' || value === null) return false;
-  const maybePromise = value as {
-    then?: (...args: unknown[]) => unknown;
-    finally?: (...args: unknown[]) => unknown;
-  };
-  return typeof maybePromise.then === 'function' && typeof maybePromise.finally === 'function';
-};
-
-export function Profile(label?: string) {
-  if (isProduction) {
-    void label;
-    return identityMethodDecorator;
-  }
-  return function (
-    target: DecoratorTarget,
-    propertyKey: string,
-    descriptor: PropertyDescriptorExtended
-  ) {
-    const originalMethod = descriptor.value;
-
-    descriptor.value = function (...args: DecoratedValue[]) {
-      if (logger.isEnabled('log') === false) return originalMethod!.apply(this, args);
-      const start = performance.now();
-      let result: DecoratedValue;
-      try {
-        result = originalMethod!.apply(this, args);
-      } catch (e) {
-        const end = performance.now();
-        const time = end - start;
-        const methodLabel = label || `${target.constructor.name}.${propertyKey}`;
-        logger.log(`[Profile] ${methodLabel} executed in ${time.toFixed(2)}ms`);
-        throw e;
-      }
-
-      if (isPromiseLike(result)) {
-        const methodLabel = label || `${target.constructor.name}.${propertyKey}`;
-        return result.finally(() => {
-          const end = performance.now();
-          const time = end - start;
-          logger.log(`[Profile] ${methodLabel} executed in ${time.toFixed(2)}ms`);
-        });
-      }
-
-      const end = performance.now();
-      const time = end - start;
-      const methodLabel = label || `${target.constructor.name}.${propertyKey}`;
-      logger.log(`[Profile] ${methodLabel} executed in ${time.toFixed(2)}ms`);
-      return result;
-    };
-
-    return descriptor;
-  };
-}
-
 export function MonitorMemory(threshold: number = 100) { // MB 단위
   if (isProduction) {
     void threshold;

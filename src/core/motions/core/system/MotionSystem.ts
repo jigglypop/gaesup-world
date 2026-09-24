@@ -2,7 +2,6 @@ import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { AbstractSystem, SystemContext, SystemUpdateArgs, Inject } from '@core/boilerplate/engine';
-import { Profile } from '@core/boilerplate/engine';
 import type { RuntimeRecord } from '@core/boilerplate/engine';
 import type { GameStatesType } from '@core/world/components/Rideable/types';
 
@@ -165,7 +164,6 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     );
   }
 
-  @Profile()
   protected performUpdate(args: MotionUpdateArgs): void {
     if (!args.rigidBody) return;
     const { position, velocity, rotation } = this.extractPhysicsState(args.rigidBody);
@@ -181,7 +179,6 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     throw new Error('MotionSystem requires explicit motion update args.');
   }
 
-  @Profile()
   protected override updateMetrics(deltaTime: number): void {
     void deltaTime;
     const previousSpeed = this.metrics.currentSpeed;
@@ -243,7 +240,6 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     gameStates.isOnTheGround = grounded;
   }
 
-  @Profile()
   private calculateSpeed(): void {
     const distance = this.state.position.distanceTo(this.metrics.lastPosition);
     this.metrics.totalDistance += distance;

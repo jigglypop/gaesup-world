@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-import { Profile } from '@/core/boilerplate/decorators';
 import { GameStatesType } from '@/core/world/components/Rideable/types';
 import { Service } from '@core/boilerplate/engine';
 
@@ -11,7 +10,6 @@ export class MotionService {
   private readonly DEFAULT_ACCELERATION = 5;
   private readonly GROUND_THRESHOLD = 0.1;
 
-  @Profile()
   public calculateMovementForce(
     movement: THREE.Vector3,
     currentVelocity: THREE.Vector3,
@@ -37,7 +35,6 @@ export class MotionService {
     return force;
   }
 
-  @Profile()
   public calculateJumpForce(
     isGrounded: boolean,
     jumpSpeed: number = this.DEFAULT_JUMP_FORCE,
@@ -69,7 +66,6 @@ export class MotionService {
     return v.copy(velocity).multiplyScalar(damping);
   }
 
-  @Profile()
   public limitVelocity(velocity: THREE.Vector3, maxSpeed: number): THREE.Vector3 {
     const speed = this.calculateSpeed(velocity);
     if (speed > maxSpeed) {
@@ -80,7 +76,6 @@ export class MotionService {
     return velocity;
   }
 
-  @Profile()
   public calculateRotationToTarget(
     currentPosition: THREE.Vector3,
     targetPosition: THREE.Vector3
@@ -91,7 +86,6 @@ export class MotionService {
     return Math.atan2(dx, dz);
   }
 
-  @Profile()
   public smoothRotation(
     currentRotation: number,
     targetRotation: number,
@@ -103,7 +97,6 @@ export class MotionService {
     return currentRotation + diff * smoothing;
   }
 
-  @Profile()
   public calculateMetrics(
     velocity: THREE.Vector3,
     previousVelocity: THREE.Vector3,

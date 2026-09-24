@@ -1,7 +1,6 @@
 
 import { RapierRigidBody } from '@react-three/rapier';
 
-import { Profile } from '@/core/boilerplate/decorators';
 import {
   createInteractionInputAdapter,
   type InputAdapter,
@@ -33,7 +32,6 @@ export class ImpulseComponent {
     this.config = config;
   }
 
-  @Profile()
   applyImpulse(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: PhysicsState,
@@ -56,7 +54,6 @@ export class ImpulseComponent {
     }
   }
 
-  @Profile()
   private applyCharacterImpulse(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: PhysicsState,

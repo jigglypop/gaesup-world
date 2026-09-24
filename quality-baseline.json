@@ -4,5 +4,8 @@
   "anyUsages": 0,
   "rawUseFrame": 5,
   "oversizedComponents": 46,
-  "oversizedModules": 16
+  "oversizedModules": 15,
+  "handleErrorDecorators": 0,
+  "profileDecorators": 0,
+  "reflectMetadataImports": 11
 }

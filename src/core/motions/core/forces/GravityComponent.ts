@@ -1,7 +1,6 @@
 
 import { RapierRigidBody } from '@react-three/rapier';
 
-import { Profile } from '@/core/boilerplate/decorators';
 import type { RefObject } from '@core/boilerplate';
 
 import type { PhysicsState } from '../../types';
@@ -15,7 +14,6 @@ export class GravityComponent {
     this.config = config;
   }
 
-  @Profile()
   applyGravity(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: PhysicsState
@@ -37,7 +35,6 @@ export class GravityComponent {
     }
   }
 
-  @Profile()
   private applyCharacterGravity(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: PhysicsState
@@ -53,7 +50,6 @@ export class GravityComponent {
     }
   }
 
-  @Profile()
   private applyAirplaneGravity(
     rigidBodyRef: RefObject<RapierRigidBody>
   ): void {
@@ -61,7 +57,6 @@ export class GravityComponent {
     applyGravityScale(rigidBodyRef.current, gravityScale);
   }
 
-  @Profile()
   private applyVehicleGravity(
     rigidBodyRef: RefObject<RapierRigidBody>
   ): void {

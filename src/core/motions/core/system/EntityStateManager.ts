@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-import { Profile, HandleError } from '@/core/boilerplate/decorators';
 import { GameStatesType } from '@core/world/components/Rideable/types';
 
 import { EntityStateRefs } from './types';
@@ -50,7 +49,6 @@ export class EntityStateManager {
     return this.refs;
   }
   
-  @Profile()
   updateActiveState(updates: Partial<ActiveStateType>): void {
     const target = this.refs.activeState;
     if (updates.position) target.position.set(updates.position.x, updates.position.y, updates.position.z);
@@ -69,12 +67,10 @@ export class EntityStateManager {
     if (updates.isGround !== undefined) target.isGround = updates.isGround;
   }
   
-  @Profile()
   updateGameStates(updates: Partial<GameStatesType>): void {
     Object.assign(this.refs.gameStates, updates);
   }
   
-  @HandleError()
   resetActiveState(): void {
     this.refs.activeState.position.set(0, 0, 0);
     this.refs.activeState.quaternion.identity();
@@ -86,7 +82,6 @@ export class EntityStateManager {
     this.refs.activeState.isGround = false;
   }
   
-  @HandleError()
   resetGameStates(): void {
     this.refs.gameStates.canRide = false;
     this.refs.gameStates.isRiding = false;
@@ -102,13 +97,11 @@ export class EntityStateManager {
     this.refs.gameStates.rideableDistance = undefined;
   }
   
-  @HandleError()
   reset(): void {
     this.resetActiveState();
     this.resetGameStates();
   }
   
-  @HandleError()
   dispose(): void {
     this.reset();
   }

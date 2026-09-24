@@ -1,7 +1,6 @@
 
 import * as THREE from 'three';
 
-import { Profile } from '@/core/boilerplate/decorators';
 import type { RefObject } from '@core/boilerplate';
 import {
   getCachedTrig,
@@ -57,7 +56,6 @@ export class DirectionComponent {
     this.config = config;
   }
 
-  @Profile()
   updateDirection(
     physicsState: PhysicsState,
     controlMode?: string,
@@ -80,7 +78,6 @@ export class DirectionComponent {
     }
   }
 
-  @Profile()
   private updateCharacterDirection(
     physicsState: PhysicsState,
     controlMode?: string,
@@ -96,7 +93,6 @@ export class DirectionComponent {
     }
   }
 
-  @Profile()
   private updateVehicleDirection(
     physicsState: PhysicsState,
     controlMode?: string,
@@ -117,7 +113,6 @@ export class DirectionComponent {
     activeState.dir.copy(activeState.direction);
   }
 
-  @Profile()
   private updateAirplaneDirection(
     physicsState: PhysicsState,
     innerGroupRef?: RefObject<THREE.Group>,
