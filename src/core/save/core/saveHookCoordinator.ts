@@ -124,7 +124,8 @@ class SaveHookCoordinator {
     if (this.saving) { this.pendingSave = true; return; }
     // Claim before serialization, which can itself trigger subscriber callbacks.
     this.saving = true;
-    void this.system.save(this.slot).catch((error: unknown) => {
+    // Unchanged domains make every trigger, including beforeunload, a no-op after the hidden-page save.
+    void this.system.save(this.slot, { skipUnchanged: true }).catch((error: unknown) => {
       logger.error('Automatic save failed', error instanceof Error ? error : String(error));
     }).finally(() => {
       this.saving = false;

@@ -20,6 +20,15 @@ export type DomainBinding<T = SerializedDomainValue> = {
   hydrate: (data: T | null | undefined) => void;
   /** Validate and prepare without mutation; return the deferred application. */
   prepareHydrate?: (data: T | null | undefined) => () => void;
+  /** serialize() returns a fresh snapshot shared with nothing, so SaveSystem keeps it without another clone. */
+  owned?: boolean;
+  /** Changes whenever serialize() output may change. Lets unchanged autosaves skip serialization. */
+  revision?: () => number;
+};
+
+export type SaveOptions = {
+  /** Skip serialization and storage when every domain reports the revision of this slot's last such write. */
+  skipUnchanged?: boolean;
 };
 
 export type Migration = (blob: SaveBlob) => SaveBlob;

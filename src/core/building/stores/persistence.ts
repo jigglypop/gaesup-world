@@ -21,23 +21,30 @@ import type {
   WallGroupConfig,
 } from '../types';
 import { createDefaultTileCategories, createDefaultWallCategories } from './defaultCategories';
+import { clonePlainData } from '../../utils/clone';
 import { TILE_CONSTANTS } from '../types/constants';
 
-export type BuildingSerializableState = Pick<
-  BuildingHydrationTarget,
-  | 'meshes'
-  | 'wallGroups'
-  | 'tileGroups'
-  | 'blocks'
-  | 'objects'
-  | 'showSnow'
-  | 'showFog'
-  | 'fogColor'
-  | 'weatherEffect'
-  | 'worldSurface'
-  | 'wallCategories'
-  | 'tileCategories'
->;
+const SERIALIZED_KEYS = [
+  'meshes',
+  'wallGroups',
+  'tileGroups',
+  'blocks',
+  'objects',
+  'showSnow',
+  'showFog',
+  'fogColor',
+  'weatherEffect',
+  'worldSurface',
+  'wallCategories',
+  'tileCategories',
+] as const;
+
+export type BuildingSerializableState = Pick<BuildingHydrationTarget, typeof SERIALIZED_KEYS[number]>;
+
+/** Every serialized field; immer replaces a field whenever its content changes, so identity marks edits. */
+export function readBuildingSaveFields(state: BuildingSerializableState): unknown[] {
+  return SERIALIZED_KEYS.map((key) => state[key]);
+}
 
 export type BuildingHydrationTarget = {
   meshes: Map<string, MeshConfig>;
@@ -61,26 +68,19 @@ export type BuildingHydrationTarget = {
 export function serializeBuildingState(state: BuildingSerializableState): BuildingSerializedState {
   return {
     version: 1,
-    meshes: Array.from(state.meshes.values(), cloneBuildingValue),
-    wallGroups: Array.from(state.wallGroups.values(), cloneBuildingValue),
-    tileGroups: Array.from(state.tileGroups.values(), cloneBuildingValue),
-    blocks: state.blocks.map(cloneBuildingValue),
-    objects: state.objects.map(cloneBuildingValue),
+    meshes: Array.from(state.meshes.values(), clonePlainData),
+    wallGroups: Array.from(state.wallGroups.values(), clonePlainData),
+    tileGroups: Array.from(state.tileGroups.values(), clonePlainData),
+    blocks: state.blocks.map(clonePlainData),
+    objects: state.objects.map(clonePlainData),
     showSnow: state.showSnow,
     showFog: state.showFog,
     fogColor: state.fogColor,
     weatherEffect: state.weatherEffect,
     worldSurface: state.worldSurface,
-    wallCategories: Array.from(state.wallCategories.values(), cloneBuildingValue),
-    tileCategories: Array.from(state.tileCategories.values(), cloneBuildingValue),
+    wallCategories: Array.from(state.wallCategories.values(), clonePlainData),
+    tileCategories: Array.from(state.tileCategories.values(), clonePlainData),
   };
-}
-
-function cloneBuildingValue<T>(value: T): T {
-  if (typeof structuredClone === 'function') {
-    return structuredClone(value);
-  }
-  return JSON.parse(JSON.stringify(value)) as T;
 }
 
 function validateVector(value: unknown): void {
@@ -165,7 +165,7 @@ export function hydrateBuildingState(
   }
   for (const object of data.objects ?? []) validateVector(object.position);
 
-  data = cloneBuildingValue(data);
+  data = clonePlainData(data);
 
   state.meshes.clear();
   state.wallGroups.clear();

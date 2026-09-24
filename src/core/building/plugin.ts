@@ -9,7 +9,9 @@ import {
   wallToPlacementEntry,
 } from './model';
 import { useBuildingStore, BUILDING_STORE_SERVICE } from './stores/buildingStore';
+import { readBuildingSaveFields } from './stores/persistence';
 import type { BuildingSerializedState } from './types';
+import { createIdentityRevision } from '../save/core/revision';
 
 export interface BuildingPlacementExtension {
   adapter: typeof buildingPlacementAdapter;
@@ -25,6 +27,8 @@ export interface BuildingSaveExtension {
   serialize: () => BuildingSerializedState;
   hydrate: (data: Partial<BuildingSerializedState> | null | undefined) => void;
   prepareHydrate?: (data: Partial<BuildingSerializedState> | null | undefined) => () => void;
+  owned?: boolean;
+  revision?: () => number;
 }
 
 export interface BuildingStoreService {
@@ -84,6 +88,9 @@ export function createBuildingPlugin(options: BuildingPluginOptions = {}): Gaesu
       serialize: () => store.getState().serialize(),
       hydrate: (data: Partial<BuildingSerializedState> | null | undefined) => store.getState().hydrate(data),
       prepareHydrate: (data: Partial<BuildingSerializedState> | null | undefined) => store.getState().prepareHydrate(data),
+      // serialize() clones every entry; UI-only store updates keep the revision.
+      owned: true,
+      revision: createIdentityRevision(() => readBuildingSaveFields(store.getState())),
     }, pluginId);
     ctx.services.register(storeServiceId, {
       useStore: store,

@@ -1,4 +1,5 @@
 import type { GaesupPlugin, PluginContext } from '../plugins';
+import { clonePlainData } from '../utils/clone';
 import { findNPCSimulation } from './core/NPCSimulation';
 import { useNPCStore, type NPCStoreApi, NPC_STORE_SERVICE } from './stores/npcStore';
 import type {
@@ -34,25 +35,18 @@ const DEFAULT_PLUGIN_ID = 'gaesup.npc';
 const DEFAULT_SAVE_EXTENSION_ID = 'npc';
 const DEFAULT_STORE_SERVICE_ID = 'npc.store';
 
-function cloneNPCValue<T>(value: T): T {
-  if (typeof structuredClone === 'function') {
-    return structuredClone(value);
-  }
-  return JSON.parse(JSON.stringify(value)) as T;
-}
-
 export function serializeNPCState(store: NPCStoreApi = useNPCStore): NPCSerializedState {
   const state = store.getState();
 
   return {
     version: 1,
-    templates: Array.from(state.templates.values(), cloneNPCValue),
-    instances: Array.from((findNPCSimulation(store)?.snapshotInstances() ?? state.instances).values(), cloneNPCValue),
-    categories: Array.from(state.categories.values(), cloneNPCValue),
-    clothingSets: Array.from(state.clothingSets.values(), cloneNPCValue),
-    clothingCategories: Array.from(state.clothingCategories.values(), cloneNPCValue),
-    animations: Array.from(state.animations.values(), cloneNPCValue),
-    brainBlueprints: Array.from(state.brainBlueprints.values(), cloneNPCValue),
+    templates: Array.from(state.templates.values(), clonePlainData),
+    instances: Array.from((findNPCSimulation(store)?.snapshotInstances() ?? state.instances).values(), clonePlainData),
+    categories: Array.from(state.categories.values(), clonePlainData),
+    clothingSets: Array.from(state.clothingSets.values(), clonePlainData),
+    clothingCategories: Array.from(state.clothingCategories.values(), clonePlainData),
+    animations: Array.from(state.animations.values(), clonePlainData),
+    brainBlueprints: Array.from(state.brainBlueprints.values(), clonePlainData),
     editMode: state.editMode,
   };
 }
@@ -64,7 +58,7 @@ function prepareCollection<T extends { id: string }>(entries: T[]): Map<string, 
     if (!entry || typeof entry !== 'object' || typeof entry.id !== 'string' || !entry.id.trim() || result.has(entry.id)) {
       throw new TypeError('Invalid NPC collection ID');
     }
-    result.set(entry.id, cloneNPCValue(entry));
+    result.set(entry.id, clonePlainData(entry));
   }
   return result;
 }
@@ -118,6 +112,8 @@ export function createNPCPlugin(options: NPCPluginOptions = {}): GaesupPlugin {
         serialize: () => serializeNPCState(store),
         hydrate: (data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined) => hydrateNPCState(data, store),
         prepareHydrate: (data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined) => prepareNPCState(data, store),
+        // serializeNPCState clones every entry.
+        owned: true,
       }, pluginId);
       ctx.services.register(storeServiceId, {
         useStore: store,

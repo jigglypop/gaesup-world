@@ -1,3 +1,4 @@
+import { clonePlainData } from '../../utils/clone';
 import { logger } from '../../utils/logger';
 import { IndexedDBAdapter } from '../adapters/IndexedDBAdapter';
 import { LocalStorageAdapter } from '../adapters/LocalStorageAdapter';
@@ -9,9 +10,12 @@ import type {
   SaveBlob,
   SaveDiagnostic,
   SaveDiagnosticListener,
+  SaveOptions,
   SaveRestoreGuard,
   SaveSystemOptions,
 } from '../types';
+
+type DomainRevisions = Map<string, number>;
 
 export class SaveSystem {
   private adapter: SaveAdapter;
@@ -26,6 +30,9 @@ export class SaveSystem {
   private restoreGeneration = 0;
   private loading: { generation: number; signal: AbortSignal | undefined } | undefined;
   private pendingMutations = new Map<string, Promise<void>>();
+  // Revisions of each slot's last skipUnchanged write, valid only for the binding generation that wrote it.
+  private savedRevisions = new Map<string, DomainRevisions>();
+  private bindingGeneration = 0;
 
   constructor(opts: SaveSystemOptions) {
     this.adapter = opts.adapter;
@@ -48,16 +55,25 @@ export class SaveSystem {
       serialize: () => binding.serialize(),
       hydrate: (data) => binding.hydrate(data),
       ...(binding.prepareHydrate ? { prepareHydrate: (data: Parameters<DomainBinding['hydrate']>[0]) => binding.prepareHydrate!(data) } : {}),
+      ...(binding.owned ? { owned: true } : {}),
+      ...(binding.revision ? { revision: () => binding.revision!() } : {}),
     };
     this.bindings.set(binding.key, normalizedBinding);
-    this.cancelPendingLoads();
+    this.bindingsChanged();
     return () => {
       if (this.bindings.get(binding.key) === normalizedBinding) {
         if (this.processing) throw new Error('Save operation already in progress');
         this.bindings.delete(binding.key);
-        this.cancelPendingLoads();
+        this.bindingsChanged();
       }
     };
+  }
+
+  private bindingsChanged(): void {
+    this.cancelPendingLoads();
+    // A replaced binding may restart its revision count, so no earlier write proves a slot current.
+    this.bindingGeneration++;
+    this.savedRevisions.clear();
   }
 
   has(key: string): boolean { return this.bindings.has(key); }
@@ -100,7 +116,8 @@ export class SaveSystem {
     const errors: unknown[] = [];
     for (const [key, b] of this.bindings) {
       try {
-        domains[key] = cloneDomain(b.serialize());
+        const value = b.serialize();
+        domains[key] = b.owned ? value : clonePlainData(value);
       } catch (error) {
         errors.push(error);
         this.reportDiagnostic({ phase: 'serialize', key, slot, error });
@@ -152,7 +169,7 @@ export class SaveSystem {
   }
 
   private applyBlob(raw: SaveBlob, slot: string, current: () => boolean, releases: Array<() => void>): boolean {
-    let blob = cloneDomain(raw);
+    let blob = clonePlainData(raw);
     validateSaveEnvelope(blob);
     if (!Number.isInteger(blob.version) || blob.version < 1 || blob.version > this.currentVersion) {
       throw new Error(`Unsupported save version: ${blob.version}`);
@@ -169,15 +186,13 @@ export class SaveSystem {
     }
     if (!current()) return false;
     const errors: unknown[] = [];
-    // Capture every domain before validation/application. Serializers may return live objects.
-    const snapshot = this.serializeBlob(slot);
-    const applications: Array<{ key: string; apply: () => void; rollback: () => void }> = [];
+    const applications: Array<{ key: string; binding: DomainBinding; apply: () => void }> = [];
     for (const [key, binding] of this.bindings) {
       try {
         const data = blob.domains[key];
-        applications.push({ key, apply: binding.prepareHydrate
+        applications.push({ key, binding, apply: binding.prepareHydrate
           ? binding.prepareHydrate(data)
-          : () => binding.hydrate(data), rollback: () => binding.hydrate(snapshot.domains[key]) });
+          : () => binding.hydrate(data) });
       } catch (error) {
         errors.push(error);
         this.reportDiagnostic({ phase: 'hydrate', key, slot, error });
@@ -185,6 +200,9 @@ export class SaveSystem {
     }
     if (errors.length > 0) throw new AggregateError(errors, 'Save hydration failed');
     if (!current()) return false;
+    // Capture rollback state only once every domain validated, still before any apply or guard.
+    // Serializers may return live objects.
+    const snapshot = this.serializeBlob(slot);
     for (const guard of this.restoreGuards) {
       if (!current()) return false;
       try {
@@ -209,7 +227,7 @@ export class SaveSystem {
         for (let previous = applied; previous >= 0; previous--) {
           const application = applications[previous]!;
           try {
-            application.rollback();
+            application.binding.hydrate(snapshot.domains[application.key]);
           } catch (rollbackError) {
             errors.push(rollbackError);
             this.reportDiagnostic({ phase: 'hydrate', operation: 'rollback', key: application.key, slot, error: rollbackError });
@@ -224,9 +242,32 @@ export class SaveSystem {
     return current();
   }
 
-  async save(slot: string = this.defaultSlot): Promise<void> {
-    const blob = this.createBlob(slot);
-    await this.enqueueMutation(slot, () => this.adapter.write(slot, blob));
+  async save(slot: string = this.defaultSlot, options: SaveOptions = {}): Promise<void> {
+    const generation = this.bindingGeneration;
+    let revisions: DomainRevisions | undefined;
+    const blob = this.process(() => {
+      if (options.skipUnchanged) {
+        // Read before serializing, so a change made during serialization reads as dirty next time.
+        revisions = this.readRevisions();
+        if (revisions && sameRevisions(revisions, this.savedRevisions.get(slot))) return undefined;
+      }
+      return this.serializeBlob(slot);
+    });
+    if (!blob) return;
+    await this.enqueueMutation(slot, async () => {
+      await this.adapter.write(slot, blob);
+      if (revisions && generation === this.bindingGeneration) this.savedRevisions.set(slot, revisions);
+    });
+  }
+
+  /** Undefined while any domain cannot report a revision; such saves always write. */
+  private readRevisions(): DomainRevisions | undefined {
+    const revisions: DomainRevisions = new Map();
+    for (const [key, binding] of this.bindings) {
+      if (!binding.revision) return undefined;
+      revisions.set(key, binding.revision());
+    }
+    return revisions;
   }
 
   /** An aborted or superseded load returns false without applying the stored domains. */
@@ -253,7 +294,12 @@ export class SaveSystem {
 
   async list(): Promise<string[]> { return this.adapter.list(); }
   async remove(slot: string = this.defaultSlot): Promise<void> {
-    return this.enqueueMutation(slot, () => this.adapter.remove(slot));
+    // Later autosaves write the slot again, including ones queued behind this removal.
+    this.savedRevisions.delete(slot);
+    return this.enqueueMutation(slot, () => {
+      this.savedRevisions.delete(slot);
+      return this.adapter.remove(slot);
+    });
   }
 
   private enqueueMutation(slot: string, operation: () => Promise<void>): Promise<void> {
@@ -289,11 +335,12 @@ export class SaveSystem {
 
 class RestoreCancelledError extends Error { constructor() { super('Save restoration was cancelled'); } }
 
-function cloneDomain<T>(value: T): T {
-  if (value === undefined || value === null || typeof value !== 'object') return value;
-  if (typeof structuredClone === 'function') return structuredClone(value);
-  // Legacy environments use the same JSON value contract as LocalStorageAdapter.
-  return JSON.parse(JSON.stringify(value)) as T;
+function sameRevisions(current: DomainRevisions, saved: DomainRevisions | undefined): boolean {
+  if (!saved || saved.size !== current.size) return false;
+  for (const [key, revision] of current) {
+    if (saved.get(key) !== revision) return false;
+  }
+  return true;
 }
 
 function validateSaveEnvelope(blob: SaveBlob): void {

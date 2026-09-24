@@ -68,6 +68,27 @@ describe('building plugin', () => {
     }
   });
 
+  it('owns its snapshot and keeps its save revision across UI-only store updates', async () => {
+    const registry = createPluginRegistry();
+    registry.register(createBuildingPlugin());
+    await registry.setup('gaesup.building');
+    const previous = useBuildingStore.getState().serialize();
+    const binding = registry.context.save.require<DomainBinding>('building');
+    try {
+      expect(binding.owned).toBe(true);
+      const revision = binding.revision!();
+      useBuildingStore.getState().setShowGrid(!useBuildingStore.getState().showGrid);
+      useBuildingStore.getState().setGridSize(useBuildingStore.getState().gridSize + 1);
+      expect(binding.revision!()).toBe(revision);
+      useBuildingStore.getState().hydrate({ meshes: [{ id: 'revision-mesh', color: '#fff', material: 'STANDARD' }] });
+      expect(binding.revision!()).toBe(revision + 1);
+      expect(binding.revision!()).toBe(revision + 1);
+    } finally {
+      useBuildingStore.getState().hydrate(previous);
+      await registry.dispose('gaesup.building');
+    }
+  });
+
   it('registers building grid and placement extensions', async () => {
     const registry = createPluginRegistry();
     const readyEvents: unknown[] = [];

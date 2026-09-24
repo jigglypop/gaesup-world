@@ -7,6 +7,7 @@ import {
 import type { SceneDocument, SceneMigration } from '..';
 import { SaveSystem } from '../../save';
 import type { SaveAdapter } from '../../save';
+import * as core from '../core';
 
 const adapter: SaveAdapter = {
   read: async () => null,
@@ -77,6 +78,52 @@ describe('createSceneDocumentSaveBinding', () => {
     });
     expect(controller.getSnapshot().objects).toHaveLength(1);
     expect(controller.getSnapshot().objects[0]?.tags).toEqual(['initial']);
+  });
+
+  test('serializes a trusted snapshot with one copy, no validation and a stable revision', () => {
+    const controller = createSceneDocumentController(
+      createSceneDocument({ id: 'scene', objects: [{ id: 'root', name: 'Root' }] }),
+    );
+    controller.dispatch({ type: 'scene-object.update', objectId: 'root', patch: { name: 'Edited' } });
+    const binding = createSceneDocumentSaveBinding(controller);
+    const validate = jest.spyOn(core, 'validateSceneDocument');
+    try {
+      expect(binding.owned).toBe(true);
+      expect(binding.serialize()).toEqual(controller.getSnapshot());
+      expect(validate).not.toHaveBeenCalled();
+      const revision = binding.revision!();
+      expect(binding.revision!()).toBe(revision);
+      controller.dispatch({ type: 'scene-object.update', objectId: 'root', patch: { name: 'Again' } });
+      expect(binding.revision!()).toBe(revision + 1);
+    } finally {
+      validate.mockRestore();
+    }
+  });
+
+  test('validates an untrusted controller snapshot on save and always reads it as changed', () => {
+    const snapshot = createSceneDocument({ id: 'custom', objects: [{ id: 'root' }] });
+    const binding = createSceneDocumentSaveBinding({ getSnapshot: () => snapshot, dispatch: jest.fn() });
+    const validate = jest.spyOn(core, 'validateSceneDocument');
+    try {
+      expect(binding.serialize()).toEqual(snapshot);
+      expect(validate).toHaveBeenCalled();
+      expect(binding.revision!()).not.toBe(binding.revision!());
+    } finally {
+      validate.mockRestore();
+    }
+  });
+
+  test('hydration validates the migrated document once', () => {
+    const controller = createSceneDocumentController(createSceneDocument({ id: 'current' }));
+    const binding = createSceneDocumentSaveBinding(controller);
+    const validate = jest.spyOn(core, 'validateSceneDocument');
+    try {
+      binding.hydrate(createSceneDocument({ id: 'loaded', objects: [{ id: 'a' }, { id: 'b', parentId: 'a' }] }));
+      expect(controller.getSnapshot().objects.map((object) => object.id)).toEqual(['a', 'b']);
+      expect(validate).toHaveBeenCalledTimes(1);
+    } finally {
+      validate.mockRestore();
+    }
   });
 
   test('hydrates through migration and the canonical replace command', () => {

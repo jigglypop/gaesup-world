@@ -2,6 +2,7 @@ import { validateSceneComponentData } from './componentSchemas';
 import { isCanonicalSceneJsonObject } from './core';
 import { deepFreezeOwned } from './ownership';
 import { parseSceneDocument } from './serialization';
+import { trustSceneSnapshot } from './trustedSnapshots';
 import type {
   SceneDocument,
   SceneDocumentBatchCommand,
@@ -87,6 +88,8 @@ export function applySceneComponentUpdate(
     objects: document.objects.map((entry) => (entry.id === objectId ? nextObject : entry)),
   });
   if (!parsed.ok || !parsed.document) return reject(document, parsed.issues);
+  // The fresh parse is validated and becomes deep-frozen below.
+  trustSceneSnapshot(parsed.document);
   return accept(parsed.document, {
     type: 'scene-object.component.updated',
     documentId: parsed.document.id,

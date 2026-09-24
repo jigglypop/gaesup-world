@@ -1,6 +1,7 @@
 import { applySceneDocumentCommand } from './commands';
 import { deepFreezeOwned } from './ownership';
 import { parseSceneDocument } from './serialization';
+import { trustSceneSnapshot } from './trustedSnapshots';
 import type {
   SceneDocument,
   SceneDocumentController,
@@ -27,7 +28,7 @@ export function createSceneDocumentController(
     throw new TypeError(formatSceneDocumentIssues(parsed.issues));
   }
 
-  let snapshot = deepFreezeOwned(parsed.document);
+  let snapshot = trustSceneSnapshot(deepFreezeOwned(parsed.document));
   let revision = 0;
   const listeners = new Map<SceneDocumentControllerListener, SceneDocumentListenerRegistration>();
   const notificationQueue: SceneDocumentNotification[] = [];

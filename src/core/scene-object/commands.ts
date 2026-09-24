@@ -2,6 +2,7 @@ import { SCENE_DOCUMENT_VERSION, isCanonicalSceneJsonObject } from './core';
 import { applySceneComponentUpdate, applySceneDocumentBatch } from './extendedCommands';
 import { deepFreezeOwned } from './ownership';
 import { parseSceneDocument } from './serialization';
+import { isTrustedSceneSnapshot, trustSceneSnapshot } from './trustedSnapshots';
 import type {
   SceneDocument,
   SceneDocumentCommand,
@@ -20,8 +21,6 @@ import type {
 } from './types';
 
 const MISSING_PROPERTY = Symbol('missing-scene-command-property');
-// Only snapshots returned by this module are trusted; callers cannot brand mutable input.
-const validatedSnapshots = new WeakSet<SceneDocument>();
 
 type SceneCommandMutation = {
   candidate: unknown;
@@ -44,7 +43,7 @@ export function applySceneDocumentCommand(
   command: SceneDocumentCommand,
 ): SceneDocumentCommandResult {
   let current = document;
-  if (!validatedSnapshots.has(document)) {
+  if (!isTrustedSceneSnapshot(document)) {
     try {
       assertCanonicalSceneDocument(document, 'Current scene document');
     } catch (error) {
@@ -101,12 +100,7 @@ function applyToCanonicalDocument(
     nextDocument = parsedCandidate.document;
   }
 
-  const result = createAcceptedResult(
-    nextDocument,
-    mutation.createEvent(nextDocument),
-  );
-  validatedSnapshots.add(result.document);
-  return result;
+  return createAcceptedResult(nextDocument, mutation.createEvent(nextDocument));
 }
 
 function isRecordCommand<TType extends SceneDocumentCommand['type']>(
@@ -127,9 +121,12 @@ function createMutation(
     case 'scene-document.replace': {
       assertOnlyKeys(command, ['type', 'document'], 'Replace scene command');
       const replacement = readRequiredProperty(command, 'document', 'Replacement scene document');
-      assertCanonicalSceneDocument(replacement, 'Replacement scene document');
+      // A trusted snapshot is validated and immutable; it becomes the next snapshot as is.
+      const trusted = isTrustedSceneSnapshot(replacement as SceneDocument);
+      if (!trusted) assertCanonicalSceneDocument(replacement, 'Replacement scene document');
       return {
         candidate: replacement,
+        ...(trusted ? { validatedDocument: replacement as SceneDocument } : {}),
         createEvent: (nextDocument) => ({
           type: 'scene-document.replaced',
           documentId: nextDocument.id,
@@ -577,7 +574,9 @@ function createAcceptedResult(
   document: SceneDocument,
   event: SceneDocumentEvent,
 ): SceneDocumentCommandAcceptedResult {
-  return deepFreezeOwned({ accepted: true, document, event });
+  const result = deepFreezeOwned({ accepted: true as const, document, event });
+  trustSceneSnapshot(result.document);
+  return result;
 }
 
 function createRejectedResult(
