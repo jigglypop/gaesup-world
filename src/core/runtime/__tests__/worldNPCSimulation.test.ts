@@ -107,3 +107,42 @@ test('save restore blocks reentrant simulation and resumes the restored live pos
     expect(runtime.npcSimulation.getPose('one')).toBeUndefined();
   } finally { off(); await runtime.dispose(); }
 });
+
+test('a decision tick with actions for many NPCs is one store update', async () => {
+  const runtime = createGaesupRuntime(); await runtime.setup();
+  runtime.npcBrainAdapters.register('scripted', 'look', ({ observation }) => ({
+    source: 'scripted',
+    actions: [{ type: 'lookAt', target: [1, 0, 1] }, { type: 'remember', key: 'seen', value: observation.perceived.length }],
+  }));
+  try {
+    for (let i = 0; i < 50; i++) {
+      runtime.npcStore.getState().addInstance({ ...npc(String(i)), brain: { mode: 'scripted', policyId: 'look' } });
+    }
+    const notify = jest.fn(); const off = runtime.npcStore.subscribe(notify);
+    runtime.clockLoop.clock.stepTicks(60);
+    off();
+    expect(notify).toHaveBeenCalledTimes(1);
+    const instance = runtime.npcStore.getState().instances.get('7')!;
+    expect(instance.lastDecision?.actions).toHaveLength(2);
+    expect(instance.rotation[1]).toBeCloseTo(Math.PI / 4);
+    expect(instance.brain?.memory?.['seen']).toBeDefined();
+  } finally { await runtime.dispose(); }
+});
+
+test('kinematic bodies are written only while their NPC moves', async () => {
+  const runtime = createGaesupRuntime(); await runtime.setup();
+  try {
+    runtime.npcStore.getState().addInstance(npc());
+    const body = { isValid: () => true, setTranslation: jest.fn(), setRotation: jest.fn(), isKinematic: () => true, setNextKinematicTranslation: jest.fn(), setNextKinematicRotation: jest.fn() };
+    const detach = runtime.npcSimulation.bindBody('one', body as unknown as RapierRigidBody);
+    runtime.clockLoop.clock.stepTicks(60);
+    expect(body.setNextKinematicTranslation.mock.calls.length).toBeLessThanOrEqual(1);
+    runtime.npcStore.getState().setNavigation('one', [[1, 0, 0]], 3);
+    body.setNextKinematicTranslation.mockClear();
+    runtime.clockLoop.clock.stepTicks(60);
+    // 1m at 3m/s is 20 ticks of motion; the stopped NPC is not rewritten for the remaining 40.
+    expect(body.setNextKinematicTranslation).toHaveBeenCalledTimes(20);
+    expect(body.setNextKinematicTranslation.mock.calls.at(-1)![0].x).toBeCloseTo(1);
+    detach();
+  } finally { await runtime.dispose(); }
+});

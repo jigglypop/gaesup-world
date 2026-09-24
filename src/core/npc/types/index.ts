@@ -187,6 +187,14 @@ export interface NPCBrainDecision {
   reason?: string;
 }
 
+/** One NPC's result of a decision tick; a tick's entries apply in a single store update. */
+export type NPCDecisionEntry = {
+  instanceId: string;
+  observation: NPCObservation;
+  /** Recorded and executed only when it has actions. */
+  decision?: NPCBrainDecision;
+};
+
 export interface NPCInstance {
   id: string;
   templateId: string;

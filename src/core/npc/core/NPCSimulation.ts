@@ -5,7 +5,7 @@ import { resolveNPCBrainDecision, type NPCBrainAdapterRegistry } from './brain';
 import { NPCPerceptionIndex } from './NPCPerceptionIndex';
 import type { AnimationClockLoop } from '../../simulation/AnimationClockLoop';
 import type { FixedTick } from '../../simulation/FixedStepClock';
-import type { NPCInstance, NPCObservation } from '../types';
+import type { NPCDecisionEntry, NPCInstance } from '../types';
 import type { NPCBodyPort, NPCSimulationStore } from '../types/simulation';
 
 type Point = [number, number, number];
@@ -13,7 +13,23 @@ type Pose = {
   position: Point; rotation: Point;
   sourcePosition: Point; sourceRotation: Point;
   nextDecision: number;
+  /** Kinematic bodies keep their last target, so they are written only after the pose changes. */
+  moved: boolean;
 };
+
+function applyDecisions(store: NPCSimulationStore, entries: NPCDecisionEntry[]): void {
+  const state = store.getState();
+  if (state.applyNPCDecisions) {
+    state.applyNPCDecisions(entries);
+    return;
+  }
+  state.setInstanceObservations(entries.map(({ instanceId, observation }) => [instanceId, observation] as const));
+  for (const { instanceId, decision } of entries) {
+    if (!decision) continue;
+    state.setInstanceDecision(instanceId, decision);
+    state.executeInstanceActions(instanceId, decision.actions);
+  }
+}
 const simulations = new WeakMap<NPCSimulationStore, NPCSimulation>();
 export function findNPCSimulation(store: NPCSimulationStore): NPCSimulation | undefined { return simulations.get(store); }
 
@@ -29,6 +45,7 @@ export class NPCSimulation {
   private active = false;
   private euler = new Euler();
   private rotation = new Quaternion();
+  private translation = { x: 0, y: 0, z: 0 };
   private perception = new NPCPerceptionIndex();
 
   constructor(private readonly store: NPCSimulationStore, private readonly loop: AnimationClockLoop,
@@ -77,11 +94,13 @@ export class NPCSimulation {
     for (const instance of instances.values()) {
       let pose = this.poses.get(instance.id);
       if (!pose) {
-        pose = { position: [...instance.position], rotation: [...instance.rotation], sourcePosition: instance.position, sourceRotation: instance.rotation, nextDecision: 0 };
+        pose = { position: [...instance.position], rotation: [...instance.rotation], sourcePosition: instance.position, sourceRotation: instance.rotation, nextDecision: 0, moved: true };
         this.poses.set(instance.id, pose);
       }
-      if (pose.sourcePosition !== instance.position) { pose.position = [...instance.position]; pose.sourcePosition = instance.position; pose.nextDecision = 0; }
-      if (pose.sourceRotation !== instance.rotation) { pose.rotation = [...instance.rotation]; pose.sourceRotation = instance.rotation; }
+      if (pose.sourcePosition !== instance.position) {
+        pose.position = [...instance.position]; pose.sourcePosition = instance.position; pose.nextDecision = 0; pose.moved = true;
+      }
+      if (pose.sourceRotation !== instance.rotation) { pose.rotation = [...instance.rotation]; pose.sourceRotation = instance.rotation; pose.moved = true; }
     }
   }
 
@@ -106,10 +125,21 @@ export class NPCSimulation {
     entries.add(body);
     const pose = this.getPose(id);
     if (pose && body.isValid()) {
-      body.setTranslation({ x: pose.position[0], y: pose.position[1], z: pose.position[2] }, true);
-      body.setRotation(this.rotation.setFromEuler(this.euler.set(...pose.rotation)), true);
+      body.setTranslation(this.writeTranslation(pose), true);
+      body.setRotation(this.writeRotation(pose), true);
     }
     return () => { entries.delete(body); if (!entries.size && this.bodies.get(id) === entries) this.bodies.delete(id); };
+  }
+
+  private writeTranslation(pose: Readonly<{ position: Point }>): { x: number; y: number; z: number } {
+    const [x, y, z] = pose.position;
+    this.translation.x = x; this.translation.y = y; this.translation.z = z;
+    return this.translation;
+  }
+
+  private writeRotation(pose: Readonly<{ rotation: Point }>): Quaternion {
+    const [x, y, z] = pose.rotation;
+    return this.rotation.setFromEuler(this.euler.set(x, y, z));
   }
 
   private update(tick: FixedTick): void {
@@ -122,40 +152,38 @@ export class NPCSimulation {
       const bodies = this.bodies.get(instance.id);
       if (bodies) for (const body of bodies) {
         if (!body.isValid()) continue;
-        const [x, y, z] = pose.position;
-        if (body.isKinematic()) body.setNextKinematicTranslation({ x, y, z });
-        else body.setTranslation({ x, y, z }, true);
-        this.rotation.setFromEuler(this.euler.set(...pose.rotation));
-        if (body.isKinematic()) body.setNextKinematicRotation(this.rotation);
-        else body.setRotation(this.rotation, true);
+        if (body.isKinematic()) {
+          if (!pose.moved) continue;
+          body.setNextKinematicTranslation(this.writeTranslation(pose));
+          body.setNextKinematicRotation(this.writeRotation(pose));
+        } else {
+          body.setTranslation(this.writeTranslation(pose), true);
+          body.setRotation(this.writeRotation(pose), true);
+        }
       }
+      pose.moved = false;
     }
     let observed: Map<string, NPCInstance> | undefined;
-    const observations: [string, NPCObservation][] = [];
+    const entries: NPCDecisionEntry[] = [];
     for (const instance of this.store.getState().instances.values()) {
       const pose = this.poses.get(instance.id);
       if (!pose || (instance.brain?.mode ?? 'none') === 'none' || tick.elapsedSeconds + 1e-9 < pose.nextDecision) continue;
       pose.nextDecision = tick.elapsedSeconds + Math.max(0.5, instance.behavior?.waitSeconds ?? 1);
       if (!observed) { observed = this.snapshotInstances(); this.perception.refresh(observed); }
-      const current = observed.get(instance.id)!;
-      observations.push([instance.id, this.perception.observe(current, tick.elapsedSeconds)]);
+      entries.push({ instanceId: instance.id, observation: this.perception.observe(observed.get(instance.id)!, tick.elapsedSeconds) });
     }
     if (!observed) return;
-    this.store.getState().setInstanceObservations(observations);
-    for (const [id, observation] of observations) {
+    for (const entry of entries) {
+      const current = observed.get(entry.instanceId)!;
+      const owner = this.store.getState().instances.get(entry.instanceId);
+      if (!owner || owner.brain !== current.brain || owner.templateId !== current.templateId) continue;
+      const decision = resolveNPCBrainDecision(current, entry.observation, this.options.scoped ? this.store.getState().brainBlueprints : undefined, this.options.conditions, this.options.adapters);
       if (!this.active) return;
-      const current = observed.get(id)!;
-      const instance = this.store.getState().instances.get(id);
-      if (!instance || instance.brain !== current.brain || instance.templateId !== current.templateId) continue;
-      const decisionOwner = this.store.getState().instances.get(instance.id);
-      const decision = resolveNPCBrainDecision(current, observation, this.options.scoped ? this.store.getState().brainBlueprints : undefined, this.options.conditions, this.options.adapters);
-      if (!this.active) return;
-      if (this.store.getState().instances.get(instance.id) !== decisionOwner) continue;
-      if (decision?.actions.length) {
-        this.store.getState().setInstanceDecision(instance.id, decision);
-        this.store.getState().executeInstanceActions(instance.id, decision.actions);
-      }
+      // An adapter that rewrote this NPC while deciding owns the result; the stale decision is dropped.
+      if (this.store.getState().instances.get(entry.instanceId) !== owner) continue;
+      if (decision?.actions.length) entry.decision = decision;
     }
+    applyDecisions(this.store, entries);
   }
 
   private move(instance: NPCInstance, pose: Pose, delta: number): void {
@@ -170,6 +198,7 @@ export class NPCSimulation {
         const fraction = Math.min(1, remaining / distance);
         pose.position[0] += dx * fraction; pose.position[1] += dy * fraction; pose.position[2] += dz * fraction;
         if (Math.hypot(dx, dz) > 1e-9) pose.rotation[1] = Math.atan2(dx, dz);
+        pose.moved = true;
       }
       if (distance > remaining + 1e-9) break;
       remaining = Math.max(0, remaining - distance);

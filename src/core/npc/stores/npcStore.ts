@@ -6,6 +6,7 @@ import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useQuestStore } from '../../quests/stores/questStore';
 import { useFriendshipStore } from '../../relations/stores/friendshipStore';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createUniqueId } from '../../utils/id';
 import {
   registerNPCBrainBlueprint,
   setDefaultNPCBrainConditionStores,
@@ -18,7 +19,6 @@ import {
   NPCCategory,
   NPCAnimation,
   NPCPart,
-  NPCNavigationState,
   NPCVolumeConfig,
   NPCBrainConfig,
   NPCPerceptionConfig,
@@ -27,6 +27,7 @@ import {
   NPCObservation,
   NPCBrainDecision,
   NPCBrainBlueprint,
+  NPCDecisionEntry,
   ClothingSet,
   ClothingCategory,
   NPCEvent
@@ -96,6 +97,132 @@ function getIdleAnimation(instance: NPCInstance): string {
 
 function getMoveAnimation(instance: NPCInstance, speed: number): string {
   return instance.behavior?.moveAnimation ?? (speed >= 3.8 ? 'run' : 'walk');
+}
+
+function withBehavior(instance: NPCInstance, behavior: Partial<NPCBehaviorConfig>): NPCInstance {
+  const nextBehavior = { ...(instance.behavior ?? DEFAULT_NPC_BEHAVIOR), ...behavior };
+  const next: NPCInstance = { ...instance, behavior: nextBehavior };
+  if (nextBehavior.mode === 'idle') {
+    next.currentAnimation = nextBehavior.idleAnimation ?? 'idle';
+    delete next.navigation;
+  } else if (behavior.moveAnimation !== undefined) {
+    next.currentAnimation = behavior.moveAnimation;
+  }
+  return next;
+}
+
+function withNavigation(instance: NPCInstance, waypoints: [number, number, number][], speed: number): NPCInstance {
+  return {
+    ...instance,
+    navigation: { waypoints, currentIndex: 0, speed, state: 'moving' },
+    currentAnimation: getMoveAnimation(instance, speed),
+  };
+}
+
+function withoutNavigation(instance: NPCInstance): NPCInstance {
+  const next: NPCInstance = { ...instance, currentAnimation: getIdleAnimation(instance) };
+  delete next.navigation;
+  return next;
+}
+
+/**
+ * Applies one action to the draft. Every action is one instance replacement, so a list of actions, or a whole
+ * decision tick, is a single store update instead of one or more per action.
+ */
+function applyNPCAction(state: NPCStore, instanceId: string, action: NPCAction, invalidateBrain: (id?: string) => void): void {
+  const instance = state.instances.get(instanceId);
+  if (!instance) return;
+  const speed = action.type === 'moveTo' || action.type === 'patrol' || action.type === 'wander'
+    ? action.speed ?? instance.behavior?.speed ?? DEFAULT_NPC_BEHAVIOR.speed
+    : 0;
+  let next: NPCInstance;
+  switch (action.type) {
+    case 'idle':
+      next = withoutNavigation(withBehavior(instance, {
+        mode: 'idle',
+        ...(action.animationId ? { idleAnimation: action.animationId, arriveAnimation: action.animationId } : {}),
+      }));
+      if (action.animationId) next.currentAnimation = action.animationId;
+      break;
+    case 'moveTo':
+      next = withNavigation(
+        action.animationId ? withBehavior(instance, { moveAnimation: action.animationId }) : instance,
+        [action.target],
+        speed,
+      );
+      break;
+    case 'patrol':
+      if (action.waypoints.length === 0) return;
+      next = withNavigation(withBehavior(instance, {
+        mode: 'patrol',
+        waypoints: action.waypoints,
+        speed,
+        loop: action.loop ?? instance.behavior?.loop ?? true,
+        ...(action.animationId ? { moveAnimation: action.animationId } : {}),
+      }), action.waypoints, speed);
+      break;
+    case 'wander':
+      next = withBehavior(instance, {
+        mode: 'wander',
+        speed,
+        wanderRadius: action.radius ?? instance.behavior?.wanderRadius ?? DEFAULT_NPC_BEHAVIOR.wanderRadius ?? 4,
+        waitSeconds: action.waitSeconds ?? instance.behavior?.waitSeconds ?? DEFAULT_NPC_BEHAVIOR.waitSeconds ?? 1.5,
+      });
+      break;
+    case 'playAnimation': {
+      const animation = state.animations.get(action.animationId);
+      if (animation) {
+        state.animations.set(action.animationId, {
+          ...animation,
+          ...(action.loop !== undefined ? { loop: action.loop } : {}),
+          ...(action.speed !== undefined ? { speed: action.speed } : {}),
+        });
+      }
+      next = { ...instance, currentAnimation: action.animationId };
+      break;
+    }
+    case 'lookAt':
+      next = {
+        ...instance,
+        rotation: [
+          instance.rotation[0],
+          Math.atan2(action.target[0] - instance.position[0], action.target[2] - instance.position[2]),
+          instance.rotation[2],
+        ],
+      };
+      break;
+    case 'speak':
+      next = {
+        ...instance,
+        events: [...(instance.events ?? []), {
+          id: createUniqueId('npc-speak'),
+          type: 'onInteract',
+          action: 'dialogue',
+          payload: {
+            type: 'dialogue',
+            text: action.text,
+            ...(action.duration !== undefined ? { duration: action.duration } : {}),
+          },
+        }],
+      };
+      break;
+    case 'interact':
+      next = { ...instance, metadata: { ...instance.metadata, lastInteractionTargetId: action.targetId } };
+      break;
+    case 'remember':
+      invalidateBrain(instanceId);
+      next = {
+        ...instance,
+        brain: {
+          ...(instance.brain ?? DEFAULT_NPC_BRAIN),
+          memory: { ...(instance.brain?.memory ?? {}), [action.key]: action.value },
+        },
+      };
+      break;
+    default:
+      return;
+  }
+  state.instances.set(instanceId, next);
 }
 
 function attachReinforcementBrainToInstances(state: NPCStore): void {
@@ -175,6 +302,8 @@ interface NPCStore extends NPCSystemState {
   setInstanceObservation: (instanceId: string, observation: NPCObservation) => void;
   setInstanceObservations: (observations: ReadonlyArray<readonly [string, NPCObservation]>) => void;
   setInstanceDecision: (instanceId: string, decision: NPCBrainDecision) => void;
+  /** Records a decision tick's observations and decisions and executes their actions in one update. */
+  applyNPCDecisions: (entries: ReadonlyArray<NPCDecisionEntry>) => void;
   executeInstanceAction: (instanceId: string, action: NPCAction) => void;
   executeInstanceActions: (instanceId: string, actions: NPCAction[]) => void;
   addInstanceEvent: (instanceId: string, event: NPCEvent) => void;
@@ -775,21 +904,7 @@ function buildNPCStore(legacyBlueprintRegistry = false, invalidateBrainRequests:
 
     updateInstanceBehavior: (instanceId, behavior) => set((state) => {
       const instance = state.instances.get(instanceId);
-      if (!instance) return;
-      const nextBehavior = { ...(instance.behavior ?? DEFAULT_NPC_BEHAVIOR), ...behavior };
-      const nextInstance: NPCInstance = {
-        ...instance,
-        behavior: nextBehavior,
-      };
-      if (nextBehavior.mode === 'idle') {
-        nextInstance.currentAnimation = nextBehavior.idleAnimation ?? 'idle';
-      } else if (behavior.moveAnimation !== undefined) {
-        nextInstance.currentAnimation = behavior.moveAnimation;
-      }
-      if (nextBehavior.mode === 'idle') {
-        delete nextInstance.navigation;
-      }
-      state.instances.set(instanceId, nextInstance);
+      if (instance) state.instances.set(instanceId, withBehavior(instance, behavior));
     }),
 
     setInstanceObservation: (instanceId, observation) => get().setInstanceObservations([[instanceId, observation]]),
@@ -809,104 +924,29 @@ function buildNPCStore(legacyBlueprintRegistry = false, invalidateBrainRequests:
       });
     }),
 
-    executeInstanceAction: (instanceId, action) => {
-      const store = get();
-      const instance = store.instances.get(instanceId);
-      if (!instance) return;
-
-      switch (action.type) {
-        case 'idle':
-          store.updateInstanceBehavior(instanceId, {
-            mode: 'idle',
-            ...(action.animationId ? { idleAnimation: action.animationId, arriveAnimation: action.animationId } : {}),
-          });
-          store.clearNavigation(instanceId);
-          if (action.animationId) store.updateInstance(instanceId, { currentAnimation: action.animationId });
-          return;
-
-        case 'moveTo':
-          if (action.animationId) {
-            store.updateInstanceBehavior(instanceId, { moveAnimation: action.animationId });
-          }
-          store.setNavigation(instanceId, [action.target], action.speed ?? instance.behavior?.speed ?? DEFAULT_NPC_BEHAVIOR.speed);
-          return;
-
-        case 'patrol':
-          if (action.waypoints.length === 0) return;
-          store.updateInstanceBehavior(instanceId, {
-            mode: 'patrol',
-            waypoints: action.waypoints,
-            speed: action.speed ?? instance.behavior?.speed ?? DEFAULT_NPC_BEHAVIOR.speed,
-            loop: action.loop ?? instance.behavior?.loop ?? true,
-            ...(action.animationId ? { moveAnimation: action.animationId } : {}),
-          });
-          store.setNavigation(instanceId, action.waypoints, action.speed ?? instance.behavior?.speed ?? DEFAULT_NPC_BEHAVIOR.speed);
-          return;
-
-        case 'wander':
-          store.updateInstanceBehavior(instanceId, {
-            mode: 'wander',
-            speed: action.speed ?? instance.behavior?.speed ?? DEFAULT_NPC_BEHAVIOR.speed,
-            wanderRadius: action.radius ?? instance.behavior?.wanderRadius ?? DEFAULT_NPC_BEHAVIOR.wanderRadius ?? 4,
-            waitSeconds: action.waitSeconds ?? instance.behavior?.waitSeconds ?? DEFAULT_NPC_BEHAVIOR.waitSeconds ?? 1.5,
-          });
-          return;
-
-        case 'playAnimation':
-          store.updateAnimation(action.animationId, {
-            ...(action.loop !== undefined ? { loop: action.loop } : {}),
-            ...(action.speed !== undefined ? { speed: action.speed } : {}),
-          });
-          store.updateInstance(instanceId, { currentAnimation: action.animationId });
-          return;
-
-        case 'lookAt':
-          store.updateInstance(instanceId, {
-            rotation: [
-              instance.rotation[0],
-              Math.atan2(action.target[0] - instance.position[0], action.target[2] - instance.position[2]),
-              instance.rotation[2],
-            ],
-          });
-          return;
-
-        case 'speak':
-          store.addInstanceEvent(instanceId, {
-            id: `npc-speak-${Date.now()}`,
-            type: 'onInteract',
-            action: 'dialogue',
-            payload: {
-              type: 'dialogue',
-              text: action.text,
-              ...(action.duration !== undefined ? { duration: action.duration } : {}),
-            },
-          });
-          return;
-
-        case 'interact':
-          store.updateInstance(instanceId, {
-            metadata: {
-              ...instance.metadata,
-              lastInteractionTargetId: action.targetId,
-            },
-          });
-          return;
-
-        case 'remember':
-          store.updateInstanceBrain(instanceId, {
-            memory: {
-              ...(instance.brain?.memory ?? {}),
-              [action.key]: action.value,
-            },
-          });
-          return;
-      }
+    applyNPCDecisions: (entries) => {
+      if (entries.length === 0) return;
+      set((state) => {
+        for (const { instanceId, observation, decision } of entries) {
+          const instance = state.instances.get(instanceId);
+          if (!instance) continue;
+          state.instances.set(instanceId, decision
+            ? { ...instance, lastObservation: observation, lastDecision: decision }
+            : { ...instance, lastObservation: observation });
+          if (decision) for (const action of decision.actions) applyNPCAction(state, instanceId, action, invalidateBrainRequests);
+        }
+      });
     },
 
+    executeInstanceAction: (instanceId, action) => set((state) => {
+      applyNPCAction(state, instanceId, action, invalidateBrainRequests);
+    }),
+
     executeInstanceActions: (instanceId, actions) => {
-      for (const action of actions) {
-        get().executeInstanceAction(instanceId, action);
-      }
+      if (actions.length === 0) return;
+      set((state) => {
+        for (const action of actions) applyNPCAction(state, instanceId, action, invalidateBrainRequests);
+      });
     },
 
     addInstanceEvent: (instanceId, event) => set((state) => {
@@ -936,18 +976,7 @@ function buildNPCStore(legacyBlueprintRegistry = false, invalidateBrainRequests:
 
     setNavigation: (instanceId, waypoints, speed = 3) => set((state) => {
       const instance = state.instances.get(instanceId);
-      if (!instance || waypoints.length === 0) return;
-      const nav: NPCNavigationState = {
-        waypoints,
-        currentIndex: 0,
-        speed,
-        state: 'moving',
-      };
-      state.instances.set(instanceId, {
-        ...instance,
-        navigation: nav,
-        currentAnimation: getMoveAnimation(instance, speed),
-      });
+      if (instance && waypoints.length > 0) state.instances.set(instanceId, withNavigation(instance, waypoints, speed));
     }),
 
     advanceNavigation: (instanceId) => set((state) => {
@@ -971,13 +1000,7 @@ function buildNPCStore(legacyBlueprintRegistry = false, invalidateBrainRequests:
 
     clearNavigation: (instanceId) => set((state) => {
       const instance = state.instances.get(instanceId);
-      if (!instance) return;
-      const nextInstance: NPCInstance = {
-        ...instance,
-        currentAnimation: getIdleAnimation(instance),
-      };
-      delete nextInstance.navigation;
-      state.instances.set(instanceId, nextInstance);
+      if (instance) state.instances.set(instanceId, withoutNavigation(instance));
     }),
 
     updateNavigationPosition: (instanceId, position) => set((state) => {
