@@ -7,8 +7,8 @@ import { Water } from "three-stdlib";
 import { getDefaultToonMode } from "@core/rendering/toon";
 import { weightFromDistance } from "@core/utils/sfe";
 
-import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
 import { getSharedWaterNormals } from './normals';
+import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
 
 
 class OwnedWater extends Water {

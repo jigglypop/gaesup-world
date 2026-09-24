@@ -1,4 +1,5 @@
 import { PlayerNetworkManager, type PlayerNetworkManagerOptions } from '../core/PlayerNetworkManager';
+import { MAX_REMOTE_CHAT_TEXT_LENGTH, MAX_REMOTE_WIRE_MESSAGE_LENGTH } from '../core/remoteInputLimits';
 import type { PlayerState } from '../types';
 
 class InboundSocket {
@@ -163,6 +164,44 @@ describe('PlayerNetworkManager inbound peer state', () => {
     const roomState = onWelcome.mock.calls[0]?.[1];
     expect(roomState?.['peer-1'] && Object.keys(roomState['peer-1']).sort()).toEqual(['color', 'name', 'position', 'rotation']);
     expect(received.joins.get('peer-1')).toEqual(roomState?.['peer-1']);
+    manager.disconnect();
+  });
+});
+
+describe('inbound wire limits', () => {
+  const TOO_LARGE = '서버 메시지가 너무 큽니다';
+
+  test('상한을 넘는 문자열 메시지는 JSON 파싱 전에 거부한다', () => {
+    const errors: string[] = [];
+    const { manager, socket, received } = connect({ onError: (error) => errors.push(error) });
+    const oversized = JSON.stringify({ type: 'Chat', client_id: 'peer', text: 'x'.repeat(MAX_REMOTE_WIRE_MESSAGE_LENGTH), timestamp: 1 });
+    const parse = jest.spyOn(JSON, 'parse');
+    try {
+      socket.onmessage?.({ data: oversized } as MessageEvent);
+      expect(parse).not.toHaveBeenCalled();
+    } finally {
+      parse.mockRestore();
+    }
+    expect(received.chats).toEqual([]);
+    expect(errors).toEqual([TOO_LARGE]);
+    manager.disconnect();
+  });
+
+  test('큰 Blob은 읽기 전에, 큰 ArrayBuffer는 디코딩 전에 거부한다', () => {
+    const errors: string[] = [];
+    const { manager, socket } = connect({ onError: (error) => errors.push(error) });
+    const text = jest.fn(async () => '{}');
+    socket.onmessage?.({ data: { size: MAX_REMOTE_WIRE_MESSAGE_LENGTH + 1, text } } as unknown as MessageEvent);
+    socket.onmessage?.({ data: new ArrayBuffer(MAX_REMOTE_WIRE_MESSAGE_LENGTH + 1) } as MessageEvent);
+    expect(text).not.toHaveBeenCalled();
+    expect(errors).toEqual([TOO_LARGE, TOO_LARGE]);
+    manager.disconnect();
+  });
+
+  test('수신 채팅은 공용 상한 길이로 자른다', () => {
+    const { manager, socket, received } = connect();
+    socket.receive({ type: 'Chat', client_id: 'peer', text: '가'.repeat(MAX_REMOTE_CHAT_TEXT_LENGTH + 50), timestamp: 1 });
+    expect(received.chats[0]).toHaveLength(MAX_REMOTE_CHAT_TEXT_LENGTH);
     manager.disconnect();
   });
 });

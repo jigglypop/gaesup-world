@@ -1,3 +1,9 @@
+import {
+  clampRemoteString,
+  MAX_REMOTE_CHAT_TEXT_LENGTH,
+  MAX_REMOTE_MODEL_URL_LENGTH,
+  MAX_REMOTE_WIRE_MESSAGE_LENGTH,
+} from './remoteInputLimits';
 import { NetworkPayload, PlayerState } from '../types';
 
 type PlayerNetworkLogLevel = 'none' | 'error' | 'warn' | 'info' | 'debug';
@@ -222,6 +228,10 @@ export class PlayerNetworkManager {
       // Avoid throwing inside the handler (would silently break updates).
       const handleText = (text: string) => {
         if (this.ws !== ws || ws.readyState !== WebSocket.OPEN) return;
+        if (text.length > MAX_REMOTE_WIRE_MESSAGE_LENGTH) {
+          this.onError?.('서버 메시지가 너무 큽니다');
+          return;
+        }
         try {
           const message: unknown = JSON.parse(text);
           if (!isServerMessage(message)) {
@@ -241,6 +251,10 @@ export class PlayerNetworkManager {
       }
 
       if (isTextReadablePayload(data)) {
+        if ('size' in data && typeof data.size === 'number' && data.size > MAX_REMOTE_WIRE_MESSAGE_LENGTH) {
+          this.onError?.('서버 메시지가 너무 큽니다');
+          return;
+        }
         data
           .text()
           .then((t: string) => handleText(t))
@@ -253,6 +267,10 @@ export class PlayerNetworkManager {
       }
 
       if (data instanceof ArrayBuffer) {
+        if (data.byteLength > MAX_REMOTE_WIRE_MESSAGE_LENGTH) {
+          this.onError?.('서버 메시지가 너무 큽니다');
+          return;
+        }
         try {
           const text = new TextDecoder().decode(new Uint8Array(data));
           handleText(text);
@@ -372,7 +390,7 @@ export class PlayerNetworkManager {
   }
 
   sendChat(text: string, options?: { range?: number }): void {
-    const safeText = String(text ?? '').trim().slice(0, 200);
+    const safeText = String(text ?? '').trim().slice(0, MAX_REMOTE_CHAT_TEXT_LENGTH);
     if (!safeText) return;
 
     const ws = this.ws;
@@ -487,7 +505,7 @@ export class PlayerNetworkManager {
         break;
 
       case 'Chat':
-        this.onChat?.(message.client_id, message.text.slice(0, MAX_CHAT_LENGTH), message.timestamp);
+        this.onChat?.(message.client_id, message.text.slice(0, MAX_REMOTE_CHAT_TEXT_LENGTH), message.timestamp);
         break;
 
       default:
@@ -499,9 +517,9 @@ export class PlayerNetworkManager {
   /** Copies only known, bounded fields so peers cannot inject extra keys or oversized values. */
   private copyPlayerState(state: Partial<PlayerState>): Partial<PlayerState> {
     const out: Partial<PlayerState> = {};
-    if (typeof state.name === 'string') out.name = state.name.slice(0, MAX_NAME_LENGTH);
-    if (typeof state.color === 'string') out.color = state.color.slice(0, MAX_LABEL_LENGTH);
-    if (typeof state.animation === 'string') out.animation = state.animation.slice(0, MAX_LABEL_LENGTH);
+    if (typeof state.name === 'string') out.name = clampRemoteString('name', state.name);
+    if (typeof state.color === 'string') out.color = clampRemoteString('color', state.color);
+    if (typeof state.animation === 'string') out.animation = clampRemoteString('animation', state.animation);
     if (typeof state.modelUrl === 'string' && isSafeModelUrl(state.modelUrl)
       && (this.acceptModelUrl?.(state.modelUrl) ?? true)) {
       out.modelUrl = state.modelUrl;
@@ -816,13 +834,8 @@ function isFiniteTuple(value: unknown, length: number): boolean {
     && value.every((component: unknown) => typeof component === 'number' && Number.isFinite(component));
 }
 
-const MAX_NAME_LENGTH = 64;
-const MAX_LABEL_LENGTH = 64;
-const MAX_MODEL_URL_LENGTH = 2048;
-const MAX_CHAT_LENGTH = 200;
-
 function isSafeModelUrl(url: string): boolean {
-  if (!url || url.length > MAX_MODEL_URL_LENGTH) return false;
+  if (!url || url.length > MAX_REMOTE_MODEL_URL_LENGTH) return false;
   const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(url)?.[1]?.toLowerCase();
   return scheme === undefined || scheme === 'http' || scheme === 'https';
 }

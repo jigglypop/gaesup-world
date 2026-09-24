@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import {
   Color,
   InstancedBufferAttribute,
@@ -10,8 +9,8 @@ import {
 } from 'three/webgpu';
 
 import type { FireBatchEntry } from './index';
-import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
 import { EmberSpriteNodeMaterial, FireSpriteNodeMaterial } from '../../../../rendering/tsl/fire';
+import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
 
 const FIRE_LAYERS = [
   { w: 0.78, h: 1, x: 0, y: 0.5, z: 0, seed: 0.17, lean: 0.06, flare: 1, speed: 1.45, offset: 0, intensity: 1 },
@@ -19,6 +18,7 @@ const FIRE_LAYERS = [
   { w: 0.42, h: 0.7, x: 0.14, y: 0.36, z: -0.02, seed: 2.63, lean: 0.16, flare: 0.74, speed: 2.2, offset: 3.4, intensity: 0.72 },
 ] as const;
 const EMBERS_PER_FIRE = 18;
+const NODE_FIRE_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:node-fire' };
 const FIRE_INSTANCE_STRIDE = 14;
 
 type EffectObjects = { flame: Sprite; embers: Sprite };
@@ -106,10 +106,9 @@ function NodeFireObjects({ fires, local }: { fires: FireBatchEntry[]; local: boo
     objects.embers.geometry.dispose();
     objects.embers.material.dispose();
   }, [objects]);
-  useFrame((state) => {
-    const elapsed = getFrameElapsedSeconds(state);
-    (objects.flame.material as FireSpriteNodeMaterial).time = elapsed;
-    (objects.embers.material as EmberSpriteNodeMaterial).time = elapsed;
+  useSharedFrame(NODE_FIRE_FRAME, (_, elapsedSeconds) => {
+    (objects.flame.material as FireSpriteNodeMaterial).time = elapsedSeconds;
+    (objects.embers.material as EmberSpriteNodeMaterial).time = elapsedSeconds;
   });
   return <><primitive object={objects.flame} /><primitive object={objects.embers} /></>;
 }

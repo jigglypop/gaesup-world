@@ -1,14 +1,13 @@
 import { PhysicsInputState, PhysicsState } from '../types';
 
+const KEYBOARD_KEYS = ['forward', 'backward', 'leftward', 'rightward', 'shift', 'space', 'keyE', 'keyR', 'keyF', 'keyZ', 'escape'] as const;
+
 export const updateInputState = (state: PhysicsState, input: PhysicsInputState): void => {
   state.gamepad = input.gamepad;
-  const keyboardKeys = ['forward', 'backward', 'leftward', 'rightward', 'shift', 'space', 'keyE', 'keyR', 'keyF', 'keyZ', 'escape'] as const;
-  
-  keyboardKeys.forEach(key => {
-    if (state.keyboard[key] !== input.keyboard[key]) {
-      state.keyboard[key] = input.keyboard[key];
-    }
-  });
+  for (let i = 0; i < KEYBOARD_KEYS.length; i++) {
+    const key = KEYBOARD_KEYS[i]!;
+    if (state.keyboard[key] !== input.keyboard[key]) state.keyboard[key] = input.keyboard[key];
+  }
 
   if (!state.mouse.target.equals(input.mouse.target)) {
     state.mouse.target.copy(input.mouse.target);

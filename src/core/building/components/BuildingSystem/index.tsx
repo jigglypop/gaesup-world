@@ -24,10 +24,11 @@ import {
 } from '../../render/draw';
 import { useBuildingRenderStateStore } from '../../render/store';
 import { useBuildingStore } from '../../stores/buildingStore';
-import type { BuildingTreeKind, PlacedObject } from '../../types';
+import type { BuildingBlockConfig, BuildingTreeKind, PlacedObject } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { useBuildingVisibilityStore } from '../../visibility/store';
 import { BlockSystem } from '../BlockSystem';
+import { BuildingColliders } from '../BuildingColliders';
 import { GridHelper } from '../GridHelper';
 import { BillboardBatch } from '../mesh/billboard';
 import { FireBatch, type FireBatchEntry } from '../mesh/fire';
@@ -57,6 +58,8 @@ function isTreeObject(object: PlacedObject): boolean {
 function resolveTreeKind(object: PlacedObject): BuildingTreeKind {
   return object.type === 'sakura' ? 'sakura' : object.config?.treeKind ?? 'oak';
 }
+
+const EMPTY_BLOCKS: readonly BuildingBlockConfig[] = [];
 
 const EMPTY_BUCKETS: ObjectBuckets = {
   sakura: [],
@@ -247,6 +250,14 @@ export const BuildingSystem = React.memo(function BuildingSystem({
         <PreviewTile />
         <PreviewWall />
         <NPCPreview />
+
+        <BuildingColliders
+          tileGroups={tileGroups}
+          wallGroups={wallGroups}
+          blocks={blocks ?? EMPTY_BLOCKS}
+          wallEditMode={editMode === 'wall'}
+          blockEditMode={editMode === 'block'}
+        />
         
         {wallGroupsArray.map((wallGroup) => (
           <WallSystem
@@ -256,6 +267,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
             meshes={meshes}
             isEditMode={editMode === 'wall'}
             selectedWallId={selectedWallId}
+            colliders={false}
             {...(onWallClick ? { onWallClick } : {})}
             {...(onWallDelete ? { onWallDelete } : {})}
           />
@@ -268,6 +280,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
             meshes={meshes}
             isEditMode={editMode === 'tile'}
             selectedTileId={selectedTileId}
+            colliders={false}
             {...(onTileClick ? { onTileClick } : {})}
             {...(onTileDelete ? { onTileDelete } : {})}
           />
@@ -279,6 +292,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
             meshes={meshes}
             isEditMode={editMode === 'block'}
             selectedBlockId={selectedBlockId}
+            colliders={false}
             {...(onBlockClick || onBlockDelete ? { onBlockClick: onBlockClick ?? onBlockDelete } : {})}
           />
         )}

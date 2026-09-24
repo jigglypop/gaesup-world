@@ -76,6 +76,39 @@ describe('RemotePlayer', () => {
     frameScheduler.clear();
   });
 
+  test('keeps a failing peer model inside its own boundary', () => {
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const originalLoader = mockedUseGLTF.getMockImplementation();
+    mockedUseGLTF.mockImplementation(() => { throw new Error('404'); });
+    let renderer: ReactTestRenderer | undefined;
+    try {
+      act(() => {
+        renderer = create(<><RemotePlayer playerId="broken" state={PLAYER_STATE} characterUrl="/missing.glb" /><group name="world" /></>);
+      });
+      expect(renderer?.root.findByProps({ name: 'world' })).toBeDefined();
+      expect(renderer?.root.findByProps({ name: 'remote-player-model-fallback' })).toBeDefined();
+    } finally {
+      act(() => renderer?.unmount());
+      if (originalLoader) mockedUseGLTF.mockImplementation(originalLoader);
+      consoleError.mockRestore();
+    }
+  });
+
+  test('keeps a loading peer model from suspending the world', () => {
+    const originalLoader = mockedUseGLTF.getMockImplementation();
+    mockedUseGLTF.mockImplementation(() => { throw new Promise<never>(() => undefined); });
+    let renderer: ReactTestRenderer | undefined;
+    try {
+      act(() => {
+        renderer = create(<><RemotePlayer playerId="loading" state={PLAYER_STATE} characterUrl="/slow.glb" /><group name="world" /></>);
+      });
+      expect(renderer?.root.findByProps({ name: 'world' })).toBeDefined();
+    } finally {
+      act(() => renderer?.unmount());
+      if (originalLoader) mockedUseGLTF.mockImplementation(originalLoader);
+    }
+  });
+
   test('plays initial idle immediately and completes or cancels delayed transitions', () => {
     jest.useFakeTimers();
     const makeAction = () => {

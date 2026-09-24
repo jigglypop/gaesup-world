@@ -2,10 +2,10 @@ import { StrictMode } from 'react';
 
 import { act, renderHook } from '@testing-library/react';
 
+import { isAutoSaveSuspended } from '../../../save/core/autoSaveSuspension';
 import { createLocalVisitChannel, createWebSocketVisitChannel } from '../channel';
 import { serializeVisit } from '../serializer';
 import type { VisitChannel, VisitChannelEvent } from '../types';
-import { isAutoSaveSuspended } from '../../../save/core/autoSaveSuspension';
 import { useVisitRoom } from '../useVisitRoom';
 
 describe('visit room session lifetime', () => {

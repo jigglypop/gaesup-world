@@ -1,7 +1,5 @@
 import { StrictMode, type RefObject } from 'react';
-import { act, render, type RenderResult } from '@testing-library/react';
 
-import { useFrame } from '@react-three/fiber';
 import { RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import { act, render, type RenderResult } from '@testing-library/react';
 

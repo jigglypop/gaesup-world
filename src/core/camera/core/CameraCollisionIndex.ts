@@ -8,8 +8,10 @@ export function invalidateCameraColliders(): void {
   globalGeneration++;
 }
 
-function isRaycastableMesh(object: THREE.Object3D): object is THREE.Mesh {
-  return object instanceof THREE.Mesh && !('isLineSegments2' in object && object.isLineSegments2);
+type RaycastCandidate = THREE.Object3D & { isMesh?: boolean; isLineSegments2?: boolean; geometry?: unknown };
+
+function isRaycastableMesh(object: RaycastCandidate): object is THREE.Mesh {
+  return object.isMesh === true && object.isLineSegments2 !== true && !!object.geometry;
 }
 
 export class CameraCollisionIndex {
@@ -26,8 +28,13 @@ export class CameraCollisionIndex {
   }
 
   getTargets(): readonly THREE.Mesh[] {
-    if (this.dirty || this.generation !== globalGeneration) this.rebuild();
+    this.refresh();
     return this.colliderMeshes.length > 0 ? this.colliderMeshes : this.allMeshes;
+  }
+
+  getColliders(): readonly THREE.Mesh[] {
+    this.refresh();
+    return this.colliderMeshes;
   }
 
   getRebuildCount(): number {
@@ -66,6 +73,10 @@ export class CameraCollisionIndex {
     this.allMeshes.push(object);
     if (object.layers.isEnabled(CAMERA_COLLIDER_LAYER)) this.colliderMeshes.push(object);
   };
+
+  private refresh(): void {
+    if (this.dirty || this.generation !== globalGeneration) this.rebuild();
+  }
 
   private rebuild(): void {
     this.allMeshes.length = 0;

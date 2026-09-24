@@ -56,6 +56,13 @@ describe('FixedStepClock', () => {
     clock.advance(0.005); expect(clock.interpolationAlpha).toBeCloseTo(0.5);
   });
 
+  it('caps deferred catch-up under sustained slow frames and reports the excess as discarded', () => {
+    const clock = new FixedStepClock({ tickRate: 100, maxSubSteps: 2, maxFrameSeconds: 0.1 });
+    for (let i = 0; i < 100; i++) clock.advance(0.1);
+    expect(clock.deferredSeconds).toBeLessThanOrEqual(0.1);
+    expect(clock.tick * clock.deltaSeconds + clock.deferredSeconds + clock.discardedSeconds).toBeCloseTo(10);
+  });
+
   it('rejects reentrant advancement and surfaces failures without leaving the clock locked', () => {
     const clock = new FixedStepClock(); const error = new Error('simulation failed');
     const remove = clock.addSystem({ id: 'fail', phase: 'simulation', update: () => {

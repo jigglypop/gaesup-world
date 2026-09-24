@@ -6,6 +6,16 @@ import pluginReactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+// Raw useFrame owners outside the scheduler; check:quality caps their count (rawUseFrame).
+const RAW_USE_FRAME_OWNERS = [
+  'src/core/runtime/frame/react/**',
+  'src/core/motions/entities/refs/RigidPartRef.tsx',
+  'src/core/rendering/GpuBatchBridge.tsx',
+  'src/core/rendering/postprocess/WorldPostProcessing.tsx',
+  'src/core/rendering/sky/CascadedSun.tsx',
+  'src/core/world/components/WorldPhysics/index.tsx',
+];
+
 export default tseslint.config(
   {
     ignores: [
@@ -140,7 +150,7 @@ export default tseslint.config(
   },
   {
     files: ['src/**/*.{ts,tsx}'],
-    ignores: ['src/core/runtime/frame/react/**'],
+    ignores: RAW_USE_FRAME_OWNERS,
     rules: {
       'no-restricted-imports': [
         'error',

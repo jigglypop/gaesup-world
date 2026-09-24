@@ -6,7 +6,9 @@ import {
   type Material,
   type Skeleton,
 } from 'three';
-import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
+import { createGLTFLoader } from './gltfLoader';
 
 export type GLTFAssetLease = { gltf: GLTF; release: () => void };
 type Entry = { promise: Promise<GLTF>; references: number };
@@ -16,7 +18,7 @@ export class GLTFAssetCache {
   private entries = new Map<string, Entry>();
   constructor(
     private readonly load: (uri: string) => Promise<GLTF> = (uri) =>
-      new GLTFLoader().loadAsync(uri),
+      createGLTFLoader().loadAsync(uri),
   ) {}
 
   async acquire(uri: string): Promise<GLTFAssetLease> {

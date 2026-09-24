@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { Profile, HandleError } from '@/core/boilerplate/decorators';
 
 import { ICameraController, CameraCalcProps, CameraSystemState, CameraSystemConfig } from '../core/types';
-import { activeStateUtils, cameraUtils } from '../utils/camera';
+import { activeStateUtils, cameraUtils, resolveCollisionPosition } from '../utils/camera';
 
 export abstract class BaseController implements ICameraController {
   abstract name: string;
@@ -140,12 +140,13 @@ export abstract class BaseController implements ICameraController {
     cameraUtils.frameRateIndependentLerpVector3(
       this.nextPosition.copy(camera.position), targetPosition, positionSmoothing, deltaTime,
     );
-    const position = cameraOption.enableCollision
-      ? cameraUtils.improvedCollisionCheck(
+    if (cameraOption.enableCollision) {
+      resolveCollisionPosition(
         lookAtTarget, this.nextPosition, props.scene, cameraOption.collisionMargin ?? 0.5, props.excludeObjects,
-      ).position
-      : this.nextPosition;
-    camera.position.copy(position);
+        this.nextPosition, cameraOption.collisionTargets,
+      );
+    }
+    camera.position.copy(this.nextPosition);
     cameraUtils.smoothLookAt(camera, lookAtTarget, rotationSmoothing, deltaTime);
     
     // FOV 업데이트

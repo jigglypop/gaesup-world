@@ -64,6 +64,7 @@ exports[`runtime export snapshot . export 목록 1`] = `
   "BuildingUI",
   "BuildingVisibilityDriver",
   "BuoyancyComponent",
+  "CAMERA_COLLIDER_LAYER",
   "CAMERA_CONTROLLER_DEFAULT_CLASSES",
   "CAMERA_CONTROLLER_DEFAULT_LABELS",
   "CAMERA_CONTROLLER_DEFAULT_MODES",

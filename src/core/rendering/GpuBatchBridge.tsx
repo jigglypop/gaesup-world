@@ -1,11 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 
 import { useFrame, useThree } from '@react-three/fiber';
-import { Frustum, InstancedMesh, Matrix4, REVISION } from 'three';
+import { Frustum, InstancedMesh, Matrix4 } from 'three';
 import type { CoordinateSystem, Group, Material, Object3D } from 'three';
 import type { WebGPURenderer } from 'three/webgpu';
 
+import { isGpuBatchRevision } from './gpuBatchRevision';
 import { createGpuInstanceBatch, type GpuInstanceBatch } from './gpuInstanceBatch';
 import { supportsGpuBatchMaterial } from './gpuMaterialSync';
 import { invalidateRenderHistory } from './renderHistory';
@@ -54,7 +55,21 @@ export function supportsGpuInstanceBatches(renderer: unknown): renderer is WebGP
     backend?: { isWebGPUBackend?: boolean };
     _attributes?: unknown;
   } | null;
-  return REVISION === '185' && value?.backend?.isWebGPUBackend === true && !!value._attributes;
+  return isGpuBatchRevision() && value?.backend?.isWebGPUBackend === true && !!value._attributes;
+}
+
+function supportsAllGpuBatchMaterials(material: InstancedMesh['material']): boolean {
+  if (!Array.isArray(material)) return supportsGpuBatchMaterial(material);
+  for (let i = 0; i < material.length; i++) if (!supportsGpuBatchMaterial(material[i]!)) return false;
+  return true;
+}
+
+function materialsChanged(materials: Material[], versions: number[], current: InstancedMesh['material']): boolean {
+  for (let i = 0; i < materials.length; i++) {
+    const material = materials[i]!;
+    if (material.version !== versions[i] || material !== (Array.isArray(current) ? current[i] : current)) return true;
+  }
+  return false;
 }
 
 /** Accelerates material batches under one world root, retaining original picking and shadow meshes. */
@@ -70,7 +85,7 @@ export function GpuBatchBridge({
   const tick = useRef<
     ((camera: Matrix4, coordinateSystem: CoordinateSystem, reversed: boolean) => void) | null
   >(null);
-  const projection = useRef(new Matrix4());
+  const [projection] = useState(() => new Matrix4());
 
   useEffect(() => {
     const group = root.current;
@@ -132,11 +147,14 @@ export function GpuBatchBridge({
       frustum.setFromProjectionMatrix(matrix, coordinateSystem, reversed);
       for (let i = 0; i < 6; i++) {
         const plane = frustum.planes[i]!;
-        planes.set([plane.normal.x, plane.normal.y, plane.normal.z, plane.constant], i * 4);
+        const offset = i * 4;
+        planes[offset] = plane.normal.x;
+        planes[offset + 1] = plane.normal.y;
+        planes[offset + 2] = plane.normal.z;
+        planes[offset + 3] = plane.constant;
       }
       for (const source of registry) {
-        const sourceMaterials = Array.isArray(source.material) ? source.material : [source.material];
-        if (sourceMaterials.some(material => !supportsGpuBatchMaterial(material))) {
+        if (!supportsAllGpuBatchMaterials(source.material)) {
           release(source);
           continue;
         }
@@ -148,12 +166,7 @@ export function GpuBatchBridge({
             signature.count !== source.count ||
             signature.matrix !== source.instanceMatrix ||
             signature.color !== source.instanceColor ||
-            signature.materials.some(
-              (material, i) =>
-                material.version !== signature.versions[i] ||
-                material !==
-                  (Array.isArray(source.material) ? source.material[i] : source.material),
-            ))
+            materialsChanged(signature.materials, signature.versions, source.material))
         )
           release(source);
         const batch = batches.get(source);
@@ -216,8 +229,8 @@ export function GpuBatchBridge({
   useFrame(({ camera }) => {
     if (!tick.current) return;
     camera.updateWorldMatrix(true, false);
-    projection.current.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-    tick.current(projection.current, camera.coordinateSystem, camera.reversedDepth);
+    projection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    tick.current(projection, camera.coordinateSystem, camera.reversedDepth);
   });
   return null;
 }

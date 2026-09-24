@@ -1,13 +1,8 @@
-import { act, render } from '@testing-library/react';
 import { useThree } from '@react-three/fiber';
+import { act, render } from '@testing-library/react';
 import * as THREE from 'three';
 
 import { frameScheduler } from '../../../runtime/frame';
-import { useBuildingRenderStateStore } from '../../render/store';
-import { useFrame, useThree } from '@react-three/fiber';
-import { act, render } from '@testing-library/react';
-import * as THREE from 'three';
-
 import { useBuildingGpuCullingStore } from '../../render/cullingStore';
 import { useBuildingRenderStateStore } from '../../render/store';
 import { BuildingGpuCullingDriver } from '../BuildingGpuCullingDriver';

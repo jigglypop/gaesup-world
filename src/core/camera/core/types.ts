@@ -15,6 +15,8 @@ export interface CameraConstants {
   FRAME_RATE_LERP_SPEED: number;
 }
 
+export type CameraCollisionTargets = 'scene' | 'colliders';
+
 export interface CameraBounds {
   minX?: number;
   maxX?: number;
@@ -46,6 +48,8 @@ export interface CameraOption {
   enableFocus?: boolean;
   enableCollision?: boolean;
   collisionMargin?: number;
+  /** 'colliders' tests only meshes on CAMERA_COLLIDER_LAYER and falls back to the whole scene when none exist. */
+  collisionTargets?: CameraCollisionTargets;
   smoothing?: {
     position?: number;
     rotation?: number;
@@ -156,6 +160,7 @@ export interface CameraSystemConfig {
   bounds?: CameraBounds; // optional로 변경
   enableCollision: boolean;
   collisionMargin?: number;
+  collisionTargets?: CameraCollisionTargets;
   orbitYaw?: number;
   orbitPitch?: number;
   smoothing?: {

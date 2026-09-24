@@ -1,11 +1,12 @@
 import 'reflect-metadata'
 
 import type { DecoratedValue } from './types'
+import { isProductionEnv } from '../../utils/env'
 import { logger } from '../../utils/logger'
 
 type Constructor<T = object> = new (...args: DecoratedValue[]) => T
 
-const isProduction = process.env.NODE_ENV === 'production'
+const isProduction = isProductionEnv()
 
 const identityMethodDecorator = (target: object, propertyKey: string, descriptor: PropertyDescriptor) => {
     void target

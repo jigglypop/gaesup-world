@@ -77,6 +77,7 @@ export function useCamera(enableMouse = true) {
     zoom: cameraOption?.zoom ?? 1,
     enableCollision: cameraOption?.enableCollision ?? true,
     ...(cameraOption?.collisionMargin !== undefined ? { collisionMargin: cameraOption.collisionMargin } : {}),
+    ...(cameraOption?.collisionTargets !== undefined ? { collisionTargets: cameraOption.collisionTargets } : {}),
     orbitYaw: orbitYawRef.current,
     orbitPitch: orbitPitchRef.current,
     ...(cameraOption?.maxDistance !== undefined ? { maxDistance: cameraOption.maxDistance } : {}),
@@ -113,6 +114,7 @@ export function useCamera(enableMouse = true) {
       zoom: opt?.zoom ?? 1,
       enableCollision: opt?.enableCollision ?? true,
       ...(opt?.collisionMargin !== undefined ? { collisionMargin: opt.collisionMargin } : {}),
+      ...(opt?.collisionTargets !== undefined ? { collisionTargets: opt.collisionTargets } : {}),
       ...(opt?.maxDistance !== undefined ? { maxDistance: opt.maxDistance } : {}),
       ...(opt?.offset
         ? { offset: { x: opt.offset.x, y: opt.offset.y, z: opt.offset.z } }

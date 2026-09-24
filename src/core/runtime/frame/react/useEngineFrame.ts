@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
 
-import { frameScheduler } from '../FrameScheduler';
 import type { FrameCallback, FrameDriver, FramePhase } from '../types';
-import { retainImplicitFrameHost, useCanvasFrameScheduler, useCanvasStore, useFrameRegistrationEffect } from './canvasScheduler';
+import { retainImplicitFrameHost, useCanvasFrameScheduler, useFrameRegistrationEffect, useRootStore } from './canvasScheduler';
 import type { UseEngineFrameOptions } from './types';
 
 export function useEngineFrame(
@@ -15,7 +14,7 @@ export function useEngineFrame(
   const enabledRef = useRef(options.enabled);
   enabledRef.current = options.enabled;
   const canvasScheduler = useCanvasFrameScheduler();
-  const canvasStore = useCanvasStore();
+  const canvasStore = useRootStore();
   const { scheduler = canvasScheduler, active = true, order, throttleMs, label } = options;
 
   useFrameRegistrationEffect(() => {

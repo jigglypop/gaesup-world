@@ -1,3 +1,4 @@
+import { COMMAND_HANDLER_FAILURE_REASON } from '../authority';
 import {
   createCommandAcceptedResult,
   createCommandAuthorityRouter,
@@ -362,15 +363,63 @@ describe('command authority router', () => {
       expect(handler).toHaveBeenCalledTimes(1);
     });
 
-    test('turns handler exceptions into rejected results', async () => {
-      const router = createCommandAuthorityRouter();
+    test('핸들러 예외는 내부 메시지를 숨긴 거절 결과로 바꾸고 원본 오류는 onHandlerError로 넘긴다', async () => {
+      const onHandlerError = jest.fn();
+      const router = createCommandAuthorityRouter({ onHandlerError });
+      const failure = new Error('ledger offline');
       router.register({ domain: 'economy', action: 'buy' }, () => {
-        throw new Error('ledger offline');
+        throw failure;
       });
       const result = await router.handle(buy('cmd-throw'));
       expect(result.accepted).toBe(false);
-      expect(result.reason).toContain('ledger offline');
+      expect(result.reason).toBe(COMMAND_HANDLER_FAILURE_REASON);
+      expect(JSON.stringify(result.events)).not.toContain('ledger offline');
       expect(result.events[0]?.type).toBe('command.rejected');
+      expect(onHandlerError).toHaveBeenCalledWith(failure, expect.objectContaining({ commandId: 'cmd-throw' }));
+    });
+
+    test('serializes a domain so concurrent commands cannot pass the same revision check', async () => {
+      let revision = 0;
+      let release: () => void = () => undefined;
+      const gate = new Promise<void>((resolve) => { release = resolve; });
+      const handler = jest.fn(async (incoming: Parameters<typeof createCommandAcceptedResult>[0]) => {
+        await gate;
+        revision += 1;
+        return createCommandAcceptedResult(incoming, { serverRevision: revision });
+      });
+      const router = createCommandAuthorityRouter({ getRevision: () => revision });
+      router.register({ domain: 'economy', action: 'buy' }, handler);
+      const first = router.handle(buy('cmd-first', { expectedRevision: 0 }));
+      const second = router.handle(buy('cmd-second', { expectedRevision: 0 }));
+      release();
+      const results = await Promise.all([first, second]);
+      expect(results.map((result) => result.accepted)).toEqual([true, false]);
+      expect(results[1]?.serverRevision).toBe(1);
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    test('does not replay a rejection when the same command is retried', async () => {
+      const handler = jest
+        .fn<ReturnType<typeof createCommandAcceptedResult>, [Parameters<typeof createCommandAcceptedResult>[0]]>()
+        .mockImplementationOnce(() => { throw new Error('ledger offline'); })
+        .mockImplementation((incoming) => createCommandAcceptedResult(incoming));
+      const router = createCommandAuthorityRouter({ onHandlerError: jest.fn() });
+      router.register({ domain: 'economy', action: 'buy' }, handler);
+      expect((await router.handle(buy('cmd-retry'))).accepted).toBe(false);
+      expect((await router.handle(buy('cmd-retry'))).accepted).toBe(true);
+      expect(handler).toHaveBeenCalledTimes(2);
+    });
+
+    test('replay 기록은 상한을 넘으면 가장 오래된 것부터 버린다', async () => {
+      const handler = jest.fn((command: Parameters<typeof createCommandAcceptedResult>[0]) => createCommandAcceptedResult(command));
+      const router = createCommandAuthorityRouter({ now: () => 1, maxReplayEntries: 2 });
+      router.register({ domain: 'economy', action: 'buy' }, handler);
+      for (const id of ['cmd-1', 'cmd-2', 'cmd-3']) await router.handle(buy(id));
+      await router.handle(buy('cmd-3'));
+      expect(handler).toHaveBeenCalledTimes(3);
+      await router.handle(buy('cmd-1'));
+      expect(handler).toHaveBeenCalledTimes(4);
+      expect(() => createCommandAuthorityRouter({ maxReplayEntries: 0 })).toThrow(RangeError);
     });
   });
 });

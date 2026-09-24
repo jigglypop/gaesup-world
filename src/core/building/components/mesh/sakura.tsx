@@ -589,6 +589,7 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
     for (const [ref, count] of [[barkRef, bi], [darkRef, di], [topRef, ti], [shellRef, si], [coreRef, ci]] as const) {
       ref.current.count = count as number;
       ref.current.instanceMatrix.needsUpdate = true;
+      ref.current.computeBoundingSphere();
       if (hasCustomColor && ref.current.instanceColor) {
         ref.current.instanceColor.needsUpdate = true;
       }

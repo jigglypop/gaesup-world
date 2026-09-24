@@ -3,8 +3,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 import { MILLISECONDS_IN_SECOND } from '../../../boilerplate/types';
-import { useEngineFrame } from '../../../runtime/frame';
 import { useInventoryStoreApi } from '../../../inventory/stores/inventoryStore';
+import { useEngineFrame } from '../../../runtime/frame';
 import { useTimeStoreApi } from '../../../time/stores/timeStore';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';

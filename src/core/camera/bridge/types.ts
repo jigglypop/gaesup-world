@@ -1,5 +1,7 @@
 import { Emitter } from 'mitt';
 
+import type { CameraCollisionTargets } from '../core/types';
+
 export type CameraEventValue = object | string | number | boolean | null | undefined;
 
 export type CameraSystemEvents = {
@@ -22,6 +24,7 @@ export interface CameraSystemConfig {
   zoom: number;
   enableCollision: boolean;
   collisionMargin?: number;
+  collisionTargets?: CameraCollisionTargets;
   orbitYaw?: number;
   orbitPitch?: number;
   minDistance?: number;

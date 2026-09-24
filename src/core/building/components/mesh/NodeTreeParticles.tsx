@@ -1,12 +1,13 @@
 import { useEffect, useMemo } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import type { BufferGeometry } from 'three';
 import { attribute, cos, exp, float, fract, pow, sin, uniform, uv, vec3 } from 'three/tsl';
 import { InstancedBufferAttribute, PointsNodeMaterial, Sprite } from 'three/webgpu';
 
-import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
+import { useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
 import { useWeatherStoreApi } from '../../../weather/stores/weatherStore';
+
+const TREE_PARTICLE_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:tree-particles' };
 
 type TreeParticleProps = {
   geometry: BufferGeometry;
@@ -68,14 +69,14 @@ export default function NodeTreeParticles({ geometry, size, opacity, falling = f
     owned.sprite.material.dispose();
   }, [owned]);
 
-  useFrame((state) => {
-    if (!falling || (owned.sprite.parent && !owned.sprite.parent.visible)) return;
-    owned.time.value = getFrameElapsedSeconds(state);
+  useSharedFrame(TREE_PARTICLE_FRAME, (_, elapsedSeconds) => {
+    if (owned.sprite.parent && !owned.sprite.parent.visible) return;
+    owned.time.value = elapsedSeconds;
     const weather = weatherStore.getState().current;
     const base = weather?.kind === 'storm' ? 2.4 : weather?.kind === 'rain' ? 1.6
       : weather?.kind === 'snow' ? 1.2 : weather?.kind === 'cloudy' ? 1.1 : 0.9;
     owned.wind.value = base + (weather?.intensity ?? 0) * 0.7;
-  });
+  }, falling);
 
   return <primitive object={owned.sprite} dispose={null} />;
 }

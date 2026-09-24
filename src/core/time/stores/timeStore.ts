@@ -65,7 +65,8 @@ export function createTimeStore() { return create<TimeState>((set, get) => ({
     if (nextMinutes === s.totalMinutes) return;
     const newDay = isNewDay(s.totalMinutes, nextMinutes);
     const newHour = isNewHour(s.totalMinutes, nextMinutes);
-    const time = computeGameTime(nextMinutes);
+    // GameTime has minute resolution; keeping its identity stops `s.time` subscribers from re-rendering every tick.
+    const time = Math.max(0, Math.floor(nextMinutes)) === s.time.totalMinutes ? s.time : computeGameTime(nextMinutes);
     set({ totalMinutes: nextMinutes, time });
     if (newHour) emit(s.listeners, 'newHour', time);
     if (newDay) emit(s.listeners, 'newDay', time);

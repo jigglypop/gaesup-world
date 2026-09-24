@@ -89,5 +89,5 @@ export function createWorldSliceForBridge({ bridge, worldId, owned = false, acti
 
 /** Legacy shared-default-world composition. Each slice owns only its own subscription. */
 export const createWorldSlice: StateCreator<WorldSlice> = (...args) => createWorldSliceForBridge({
-  bridge: BridgeFactory.getOrCreate<WorldBridge>('world') ?? new WorldBridge(), worldId: 'default',
+  bridge: BridgeFactory.getOrCreateFor(WorldBridge) ?? new WorldBridge(), worldId: 'default',
 })(...args);

@@ -52,7 +52,7 @@ export function useSpawnFromBlueprint(view?: WorldView) {
         return null;
       }
 
-      const worldBridge = runtime?.worldBridge ?? BridgeFactory.getOrCreate<WorldBridge>('world');
+      const worldBridge = runtime?.worldBridge ?? BridgeFactory.getOrCreateFor(WorldBridge);
       const worldId = runtime?.worldId ?? DEFAULT_WORLD_ID;
       if ((runtime && !runtime.isActive()) || !worldBridge?.getEngine(worldId)) {
         logger.error('Cannot spawn blueprint: the target world is not initialized');

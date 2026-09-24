@@ -65,6 +65,11 @@ jest.mock('../BlockSystem', () => ({
   ),
 }));
 
+jest.mock('@react-three/rapier', () => ({
+  RigidBody: ({ children }: { children: React.ReactNode }) => <group name="rigid-body">{children}</group>,
+  CuboidCollider: () => <group name="cuboid-collider" />,
+}));
+
 jest.mock('../GridHelper', () => ({
   GridHelper: ({ size }: GridHelperProps) => <gridHelper name="grid-helper" args={[size, 25]} />,
 }));
@@ -340,6 +345,56 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       expectSceneMissingName(renderer, 'wall-system-wall-group-2');
       expectSceneHasName(renderer, 'tile-system-tile-group-1');
       expectSceneMissingName(renderer, 'tile-system-tile-group-2');
+
+      renderer.unmount();
+    });
+
+    test('visibility로 숨겨진 그룹도 물리 collider는 유지해야 함', async () => {
+      const tile = (id: string, groupId: string, x: number) => ({ id, tileGroupId: groupId, position: { x, y: 0, z: 0 }, size: 1 });
+      const wall = (id: string, groupId: string, x: number) => ({
+        id, wallGroupId: groupId, position: { x, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 },
+      });
+      mockStore({
+        tileGroups: new Map<string, TileGroupConfig>([
+          ['tile-group-1', { id: 'tile-group-1', name: 'near', floorMeshId: 'wood-mesh', tiles: [tile('tile-1', 'tile-group-1', 0)] }],
+          ['tile-group-2', { id: 'tile-group-2', name: 'far', floorMeshId: 'wood-mesh', tiles: [tile('tile-2', 'tile-group-2', 200)] }],
+        ]),
+        wallGroups: new Map<string, WallGroupConfig>([
+          ['wall-group-1', { id: 'wall-group-1', name: 'near', walls: [wall('wall-1', 'wall-group-1', 0)] }],
+          ['wall-group-2', { id: 'wall-group-2', name: 'far', walls: [wall('wall-2', 'wall-group-2', 200)] }],
+        ]),
+      });
+      useBuildingVisibilityStore.getState().setVisible({
+        tileIds: new Set(['tile-group-1']),
+        wallIds: new Set(['wall-group-1']),
+        blockIds: new Set(),
+        objectIds: new Set(),
+      });
+
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+
+      expectSceneMissingName(renderer, 'tile-system-tile-group-2');
+      expectSceneMissingName(renderer, 'wall-system-wall-group-2');
+      expect(renderer.scene.findAllByProps({ name: 'cuboid-collider' })).toHaveLength(4);
+
+      renderer.unmount();
+    });
+
+    test('벽 편집 모드에서는 벽 collider를 만들지 않아야 함', async () => {
+      mockStore({
+        editMode: 'wall',
+        tileGroups: new Map(),
+        wallGroups: new Map<string, WallGroupConfig>([
+          ['wall-group-1', {
+            id: 'wall-group-1', name: 'near',
+            walls: [{ id: 'wall-1', wallGroupId: 'wall-group-1', position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } }],
+          }],
+        ]),
+      });
+
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+
+      expect(renderer.scene.findAllByProps({ name: 'cuboid-collider' })).toHaveLength(0);
 
       renderer.unmount();
     });

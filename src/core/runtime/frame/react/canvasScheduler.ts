@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useLayoutEffect } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, type Context } from 'react';
 
 import { context as fiberContext, type RootState, type RootStore } from '@react-three/fiber';
 
@@ -10,6 +10,7 @@ import { FRAME_PRE_PHYSICS_PRIORITY, FRAME_SCHEDULER_PRIORITY } from './prioriti
 type ImplicitHost = { refs: number; release: () => void };
 
 const NO_CANVAS_CONTEXT = createContext<RootStore | null>(null);
+const CANVAS_STORE_CONTEXT = (fiberContext ?? NO_CANVAS_CONTEXT) as Context<RootStore | null>;
 const canvasSchedulers = new WeakMap<object, FrameScheduler>();
 const implicitHosts = new WeakMap<FrameScheduler, ImplicitHost>();
 
@@ -27,7 +28,7 @@ export function useCanvasFrameScheduler(): FrameScheduler {
 }
 
 export function useRootStore(): RootStore | null {
-  return useContext<RootStore | null>(fiberContext ?? NO_CANVAS_CONTEXT);
+  return useContext(CANVAS_STORE_CONTEXT);
 }
 
 function subscribeImplicitHost(scheduler: FrameScheduler, store: RootStore): () => void {

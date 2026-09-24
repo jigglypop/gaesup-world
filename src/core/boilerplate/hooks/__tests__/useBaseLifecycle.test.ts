@@ -408,16 +408,15 @@ describe('useBaseLifecycle', () => {
   });
 
   describe('성능 테스트', () => {
-    test('많은 수의 useBaseLifecycle 훅을 생성해도 성능 문제가 없어야 함', () => {
-      const startTime = performance.now();
-      
-      // Keep this test stable across slower CI machines.
-      for (let i = 0; i < 200; i++) {
-        renderHook(() => useBaseLifecycle(mockBridge, `test-id-${i}`, mockEngine, {}));
-      }
-      
-      const endTime = performance.now();
-      expect(endTime - startTime).toBeLessThan(1000); // 1초 이내
+    test('많은 수의 useBaseLifecycle 훅은 엔티티마다 한 번씩만 등록하고 해제해야 함', () => {
+      const hookCount = 200;
+      const hooks = Array.from({ length: hookCount }, (_, i) =>
+        renderHook(() => useBaseLifecycle(mockBridge, `test-id-${i}`, mockEngine, {})),
+      );
+
+      expect(mockBridge.register).toHaveBeenCalledTimes(hookCount);
+      hooks.forEach((hook) => hook.unmount());
+      expect(mockBridge.unregister).toHaveBeenCalledTimes(hookCount);
     });
   });
 }); 

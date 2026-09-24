@@ -202,6 +202,9 @@ export interface BuildingSerializedState {
   fogColor: string;
   weatherEffect: BuildingWeatherEffect;
   worldSurface: BuildingWorldSurface;
+  /** Absent in snapshots written before categories were persisted. */
+  wallCategories?: WallCategory[];
+  tileCategories?: TileCategory[];
 }
 
 export type BuildingWeatherEffect = 'none' | 'snow' | 'rain' | 'storm' | 'wind';

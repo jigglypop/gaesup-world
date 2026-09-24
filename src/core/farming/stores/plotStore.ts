@@ -145,7 +145,9 @@ export function createPlotStore(inventoryStore: InventoryStore) {
   tick: (currentMinutes) => {
     const cur = get().plots;
     let next = cur;
-    for (const [id, plot] of Object.entries(cur)) {
+    for (const id in cur) {
+      const plot = cur[id];
+      if (!plot) continue;
       let p = plot;
       if (p.state === 'planted' || p.state === 'mature') {
         const def = p.cropId ? getCropRegistry().get(p.cropId) : undefined;

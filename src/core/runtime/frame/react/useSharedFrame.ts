@@ -4,9 +4,8 @@ import { useThree, type RootState } from '@react-three/fiber';
 
 import { MILLISECONDS_IN_SECOND } from '../../../boilerplate/types';
 import { logger } from '../../../utils/logger';
-import { frameScheduler, type FrameScheduler } from '../FrameScheduler';
-import { useCanvasFrameScheduler, useFrameRegistrationEffect } from './canvasScheduler';
-import { warnIfHostMissing } from './hostWarnings';
+import type { FrameScheduler } from '../FrameScheduler';
+import { retainImplicitFrameHost, useCanvasFrameScheduler, useFrameRegistrationEffect, useRootStore } from './canvasScheduler';
 import type { SharedFrameCallback, SharedFrameChannel } from './types';
 
 type SharedFrameEntry = {
@@ -89,18 +88,19 @@ export function useSharedFrame(channel: SharedFrameChannel, callback: SharedFram
   const channelRef = useRef(channel);
   channelRef.current = channel;
   const scheduler = useCanvasFrameScheduler();
+  const canvasStore = useRootStore();
   const getThree = useThree((state) => state.get);
   const key = channelKey(channel);
 
   useFrameRegistrationEffect(() => {
     if (!active) return undefined;
     const leave = joinGroup(scheduler, key, channelRef.current, getThree, { callback: callbackRef });
-    const cancelHostCheck = scheduler === frameScheduler ? undefined : warnIfHostMissing(scheduler, channelRef.current.label);
+    const releaseHost = retainImplicitFrameHost(scheduler, canvasStore);
     return () => {
-      cancelHostCheck?.();
+      releaseHost();
       leave();
     };
-  }, [active, getThree, key, scheduler]);
+  }, [active, canvasStore, getThree, key, scheduler]);
 }
 
 export function getSharedFrameEntryCount(scheduler: FrameScheduler, channel: SharedFrameChannel): number {

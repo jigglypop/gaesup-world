@@ -1,7 +1,8 @@
 import { BaseSystem } from './BaseSystem';
+import { readNodeEnv } from '../../utils/env';
 import { logger } from '../../utils/logger';
 
-const shouldWarnOnOverwrite = process.env.NODE_ENV !== 'test';
+const shouldWarnOnOverwrite = readNodeEnv() !== 'test';
 
 class Registry {
   private systems: Map<string, BaseSystem> = new Map();

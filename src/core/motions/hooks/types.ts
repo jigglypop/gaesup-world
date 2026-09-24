@@ -55,3 +55,4 @@ export type UseCharacterAnimatorOptions = {
   controller?: AnimatorControllerDefinition;
   locomotionResponse?: number;
 };
+

@@ -1,6 +1,6 @@
-// Vite dev/build replaces `process.env.NODE_ENV` via `define` in `vite.config.ts`.
-// In Jest/Node, `process.env.NODE_ENV` exists normally.
-const isProduction = process.env.NODE_ENV === 'production';
+import { readNodeEnv } from './env';
+
+const nodeEnv = readNodeEnv();
 
 export type LogLevel = 'log' | 'warn' | 'error' | 'info';
 export type LogValue = object | string | number | boolean | bigint | symbol | null | undefined;
@@ -14,7 +14,7 @@ const LEVEL_RANK: Readonly<Record<LogLevel, number>> = {
 
 class Logger {
   private static instance: Logger;
-  private enabled: boolean = !isProduction && process.env.NODE_ENV !== 'test';
+  private enabled: boolean = nodeEnv !== 'production' && nodeEnv !== 'test';
   private level: LogLevel = 'info';
 
   private constructor() {}

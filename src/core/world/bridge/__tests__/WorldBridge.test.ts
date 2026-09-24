@@ -5,6 +5,13 @@ import { WorldBridge } from '../WorldBridge';
 
 const WORLD_ID = 'world';
 
+const objectAt = (type: string, x: number) => ({
+  type,
+  position: new THREE.Vector3(x, 0, 0),
+  rotation: new THREE.Euler(),
+  scale: new THREE.Vector3(1, 1, 1),
+});
+
 describe('WorldBridge snapshot', () => {
   let bridge: WorldBridge;
 
@@ -23,15 +30,15 @@ describe('WorldBridge snapshot', () => {
       counts.push(snapshot.objects.length);
     });
 
-    bridge.addObject(WORLD_ID, { type: 'npc', position: new THREE.Vector3(0, 0, 0) });
-    bridge.addObject(WORLD_ID, { type: 'npc', position: new THREE.Vector3(1, 0, 0) });
+    bridge.addObject(WORLD_ID, objectAt('npc', 0));
+    bridge.addObject(WORLD_ID, objectAt('npc', 1));
 
     expect(counts).toEqual([1, 2]);
   });
 
   test('조회 함수는 스냅샷마다 새로 만들지 않고 현재 월드를 읽는다', () => {
     const first = bridge.snapshot(WORLD_ID);
-    const objectId = bridge.addObject(WORLD_ID, { type: 'item', position: new THREE.Vector3(2, 0, 0) });
+    const objectId = bridge.addObject(WORLD_ID, objectAt('item', 2));
     const second = bridge.snapshot(WORLD_ID);
 
     expect(second?.objects).not.toBe(first?.objects);

@@ -10,7 +10,8 @@ const mockSetUrls = jest.fn();
 const mockSetMode = jest.fn();
 const mockGetEngine = jest.fn<unknown, [string]>(() => ({}));
 jest.mock('../../../core/boilerplate', () => ({
-  BridgeFactory: { getOrCreate: () => ({ addObject: mockAddObject, getEngine: mockGetEngine }) },
+  ...jest.requireActual<object>('../../../core/boilerplate'),
+  BridgeFactory: { getOrCreateFor: () => ({ addObject: mockAddObject, getEngine: mockGetEngine }) },
 }));
 jest.mock('../../../core/stores/gaesupStore', () => ({
   useGaesupStore: (selector: (state: unknown) => unknown) => selector({ setUrls: mockSetUrls, setMode: mockSetMode }),

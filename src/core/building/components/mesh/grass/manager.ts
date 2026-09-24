@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 import { BridgeFactory } from '@core/boilerplate';
-import type { MotionBridge } from '@core/motions/bridge/MotionBridge';
+import { MotionBridge } from '@core/motions/bridge/MotionBridge';
 import { logger } from '@core/utils/logger';
 import type { GaesupCoreWasmExports } from '@core/wasm/loader';
 import { useWeatherStore } from '@core/weather/stores/weatherStore';
@@ -61,7 +61,7 @@ export type GrassManagerSources = {
 const legacySources: GrassManagerSources = {
   weather: () => useWeatherStore.getState().current,
   trample: () => {
-    const bridge = BridgeFactory.getOrCreate('motion') as MotionBridge | null;
+    const bridge = BridgeFactory.getOrCreateFor(MotionBridge);
     const id = bridge?.getPlayerEntityId();
     return id ? bridge?.snapshot(id) ?? null : null;
   },

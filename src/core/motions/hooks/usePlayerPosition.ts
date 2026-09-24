@@ -2,13 +2,35 @@ import { useRef, useState, useEffect } from 'react';
 
 import * as THREE from 'three';
 
-import { AFTER_MOTION_FRAME_ORDER, useEngineFrame } from '@core/runtime/frame';
+import { AFTER_MOTION_FRAME_ORDER, useCanvasFrameScheduler, useEngineFrame, type FrameScheduler } from '@core/runtime/frame';
 
 import { useStateSystem } from './useStateSystem';
 import { useWorldMotionBridge } from './useWorldMotionBridge';
 import { MotionBridge } from '../bridge/MotionBridge';
 
 const POSITION_CHANGE_EPSILON_SQ = 0.000001;
+
+type MotionSnapshotRead = ReturnType<MotionBridge['snapshot']>;
+type SharedSnapshotRead = { scheduler: FrameScheduler; frame: number; entityId: string; snapshot: MotionSnapshotRead };
+
+// Every consumer polls in the same frame phase; one bridge read per frame also avoids repeated body syncs.
+const sharedReads = new WeakMap<MotionBridge, SharedSnapshotRead>();
+
+function readFrameSnapshot(bridge: MotionBridge, entityId: string, scheduler: FrameScheduler): MotionSnapshotRead {
+  const frame = scheduler.getFrame();
+  const shared = sharedReads.get(bridge);
+  if (shared && shared.scheduler === scheduler && shared.frame === frame && shared.entityId === entityId) return shared.snapshot;
+  const snapshot = bridge.snapshot(entityId);
+  if (!shared) {
+    sharedReads.set(bridge, { scheduler, frame, entityId, snapshot });
+    return snapshot;
+  }
+  shared.scheduler = scheduler;
+  shared.frame = frame;
+  shared.entityId = entityId;
+  shared.snapshot = snapshot;
+  return snapshot;
+}
 
 function consumePositionChange(last: { x: number; y: number; z: number }, next: THREE.Vector3): boolean {
   const dx = next.x - last.x;
@@ -64,6 +86,7 @@ export function usePlayerPosition(
   const lastBridgeEventRef = useRef<number>(0);
   const lastPositionSnapshot = useRef({ x: 0, y: 0, z: 0 });
   const bridgeRef = useRef<MotionBridge | null>(null);
+  const scheduler = useCanvasFrameScheduler();
   const { activeState, gameStates } = useStateSystem();
 
   const getTargetEntityId = (bridge: MotionBridge): string | undefined => {
@@ -116,7 +139,7 @@ export function usePlayerPosition(
 
       const recentBridgeEvent = now - lastBridgeEventRef.current < 16;
       if (!recentBridgeEvent && targetEntityId) {
-        const snapshot = bridge.snapshot(targetEntityId);
+        const snapshot = readFrameSnapshot(bridge, targetEntityId, scheduler);
         if (snapshot) {
           result.position.copy(snapshot.position);
           result.velocity.copy(snapshot.velocity);

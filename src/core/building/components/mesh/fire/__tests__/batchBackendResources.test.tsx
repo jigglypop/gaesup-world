@@ -4,8 +4,8 @@ import { useThree } from '@react-three/fiber';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import * as THREE from 'three';
 
-import { FrameSchedulerHost } from '../../../../../runtime/frame';
 import { FireBatch } from '..';
+import { FrameSchedulerHost } from '../../../../../runtime/frame';
 
 jest.mock('three/webgpu', () => jest.requireActual('three'));
 jest.mock('../../../../../rendering/tsl/fire', () => {

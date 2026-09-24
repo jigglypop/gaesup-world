@@ -8,7 +8,7 @@ import { useSpawnFromBlueprint } from '../useSpawnFromBlueprint';
 
 test('a real world bridge rejects spawning before registration and retains the object after retry', async () => {
   const bridge = new WorldBridge();
-  const factory = jest.spyOn(BridgeFactory, 'getOrCreate').mockReturnValue(bridge);
+  const factory = jest.spyOn(BridgeFactory, 'getOrCreateFor').mockReturnValue(bridge);
   const { mode, urls } = useGaesupStore.getState();
   const { result, unmount } = renderHook(() => useSpawnFromBlueprint());
   try {

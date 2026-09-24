@@ -1,4 +1,4 @@
-import { createRef, type RefObject } from 'react';
+import type { RefObject } from 'react';
 
 import type { RapierRigidBody } from '@react-three/rapier';
 import { renderHook } from '@testing-library/react';
@@ -91,7 +91,7 @@ describe('useEntity ownership key', () => {
   });
 
   test('활성 캐릭터 엔티티만 Animator를 구동하고 지정한 컨트롤러를 전달한다', () => {
-    const rigidBodyRef = createRef<RapierRigidBody>();
+    const rigidBodyRef: RefObject<RapierRigidBody> = { current: null! };
     const controller = createDefaultCharacterAnimator('entity.custom');
     const mockUseCharacterAnimator = jest.mocked(useCharacterAnimator);
     const { rerender } = renderHook(

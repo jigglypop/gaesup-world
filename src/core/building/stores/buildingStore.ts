@@ -44,12 +44,24 @@ import {
   type BuildingWeatherEffect,
   type BuildingWorldSurface,
 } from '../types';
+import { createDefaultTileCategories, createDefaultWallCategories } from './defaultCategories';
 import { applyBuildingHydration, hydrateBuildingState, serializeBuildingState } from './persistence';
 import { TILE_CONSTANTS } from '../types/constants';
 
 enableMapSet();
 
 const CUSTOM_TILE_CATEGORY_ID = 'custom-tiles';
+const DEFAULT_GRASS_DENSITY = 90;
+
+function defaultTileObjectConfig(
+  objectType: TileObjectType | undefined,
+  terrainColor: string,
+  terrainAccentColor: string,
+): TileConfig['objectConfig'] {
+  if (objectType === 'grass') return { grassDensity: DEFAULT_GRASS_DENSITY, terrainColor, terrainAccentColor };
+  if (objectType === 'sand' || objectType === 'snowfield') return { terrainColor, terrainAccentColor };
+  return undefined;
+}
 
 function ensureTileCategory(
   state: BuildingStore,
@@ -416,49 +428,8 @@ export function createBuildingStore() {
           metalness: 0.0,
         });
 
-        // 기본 벽 카테고리 생성
-        state.wallCategories.set('interior-walls', {
-          id: 'interior-walls',
-          name: '실내 벽',
-          description: '실내 공간에 사용하는 벽',
-          wallGroupIds: ['plaster-walls', 'painted-walls'],
-        });
-
-        state.wallCategories.set('exterior-walls', {
-          id: 'exterior-walls',
-          name: '외벽',
-          description: '건물 외부에 사용하는 벽',
-          wallGroupIds: ['brick-walls', 'concrete-walls'],
-        });
-
-        state.wallCategories.set('special-walls', {
-          id: 'special-walls',
-          name: '특수 벽',
-          description: '유리와 특수 재질의 벽',
-          wallGroupIds: ['glass-walls'],
-        });
-
-        // 기본 타일 카테고리 생성
-        state.tileCategories.set('wood-floors', {
-          id: 'wood-floors',
-          name: '나무 바닥',
-          description: '여러 종류의 나무 바닥',
-          tileGroupIds: ['oak-floor', 'pine-floor'],
-        });
-
-        state.tileCategories.set('stone-floors', {
-          id: 'stone-floors',
-          name: '돌 바닥',
-          description: '대리석과 석재 바닥',
-          tileGroupIds: ['marble-floor', 'granite-floor'],
-        });
-
-        state.tileCategories.set('natural-floors', {
-          id: 'natural-floors',
-          name: '자연 바닥',
-          description: '모래와 눈 지형 바닥',
-          tileGroupIds: ['sand-floor', 'snow-floor'],
-        });
+        for (const [id, category] of createDefaultWallCategories()) state.wallCategories.set(id, category);
+        for (const [id, category] of createDefaultTileCategories()) state.tileCategories.set(id, category);
 
         // 기본 그룹 생성
         state.wallGroups.set('brick-walls', {
@@ -960,20 +931,9 @@ export function createBuildingStore() {
       set((state) => {
         const group = state.tileGroups.get(groupId);
         if (group) {
-          const objectConfig: TileConfig['objectConfig'] =
-            state.selectedTileObjectType === 'grass'
-              ? {
-                  grassDensity: 90,
-                  terrainColor: state.currentTerrainColor,
-                  terrainAccentColor: state.currentTerrainAccentColor,
-                }
-              : state.selectedTileObjectType === 'sand' ||
-                  state.selectedTileObjectType === 'snowfield'
-                ? {
-                    terrainColor: state.currentTerrainColor,
-                    terrainAccentColor: state.currentTerrainAccentColor,
-                  }
-                : undefined;
+          const objectType = tile.objectType ?? state.selectedTileObjectType;
+          const objectConfig = tile.objectConfig
+            ?? defaultTileObjectConfig(objectType, state.currentTerrainColor, state.currentTerrainAccentColor);
           const cell = tile.cell ?? tilePositionToCell(tile.position);
           const materialId = tile.materialId ?? state.currentTileMaterialId;
           const tileWithObject: TileConfig = {
@@ -981,7 +941,7 @@ export function createBuildingStore() {
             cell,
             footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1),
             ...(materialId ? { materialId } : {}),
-            objectType: state.selectedTileObjectType,
+            objectType,
             ...(objectConfig ? { objectConfig } : {}),
           };
           group.tiles.push(tileWithObject);

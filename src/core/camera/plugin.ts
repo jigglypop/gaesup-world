@@ -4,7 +4,7 @@ import type { GaesupPlugin, PluginContext } from '../plugins';
 import { useGaesupStore, RUNTIME_GAESUP_STORE_SERVICE_ID, type GaesupStore } from '../stores/gaesupStore';
 import type { CameraSystemConfig } from './bridge/types';
 import { CameraSystem } from './core/CameraSystem';
-import type { CameraOptionType } from './core/types';
+import type { CameraCollisionTargets, CameraOptionType } from './core/types';
 import type { ModeState } from '../stores/slices/mode';
 
 type SerializedVector3 = {
@@ -63,6 +63,7 @@ const DEFAULT_PLUGIN_ID = 'gaesup.camera';
 export const DEFAULT_CAMERA_SYSTEM_EXTENSION_ID = 'camera.system';
 export const DEFAULT_CAMERA_SAVE_EXTENSION_ID = 'camera';
 export const DEFAULT_CAMERA_STORE_SERVICE_ID = 'camera.store';
+const COLLISION_TARGETS: ReadonlySet<unknown> = new Set<CameraCollisionTargets>(['scene', 'colliders']);
 const VECTOR_OPTION_KEYS = new Set([
   'offset',
   'target',
@@ -200,6 +201,9 @@ function prepareCameraState(data: CameraSerializedState | null | undefined, stor
       if (raw[key] !== undefined) validateNumericOptions(raw[key]);
     }
     if (raw['mode'] !== undefined && typeof raw['mode'] !== 'string') throw new TypeError('Invalid camera option mode');
+    if (raw['collisionTargets'] !== undefined && !COLLISION_TARGETS.has(raw['collisionTargets'])) {
+      throw new TypeError('Invalid camera collision targets');
+    }
   }
   const option = raw ? deserializeCameraOption(raw) : undefined;
   return () => {

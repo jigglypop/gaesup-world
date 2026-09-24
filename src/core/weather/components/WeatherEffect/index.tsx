@@ -3,8 +3,8 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { useEngineFrame } from '../../../runtime/frame';
 import { getSnowParticleTexture } from './particleTexture';
+import { useEngineFrame } from '../../../runtime/frame';
 import { useWeatherStore } from '../../stores/weatherStore';
 import type { WeatherKind } from '../../types';
 

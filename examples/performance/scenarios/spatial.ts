@@ -1,6 +1,6 @@
-import { Box3, BoxGeometry, Clock, Euler, Mesh, MeshBasicMaterial, PerspectiveCamera, Ray, Scene, Vector3 } from 'three';
+import { Box3, BoxGeometry, Clock, Euler, Group, Mesh, MeshBasicMaterial, PerspectiveCamera, Ray, Scene, Vector3 } from 'three';
 
-import { cameraUtils, EntityStateManager, ThirdPersonController, type CameraSystemState } from 'gaesup-world';
+import { CAMERA_COLLIDER_LAYER, cameraUtils, EntityStateManager, ThirdPersonController, type CameraSystemState } from 'gaesup-world';
 import { WorldSystem, type WorldObject } from 'gaesup-world/runtime';
 
 import { checkAbort, nextFrame, type Scenario, type ScenarioContext } from './types';
@@ -121,8 +121,41 @@ async function cameraSmoothing(ctx: ScenarioContext) {
   } finally { manager.dispose(); scene.clear(); geometry.dispose(); material.dispose(); }
 }
 
+async function cameraColliders(ctx: ScenarioContext) {
+  const scene = new Scene(); const geometry = new BoxGeometry(1, 4, 3); const material = new MeshBasicMaterial();
+  const wall = new Mesh(geometry, material); wall.position.set(0, 0, 8); wall.layers.enable(CAMERA_COLLIDER_LAYER); scene.add(wall);
+  const count = ctx.config.count;
+  for (let i = 0; i < count; i++) {
+    const holder = new Group(); holder.position.set(20 + (i % 100) * 3, 0, Math.floor(i / 100) * 3);
+    holder.add(new Mesh(geometry, material)); scene.add(holder);
+  }
+  const manager = new EntityStateManager();
+  const lanes = (['scene', 'colliders'] as const).map((collisionTargets) => {
+    const camera = new PerspectiveCamera(); camera.position.set(4, 0, 8);
+    const state: CameraSystemState = { lastUpdate: 0, config: { mode: 'thirdPerson', distance: { x: 4, y: 0, z: -8 },
+      enableCollision: true, collisionMargin: 0.25, collisionTargets, zoom: 1, fov: 75, smoothing: { position: 0.5, rotation: 0.5, fov: 0.1 } } };
+    return { collisionTargets, camera, state, controller: new ThirdPersonController(),
+      props: { camera, scene, activeState: manager.getActiveState(), deltaTime: 1 / 60, clock: new Clock() } };
+  });
+  try {
+    for (let step = 0; step < 120; step++) {
+      checkAbort(ctx.signal);
+      for (const lane of step % 2 ? [...lanes].reverse() : lanes) {
+        lane.state.config.distance.x = step % 60 < 30 ? 4 : -4;
+        const started = performance.now();
+        lane.controller.update(lane.props, lane.state);
+        if (step >= 20) ctx.sample(`camera-${lane.collisionTargets}-targets-update`, performance.now() - started, 'ms', `cpu-${count}-off-path-meshes`);
+      }
+      ctx.assert(`same-frame-position-${step}`, true, lanes[0]!.camera.position.distanceTo(lanes[1]!.camera.position) < 1e-9);
+      if (step % 30 === 29) await nextFrame(ctx.signal);
+    }
+    ctx.unavailable('gpu-time', 'ms', 'cpu-camera-query', 'collider 모드와 장면 모드의 controller CPU 비용 비교이며 렌더링 FPS를 측정하지 않습니다.');
+  } finally { manager.dispose(); scene.clear(); geometry.dispose(); material.dispose(); }
+}
+
 export const spatialScenarios: Scenario[] = [
   { id: 'spatial-scale', title: '월드 경계 검색 규모', description: '실제 WorldSystem의 이동·충돌·최근접 광선을 선형 검색 기준과 비교합니다. 질의 32회 묶음 평균으로 타이머 해상도를 보완합니다.', version: 2, requirementIds: ['R04'], run: spatialScale },
   { id: 'camera-radius', title: '카메라 반경과 규모', description: '중심 광선이 빗나가는 장애물의 구 충돌과 반환값 소유권·장면 규모 비용을 검사합니다.', version: 1, requirementIds: ['R05'], run: cameraRadius },
   { id: 'camera-smoothing', title: '카메라 보간·포커스 충돌', description: '공개 ThirdPersonController의 실제 프레임 위치를 30/60/144Hz와 포커스 전환에서 검사합니다.', version: 2, requirementIds: ['R05'], run: cameraSmoothing },
+  { id: 'camera-colliders', title: '카메라 collider 대상 비용', description: 'collisionTargets colliders와 scene 모드가 같은 프레임 위치를 내는지 확인하고 경로 밖 메시 규모에 따른 controller 비용을 비교합니다.', version: 1, requirementIds: ['R05'], run: cameraColliders },
 ];

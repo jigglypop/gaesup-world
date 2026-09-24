@@ -1,8 +1,8 @@
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import * as THREE from 'three';
 
-import { useGaesupStore } from '../../../stores/gaesupStore';
 import { FrameSchedulerHost } from '../../../runtime/frame';
+import { useGaesupStore } from '../../../stores/gaesupStore';
 import {
   getDefaultInteractionInputBackend,
   resolveDefaultInteractionSystem,

@@ -1,9 +1,10 @@
 import { renderHook } from '@testing-library/react';
-import { useBaseFrame, useConditionalFrame } from '../useBaseFrame';
-import { AbstractBridge } from '../../bridge/AbstractBridge';
-import { IDisposable, UseBaseFrameOptions } from '../../types';
+
 import { frameScheduler } from '../../../runtime/frame';
 import { logger } from '../../../utils/logger';
+import { AbstractBridge } from '../../bridge/AbstractBridge';
+import { IDisposable, UseBaseFrameOptions } from '../../types';
+import { useBaseFrame, useConditionalFrame } from '../useBaseFrame';
 
 const tickFrame = (elapsedMs: number) => frameScheduler.tick(0.016, elapsedMs);
 
@@ -16,10 +17,20 @@ class MockEngine implements IDisposable {
   }
 }
 
-class MockBridge extends AbstractBridge<MockEngine, any, any> {
-  register = jest.fn();
-  unregister = jest.fn();
-  notifyListeners = jest.fn();
+class MockBridge extends AbstractBridge<MockEngine, unknown, unknown> {
+  override register = jest.fn();
+  override unregister = jest.fn();
+  override notifyListeners = jest.fn();
+
+  protected buildEngine(): MockEngine {
+    return new MockEngine();
+  }
+
+  protected executeCommand(): void {}
+
+  protected createSnapshot(): null {
+    return null;
+  }
 }
 
 // document.hidden mock

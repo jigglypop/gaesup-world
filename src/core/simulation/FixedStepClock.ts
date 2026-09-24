@@ -1,7 +1,8 @@
 export const SIMULATION_PHASES = ['commands', 'simulation', 'physics', 'postSimulation', 'publish'] as const;
 export type SimulationPhase = typeof SIMULATION_PHASES[number];
 export type FixedTick = { tick: number; deltaSeconds: number; elapsedSeconds: number };
-export type ClockSystem = { id: string; phase: SimulationPhase; priority?: number; update: (tick: FixedTick) => void };
+/** `tick` is reused across ticks; copy its fields to keep them beyond `update`. */
+export type ClockSystem = { id: string; phase: SimulationPhase; priority?: number; update: (tick: Readonly<FixedTick>) => void };
 type Registration = { system: ClockSystem; owner: object; references: number; order: number; active: boolean };
 
 /** Pure fixed-step scheduler shared by rendered and headless world drivers. No browser timer ownership. */
@@ -16,6 +17,7 @@ export class FixedStepClock {
   private advancing = false;
   private tickNumber = 0;
   private droppedSeconds = 0;
+  private readonly context: FixedTick;
 
   constructor(options: { tickRate?: number; maxSubSteps?: number; maxFrameSeconds?: number } = {}) {
     const rate = options.tickRate ?? 60;
@@ -25,6 +27,7 @@ export class FixedStepClock {
       || !Number.isFinite(this.maxFrameSeconds) || this.maxFrameSeconds <= 0) throw new RangeError('Invalid fixed clock configuration');
     this.deltaSeconds = 1 / rate;
     if (!Number.isFinite(this.deltaSeconds) || this.deltaSeconds <= 0) throw new RangeError('Invalid fixed clock tick duration');
+    this.context = { tick: 0, deltaSeconds: this.deltaSeconds, elapsedSeconds: 0 };
   }
 
   get tick(): number { return this.tickNumber; }
@@ -76,6 +79,11 @@ export class FixedStepClock {
         this.accumulator = Math.max(0, this.accumulator - this.deltaSeconds);
         this.runTick(); steps++;
       }
+      // Deferred catch-up is bounded to one frame budget so sustained slow frames cannot build an unbounded backlog.
+      if (this.accumulator > this.maxFrameSeconds) {
+        this.droppedSeconds += this.accumulator - this.maxFrameSeconds;
+        this.accumulator = this.maxFrameSeconds;
+      }
       return steps;
     } finally { this.advancing = false; }
   }
@@ -92,7 +100,9 @@ export class FixedStepClock {
   private runTick(): void {
     if (this.tickNumber === Number.MAX_SAFE_INTEGER) throw new RangeError('Clock tick capacity exceeded');
     this.tickNumber++;
-    const context = { tick: this.tickNumber, deltaSeconds: this.deltaSeconds, elapsedSeconds: this.elapsedSeconds };
+    const context = this.context;
+    context.tick = this.tickNumber;
+    context.elapsedSeconds = this.elapsedSeconds;
     // Registration during a tick becomes visible on the next tick; disposed systems stop immediately.
     const systems = this.ordered;
     for (const entry of systems) if (entry.active) entry.system.update(context);

@@ -34,6 +34,8 @@ export class FrameScheduler {
   private metricsEnabled = false;
   private readonly hosts: object[] = [];
   private generation = 0;
+  private frameNumber = 0;
+  private lastPhaseIndex = Number.POSITIVE_INFINITY;
 
   constructor() {
     FRAME_PHASES.forEach((phase) => {
@@ -89,6 +91,9 @@ export class FrameScheduler {
   tickPhase(phaseIndex: number, delta: number, elapsedMs: number): void {
     const phase = FRAME_PHASES[phaseIndex];
     if (!phase) return;
+    // A phase at or before the previous one starts a new frame, including partial tick drivers.
+    if (phaseIndex <= this.lastPhaseIndex) this.frameNumber++;
+    this.lastPhaseIndex = phaseIndex;
     const entries = this.phases.get(phase)!;
     if (entries.length === 0) return;
     this.ticking = true;
@@ -163,6 +168,11 @@ export class FrameScheduler {
 
   isTickOwner(token: object): boolean {
     return this.hosts[0] === token;
+  }
+
+  /** Increments once per ticked frame; readers use it to share per-frame work. */
+  getFrame(): number {
+    return this.frameNumber;
   }
 
   getGeneration(): number {

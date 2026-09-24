@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import * as THREE from 'three';
 
-import { useEngineFrame } from '../../../runtime/frame';
 import { useInventoryStoreApi } from '../../../inventory/stores/inventoryStore';
+import { useEngineFrame } from '../../../runtime/frame';
 import { useTimeStoreApi } from '../../../time/stores/timeStore';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';

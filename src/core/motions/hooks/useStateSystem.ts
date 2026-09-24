@@ -35,8 +35,12 @@ function getChannel(manager: EntityStateManager): StateChannel {
   return channel;
 }
 
+export function useScopedStateManager(): EntityStateManager {
+    return useGaesupRuntime()?.stateManager ?? getGlobalStateManager();
+}
+
 export function useStateSystem(): UseStateSystemResult {
-    const stateManager = useGaesupRuntime()?.stateManager ?? getGlobalStateManager();
+    const stateManager = useScopedStateManager();
     const channel = getChannel(stateManager);
     useSyncExternalStore(channel.subscribe, channel.getRevision, channel.getRevision);
 

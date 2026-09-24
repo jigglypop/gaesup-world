@@ -13,22 +13,27 @@ import type { EntityAnimationStates } from '../core/types';
 let fallbackAnimationBridge: AnimationBridge | null = null;
 
 export function getGlobalAnimationBridge(): AnimationBridge {
-  const bridge = BridgeFactory.getOrCreate<AnimationBridge>('animation');
+  const bridge = BridgeFactory.getOrCreateFor(AnimationBridge);
   if (bridge) return bridge;
 
   fallbackAnimationBridge ??= new AnimationBridge();
   return fallbackAnimationBridge;
 }
 
-export function useAnimationBridge() {
+export function useScopedAnimationBridge(): AnimationBridge | null {
   const runtime = useGaesupRuntime();
   useGaesupRuntimeRevision();
+  if (!runtime) return getGlobalAnimationBridge();
+  return runtime.isActive() ? runtime.animationBridge : null;
+}
+
+export function useAnimationBridge() {
   const storeApi = useGaesupStoreApi();
   const bridgeRef = useRef<AnimationBridge | null>(null);
   const mode = useGaesupStore((state) => state.mode);
   const animationState = useGaesupStore((state) => state.animationState);
   const setAnimation = useGaesupStore((state) => state.setAnimation);
-  const bridge = runtime ? (runtime.isActive() ? runtime.animationBridge : null) : getGlobalAnimationBridge();
+  const bridge = useScopedAnimationBridge();
   bridgeRef.current = bridge;
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { CAMERA_CONSTANTS, cameraUtils } from '../camera';
+import { CAMERA_CONSTANTS, cameraUtils, resolveCollisionPosition } from '../camera';
 
 const SIXTY_FPS = 1 / 60;
 
@@ -43,5 +43,43 @@ describe('cameraUtils 경계값', () => {
     expect(result.safe).toBe(true);
     expect(result.position.toArray()).toEqual([1, 2, 3]);
     expect(result.obstacles).toHaveLength(0);
+  });
+});
+
+describe('resolveCollisionPosition', () => {
+  const from = new THREE.Vector3();
+  const to = new THREE.Vector3(0, 0, 10);
+
+  function sceneWithBoxAt(z: number): THREE.Scene {
+    const scene = new THREE.Scene();
+    const box = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 1), new THREE.MeshBasicMaterial());
+    box.position.z = z;
+    scene.add(box);
+    return scene;
+  }
+
+  test('공개 충돌 검사와 같은 위치를 out에 쓴다', () => {
+    const blocked = sceneWithBoxAt(3);
+    const out = new THREE.Vector3();
+    expect(resolveCollisionPosition(from, to, blocked, 0.5, undefined, out)).toBe(out);
+    expect(out.toArray()).toEqual(cameraUtils.improvedCollisionCheck(from, to, blocked).position.toArray());
+    resolveCollisionPosition(from, to, new THREE.Scene(), 0.5, undefined, out);
+    expect(out.toArray()).toEqual([0, 0, 10]);
+  });
+
+  test('막혀도 장애물 점을 복제하지 않고 목표 벡터 자체를 out으로 받을 수 있다', () => {
+    const scene = sceneWithBoxAt(3);
+    const target = to.clone();
+    const clone = jest.spyOn(THREE.Vector3.prototype, 'clone');
+    try {
+      cameraUtils.improvedCollisionCheck(from, to, scene);
+      const ownedResultClones = clone.mock.calls.length;
+      clone.mockClear();
+      resolveCollisionPosition(from, target, scene, 0.5, undefined, target);
+      expect(clone.mock.calls.length).toBeLessThan(ownedResultClones);
+    } finally {
+      clone.mockRestore();
+    }
+    expect(target.z).toBeCloseTo(2);
   });
 });

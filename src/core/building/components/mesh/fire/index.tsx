@@ -691,6 +691,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     }
     mesh.count = logCount;
     mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
   }, [fires, N, logCount]);
 
   useLayoutEffect(() => {
@@ -708,6 +709,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     }
     mesh.count = N;
     mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
   }, [fires, N]);
 
   useLayoutEffect(() => {
@@ -731,6 +733,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     mesh.count = N;
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.computeBoundingSphere();
   }, [fires, N]);
 
   useSharedFrame(FIRE_BATCH_FRAME, (_, t) => {

@@ -11,11 +11,14 @@ import type {
   BuildingSerializedState,
   MeshConfig,
   PlacedObject,
+  TileCategory,
   TileConfig,
   TileGroupConfig,
+  WallCategory,
   WallConfig,
   WallGroupConfig,
 } from '../types';
+import { createDefaultTileCategories, createDefaultWallCategories } from './defaultCategories';
 import { TILE_CONSTANTS } from '../types/constants';
 
 export type BuildingSerializableState = Pick<
@@ -30,6 +33,8 @@ export type BuildingSerializableState = Pick<
   | 'fogColor'
   | 'weatherEffect'
   | 'worldSurface'
+  | 'wallCategories'
+  | 'tileCategories'
 >;
 
 export type BuildingHydrationTarget = {
@@ -52,6 +57,8 @@ export type BuildingHydrationTarget = {
   fogColor: string;
   weatherEffect: BuildingSerializedState['weatherEffect'];
   worldSurface: BuildingSerializedState['worldSurface'];
+  wallCategories: Map<string, WallCategory>;
+  tileCategories: Map<string, TileCategory>;
 };
 
 export function serializeBuildingState(state: BuildingSerializableState): BuildingSerializedState {
@@ -67,6 +74,8 @@ export function serializeBuildingState(state: BuildingSerializableState): Buildi
     fogColor: state.fogColor,
     weatherEffect: state.weatherEffect,
     worldSurface: state.worldSurface,
+    wallCategories: Array.from(state.wallCategories.values(), cloneBuildingValue),
+    tileCategories: Array.from(state.tileCategories.values(), cloneBuildingValue),
   };
 }
 
@@ -86,6 +95,17 @@ function validateVector(value: unknown): void {
   }
 }
 
+function isCategoryList(value: unknown, groupKey: 'wallGroupIds' | 'tileGroupIds'): boolean {
+  return Array.isArray(value) && value.every((category: unknown) => {
+    if (!category || typeof category !== 'object') return false;
+    const record = category as Record<string, unknown>;
+    const groupIds = record[groupKey];
+    return typeof record['id'] === 'string' && typeof record['name'] === 'string'
+      && (record['description'] === undefined || typeof record['description'] === 'string')
+      && Array.isArray(groupIds) && groupIds.every((id) => typeof id === 'string');
+  });
+}
+
 function validateSize(value: unknown): void {
   if (value !== undefined && (typeof value !== 'number' || !Number.isFinite(value) || value <= 0)) {
     throw new RangeError('Invalid building size');
@@ -103,7 +123,7 @@ export function hydrateBuildingState(
   if (data.version !== undefined && data.version !== 1) {
     throw new Error('Unsupported building snapshot version');
   }
-  const collections = ['meshes', 'wallGroups', 'tileGroups', 'blocks', 'objects'] as const;
+  const collections = ['meshes', 'wallGroups', 'tileGroups', 'blocks', 'objects', 'wallCategories', 'tileCategories'] as const;
   const settings = ['showSnow', 'showFog', 'fogColor', 'weatherEffect', 'worldSurface'] as const;
   if (![...collections, ...settings].some((key) => Object.prototype.hasOwnProperty.call(data, key))) {
     throw new Error('Empty building snapshot');
@@ -120,6 +140,10 @@ export function hydrateBuildingState(
     (data.weatherEffect !== undefined && !['none', 'snow', 'rain', 'storm', 'wind'].includes(data.weatherEffect)) ||
     (data.worldSurface !== undefined && !['ground', 'water'].includes(data.worldSurface))
   ) throw new Error('Invalid building snapshot settings');
+  if (
+    (data.wallCategories !== undefined && !isCategoryList(data.wallCategories, 'wallGroupIds')) ||
+    (data.tileCategories !== undefined && !isCategoryList(data.tileCategories, 'tileGroupIds'))
+  ) throw new Error('Invalid building snapshot categories');
 
   for (const group of data.tileGroups ?? []) {
     for (const tile of group.tiles) {
@@ -173,6 +197,11 @@ export function hydrateBuildingState(
   state.fogColor = data.fogColor ?? '#cfd8e3';
   state.weatherEffect = data.weatherEffect ?? (state.showSnow ? 'snow' : 'none');
   state.worldSurface = data.worldSurface ?? 'ground';
+  // Snapshots without categories keep the current ones; an empty store falls back to the defaults.
+  if (data.wallCategories) state.wallCategories = new Map(data.wallCategories.map((category) => [category.id, category]));
+  else if (state.wallCategories.size === 0) state.wallCategories = createDefaultWallCategories();
+  if (data.tileCategories) state.tileCategories = new Map(data.tileCategories.map((category) => [category.id, category]));
+  else if (state.tileCategories.size === 0) state.tileCategories = createDefaultTileCategories();
   applySelectedGroupId(state, 'selectedTileGroupId', state.tileGroups);
   applySelectedGroupId(state, 'selectedWallGroupId', state.wallGroups);
   state.initialized = true;
@@ -186,6 +215,7 @@ export function applyBuildingHydration(state: BuildingHydrationTarget, prepared:
     wallIndex: prepared.wallIndex, wallCells: prepared.wallCells, wallMeta: prepared.wallMeta,
     initialized: prepared.initialized, showSnow: prepared.showSnow, showFog: prepared.showFog,
     fogColor: prepared.fogColor, weatherEffect: prepared.weatherEffect, worldSurface: prepared.worldSurface,
+    wallCategories: prepared.wallCategories, tileCategories: prepared.tileCategories,
   });
   applySelectedGroupId(state, 'selectedTileGroupId', state.tileGroups);
   applySelectedGroupId(state, 'selectedWallGroupId', state.wallGroups);

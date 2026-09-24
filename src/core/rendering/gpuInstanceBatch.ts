@@ -1,7 +1,8 @@
-import { Matrix4, Mesh, Sphere, Vector4, REVISION } from 'three';
+import { Matrix4, Mesh, Sphere, Vector4 } from 'three';
 import type { BufferAttribute, InstancedMesh, Material } from 'three';
 import type { NodeMaterial, WebGPURenderer } from 'three/webgpu';
 
+import { isGpuBatchRevision } from './gpuBatchRevision';
 import { createMaterialSynchronizer, supportsGpuBatchMaterial } from './gpuMaterialSync';
 
 /** Renderer-owned acceleration. Source instances remain the picking/physics/shadow authority. */
@@ -11,7 +12,7 @@ export async function createGpuInstanceBatch(renderer: WebGPURenderer, source: I
   };
   if (
     !(renderer.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend ||
-    REVISION !== '185' ||
+    !isGpuBatchRevision() ||
     !owner._attributes ||
     source.count < 1
   )

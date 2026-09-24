@@ -146,6 +146,11 @@ export class DIContainer {
     }
   }
 
+  /** Drops a cached singleton so the next resolve builds a new instance; the registration stays. */
+  releaseSingleton<T>(token: Token<T>): void {
+    this.singletons.delete(token as Token<object>)
+  }
+
   clear(): void {
     this.factories.clear()
     this.singletons.clear()

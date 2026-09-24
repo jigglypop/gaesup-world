@@ -3,7 +3,7 @@ export * from './usePhysicsBridge';
 export * from './usePlayerPosition';
 export * from './useMotion';
 export * from './useGaesupGltf';
-export * from './useStateSystem';
+export { getGlobalStateManager, useStateSystem, type UseStateSystemResult } from './useStateSystem';
 export * from './useBlueprintEntity';
 export * from './useInteractionSystem';
 export * from './types';

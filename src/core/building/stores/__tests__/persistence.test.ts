@@ -1,5 +1,6 @@
 import type { BuildingSerializedState } from '../../types';
 import { useBuildingStore } from '../buildingStore';
+import { DEFAULT_TILE_CATEGORIES, DEFAULT_WALL_CATEGORIES } from '../defaultCategories';
 import {
   hydrateBuildingState,
   serializeBuildingState,
@@ -25,6 +26,8 @@ function createTarget(): BuildingHydrationTarget {
     fogColor: '#cfd8e3',
     weatherEffect: 'none',
     worldSurface: 'ground',
+    wallCategories: new Map(),
+    tileCategories: new Map(),
   };
 }
 
@@ -141,6 +144,8 @@ describe('building persistence helpers', () => {
       fogColor: '#cfd8e3',
       weatherEffect: 'none',
       worldSurface: 'ground',
+      wallCategories: [],
+      tileCategories: [],
     });
   });
 
@@ -300,5 +305,34 @@ describe('building persistence helpers', () => {
 
     expect(target.selectedTileGroupId).toBeUndefined();
     expect(target.selectedWallGroupId).toBeUndefined();
+  });
+
+  it('사용자 카테고리를 저장하고 복원한다', () => {
+    const source = createTarget();
+    source.tileCategories.set('custom-tiles', { id: 'custom-tiles', name: '내 바닥', tileGroupIds: ['my-floor'] });
+    source.wallCategories.set('custom-walls', { id: 'custom-walls', name: '내 벽', description: '직접 만든 벽', wallGroupIds: ['my-wall'] });
+    const target = createTarget();
+    hydrateBuildingState(target, serializeBuildingState(source));
+    expect([...target.tileCategories.values()]).toEqual([{ id: 'custom-tiles', name: '내 바닥', tileGroupIds: ['my-floor'] }]);
+    expect(target.wallCategories.get('custom-walls')?.description).toBe('직접 만든 벽');
+  });
+
+  it('카테고리가 없는 이전 저장을 빈 store에 불러오면 기본 카테고리를 채운다', () => {
+    const target = createTarget();
+    hydrateBuildingState(target, { version: 1, tileGroups: [] });
+    expect([...target.tileCategories.keys()]).toEqual(DEFAULT_TILE_CATEGORIES.map((category) => category.id));
+    expect([...target.wallCategories.keys()]).toEqual(DEFAULT_WALL_CATEGORIES.map((category) => category.id));
+  });
+
+  it('카테고리가 없는 이전 저장은 이미 있는 카테고리를 유지한다', () => {
+    const target = createTarget();
+    target.tileCategories.set('kept', { id: 'kept', name: '유지', tileGroupIds: [] });
+    hydrateBuildingState(target, { version: 1, tileGroups: [] });
+    expect([...target.tileCategories.keys()]).toEqual(['kept']);
+  });
+
+  it('형식이 잘못된 카테고리는 거부한다', () => {
+    const invalid = { version: 1, tileCategories: [{ id: 'bad', name: '잘못', tileGroupIds: [1] }] } as unknown as Partial<BuildingSerializedState>;
+    expect(() => hydrateBuildingState(createTarget(), invalid)).toThrow('Invalid building snapshot categories');
   });
 });

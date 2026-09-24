@@ -22,6 +22,7 @@ const libraryExternals = [
   '@react-three/drei',
   '@react-three/rapier',
   '@react-three/postprocessing',
+  '@xyflow/react',
   'immer',
   /^immer\//,
   'mitt',
@@ -215,7 +216,7 @@ export default defineConfig(({ mode }) => {
         emptyOutDir: false,
       },
       define: {
-        'process.env.NODE_ENV': JSON.stringify('production'),
+        // NODE_ENV stays for the consumer's bundler; src/core/utils/env.ts tolerates a missing `process`.
         // Avoid `process is not defined` in browsers for any dev-only diagnostics.
         'process.env.VITE_ENABLE_BRIDGE_LOGS': JSON.stringify(
           process.env.VITE_ENABLE_BRIDGE_LOGS ?? '',

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useCallback, useRef, useEffect, useMemo, useState } from 'react';
 
 import { useGLTF, useAnimations } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
@@ -10,7 +10,9 @@ import { Text } from '@/core/rendering/legacyDrei';
 import { useEngineFrame } from '@core/runtime/frame';
 import { weightFromDistance } from '@core/utils/sfe';
 
+import { GaesupErrorBoundary } from '../../error';
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
+import { logger } from '../../utils/logger';
 import { isTrustedRemoteModelUrl } from '../core/remoteInputLimits';
 import { PlayerState, MultiplayerConfig } from '../types';
 
@@ -31,6 +33,8 @@ type RemotePlayerContentProps = {
 };
 
 type ColorableMaterial = THREE.Material & { color: THREE.Color };
+
+const REMOTE_MODEL_FALLBACK = <group name="remote-player-model-fallback" />;
 
 function isColorableMaterial(material: THREE.Material): material is ColorableMaterial {
   return 'color' in material && material.color instanceof THREE.Color;
@@ -492,14 +496,22 @@ export const RemotePlayer = React.memo(function RemotePlayer({
   const remoteModelUrl =
     state.modelUrl && isTrustedRemoteModelUrl(state.modelUrl, allowedModelOrigins) ? state.modelUrl : '';
   const modelUrl = characterUrl || remoteModelUrl;
+  const handleModelError = useCallback((error: Error) => {
+    logger.warn(`[RemotePlayer] model failed to load: ${modelUrl}`, error);
+  }, [modelUrl]);
   if (!modelUrl) return null;
 
+  // A peer-controlled model must not suspend or crash the shared world.
   return (
-    <RemotePlayerContent
-      state={state}
-      config={config}
-      speechText={speechText}
-      modelUrl={modelUrl}
-    />
+    <GaesupErrorBoundary key={modelUrl} fallback={REMOTE_MODEL_FALLBACK} onError={handleModelError}>
+      <Suspense fallback={null}>
+        <RemotePlayerContent
+          state={state}
+          config={config}
+          speechText={speechText}
+          modelUrl={modelUrl}
+        />
+      </Suspense>
+    </GaesupErrorBoundary>
   );
 });

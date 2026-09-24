@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import type { RapierRigidBody } from '@react-three/rapier';
 
 import { RemotePlayer } from './RemotePlayer';
+import { useEngineFrame } from '../../runtime/frame';
 import { isLivePlayerMap } from '../core/LivePlayerMap';
 import type { MultiplayerConfig, PlayerState } from '../types';
 
@@ -105,8 +105,7 @@ export function RemotePlayers({
 
   useEffect(refresh, [players, proximityRange]);
 
-  useFrame(() => {
-    if (!proximityRange || proximityRange <= 0) return;
+  useEngineFrame('lateUpdate', () => {
     frameRef.current = (frameRef.current + 1) % PROXIMITY_SAMPLE_INTERVAL_FRAMES;
     if (frameRef.current !== 0) return;
     const body = playerRef?.current;
@@ -117,7 +116,7 @@ export function RemotePlayers({
       originRef.current.z = position.z;
     }
     refresh();
-  });
+  }, { active: !!proximityRange && proximityRange > 0, label: 'networks:remote-proximity' });
 
   return (
     <>

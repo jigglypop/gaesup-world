@@ -1,6 +1,8 @@
-import { Mesh, REVISION, Vector4 } from 'three';
+import { Mesh, Vector4 } from 'three';
 import type { BufferAttribute, BufferGeometry } from 'three';
 import type { WebGPURenderer } from 'three/webgpu';
+
+import { isGpuBatchRevision } from '../../core/rendering/gpuBatchRevision';
 
 export type GpuDrivenInstancesOptions = {
   /** An initialized native WebGPU renderer. The caller retains ownership. */
@@ -51,7 +53,7 @@ export async function createGpuDrivenInstances(options: GpuDrivenInstancesOption
   };
   // r185 BufferAttribute.dispose() dispatches an event but the storage manager
   // does not listen to it. Only enable the version whose teardown is verified.
-  if (REVISION !== '185' || !owner._attributes) return null;
+  if (!isGpuBatchRevision() || !owner._attributes) return null;
   // vec4 keeps the CPU packing aligned with WGSL storage array stride.
   const packed = new Float32Array(count * 4);
   for (let i = 0; i < count; i += 1) {

@@ -4,9 +4,10 @@ import {
   PerformanceWithMemory,
   PropertyDescriptorExtended
 } from './types';
+import { isProductionEnv } from '../../utils/env';
 import { logger } from '../../utils/logger';
 
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = isProductionEnv();
 
 const identityMethodDecorator = (
   target: DecoratorTarget,
@@ -341,11 +342,13 @@ export function Timeout(ms: number) {
     void target;
     const originalMethod = descriptor.value;
 
+    // The timer only bounds the caller's wait; the original work is not cancelled.
     descriptor.value = async function (...args: DecoratedValue[]) {
+      let timer: ReturnType<typeof setTimeout> | undefined;
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error(`${propertyKey} timed out after ${ms}ms`)), ms);
+        timer = setTimeout(() => reject(new Error(`${propertyKey} timed out after ${ms}ms`)), ms);
       });
-      
+
       try {
         return await Promise.race([
           originalMethod!.apply(this, args),
@@ -357,6 +360,8 @@ export function Timeout(ms: number) {
           error instanceof Error ? error : String(error),
         );
         throw error;
+      } finally {
+        clearTimeout(timer);
       }
     };
 

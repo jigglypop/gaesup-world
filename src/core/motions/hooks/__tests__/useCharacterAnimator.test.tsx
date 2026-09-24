@@ -1,22 +1,25 @@
-import { StrictMode } from 'react';
+import { StrictMode, type ReactNode } from 'react';
 
 import { renderHook } from '@testing-library/react';
 import * as THREE from 'three';
 
 import { frameScheduler } from '@core/runtime/frame';
 
+import type { AnimationBridge } from '../../../animation/bridge/AnimationBridge';
 import { getGlobalAnimationBridge } from '../../../animation/hooks/useAnimationBridge';
+import { GaesupRuntimeProvider } from '../../../runtime/context';
+import { createGaesupRuntime } from '../../../runtime/createGaesupRuntime';
 import { useCharacterAnimator } from '../useCharacterAnimator';
 import { getGlobalStateManager } from '../useStateSystem';
 
-function registerCharacterClips(names: string[]) {
+function registerCharacterClips(names: string[], target: AnimationBridge = getGlobalAnimationBridge()) {
   const root = new THREE.Object3D();
   const mixer = new THREE.AnimationMixer(root);
   const actions: Record<string, THREE.AnimationAction> = {};
   names.forEach((name) => {
     actions[name] = mixer.clipAction(new THREE.AnimationClip(name, 1, []));
   });
-  getGlobalAnimationBridge().registerAnimations('character', actions);
+  target.registerAnimations('character', actions);
   return actions;
 }
 
@@ -126,5 +129,25 @@ describe('useCharacterAnimator', () => {
     runFrames(1, 0.5);
     expect(actions['pose']!.time).toBeCloseTo(0.5);
     view.unmount();
+  });
+
+  test('runtime이 있으면 runtime 상태와 브리지로 구동하고 전역 브리지는 건드리지 않는다', async () => {
+    const runtime = createGaesupRuntime();
+    await runtime.setup();
+    const runtimeBridge = runtime.animationBridge;
+    registerCharacterClips(['idle', 'walk', 'run'], runtimeBridge);
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <GaesupRuntimeProvider runtime={runtime}>{children}</GaesupRuntimeProvider>
+    );
+    const view = renderHook(() => useCharacterAnimator({ enabled: true }), { wrapper });
+    try {
+      expect(bridge.getAnimator('character')).toBeNull();
+      runtime.stateManager.updateGameStates({ isMoving: true, isNotMoving: false });
+      runFrames(60, 1 / 60);
+      expect(runtimeBridge.snapshot('character')?.currentAnimation).toBe('walk');
+    } finally {
+      view.unmount();
+      await runtime.dispose();
+    }
   });
 });

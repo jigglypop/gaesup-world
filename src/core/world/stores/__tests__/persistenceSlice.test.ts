@@ -1,5 +1,7 @@
+import { enableMapSet } from 'immer';
 import * as THREE from 'three';
 import { create } from 'zustand';
+import { immer } from 'zustand/middleware/immer';
 
 import { createCameraPlugin } from '../../../camera';
 import { createGaesupRuntime } from '../../../runtime';
@@ -218,6 +220,25 @@ describe('persistenceSlice', () => {
       mode: 'topDown',
       settings: { zoom: 1.2 },
     });
+  });
+
+  it('replaces frozen zustand NPC instances through setState and notifies subscribers', async () => {
+    enableMapSet();
+    const stores = createStores();
+    const npc = stores.npcStore!.getState().instances.get('npc')!;
+    const manager = new MemorySaveLoadManager();
+    await createStore(stores, manager).store.getState().saveWorld('world', 'World');
+
+    const npcStore = create<{ instances: Map<string, typeof npc> }>()(immer(() => ({ instances: new Map<string, typeof npc>() })));
+    npcStore.setState((state) => { state.instances.set('stale', { ...npc, id: 'stale' }); });
+    const listener = jest.fn();
+    npcStore.subscribe(listener);
+    const frozenStores = { ...stores, npcStore } as unknown as GaesupStores;
+
+    await expect(createStore(frozenStores, manager).store.getState().loadWorld('world_123')).resolves.not.toBeNull();
+
+    expect([...npcStore.getState().instances.keys()]).toEqual(['npc']);
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 
   it('does not read window globals when stores are not injected', async () => {

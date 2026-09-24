@@ -2,12 +2,22 @@ import { useFrame } from '@react-three/fiber';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 
 import { frameScheduler } from '../FrameScheduler';
-import type { FramePhase } from '../types';
 import { FrameSchedulerHost, PHYSICS_STEP_PRIORITY } from '../react/FrameSchedulerHost';
 import { useEngineFrame } from '../react/useEngineFrame';
+import { useSharedFrame } from '../react/useSharedFrame';
+import type { FramePhase } from '../types';
+
+const SHARED_EFFECTS_CHANNEL = { phase: 'effects', label: 'implicit-shared' } as const;
 
 function PhaseProbe({ phase, calls, name }: { phase: FramePhase; calls: string[]; name: string }) {
   useEngineFrame(phase, () => {
+    calls.push(name);
+  });
+  return null;
+}
+
+function SharedProbe({ calls, name }: { calls: string[]; name: string }) {
+  useSharedFrame(SHARED_EFFECTS_CHANNEL, () => {
     calls.push(name);
   });
   return null;
@@ -112,6 +122,39 @@ describe('FrameSchedulerHost ownership', () => {
     await renderer.advanceFrames(1, 1 / 60);
     expect(calls).toEqual(['canvas-post', 'global-late', 'canvas-camera']);
     unsubscribeGlobal();
+    await renderer.unmount();
+  });
+});
+
+describe('implicit frame host', () => {
+  afterEach(() => {
+    frameScheduler.clear();
+  });
+
+  test('호스트가 없는 캔버스도 물리 step 전후 순서대로 단계를 실행한다', async () => {
+    const calls: string[] = [];
+    const renderer = await ReactThreeTestRenderer.create(
+      <>
+        <PhaseProbe phase="camera" calls={calls} name="camera" />
+        <PhysicsStepProbe calls={calls} />
+        <PhaseProbe phase="prePhysics" calls={calls} name="prePhysics" />
+      </>,
+    );
+    await renderer.advanceFrames(1, 1 / 60);
+    expect(calls).toEqual(['prePhysics', 'physics-step', 'camera']);
+    await renderer.unmount();
+  });
+
+  test('공유 프레임도 호스트 없이 구독자마다 한 번씩 실행한다', async () => {
+    const calls: string[] = [];
+    const renderer = await ReactThreeTestRenderer.create(
+      <>
+        <SharedProbe calls={calls} name="first" />
+        <SharedProbe calls={calls} name="second" />
+      </>,
+    );
+    await renderer.advanceFrames(2, 1 / 60);
+    expect(calls).toEqual(['first', 'second', 'first', 'second']);
     await renderer.unmount();
   });
 });

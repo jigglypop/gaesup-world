@@ -1,6 +1,7 @@
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import * as THREE from 'three';
 
+import { getSharedFrameEntryCount, useCanvasFrameScheduler, type FrameScheduler } from '../../../../runtime/frame';
 import NodeTreeParticles from '../NodeTreeParticles';
 
 function createParticleGeometry(falling: boolean) {
@@ -46,5 +47,24 @@ test('keeps falling offsets and per-particle size on the instanced sprite path',
   expect(sprite.geometry.getAttribute('aTreePos').count).toBe(2);
   expect(sprite.geometry.getAttribute('aPointScale').count).toBe(2);
   expect((sprite.material as THREE.Material & { sizeNode?: unknown }).sizeNode).toBeDefined();
+  await view.unmount();
+});
+
+test('떨어지는 나무 파티클만 공유 프레임 채널 하나에 등록한다', async () => {
+  let scheduler: FrameScheduler | null = null;
+  function Probe() {
+    scheduler = useCanvasFrameScheduler();
+    return null;
+  }
+  const falling = createParticleGeometry(true);
+  const still = createParticleGeometry(false);
+  const view = await ReactThreeTestRenderer.create(
+    <>
+      <Probe />
+      {[0, 1, 2].map((i) => <NodeTreeParticles key={`falling-${i}`} geometry={falling} size={0.1} opacity={1} falling />)}
+      {[0, 1].map((i) => <NodeTreeParticles key={`still-${i}`} geometry={still} size={0.1} opacity={1} />)}
+    </>,
+  );
+  expect(getSharedFrameEntryCount(scheduler!, { phase: 'effects', label: 'building:tree-particles' })).toBe(3);
   await view.unmount();
 });

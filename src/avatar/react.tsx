@@ -8,11 +8,10 @@ import {
   type ReactNode,
 } from 'react';
 
-import { useFrame } from '@react-three/fiber';
-
 import type { AvatarEquipmentState, AvatarState } from './core/types';
 import { AvatarRuntime, type AvatarRuntimeOptions } from './runtime/AvatarRuntime';
 import { useAssetStore } from '../core/assets/stores/assetStore';
+import { useEngineFrame } from '../core/runtime/frame';
 import { logger } from '../core/utils/logger';
 
 const AvatarContext = createContext<AvatarRuntime | null | undefined>(undefined);
@@ -106,7 +105,7 @@ function AvatarView({ body, equipment, animation, onReady, onError }: AvatarProp
     if (runtime && animation && runtime.getAnimationNames().includes(animation))
       runtime.playAnimation(animation);
   }, [runtime, animation]);
-  useFrame((_, delta) => runtime?.update(delta));
+  useEngineFrame('animation', (delta) => runtime?.update(delta), { active: runtime !== null, label: 'avatar:runtime' });
   return runtime ? <primitive object={runtime.scene} dispose={null} /> : null;
 }
 
