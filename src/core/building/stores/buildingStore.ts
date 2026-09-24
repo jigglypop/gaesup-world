@@ -5,8 +5,7 @@ import { immer } from 'zustand/middleware/immer';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import {
-  blockToPlacementEntry,
-  createBuildingPlacementEngine,
+  createBlockFootprint,
   getBuildingSupportHeight,
   hasWallCollision,
   indexAabb,
@@ -14,10 +13,10 @@ import {
   createTileFootprint,
   tileHalfSize,
   tilePositionToCell,
-  tileToPlacementEntry,
   unindexId,
   wallTransformToEdge,
 } from '../model';
+import { blockPlacementCells, tilePlacementCells } from '../model/placement';
 import {
   BuildingSystemState,
   MeshConfig,
@@ -295,17 +294,14 @@ interface BuildingStore extends BuildingSystemState {
   prepareHydrate: (data: Partial<BuildingSerializedState> | null | undefined) => () => void;
 }
 
+// Callers may replace a group's tile list wholesale; every footprint is validated before occupancy changes.
+function replaceTileOccupancy(index: BuildingSpatialIndex, previous: readonly TileConfig[], next: readonly TileConfig[]): void {
+  const cells = next.map(tilePlacementCells);
+  for (const tile of previous) index.vacate(tile.id);
+  next.forEach((tile, i) => index.occupy(tile.id, cells[i]!));
+}
+
 export function createBuildingStore() {
-  // Hover checks reuse one placement engine until the building data it indexes changes identity.
-  let engine: ReturnType<typeof createBuildingPlacementEngine> | undefined;
-  let engineSource: readonly unknown[] = [];
-  const placementEngine = ({ tileGroups, wallGroups, blocks }: BuildingStore) => {
-    if (!engine || engineSource[0] !== tileGroups || engineSource[1] !== wallGroups || engineSource[2] !== blocks) {
-      engine = createBuildingPlacementEngine(tileGroups.values(), wallGroups.values(), { blocks });
-      engineSource = [tileGroups, wallGroups, blocks];
-    }
-    return engine;
-  };
 
   return create<BuildingStore>()(
   immer((set, get) => ({
@@ -649,6 +645,7 @@ export function createBuildingStore() {
             tileWithCell.position.z + hs,
             cellSize,
           );
+          state.spatialIndex.occupy(tileWithCell.id, tilePlacementCells(tileWithCell));
         };
 
         if (oakFloorGroup && marbleFloorGroup) {
@@ -905,6 +902,7 @@ export function createBuildingStore() {
 
     addTileGroup: (group) =>
       set((state) => {
+        replaceTileOccupancy(state.spatialIndex, state.tileGroups.get(group.id)?.tiles ?? [], group.tiles);
         state.tileGroups.set(group.id, group);
       }),
 
@@ -912,6 +910,7 @@ export function createBuildingStore() {
       set((state) => {
         const group = state.tileGroups.get(id);
         if (group) {
+          if (updates.tiles) replaceTileOccupancy(state.spatialIndex, group.tiles, updates.tiles);
           state.tileGroups.set(id, { ...group, ...updates });
         }
       }),
@@ -923,6 +922,7 @@ export function createBuildingStore() {
           for (const tile of group.tiles) {
             unindexId(state.spatialIndex.tileIndex, state.spatialIndex.tileCells, tile.id);
             state.spatialIndex.tileMeta.delete(tile.id);
+            state.spatialIndex.vacate(tile.id);
           }
         }
         state.tileGroups.delete(id);
@@ -965,6 +965,7 @@ export function createBuildingStore() {
             tileWithObject.position.z + halfSize,
             cellSize,
           );
+          state.spatialIndex.occupy(tileWithObject.id, tilePlacementCells(tileWithObject));
         }
       }),
 
@@ -982,6 +983,8 @@ export function createBuildingStore() {
                 state.spatialIndex.tileMeta.delete(tileId);
               }
               Object.assign(tile, updates);
+              // Occupancy keeps plain footprints; reading one back through the draft could store a revoked proxy.
+              let footprint = updates.footprint;
               if (
                 updates.position !== undefined ||
                 updates.size !== undefined ||
@@ -989,8 +992,10 @@ export function createBuildingStore() {
               ) {
                 const cell = updates.cell ?? tilePositionToCell(tile.position);
                 tile.cell = cell;
-                tile.footprint = updates.footprint ?? createTileFootprint(cell, tile.size || 1);
+                footprint ??= createTileFootprint(cell, tile.size || 1);
+                tile.footprint = footprint;
               }
+              if (footprint) state.spatialIndex.occupy(tileId, footprint);
 
               if (shouldReindex) {
                 const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
@@ -1021,9 +1026,14 @@ export function createBuildingStore() {
       set((state) => {
         const group = state.tileGroups.get(groupId);
         if (group) {
-          unindexId(state.spatialIndex.tileIndex, state.spatialIndex.tileCells, tileId);
-          state.spatialIndex.tileMeta.delete(tileId);
-          group.tiles = group.tiles.filter((t) => t.id !== tileId);
+          const tiles = group.tiles.filter((t) => t.id !== tileId);
+          // A tile that lives in another group keeps its index entries.
+          if (tiles.length !== group.tiles.length) {
+            unindexId(state.spatialIndex.tileIndex, state.spatialIndex.tileCells, tileId);
+            state.spatialIndex.tileMeta.delete(tileId);
+            state.spatialIndex.vacate(tileId);
+          }
+          group.tiles = tiles;
           if (state.selectedTileId === tileId) state.selectedTileId = null;
         }
       }),
@@ -1031,6 +1041,7 @@ export function createBuildingStore() {
     addBlock: (block) =>
       set((state) => {
         const cell = block.cell ?? tilePositionToCell(block.position);
+        state.spatialIndex.occupy(block.id, createBlockFootprint(cell, block.size));
         state.blocks.push({
           ...block,
           cell,
@@ -1047,11 +1058,14 @@ export function createBuildingStore() {
         if (updates.position !== undefined || updates.cell !== undefined) {
           block.cell = updates.cell ?? tilePositionToCell(block.position);
         }
+        state.spatialIndex.occupy(blockId, blockPlacementCells(block));
       }),
 
     removeBlock: (blockId) =>
       set((state) => {
-        state.blocks = state.blocks.filter((block) => block.id !== blockId);
+        const blocks = state.blocks.filter((block) => block.id !== blockId);
+        if (blocks.length !== state.blocks.length) state.spatialIndex.vacate(blockId);
+        state.blocks = blocks;
         if (state.selectedBlockId === blockId) state.selectedBlockId = null;
       }),
 
@@ -1291,52 +1305,16 @@ export function createBuildingStore() {
       return snapBuildingPosition(position);
     },
 
+    // Candidate cells are looked up in the incrementally kept occupancy instead of re-indexing every tile, wall
+    // and block into a placement engine; walls sit on edges and never share a cell key.
     checkTilePosition: (position) => {
-      const {
-        currentTileMultiplier,
-        currentTileRotation,
-        currentTileShape,
-        selectedTileGroupId,
-        selectedTileObjectType,
-      } = get();
-      const groupId = selectedTileGroupId ?? '__candidate_group__';
-      const cell = tilePositionToCell(position);
-      const entry = tileToPlacementEntry({
-        id: '__candidate_tile__',
-        position,
-        tileGroupId: groupId,
-        size: currentTileMultiplier,
-        shape: currentTileShape,
-        rotation: currentTileRotation,
-        objectType: selectedTileObjectType,
-        cell,
-        footprint: createTileFootprint(cell, currentTileMultiplier),
-      });
-      const engine = placementEngine(get());
-      const request = {
-        subject: entry.subject,
-        coord: entry.coord,
-        footprint: entry.footprint,
-      };
-
-      return !engine.canPlace(
-        entry.rotation === undefined ? request : { ...request, rotation: entry.rotation },
-      ).ok;
+      const { currentTileMultiplier, spatialIndex } = get();
+      const cells = createTileFootprint(tilePositionToCell(position), currentTileMultiplier);
+      return spatialIndex.isOccupied(cells, '__candidate_tile__');
     },
 
-    checkBlockPosition: (block) => {
-      const candidate = blockToPlacementEntry({
-        id: '__candidate_block__',
-        position: block.position,
-        ...(block.cell ? { cell: block.cell } : {}),
-        ...(block.size ? { size: block.size } : {}),
-      });
-      return !placementEngine(get()).canPlace({
-        subject: candidate.subject,
-        coord: candidate.coord,
-        footprint: candidate.footprint,
-      }).ok;
-    },
+    checkBlockPosition: (block) =>
+      get().spatialIndex.isOccupied(blockPlacementCells(block), '__candidate_block__'),
 
     getSupportHeightAt: (position) => {
       const { spatialIndex, blocks, currentTileMultiplier, editMode } = get();

@@ -237,11 +237,15 @@ export const buildingPlacementAdapter: GridAdapter<BuildingPlacementCoord> = {
   },
 };
 
+/** Cells a tile occupies in the placement engine; the spatial index derives occupancy the same way. */
+export const tilePlacementCells = (tile: TileConfig): CellCoord[] =>
+  tile.footprint ?? createTileFootprint(tile.cell ?? tilePositionToCell(tile.position), tile.size || 1);
+
 export const tileToPlacementEntry = (
   tile: TileConfig,
 ): PlacementEntry<BuildingPlacementCoord> => {
   const cell = tile.cell ?? tilePositionToCell(tile.position);
-  const footprint = tile.footprint ?? createTileFootprint(cell, tile.size || 1);
+  const footprint = tilePlacementCells(tile);
   const entry: PlacementEntry<BuildingPlacementCoord> = {
     id: tile.id,
     subject: {
@@ -286,11 +290,15 @@ export const wallToPlacementEntry = (
   };
 };
 
+/** Cells a block occupies in the placement engine; the spatial index derives occupancy the same way. */
+export const blockPlacementCells = (block: Pick<BuildingBlockConfig, 'position' | 'cell' | 'size'>): CellCoord[] =>
+  createBlockFootprint(block.cell ?? tilePositionToCell(block.position), block.size);
+
 export const blockToPlacementEntry = (
   block: BuildingBlockConfig,
 ): PlacementEntry<BuildingPlacementCoord> => {
   const cell = block.cell ?? tilePositionToCell(block.position);
-  const footprint = createBlockFootprint(cell, block.size);
+  const footprint = blockPlacementCells(block);
   return {
     id: block.id,
     subject: {

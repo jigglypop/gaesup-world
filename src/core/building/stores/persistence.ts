@@ -1,4 +1,5 @@
 import {
+  createBlockFootprint,
   createTileFootprint,
   indexAabb,
   tileHalfSize,
@@ -6,6 +7,7 @@ import {
   wallTransformToEdge,
 } from '../model';
 import { BuildingSpatialIndex } from './spatialIndex';
+import { tilePlacementCells } from '../model/placement';
 import type {
   BuildingBlockConfig,
   BuildingSerializedState,
@@ -178,10 +180,11 @@ export function hydrateBuildingState(
   hydrateTileGroups(state, data.tileGroups ?? []);
   hydrateWallGroups(state, data.wallGroups ?? []);
 
-  state.blocks = (data.blocks ?? []).map((block) => ({
-    ...block,
-    cell: block.cell ?? tilePositionToCell(block.position),
-  }));
+  state.blocks = (data.blocks ?? []).map((block) => {
+    const cell = block.cell ?? tilePositionToCell(block.position);
+    state.spatialIndex.occupy(block.id, createBlockFootprint(cell, block.size));
+    return { ...block, cell };
+  });
   state.objects = (data.objects ?? []).map((object) => ({ ...object }));
   state.showSnow = data.showSnow ?? false;
   state.showFog = data.showFog ?? false;
@@ -253,6 +256,7 @@ function hydrateTileGroups(state: BuildingHydrationTarget, groups: TileGroupConf
         tileWithCell.position.z + halfSize,
         cellSize,
       );
+      state.spatialIndex.occupy(tileWithCell.id, tilePlacementCells(tileWithCell));
       return tileWithCell;
     });
     state.tileGroups.set(group.id, { ...group, tiles });

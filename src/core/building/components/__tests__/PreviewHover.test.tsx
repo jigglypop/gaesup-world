@@ -28,31 +28,24 @@ describe('placement preview hover', () => {
     useBuildingStore.getState().setEditMode('none');
   });
 
-  it('builds placement engines only when building data changes during a hover sweep', async () => {
+  it('never builds a placement engine during a hover sweep with edits', async () => {
     const engines = jest.spyOn(placement, 'createBuildingPlacementEngine');
     const renderer = await ReactThreeTestRenderer.create(<><PreviewTile /><PreviewBlock /></>);
-    let dataChanges = 0;
     try {
       for (const mode of ['tile', 'block'] as const) {
         await act(async () => useBuildingStore.getState().setEditMode(mode));
-        await hover(0, 0);
-        engines.mockClear();
-        dataChanges = 0;
         for (let step = 0; step < 60; step++) {
           await hover((step % 6) * 4, Math.floor(step / 6) * 4);
-          if (step % 20 === 19) {
-            await addTile(`sweep-${mode}-${step}`, 40 + step * 4, 0);
-            dataChanges++;
-          }
+          if (step % 20 === 19) await addTile(`sweep-${mode}-${step}`, 40 + step * 4, 0);
         }
-        expect(engines).toHaveBeenCalledTimes(dataChanges);
       }
+      expect(engines).not.toHaveBeenCalled();
     } finally {
       renderer.unmount();
     }
   });
 
-  it('checks each hovered cell once and reflects occupancy', async () => {
+  it('checks once per hovered cell and data change and reflects occupancy', async () => {
     await act(async () => useBuildingStore.getState().setEditMode('tile'));
     const checkTilePosition = jest.fn(useBuildingStore.getState().checkTilePosition);
     const original = useBuildingStore.getState().checkTilePosition;
@@ -60,15 +53,17 @@ describe('placement preview hover', () => {
     const renderer = await ReactThreeTestRenderer.create(<PreviewTile />);
     const color = () => renderer.scene.findAllByType('MeshStandardMaterial')[0]!.props['color'];
     try {
-      await addTile('occupied-probe', 200, 200);
       await hover(200, 200);
-      expect(color()).toBe(OCCUPIED_COLOR);
+      expect(color()).not.toBe(OCCUPIED_COLOR);
       const checks = checkTilePosition.mock.calls.length;
       await hover(200.6, 199.4);
       await act(async () => useBuildingStore.getState().setTileRotation(Math.PI / 2));
       expect(checkTilePosition).toHaveBeenCalledTimes(checks);
-      await hover(204, 200);
+      await addTile('occupied-probe', 200, 200);
       expect(checkTilePosition).toHaveBeenCalledTimes(checks + 1);
+      expect(color()).toBe(OCCUPIED_COLOR);
+      await hover(204, 200);
+      expect(checkTilePosition).toHaveBeenCalledTimes(checks + 2);
       expect(color()).not.toBe(OCCUPIED_COLOR);
     } finally {
       renderer.unmount();
