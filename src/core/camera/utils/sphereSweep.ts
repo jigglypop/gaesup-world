@@ -13,7 +13,8 @@ const instanceMatrix = new Matrix4();
 const worldMatrix = new Matrix4();
 const morphProxies = new WeakMap<InstancedMesh, Mesh>();
 const boundsCenter = new Vector3();
-const segmentPoint = new Vector3();
+type InstanceSpheres = { version: number; count: number; radius: number; world: Matrix4; spheres: Float32Array };
+const instanceSpheres = new WeakMap<InstancedMesh, InstanceSpheres>();
 const batchRange = { vertexStart: 0, vertexCount: 0, reservedVertexCount: 0, indexStart: 0, indexCount: 0, reservedIndexCount: 0, start: 0, count: 0 };
 
 /** Reject static meshes before matrix inversion, raycast and triangle traversal.
@@ -71,9 +72,39 @@ export function sweepSphereBounds(mesh: Mesh, ray: Ray, radius: number, maxDista
 }
 
 /** Whether a sphere comes within `reach` of the segment origin → origin + direction * maxDistance. */
-function segmentNearSphere(ray: Ray, maxDistance: number, sphereCenter: Vector3, reach: number): boolean {
-  const along = Math.min(Math.max(segmentPoint.subVectors(sphereCenter, ray.origin).dot(ray.direction), 0), maxDistance);
-  return segmentPoint.copy(ray.direction).multiplyScalar(along).add(ray.origin).distanceToSquared(sphereCenter) <= reach * reach;
+function segmentNearSphere(ray: Ray, maxDistance: number, x: number, y: number, z: number, reach: number): boolean {
+  const { origin, direction } = ray;
+  const along = Math.min(Math.max((x - origin.x) * direction.x + (y - origin.y) * direction.y + (z - origin.z) * direction.z, 0), maxDistance);
+  const dx = origin.x + direction.x * along - x;
+  const dy = origin.y + direction.y * along - y;
+  const dz = origin.z + direction.z * along - z;
+  return dx * dx + dy * dy + dz * dz <= reach * reach;
+}
+
+/** World-space instance bounding spheres, rebuilt only when instances, count or the mesh transform change. */
+function getInstanceSpheres(mesh: InstancedMesh, bounds: { center: Vector3; radius: number }): Float32Array {
+  let cache = instanceSpheres.get(mesh);
+  if (cache && cache.version === mesh.instanceMatrix.version && cache.count === mesh.count
+    && cache.radius === bounds.radius && cache.world.equals(mesh.matrixWorld)) return cache.spheres;
+  if (!cache) {
+    cache = { version: -1, count: 0, radius: 0, world: new Matrix4(), spheres: new Float32Array(0) };
+    instanceSpheres.set(mesh, cache);
+  }
+  if (cache.spheres.length < mesh.count * 4) cache.spheres = new Float32Array(mesh.count * 4);
+  for (let i = 0; i < mesh.count; i++) {
+    mesh.getMatrixAt(i, instanceMatrix);
+    worldMatrix.multiplyMatrices(mesh.matrixWorld, instanceMatrix);
+    boundsCenter.copy(bounds.center).applyMatrix4(worldMatrix);
+    cache.spheres[i * 4] = boundsCenter.x;
+    cache.spheres[i * 4 + 1] = boundsCenter.y;
+    cache.spheres[i * 4 + 2] = boundsCenter.z;
+    cache.spheres[i * 4 + 3] = bounds.radius * worldMatrix.getMaxScaleOnAxis();
+  }
+  cache.version = mesh.instanceMatrix.version;
+  cache.count = mesh.count;
+  cache.radius = bounds.radius;
+  cache.world.copy(mesh.matrixWorld);
+  return cache.spheres;
 }
 
 function vertexTime(ray: Ray, vertex: Vector3, radius: number): number {
@@ -190,15 +221,21 @@ export function sweepSphereMesh(mesh: Mesh, ray: Ray, radius: number, maxDistanc
     }
     return nearest;
   }
+  // Cached world spheres reject instances without touching matrices; floor batches pass the mesh bounds every frame.
+  const spheres = instanced && bounds ? getInstanceSpheres(instanced, bounds) : null;
   for (let instance = 0; instance < (instanced?.count ?? 1); instance++) {
+    if (spheres && !segmentNearSphere(ray, maxDistance, spheres[instance * 4]!, spheres[instance * 4 + 1]!,
+      spheres[instance * 4 + 2]!, spheres[instance * 4 + 3]! + radius)) continue;
     if (instanced) {
       instanced.getMatrixAt(instance, instanceMatrix);
       worldMatrix.multiplyMatrices(mesh.matrixWorld, instanceMatrix);
       if (instanced.morphTexture) instanced.getMorphAt(instance, vertices);
     } else worldMatrix.copy(mesh.matrixWorld);
-    // One matrix-vector product per instance; transforming eight box corners here dominated floor batches.
-    if (bounds && !segmentNearSphere(ray, maxDistance,
-      boundsCenter.copy(bounds.center).applyMatrix4(worldMatrix), bounds.radius * worldMatrix.getMaxScaleOnAxis() + radius)) continue;
+    if (!spheres && bounds) {
+      boundsCenter.copy(bounds.center).applyMatrix4(worldMatrix);
+      if (!segmentNearSphere(ray, maxDistance, boundsCenter.x, boundsCenter.y, boundsCenter.z,
+        bounds.radius * worldMatrix.getMaxScaleOnAxis() + radius)) continue;
+    }
     if (Array.isArray(mesh.material)) {
       for (const group of geometry.groups) {
         if (mesh.material[group.materialIndex ?? 0]) visit(Math.max(drawStart, group.start), Math.min(drawEnd, group.start + group.count));

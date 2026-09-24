@@ -111,3 +111,26 @@ test('iterative traversal keeps pre-order obstacle ordering', () => {
   expect(result.obstacles.map((obstacle) => obstacle.object)).toEqual([first, second, third]);
   expect(result.position.z).toBeCloseTo(2.4);
 });
+
+test('cached instance bounds follow moved instances and a moved mesh', () => {
+  const scene = new THREE.Scene();
+  const batch = new THREE.InstancedMesh(geometry, material, 2);
+  batch.setMatrixAt(0, new THREE.Matrix4().makeTranslation(50, 0, 0));
+  batch.setMatrixAt(1, new THREE.Matrix4().makeTranslation(60, 0, 0));
+  batch.computeBoundingSphere();
+  batch.computeBoundingBox();
+  scene.add(batch);
+  scene.updateMatrixWorld(true);
+  const from = new THREE.Vector3();
+  const to = new THREE.Vector3(0, 0, 10);
+  expect(cameraUtils.improvedCollisionCheck(from, to, scene, 0.5).safe).toBe(true);
+  batch.setMatrixAt(1, new THREE.Matrix4().makeTranslation(0, 0, 5));
+  batch.instanceMatrix.needsUpdate = true;
+  batch.computeBoundingSphere();
+  batch.computeBoundingBox();
+  expect(cameraUtils.improvedCollisionCheck(from, to, scene, 0.5).safe).toBe(false);
+  batch.position.x = 30;
+  scene.updateMatrixWorld(true);
+  expect(cameraUtils.improvedCollisionCheck(from, to, scene, 0.5).safe).toBe(true);
+  batch.dispose();
+});
