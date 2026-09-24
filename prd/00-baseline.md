@@ -122,6 +122,8 @@ S와 M이 거의 같다. 거리 상주(12-e)로 플레이어 주변 140m만 올�
 - 카메라 충돌이 매 프레임 메시마다 world box를 만든다(`setFromPoints`·`Box3.applyMatrix4`·`sweepCameraPath`) 약 10ms/frame(11-b).
 - WebGPU 객체별 처리(`_update`·`_renderObjectDirect`·`_projectObject`·`writeBuffer`) 약 30ms/frame: draw 약 480. 잔디가 타일마다 메시와 텍스처 2장을 가진다(12-F09, 12-f).
 
+같은 날 개선 후(M): 11-b(카메라 충돌 캐시·bounds), 11-k(정적 collider 병합), 12-f 잔디 chunk, 카메라 발밑 붕괴 수정, 인스턴스 sphere 캐시를 거쳐 10.1→약 45fps(p50 16.7ms, vsync), script 90.5→9.5ms/frame, 할당 7,264→334KB/frame, GC 57→11회/20초, draw 467→약 238, 장면 객체 17,162→약 6,600, geometries 2,091→401, textures 954→98.
+
 ### 3.2 미측정 기준선
 
 아래 수치는 이번 분석에서 얻지 못했다. [10](10-perf-budget.md) slice 10-a에서 측정해 이 표를 채운다.
