@@ -2,7 +2,7 @@ import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { AbstractSystem, SystemContext, SystemUpdateArgs, Inject } from '@core/boilerplate/engine';
-import { Profile, HandleError } from '@core/boilerplate/engine';
+import { Profile } from '@core/boilerplate/engine';
 import type { RuntimeRecord } from '@core/boilerplate/engine';
 import type { GameStatesType } from '@core/world/components/Rideable/types';
 
@@ -204,14 +204,12 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     return this.temp;
   }
 
-  @HandleError()
   public updatePosition(position: THREE.Vector3, activeState: ActiveStateType): void {
     this.metrics.lastPosition.copy(this.state.position);
     this.state.position.copy(position);
     this.copyVector3(activeState.position, position);
   }
 
-  @HandleError()
   public updateVelocity(velocity: THREE.Vector3, activeState: ActiveStateType, gameStates: GameStatesType): void {
     this.state.velocity.copy(velocity);
     this.state.speed = velocity.length();
@@ -222,7 +220,6 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     this.copyVector3(activeState.velocity, velocity);
   }
 
-  @HandleError()
   public updateRotation(rotation: THREE.Euler, activeState: ActiveStateType): void {
     this.state.rotation.copy(rotation);
     activeState.euler.copy(rotation);
@@ -239,7 +236,6 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     this.metrics.currentSpeed = this.state.speed;
   }
 
-  @HandleError()
   public setGrounded(grounded: boolean, activeState: ActiveStateType, gameStates: GameStatesType): void {
     this.state.isGrounded = grounded;
     this.metrics.groundContact = grounded;
@@ -254,12 +250,10 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     this.metrics.currentSpeed = this.motionService.calculateSpeed(this.state.velocity);
   }
 
-  @HandleError()
   public calculateJump(config: { jumpSpeed: number }, gameStates: GameStatesType): THREE.Vector3 {
     return this.motionService.calculateJumpForce(this.state.isGrounded, config.jumpSpeed, gameStates);
   }
 
-  @HandleError()
   public applyForce(movement: THREE.Vector3, rigidBody: RapierRigidBody): void {
     const config = this.motionService.getDefaultConfig();
     const force = this.motionService.calculateMovementForce(movement, this.state.velocity, config, this.tempForce);

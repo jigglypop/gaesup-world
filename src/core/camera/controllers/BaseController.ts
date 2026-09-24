@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { Profile, HandleError } from '@/core/boilerplate/decorators';
+import { Profile } from '@/core/boilerplate/decorators';
 
 import { ICameraController, CameraCalcProps, CameraSystemState, CameraSystemConfig } from '../core/types';
 import { activeStateUtils, cameraUtils, resolveCollisionPosition } from '../utils/camera';
@@ -94,7 +94,6 @@ export abstract class BaseController implements ICameraController {
     return offset;
   }
   
-  @HandleError()
   @Profile()
   update(props: CameraCalcProps, state: CameraSystemState): void {
     const { camera, deltaTime, activeState } = props;

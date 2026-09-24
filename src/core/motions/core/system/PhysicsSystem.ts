@@ -134,7 +134,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     this.performUpdateWithArgs(args);
   }
 
-  @HandleError()
   @Profile()
   calculate(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
     if (!physicsState || !calcProp.rigidBodyRef.current) return;
@@ -143,14 +142,12 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     this.applyDrive(calcProp, physicsState, didTransition);
   }
 
-  @HandleError()
   drive(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
     if (!physicsState || !calcProp.rigidBodyRef.current) return;
     const didTransition = this.normalizeModeTransition(calcProp, physicsState);
     this.applyDrive(calcProp, physicsState, didTransition);
   }
 
-  @HandleError()
   resolve(calcProp: PhysicsCalcProps, physicsState: PhysicsState): void {
     if (!physicsState || !calcProp.rigidBodyRef.current) return;
     this.checkGround(calcProp, physicsState);
@@ -340,7 +337,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     physicsState.gameStates.isJumping = false;
   }
 
-  @HandleError()
   @Profile()
   private calculateCharacter(
     calcProp: PhysicsCalcProps,
@@ -359,7 +355,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     }
   }
 
-  @HandleError()
   @Profile()
   private calculateVehicle(
     calcProp: PhysicsCalcProps,
@@ -382,7 +377,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     }
   }
 
-  @HandleError()
   @Profile()
   private calculateAirplane(
     calcProp: PhysicsCalcProps,
@@ -410,7 +404,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     this.forceComponents.push(component);
   }
 
-  @HandleError()
   public applyForce(force: THREE.Vector3, rigidBody: RapierRigidBody): void {
     if (!rigidBody) return;
     const currentVel = rigidBody.linvel();
@@ -423,7 +416,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     rigidBody.setLinvel(this.tempVector, true);
   }
 
-  @HandleError()
   @Profile()
   public calculateMovement(
     input: {
@@ -456,7 +448,6 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
     return movement;
   }
 
-  @HandleError()
   public calculateJump(config: PhysicsConfigType, gameStates: GameStatesType, isGrounded: boolean): THREE.Vector3 {
     if (!isGrounded) return this.jumpScratch.set(0, 0, 0);
     gameStates.isJumping = true;

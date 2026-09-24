@@ -211,6 +211,17 @@ describe('PhysicsSystem', () => {
   });
 
   describe('calculate', () => {
+    it('계산 중 예외를 삼키지 않고 프레임 경계로 전달한다', () => {
+      const failure = new Error('direction failed');
+      const direction = MockedDirectionComponent.mock.results.at(-1)!.value as { updateDirection: jest.Mock };
+      direction.updateDirection.mockImplementationOnce(() => { throw failure; });
+      const calcProp = {
+        rigidBodyRef: { current: createMockRigidBody() },
+        innerGroupRef: { current: new THREE.Group() },
+      } as unknown as PhysicsCalcProps;
+      expect(() => system.calculate(calcProp, createPhysicsState({ modeType: 'character' }))).toThrow(failure);
+    });
+
     it('rigidBodyRef.current가 null이면 early return해야 합니다', () => {
       const calcProp = { rigidBodyRef: { current: null } } as unknown as PhysicsCalcProps;
       const physicsState = createPhysicsState();
