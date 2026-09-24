@@ -139,6 +139,26 @@ describe('BaseController', () => {
     expect(blockedProps.camera.position.length()).toBeLessThan(clearProps.camera.position.length());
   });
 
+  it('바닥에 서 있는 타깃(발 위치)에서도 카메라가 발밑으로 무너지지 않아야 합니다', () => {
+    const controller = new TestController();
+    const groundedProps = createProps();
+    const clearProps = createProps();
+    groundedProps.activeState.position.set(0, 0, 0);
+    clearProps.activeState.position.set(0, 0, 0);
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(40, 0.04, 40), new THREE.MeshBasicMaterial());
+    floor.position.y = -0.02;
+    groundedProps.scene.add(floor);
+
+    for (let i = 0; i < 30; i++) {
+      controller.update(groundedProps, createState(createConfig({ enableCollision: true, collisionMargin: 0.5 })));
+      controller.update(clearProps, createState(createConfig({ enableCollision: false })));
+    }
+
+    expect(groundedProps.camera.position.distanceTo(clearProps.camera.position)).toBeLessThan(1e-6);
+    floor.geometry.dispose();
+    (floor.material as THREE.Material).dispose();
+  });
+
   it('카메라 충돌은 타깃 바로 근처의 자기 모델을 장애물로 보지 않아야 합니다', () => {
     const controller = new TestController();
     const selfProps = createProps();

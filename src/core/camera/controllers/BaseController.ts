@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { ICameraController, CameraCalcProps, CameraSystemState, CameraSystemConfig } from '../core/types';
 import { activeStateUtils, cameraUtils, resolveCollisionPosition } from '../utils/camera';
 
+const COLLISION_PIVOT_CLEARANCE = 0.05;
+
 export abstract class BaseController implements ICameraController {
   abstract name: string;
   abstract defaultConfig: Partial<CameraSystemConfig>;
@@ -15,6 +17,7 @@ export abstract class BaseController implements ICameraController {
   private focusBasePosition = new THREE.Vector3();
   private focusTargetPosition = new THREE.Vector3();
   private readonly nextPosition = new THREE.Vector3();
+  private readonly collisionPivot = new THREE.Vector3();
   private orbitRight = new THREE.Vector3();
   private orbitYawQuaternion = new THREE.Quaternion();
   private orbitPitchQuaternion = new THREE.Quaternion();
@@ -137,8 +140,12 @@ export abstract class BaseController implements ICameraController {
       this.nextPosition.copy(camera.position), targetPosition, positionSmoothing, deltaTime,
     );
     if (cameraOption.enableCollision) {
+      const margin = cameraOption.collisionMargin ?? 0.5;
+      // The target is the character's feet. Starting the probe there puts it inside the ground it stands on,
+      // which blocks at once and collapses the camera; lift it clear of that surface first.
+      this.collisionPivot.copy(lookAtTarget).y += margin + COLLISION_PIVOT_CLEARANCE;
       resolveCollisionPosition(
-        lookAtTarget, this.nextPosition, props.scene, cameraOption.collisionMargin ?? 0.5, props.excludeObjects,
+        this.collisionPivot, this.nextPosition, props.scene, margin, props.excludeObjects,
         this.nextPosition, cameraOption.collisionTargets,
       );
     }
