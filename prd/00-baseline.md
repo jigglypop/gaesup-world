@@ -102,6 +102,8 @@ ESM 70파일 1.95MB, CJS 70파일 1.55MB, d.ts+d.cts 2,052파일 2.08MB이다. d
 
 Git Bash에서는 `MSYS_NO_PATHCONV=1` 없이 `--route=/...`가 Windows 경로로 바뀐다.
 
+마이크로 벤치는 jest 안에서 재지 않는다. jest의 vm 컨텍스트(jsdom, node 환경 모두)에서는 `Math` 같은 전역 조회가 느려서, 같은 코드가 순수 Node보다 수십~수백 배 느리게 나온다(20k 타일 그룹 bounds 계산이 jest에서 9.7ms, 순수 Node에서 0.06ms). 상대 비교만 참고하고 절대값은 TypeScript로 트랜스파일해 순수 Node에서 잰다. 13-d의 `addTile` 수치는 jest(jsdom) 기준이다.
+
 ### 3.2 미측정 기준선
 
 아래 수치는 이번 분석에서 얻지 못했다. [10](10-perf-budget.md) slice 10-a에서 측정해 이 표를 채운다.
@@ -114,7 +116,7 @@ Git Bash에서는 `MSYS_NO_PATHCONV=1` 없이 `--route=/...`가 Windows 경로�
 | 섀도 pass draw call | Spector.js 또는 renderer info 분리 계측 |
 | 정지 카메라와 이동 카메라의 React commit 수 | React Profiler API |
 | 원격 플레이어 1명당 송신 바이트/초 | ws mock 계측 |
-| 10k 타일 저장/로드 ms | jest 벤치 |
+| 10k 타일 저장/로드 ms | 순수 Node 벤치(3.1.2 끝 참고) |
 | 라이브러리 빌드 시간 | `pnpm build` (이번 분석에서 권한상 미실행) |
 | `test:package:built`, `test:demo`, `test:browser` | 기존 스크립트 |
 

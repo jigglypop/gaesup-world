@@ -4,12 +4,15 @@ import {
   buildObjectRecord,
   buildTileGroupRecord,
   buildWallGroupRecord,
+  indexVisibilityRecord,
+  unindexVisibilityRecord,
   type OccluderRecord,
   type VisibilityIndex,
+  type VisibilityKind,
   type VisibilityRecord,
   OCCLUDER_MIN_RADIUS,
   OCCLUDER_MIN_WALL_RADIUS,
-  VISIBILITY_CELL_SIZE,
+  VISIBILITY_KINDS,
 } from '../visibility/core';
 
 export const RENDER_KIND_TILE = 0;
@@ -60,215 +63,176 @@ export function createEmptyRenderSnapshot(): BuildingRenderSnapshot {
   };
 }
 
-function countEntities(
-  wallGroups: WallGroupConfig[],
-  tileGroups: TileGroupConfig[],
-  objects: PlacedObject[],
-  blocks: BuildingBlockConfig[],
-): number {
-  let count = objects.length + blocks.length;
-  for (const group of wallGroups) {
-    if (group.walls.length > 0) count += 1;
-  }
-  for (const group of tileGroups) {
-    if (group.tiles.length > 0) count += 1;
-  }
-  return count;
+type RenderEntry = { id: string; kind: number; subKind: number; record: VisibilityRecord; members: number };
+
+export type BuildingRenderSource = {
+  wallGroups: Iterable<WallGroupConfig>;
+  tileGroups: Iterable<TileGroupConfig>;
+  objects: Iterable<PlacedObject>;
+  blocks?: Iterable<BuildingBlockConfig>;
+};
+
+function tileEntry(group: TileGroupConfig): RenderEntry | null {
+  const record = buildTileGroupRecord(group);
+  if (!record) return null;
+  const objectType = group.tiles.find((tile) => tile.objectType && tile.objectType !== 'none')?.objectType ?? 'none';
+  const subKind =
+    objectType === 'grass' ? RENDER_SUBKIND_TILE_GRASS :
+    objectType === 'water' ? RENDER_SUBKIND_TILE_WATER :
+    objectType === 'sand' ? RENDER_SUBKIND_TILE_SAND :
+    objectType === 'snowfield' ? RENDER_SUBKIND_TILE_SNOWFIELD :
+                              RENDER_SUBKIND_TILE_GENERIC;
+  return { id: group.id, kind: RENDER_KIND_TILE, subKind, record, members: group.tiles.length };
 }
 
-export function buildBuildingRenderSnapshot(args: {
-  wallGroups: WallGroupConfig[];
-  tileGroups: TileGroupConfig[];
-  objects: PlacedObject[];
-  blocks?: BuildingBlockConfig[];
-  version: number;
-}): BuildingRenderSnapshot {
-  const blocks = args.blocks ?? [];
-  const count = countEntities(args.wallGroups, args.tileGroups, args.objects, blocks);
-  if (count === 0) {
-    return { ...createEmptyRenderSnapshot(), version: args.version };
-  }
+function wallEntry(group: WallGroupConfig): RenderEntry | null {
+  const record = buildWallGroupRecord(group);
+  return record && { id: group.id, kind: RENDER_KIND_WALL, subKind: RENDER_SUBKIND_WALL_GENERIC, record, members: group.walls.length };
+}
 
-  const ids = new Array<string>(count);
-  const kinds = new Uint8Array(count);
-  const subKinds = new Uint8Array(count);
-  const centerX = new Float32Array(count);
-  const centerY = new Float32Array(count);
-  const centerZ = new Float32Array(count);
-  const radius = new Float32Array(count);
-  const cellX = new Int16Array(count);
-  const cellZ = new Int16Array(count);
-  const memberCount = new Uint16Array(count);
+function blockEntry(block: BuildingBlockConfig): RenderEntry {
+  return { id: block.id, kind: RENDER_KIND_BLOCK, subKind: RENDER_SUBKIND_BLOCK_GENERIC, record: buildBlockRecord(block), members: 1 };
+}
 
-  let offset = 0;
-  const write = (id: string, kind: number, subKind: number, record: VisibilityRecord, members: number) => {
-    ids[offset] = id;
-    kinds[offset] = kind;
-    subKinds[offset] = subKind;
-    centerX[offset] = record.centerX;
-    centerY[offset] = record.centerY;
-    centerZ[offset] = record.centerZ;
-    radius[offset] = record.radius;
-    cellX[offset] = record.cellX;
-    cellZ[offset] = record.cellZ;
-    memberCount[offset] = members;
-    offset += 1;
+function objectEntry(object: PlacedObject): RenderEntry {
+  const subKind =
+    object.type === 'tree' || object.type === 'sakura' ? RENDER_SUBKIND_OBJECT_SAKURA :
+    object.type === 'flag' ? RENDER_SUBKIND_OBJECT_FLAG :
+    object.type === 'fire' ? RENDER_SUBKIND_OBJECT_FIRE :
+    object.type === 'billboard' ? RENDER_SUBKIND_OBJECT_BILLBOARD :
+    object.type === 'model' ? RENDER_SUBKIND_OBJECT_MODEL :
+                                 RENDER_SUBKIND_OBJECT_FIRE;
+  return { id: object.id, kind: RENDER_KIND_OBJECT, subKind, record: buildObjectRecord(object), members: 1 };
+}
+
+function packSnapshot(entries: RenderEntry[], version: number): BuildingRenderSnapshot {
+  const count = entries.length;
+  const snapshot: BuildingRenderSnapshot = {
+    version,
+    ids: new Array<string>(count),
+    kinds: new Uint8Array(count),
+    subKinds: new Uint8Array(count),
+    centerX: new Float32Array(count),
+    centerY: new Float32Array(count),
+    centerZ: new Float32Array(count),
+    radius: new Float32Array(count),
+    cellX: new Int16Array(count),
+    cellZ: new Int16Array(count),
+    memberCount: new Uint16Array(count),
   };
-
-  for (const group of args.tileGroups) {
-    const record = buildTileGroupRecord(group);
-    if (!record) continue;
-    const objectType = group.tiles.find((tile) => tile.objectType && tile.objectType !== 'none')?.objectType ?? 'none';
-    const subKind =
-      objectType === 'grass' ? RENDER_SUBKIND_TILE_GRASS :
-      objectType === 'water' ? RENDER_SUBKIND_TILE_WATER :
-      objectType === 'sand' ? RENDER_SUBKIND_TILE_SAND :
-      objectType === 'snowfield' ? RENDER_SUBKIND_TILE_SNOWFIELD :
-                                RENDER_SUBKIND_TILE_GENERIC;
-    write(group.id, RENDER_KIND_TILE, subKind, record, group.tiles.length);
+  for (let i = 0; i < count; i += 1) {
+    const { id, kind, subKind, record, members } = entries[i]!;
+    snapshot.ids[i] = id;
+    snapshot.kinds[i] = kind;
+    snapshot.subKinds[i] = subKind;
+    snapshot.centerX[i] = record.centerX;
+    snapshot.centerY[i] = record.centerY;
+    snapshot.centerZ[i] = record.centerZ;
+    snapshot.radius[i] = record.radius;
+    snapshot.cellX[i] = record.cellX;
+    snapshot.cellZ[i] = record.cellZ;
+    snapshot.memberCount[i] = members;
   }
-
-  for (const group of args.wallGroups) {
-    const record = buildWallGroupRecord(group);
-    if (!record) continue;
-    write(group.id, RENDER_KIND_WALL, RENDER_SUBKIND_WALL_GENERIC, record, group.walls.length);
-  }
-
-  for (const block of blocks) {
-    write(block.id, RENDER_KIND_BLOCK, RENDER_SUBKIND_BLOCK_GENERIC, buildBlockRecord(block), 1);
-  }
-
-  for (const object of args.objects) {
-    const subKind =
-      object.type === 'tree' || object.type === 'sakura' ? RENDER_SUBKIND_OBJECT_SAKURA :
-      object.type === 'flag' ? RENDER_SUBKIND_OBJECT_FLAG :
-      object.type === 'fire' ? RENDER_SUBKIND_OBJECT_FIRE :
-      object.type === 'billboard' ? RENDER_SUBKIND_OBJECT_BILLBOARD :
-      object.type === 'model' ? RENDER_SUBKIND_OBJECT_MODEL :
-                                   RENDER_SUBKIND_OBJECT_FIRE;
-    write(object.id, RENDER_KIND_OBJECT, subKind, buildObjectRecord(object), 1);
-  }
-
-  return {
-    version: args.version,
-    ids,
-    kinds,
-    subKinds,
-    centerX,
-    centerY,
-    centerZ,
-    radius,
-    cellX,
-    cellZ,
-    memberCount,
-  };
+  return snapshot;
 }
 
-function pushBucketCell(map: Map<string, string[]>, cellX: number, cellZ: number, value: string): void {
-  const key = `${cellX}:${cellZ}`;
-  const existing = map.get(key);
-  if (existing) {
-    existing.push(value);
-    return;
-  }
-  map.set(key, [value]);
-}
-
-function pushBucket(map: Map<string, string[]>, record: VisibilityRecord, value: string): void {
-  const radius = Math.max(0, Math.ceil(record.radius / VISIBILITY_CELL_SIZE));
-  for (let z = record.cellZ - radius; z <= record.cellZ + radius; z += 1) {
-    for (let x = record.cellX - radius; x <= record.cellX + radius; x += 1) {
-      pushBucketCell(map, x, z, value);
+/**
+ * Snapshot builder that caches each entity's record by config identity. Store edits share unchanged groups
+ * structurally, so an edit recomputes only the touched group instead of scanning every tile in the world.
+ * Configs must be treated as immutable while the builder is alive.
+ */
+export function createBuildingRenderSnapshotBuilder(): (source: BuildingRenderSource, version: number) => BuildingRenderSnapshot {
+  const cache = new WeakMap<object, RenderEntry | null>();
+  const collect = <T extends object>(values: Iterable<T>, build: (value: T) => RenderEntry | null, out: RenderEntry[]) => {
+    for (const value of values) {
+      let entry = cache.get(value);
+      if (entry === undefined) {
+        entry = build(value);
+        cache.set(value, entry);
+      }
+      if (entry) out.push(entry);
     }
-  }
-}
-
-function toRecord(snapshot: BuildingRenderSnapshot, index: number): VisibilityRecord {
-  return {
-    id: snapshot.ids[index] ?? '',
-    centerX: snapshot.centerX[index] ?? 0,
-    centerY: snapshot.centerY[index] ?? 0,
-    centerZ: snapshot.centerZ[index] ?? 0,
-    radius: snapshot.radius[index] ?? 1,
-    cellX: snapshot.cellX[index] ?? 0,
-    cellZ: snapshot.cellZ[index] ?? 0,
+  };
+  return (source, version) => {
+    const entries: RenderEntry[] = [];
+    collect(source.tileGroups, tileEntry, entries);
+    collect(source.wallGroups, wallEntry, entries);
+    collect(source.blocks ?? [], blockEntry, entries);
+    collect(source.objects, objectEntry, entries);
+    return packSnapshot(entries, version);
   };
 }
 
-export function buildVisibilityIndexFromRenderSnapshot(
-  snapshot: BuildingRenderSnapshot,
-): VisibilityIndex {
-  const index: VisibilityIndex = {
-    tileById: new Map(),
-    wallById: new Map(),
-    blockById: new Map(),
-    objectById: new Map(),
-    tileBuckets: new Map(),
-    wallBuckets: new Map(),
-    blockBuckets: new Map(),
-    objectBuckets: new Map(),
-    occluderByKey: new Map(),
-    occluderBuckets: new Map(),
-  };
+export function buildBuildingRenderSnapshot(args: BuildingRenderSource & { version: number }): BuildingRenderSnapshot {
+  return createBuildingRenderSnapshotBuilder()(args, args.version);
+}
 
+/** Indexed by `RENDER_KIND_*`. */
+const KIND_OF_RENDER: readonly VisibilityKind[] = ['tile', 'wall', 'object', 'block'];
+
+type IndexedRecord = VisibilityRecord & { members: number };
+
+function occluderStrength(kind: VisibilityKind, radius: number, members: number): number {
+  if (kind === 'tile') return radius >= OCCLUDER_MIN_RADIUS ? radius : 0;
+  if (kind === 'wall') return radius >= OCCLUDER_MIN_WALL_RADIUS || members >= 4 ? radius * 1.15 : 0;
+  return kind === 'block' ? radius * 1.1 : 0;
+}
+
+function matches(record: IndexedRecord, snapshot: BuildingRenderSnapshot, i: number): boolean {
+  return record.centerX === snapshot.centerX[i] && record.centerY === snapshot.centerY[i] &&
+    record.centerZ === snapshot.centerZ[i] && record.radius === snapshot.radius[i] &&
+    record.cellX === snapshot.cellX[i] && record.cellZ === snapshot.cellZ[i] &&
+    record.members === snapshot.memberCount[i];
+}
+
+function unindexEntry(index: VisibilityIndex, kind: VisibilityKind, id: string): void {
+  const layer = index[kind];
+  layer.byId.delete(id);
+  unindexVisibilityRecord(layer.buckets, id);
+  const key = `${kind}:${id}`;
+  if (index.occluders.byKey.delete(key)) unindexVisibilityRecord(index.occluders.buckets, key);
+}
+
+/**
+ * Brings the index in line with a render snapshot. Entities whose snapshot values did not change keep their
+ * cells, so an edit re-buckets only the touched groups.
+ */
+export function syncVisibilityIndex(index: VisibilityIndex, snapshot: BuildingRenderSnapshot): void {
+  const live = new Set<VisibilityRecord>();
   for (let i = 0; i < snapshot.ids.length; i += 1) {
     const id = snapshot.ids[i];
-    if (!id) continue;
-    const record = toRecord(snapshot, i);
-    const kind = snapshot.kinds[i];
-
-    if (kind === RENDER_KIND_TILE) {
-      index.tileById.set(id, record);
-      pushBucket(index.tileBuckets, record, id);
-      if (record.radius >= OCCLUDER_MIN_RADIUS) {
-        const occluder: OccluderRecord = {
-          ...record,
-          key: `tile:${id}`,
-          kind: 'tile',
-          strength: record.radius,
-        };
-        index.occluderByKey.set(occluder.key, occluder);
-        pushBucket(index.occluderBuckets, occluder, occluder.key);
-      }
+    const kind = KIND_OF_RENDER[snapshot.kinds[i] ?? -1];
+    if (!id || !kind) continue;
+    const layer = index[kind];
+    const previous = layer.byId.get(id) as IndexedRecord | undefined;
+    if (previous && matches(previous, snapshot, i)) {
+      live.add(previous);
       continue;
     }
-
-    if (kind === RENDER_KIND_WALL) {
-      index.wallById.set(id, record);
-      pushBucket(index.wallBuckets, record, id);
-      const members = snapshot.memberCount[i] ?? 0;
-      if (record.radius >= OCCLUDER_MIN_WALL_RADIUS || members >= 4) {
-        const occluder: OccluderRecord = {
-          ...record,
-          key: `wall:${id}`,
-          kind: 'wall',
-          strength: record.radius * 1.15,
-        };
-        index.occluderByKey.set(occluder.key, occluder);
-        pushBucket(index.occluderBuckets, occluder, occluder.key);
-      }
-      continue;
+    if (previous) unindexEntry(index, kind, id);
+    const record: IndexedRecord = {
+      id,
+      centerX: snapshot.centerX[i]!,
+      centerY: snapshot.centerY[i]!,
+      centerZ: snapshot.centerZ[i]!,
+      radius: snapshot.radius[i]!,
+      cellX: snapshot.cellX[i]!,
+      cellZ: snapshot.cellZ[i]!,
+      members: snapshot.memberCount[i]!,
+    };
+    layer.byId.set(id, record);
+    indexVisibilityRecord(layer.buckets, id, record);
+    live.add(record);
+    const strength = occluderStrength(kind, record.radius, record.members);
+    if (strength > 0) {
+      const occluder: OccluderRecord = { ...record, key: `${kind}:${id}`, kind: kind as OccluderRecord['kind'], strength };
+      index.occluders.byKey.set(occluder.key, occluder);
+      indexVisibilityRecord(index.occluders.buckets, occluder.key, occluder);
     }
-
-    if (kind === RENDER_KIND_BLOCK) {
-      index.blockById.set(id, record);
-      pushBucket(index.blockBuckets, record, id);
-      if (record.radius >= OCCLUDER_MIN_WALL_RADIUS || (snapshot.memberCount[i] ?? 0) >= 1) {
-        const occluder: OccluderRecord = {
-          ...record,
-          key: `block:${id}`,
-          kind: 'block',
-          strength: record.radius * 1.1,
-        };
-        index.occluderByKey.set(occluder.key, occluder);
-        pushBucket(index.occluderBuckets, occluder, occluder.key);
-      }
-      continue;
-    }
-
-    index.objectById.set(id, record);
-    pushBucket(index.objectBuckets, record, id);
   }
-
-  return index;
+  for (const kind of VISIBILITY_KINDS) {
+    for (const [id, record] of index[kind].byId) {
+      if (!live.has(record)) unindexEntry(index, kind, id);
+    }
+  }
 }

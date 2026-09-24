@@ -2,9 +2,9 @@ import { render, act } from '@testing-library/react';
 import * as THREE from 'three';
 
 import { frameScheduler } from '../../../runtime/frame';
+import { buildBuildingRenderSnapshot } from '../../render/core';
 import { useBuildingGpuCullingStore } from '../../render/cullingStore';
 import { useBuildingRenderStateStore } from '../../render/store';
-import { useBuildingStore } from '../../stores/buildingStore';
 import { useBuildingVisibilityStore } from '../../visibility/store';
 import { BuildingVisibilityDriver } from '../BuildingVisibilityDriver';
 import { GrassDriver } from '../mesh/grass/GrassDriver';
@@ -57,46 +57,43 @@ test.each([
   { coordinateSystem: THREE.WebGLCoordinateSystem, near: 0.1, far: 1000, distances: [145, 170], size: 20, visible: '145' },
   { coordinateSystem: THREE.WebGPUCoordinateSystem, near: 0.1, far: 1000, distances: [145, 170], size: 20, visible: '145' },
 ])('building respects near and distance bounds: $coordinateSystem / $near / $size', ({ coordinateSystem, near, far, distances, size, visible }) => {
-  const previousBuilding = useBuildingStore.getState();
   const previousRender = useBuildingRenderStateStore.getState();
   const camera = new THREE.PerspectiveCamera(90, 1, near, far);
   camera.coordinateSystem = coordinateSystem;
   camera.position.y = 1;
   camera.updateProjectionMatrix();
-  useBuildingStore.setState({
-    wallGroups: new Map(), blocks: [], objects: [],
-    tileGroups: new Map(distances.map((distance) => [String(distance), {
-      id: String(distance), name: 'floor', floorMeshId: 'floor',
-      tiles: [{ id: String(distance), tileGroupId: String(distance), position: { x: 0, y: 0, z: -distance }, size }],
-    }])),
+  const tileGroups = distances.map((distance) => ({
+    id: String(distance), name: 'floor', floorMeshId: 'floor',
+    tiles: [{ id: String(distance), tileGroupId: String(distance), position: { x: 0, y: 0, z: -distance }, size }],
+  }));
+  useBuildingRenderStateStore.setState({
+    snapshot: buildBuildingRenderSnapshot({ wallGroups: [], tileGroups, objects: [], version: previousRender.snapshot.version }),
   });
-  useBuildingRenderStateStore.setState({ snapshot: { ...previousRender.snapshot, ids: distances.map(String) } });
   const view = render(<BuildingVisibilityDriver />);
   try {
     act(() => frame({ camera }, 0.13));
     expect([...useBuildingVisibilityStore.getState().visibleTileGroupIds]).toEqual([visible]);
   } finally {
     view.unmount();
-    useBuildingStore.setState(previousBuilding);
     useBuildingRenderStateStore.setState(previousRender);
   }
 });
 
 test('refreshes visibility after projection changes and reuses an unchanged camera result', () => {
-  const previousBuilding = useBuildingStore.getState();
   const previousRender = useBuildingRenderStateStore.getState();
   const previousCulling = useBuildingGpuCullingStore.getState();
   const intersects = jest.spyOn(THREE.Frustum.prototype, 'intersectsSphere');
   const camera = new THREE.PerspectiveCamera(20, 1, 0.1, 100);
   camera.position.y = 1;
-  useBuildingStore.setState({
-    wallGroups: new Map(), blocks: [], objects: [],
-    tileGroups: new Map([['floor', {
-      id: 'floor', name: 'floor', floorMeshId: 'floor',
-      tiles: [{ id: 'tile', tileGroupId: 'floor', position: { x: 5, y: 0, z: -10 }, size: 1 }],
-    }]]),
+  useBuildingRenderStateStore.setState({
+    snapshot: buildBuildingRenderSnapshot({
+      wallGroups: [], objects: [], version: previousRender.snapshot.version,
+      tileGroups: [{
+        id: 'floor', name: 'floor', floorMeshId: 'floor',
+        tiles: [{ id: 'tile', tileGroupId: 'floor', position: { x: 5, y: 0, z: -10 }, size: 1 }],
+      }],
+    }),
   });
-  useBuildingRenderStateStore.setState({ snapshot: { ...previousRender.snapshot, ids: ['floor'] } });
   const view = render(<BuildingVisibilityDriver />);
   const tick = () => act(() => {
     frame({ camera }, 0.13);
@@ -144,7 +141,6 @@ test('refreshes visibility after projection changes and reuses an unchanged came
   } finally {
     view.unmount();
     intersects.mockRestore();
-    useBuildingStore.setState(previousBuilding);
     useBuildingRenderStateStore.setState(previousRender);
     useBuildingGpuCullingStore.setState(previousCulling);
   }
