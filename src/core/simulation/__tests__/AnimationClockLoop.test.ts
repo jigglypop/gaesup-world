@@ -1,3 +1,4 @@
+import { setErrorSink } from '../../utils/reportError';
 import { AnimationClockLoop } from '../AnimationClockLoop';
 import { FixedStepClock } from '../FixedStepClock';
 
@@ -71,12 +72,14 @@ describe('AnimationClockLoop', () => {
     releaseNew!(); expect(pending.size).toBe(0);
   });
 
-  it('cancels the driver on simulation failure and allows explicit recovery', () => {
+  it('keeps driving the clock when a simulation system fails and reports the failure', () => {
     const { clock, loop, frame, pending } = fixture();
+    const reports = jest.fn(); const releaseSink = setErrorSink(reports);
     const remove = clock.addSystem({ id: 'fail', phase: 'simulation', update: () => { throw new Error('failed'); } });
-    loop.acquire(); frame(0); expect(() => frame(1000 / 60)).toThrow('failed');
-    expect(pending.size).toBe(0); expect(loop.consumerCount).toBe(0);
-    remove(); const release = loop.acquire(); frame(1000); frame(1000 + 1000 / 60);
-    expect(clock.tick).toBe(2); release();
+    const release = loop.acquire(); frame(0); expect(() => frame(1000 / 60)).not.toThrow();
+    expect(reports).toHaveBeenCalledWith(new Error('failed'), { source: 'clock:simulation', label: 'fail' });
+    expect(pending.size).toBe(1); expect(loop.consumerCount).toBe(1);
+    remove(); frame(2000 / 60); expect(clock.tick).toBe(2);
+    release(); releaseSink();
   });
 });

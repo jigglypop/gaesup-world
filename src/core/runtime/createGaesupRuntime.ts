@@ -62,6 +62,7 @@ import { createTimeStore } from '../time/stores/timeStore';
 import { createToolEvents } from '../tools/core/ToolEvents';
 import { TOWN_STORE_SERVICE, createTownStore } from '../town/stores/townStore';
 import { createUniqueId } from '../utils/id';
+import { setErrorSink } from '../utils/reportError';
 import { WEATHER_STORE_SERVICE, createWeatherStore } from '../weather/stores/weatherStore';
 import { WorldViews } from '../world/core/WorldViews';
 import { createWorldObjectStore } from '../world/stores/worldObjectStore';
@@ -381,10 +382,13 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
     ownedDomainServiceIds.add(key);
   };
 
+  let releaseErrorSink: (() => void) | undefined;
+
   const setup = async (): Promise<void> => {
     if (lifecycleState === 'active') return;
     lifecycleState = 'setting-up';
     try {
+      if (options.onError && !releaseErrorSink) releaseErrorSink = setErrorSink(options.onError);
       store.activateInteractions();
       worldObjectStore.getState().activateWorldBridge();
       plugins.context.services.register(RUNTIME_TIME_STORE_SERVICE_ID, timeStore, 'gaesup.runtime');
@@ -465,12 +469,14 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
       publishLifecycle();
     } catch (error) {
       await deactivateGeneration(true);
+      releaseErrorSink?.(); releaseErrorSink = undefined;
       lifecycleState = 'inactive';
       throw error;
     }
   };
 
   const dispose = async (): Promise<void> => {
+    releaseErrorSink?.(); releaseErrorSink = undefined;
     stopGamepad();
     cinematics.suspend();
     inputActions.suspend(); interactablesStore.getState().suspend();

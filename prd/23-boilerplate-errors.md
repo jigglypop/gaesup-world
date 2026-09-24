@@ -124,6 +124,8 @@ decorator 제거는 동작 변경이 있는 slice와 없는 slice를 나눈다. 
 
 23-b 완료(2026-09-24): `ManagedEntity`, `useManagedEntity`, `useBaseFrame`, `useBaseLifecycle`, `SystemRegistry`, `@RegisterSystem`, `@ManageRuntime`, `@Autowired`, `LogInitialization`, `Log`, `Delay`, `RateLimit`, `Hook`, `MemoryProfile`, `TrackCalls`, `Validate`, `DebugLog`, `PerformanceLog`, `Singleton`, `RegisterBridge`, `RequireEngine`, `Blueprint`/`BlueprintProperty`/`FromBlueprint`, `BridgeDecorators`의 `DomainBridge`/`Command` 사본을 삭제했다. 39파일, 약 5,470줄 감소(대부분 테스트). `useEntityLifecycle`은 `useEntity`가 쓰므로 유지한다. export snapshot 불변.
 
+23-c 완료(2026-09-24): `utils/reportError.ts`(sink 교체, 항목별 첫 오류와 이후 1초당 1회, 건너뛴 수 보고). 기본 sink는 `console.error`(테스트 환경은 무음), runtime 옵션 `onError`는 활성 동안 sink를 대체한다. FrameScheduler는 예외가 난 콜백을 비활성화하지 않고 계속 실행하며 보고한다(G2, 유니티 방식). FixedStepClock은 시스템별로 잡아 나머지 시스템과 rAF 루프가 계속 돈다. 명령 경계(`AbstractBridge.execute`)는 호출자 예외 계약이 있어 23-d와 함께 처리한다.
+
 ## 7. 공개 API 영향
 
 - `@HandleError` 제거로 기존에 `undefined`를 받던 호출자가 예외를 받는다. runtime `onError` 추가와 함께 minor 릴리스 노트에 명시한다(열린 질문 1).

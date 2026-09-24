@@ -1,3 +1,4 @@
+import { setErrorSink } from '../../utils/reportError';
 import { FixedStepClock } from '../FixedStepClock';
 
 describe('FixedStepClock', () => {
@@ -63,15 +64,21 @@ describe('FixedStepClock', () => {
     expect(clock.tick * clock.deltaSeconds + clock.deferredSeconds + clock.discardedSeconds).toBeCloseTo(10);
   });
 
-  it('rejects reentrant advancement and surfaces failures without leaving the clock locked', () => {
+  it('rejects reentrant advancement and reports failures without stopping other systems or locking the clock', () => {
     const clock = new FixedStepClock(); const error = new Error('simulation failed');
+    const reports = jest.fn(); const release = setErrorSink(reports);
+    const after = jest.fn();
     const remove = clock.addSystem({ id: 'fail', phase: 'simulation', update: () => {
       expect(() => clock.advance(0)).toThrow('not reentrant');
       expect(() => clock.stepTicks()).toThrow('not reentrant');
       throw error;
     } });
-    expect(() => clock.advance(1 / 60)).toThrow(error);
+    clock.addSystem({ id: 'after', phase: 'publish', update: after });
+    expect(() => clock.advance(1 / 60)).not.toThrow();
+    expect(reports).toHaveBeenCalledWith(error, { source: 'clock:simulation', label: 'fail' });
+    expect(after).toHaveBeenCalledTimes(1);
     remove(); expect(() => clock.stepTicks()).not.toThrow();
+    release();
     expect(clock.tick).toBe(2);
   });
 

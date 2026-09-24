@@ -5,7 +5,7 @@ import {
   type FramePhaseMetrics,
   type FrameSubscriptionOptions,
 } from './types';
-import { logger } from '../../utils/logger';
+import { createErrorReportState, reportThrottled, type ErrorReportState } from '../../utils/reportError';
 
 type FrameEntry = {
   callback: FrameCallback;
@@ -16,7 +16,7 @@ type FrameEntry = {
   enabled: (() => boolean) | undefined;
   label: string;
   active: boolean;
-  failed: boolean;
+  errors: ErrorReportState;
 };
 
 function compareEntries(a: FrameEntry, b: FrameEntry): number {
@@ -56,7 +56,7 @@ export class FrameScheduler {
       enabled: options.enabled,
       label: options.label ?? phase,
       active: true,
-      failed: false,
+      errors: createErrorReportState(),
     };
     if (this.ticking) {
       entries.push(entry);
@@ -117,7 +117,7 @@ export class FrameScheduler {
   }
 
   private runEntry(entry: FrameEntry, delta: number, elapsedMs: number): void {
-    if (!entry.active || entry.failed) return;
+    if (!entry.active) return;
     if (entry.enabled && !entry.enabled()) return;
     if (entry.throttleMs > 0) {
       if (elapsedMs >= entry.lastRunMs && elapsedMs - entry.lastRunMs < entry.throttleMs) return;
@@ -126,11 +126,8 @@ export class FrameScheduler {
     try {
       entry.callback(delta, elapsedMs);
     } catch (error) {
-      entry.failed = true;
-      logger.error(
-        `[FrameScheduler Error]: 프레임 콜백 실패로 비활성화 ${entry.label}`,
-        error instanceof Error ? error : String(error),
-      );
+      // Like Unity's Update, a throwing callback keeps running next frame; reports are rate-limited per entry.
+      reportThrottled(entry.errors, elapsedMs, error, { source: 'frame', label: entry.label });
     }
   }
 

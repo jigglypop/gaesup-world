@@ -73,3 +73,8 @@ class Logger {
 }
 
 export const logger = Logger.getInstance(); 
+
+/** Unconditional error output for the default error sink; production errors must stay visible even with logging off. */
+export function writeErrorReport(message: string, error: Error): void {
+  console.error(message, error);
+}

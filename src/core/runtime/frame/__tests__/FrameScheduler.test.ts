@@ -1,3 +1,4 @@
+import { setErrorSink } from '../../../utils/reportError';
 import { createFrameDriver } from '../createFrameDriver';
 import { FrameScheduler } from '../FrameScheduler';
 
@@ -30,16 +31,24 @@ describe('FrameScheduler', () => {
     expect(scheduler.count()).toBe(0);
   });
 
-  test('예외가 난 콜백만 비활성화하고 나머지는 계속 실행한다', () => {
+  test('예외가 난 콜백도 다음 프레임에 계속 실행하고, 보고는 항목별로 제한한다', () => {
     const scheduler = new FrameScheduler();
     const healthy = jest.fn();
-    scheduler.add('effects', () => {
+    const failing = jest.fn(() => {
       throw new Error('boom');
     });
+    const reports = jest.fn();
+    const release = setErrorSink(reports);
+    scheduler.add('effects', failing, { label: 'fx' });
     scheduler.add('effects', healthy);
     scheduler.tick(0.016, 0);
     scheduler.tick(0.016, 16);
-    expect(healthy).toHaveBeenCalledTimes(2);
+    scheduler.tick(0.016, 1100);
+    release();
+    expect(healthy).toHaveBeenCalledTimes(3);
+    expect(failing).toHaveBeenCalledTimes(3);
+    expect(reports).toHaveBeenCalledTimes(2);
+    expect(reports).toHaveBeenLastCalledWith(new Error('boom'), { source: 'frame', label: 'fx', suppressed: 1 });
   });
 
   test('throttle과 enabled 조건을 적용한다', () => {

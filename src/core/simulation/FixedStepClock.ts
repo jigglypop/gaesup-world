@@ -1,9 +1,11 @@
+import { createErrorReportState, reportThrottled, type ErrorReportState } from '../utils/reportError';
+
 export const SIMULATION_PHASES = ['commands', 'simulation', 'physics', 'postSimulation', 'publish'] as const;
 export type SimulationPhase = typeof SIMULATION_PHASES[number];
 export type FixedTick = { tick: number; deltaSeconds: number; elapsedSeconds: number };
 /** `tick` is reused across ticks; copy its fields to keep them beyond `update`. */
 export type ClockSystem = { id: string; phase: SimulationPhase; priority?: number; update: (tick: Readonly<FixedTick>) => void };
-type Registration = { system: ClockSystem; owner: object; references: number; order: number; active: boolean };
+type Registration = { system: ClockSystem; owner: object; references: number; order: number; active: boolean; errors: ErrorReportState };
 
 /** Pure fixed-step scheduler shared by rendered and headless world drivers. No browser timer ownership. */
 export class FixedStepClock {
@@ -50,7 +52,7 @@ export class FixedStepClock {
     } else {
       if (!system.id.trim() || !SIMULATION_PHASES.includes(system.phase) || !Number.isFinite(system.priority ?? 0)
         || typeof system.update !== 'function') throw new TypeError('Invalid clock system');
-      entry = { system: { ...system }, owner, references: 1, order: this.nextOrder++, active: true };
+      entry = { system: { ...system }, owner, references: 1, order: this.nextOrder++, active: true, errors: createErrorReportState() };
       this.registrations.set(system.id, entry);
       this.ordered = [...this.registrations.values()].sort((a, b) => SIMULATION_PHASES.indexOf(a.system.phase) - SIMULATION_PHASES.indexOf(b.system.phase)
         || (a.system.priority ?? 0) - (b.system.priority ?? 0) || a.order - b.order);
@@ -105,6 +107,14 @@ export class FixedStepClock {
     context.elapsedSeconds = this.elapsedSeconds;
     // Registration during a tick becomes visible on the next tick; disposed systems stop immediately.
     const systems = this.ordered;
-    for (const entry of systems) if (entry.active) entry.system.update(context);
+    for (const entry of systems) {
+      if (!entry.active) continue;
+      try {
+        entry.system.update(context);
+      } catch (error) {
+        // One failing system must not stop the tick or the rAF loop driving it.
+        reportThrottled(entry.errors, context.elapsedSeconds * 1000, error, { source: `clock:${entry.system.phase}`, label: entry.system.id });
+      }
+    }
   }
 }

@@ -50,6 +50,7 @@ import type { GaesupStore } from '../stores/gaesupStore';
 import type { TimeStore } from '../time/stores/timeStore';
 import type { ToolEventBus } from '../tools/core/ToolEvents';
 import type { TownStore } from '../town/stores/townStore';
+import type { ErrorSink } from '../utils/reportError';
 import type { WeatherStore } from '../weather/stores/weatherStore';
 import type { WorldBridge } from '../world/bridge/WorldBridge';
 import type { WorldViews } from '../world/core/WorldViews';
@@ -78,6 +79,8 @@ export type GaesupRuntimeOptions = {
   saveDiagnostics?: RuntimeSaveDiagnosticsOptions;
   assets?: RuntimeAssetOptions;
   logger?: Partial<PluginLogger>;
+  /** Receives engine errors caught at frame, clock and command boundaries while the runtime is active. Defaults to console.error. */
+  onError?: ErrorSink;
 };
 
 export type GaesupRuntime = {
