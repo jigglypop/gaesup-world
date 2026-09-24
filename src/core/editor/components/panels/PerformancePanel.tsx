@@ -55,6 +55,8 @@ const BarMeter: React.FC<{ value: number; max: number; color: string; label: str
 
 export function PerformancePanel({ className = '', style, children }: EditorPanelBaseProps = {}) {
   const performanceData = useGaesupStore(useShallow((state) => state.performance));
+  const retainPerformanceSampling = useGaesupStore((state) => state.retainPerformanceSampling);
+  useEffect(() => retainPerformanceSampling(), [retainPerformanceSampling]);
   const [fps, setFps] = useState({ current: 0, min: Infinity, max: 0, avg: 0, p1Low: 0, history: Array(HISTORY_LEN).fill(0) });
   const [mem, setMem] = useState({ used: 0, limit: 0, history: Array(HISTORY_LEN).fill(0) });
   const [memoryAvailable, setMemoryAvailable] = useState(false);

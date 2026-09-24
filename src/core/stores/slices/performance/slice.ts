@@ -51,4 +51,14 @@ export const createPerformanceSlice: StateCreator<
     }),
   framePhases: null,
   setFramePhases: (framePhases: FramePhaseTimings) => set({ framePhases }),
+  performanceSamplers: 0,
+  retainPerformanceSampling: () => {
+    set((state) => ({ performanceSamplers: state.performanceSamplers + 1 }));
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      set((state) => ({ performanceSamplers: Math.max(0, state.performanceSamplers - 1) }));
+    };
+  },
 }); 

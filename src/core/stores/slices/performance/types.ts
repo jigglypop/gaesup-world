@@ -30,4 +30,7 @@ export interface PerformanceState {
   }) => void;
   framePhases: FramePhaseTimings | null;
   setFramePhases: (timings: FramePhaseTimings) => void;
+  /** Active consumers of `performance`/`framePhases`; renderer sampling runs only while this is above zero (or when forced on). */
+  performanceSamplers: number;
+  retainPerformanceSampling: () => () => void;
 } 

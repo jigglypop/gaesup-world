@@ -3,7 +3,7 @@ import { Suspense, useEffect, useLayoutEffect, ReactNode, useMemo } from 'react'
 import { Camera } from '@/core/camera';
 import type { CameraOptionType } from '@/core/camera';
 import { CAMERA_DEFAULTS } from '@/core/camera/core/constants';
-import { PerformanceCollector } from '@/core/editor/components/panels/PerformanceCollector';
+import { PerformanceCollector } from '@/core/perf/PerformanceCollector';
 import { WorldPostProcessing, type WorldPostProcessingProps } from '@/core/rendering/postprocess/WorldPostProcessing';
 import { ShadowDepthMaterials } from '@/core/rendering/shadow/ShadowDepthMaterials';
 import { GaesupRuntimeProvider } from '@/core/runtime';
@@ -149,19 +149,22 @@ function WorldConfiguration(props: WorldContainerProps) {
  */
 export const WorldContainer = WorldConfigProvider;
 
-export function GaesupWorldContent({ children, showGrid, showAxes, postProcessing }: {
-  children?: ReactNode; 
-  showGrid?: boolean; 
-  showAxes?: boolean; 
+export function GaesupWorldContent({ children, showGrid, showAxes, postProcessing, performance }: {
+  children?: ReactNode;
+  showGrid?: boolean;
+  showAxes?: boolean;
   /** Owns the canvas render loop. Use instead of mounting a second effect composer. */
   postProcessing?: boolean | WorldPostProcessingProps;
+  /** Samples renderer stats into the store. Defaults to on outside production; `retainPerformanceSampling` also turns it on. */
+  performance?: boolean;
 }) {
+  const sampled = useGaesupStore((state) => state.performanceSamplers > 0);
   return (
     <>
       <FrameSchedulerHost metrics={!isProductionEnv()} />
       <Suspense fallback={null}>
         <Camera/>
-        <PerformanceCollector />
+        {((performance ?? !isProductionEnv()) || sampled) && <PerformanceCollector />}
         <ShadowDepthMaterials />
         {postProcessing && <WorldPostProcessing {...(typeof postProcessing === 'object' ? postProcessing : {})} />}
         <WorldContent showGrid={showGrid ?? false} showAxes={showAxes ?? false}>
