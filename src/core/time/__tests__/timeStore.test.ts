@@ -77,11 +77,28 @@ test('paused realtime restoration stays paused and resume excludes time spent aw
 test('같은 게임 분 안의 tick은 time 객체를 유지하고 분이 바뀔 때만 새로 만든다', () => {
   const first = useTimeStore.getState().time;
   useTimeStore.getState().tick(16);
-  expect(useTimeStore.getState().totalMinutes).toBeGreaterThan(480);
+  expect(useTimeStore.getState().totalMinutes).toBe(480);
+  expect(useTimeStore.getState().exactMinutes()).toBeGreaterThan(480);
   expect(useTimeStore.getState().time).toBe(first);
   useTimeStore.getState().tick(MINUTE_MS / 60);
   expect(useTimeStore.getState().time).not.toBe(first);
   expect(useTimeStore.getState().time.minute).toBe(first.minute + 1);
+});
+
+test('분 안의 tick은 구독자를 깨우지 않는다(60틱에 알림 1회 이하)', () => {
+  const listener = jest.fn();
+  const off = useTimeStore.subscribe(listener);
+  for (let i = 0; i < 60; i++) useTimeStore.getState().tick(16);
+  expect(listener.mock.calls.length).toBeLessThanOrEqual(1);
+  off();
+});
+
+test('분 안의 tick은 구독자를 깨우지 않는다(60틱에 알림 1회 이하)', () => {
+  const listener = jest.fn();
+  const off = useTimeStore.subscribe(listener);
+  for (let i = 0; i < 60; i++) useTimeStore.getState().tick(16);
+  expect(listener.mock.calls.length).toBeLessThanOrEqual(1);
+  off();
 });
 
 test('useGameTime은 분 안의 프레임 tick마다 다시 렌더하지 않는다', () => {
