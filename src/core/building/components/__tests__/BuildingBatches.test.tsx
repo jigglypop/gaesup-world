@@ -34,17 +34,21 @@ function batches(view: View, kind: 'tile' | 'wall'): THREE.InstancedMesh[] {
   return found;
 }
 
-test('box tiles with the same material draw as one batch across groups', async () => {
+test('box tiles with the same material draw as one batch across groups; only raised tiles cast shadows', async () => {
   const groups = [
     tileGroup('a', [tile('a', 0), tile('a', 1), tile('a', 2, { shape: 'round' })]),
-    tileGroup('b', [tile('b', 0), tile('b', 1, { materialId: 'stone' })]),
+    tileGroup('b', [tile('b', 0), tile('b', 1, { materialId: 'stone' }), tile('b', 2, { position: { x: 8, y: 1, z: 0 } })]),
   ];
   const view = await ReactThreeTestRenderer.create(
     <BuildingBatches tileGroups={groups} wallGroups={[]} wallGroupMap={new Map()} meshes={meshes} />,
   );
   try {
-    const byName = new Map(batches(view, 'tile').map((mesh) => [mesh.name, mesh.count]));
-    expect(byName).toEqual(new Map([['building-batch:tile:floor', 3], ['building-batch:tile:stone', 1]]));
+    const byName = new Map(batches(view, 'tile').map((mesh) => [mesh.name, [mesh.count, mesh.castShadow]]));
+    expect(byName).toEqual(new Map([
+      ['building-batch:tile:floor', [3, false]],
+      ['building-batch:tile:stone', [1, false]],
+      ['building-batch:tile:floor:raised', [1, true]],
+    ]));
   } finally {
     await view.unmount();
   }

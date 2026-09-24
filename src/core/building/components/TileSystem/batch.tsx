@@ -7,10 +7,23 @@ import { TILE_CONSTANTS } from '../../types/constants';
 import { useInstanceCapacity } from '../BuildingBatches/capacity';
 
 export type BoxTileBatch = {
-  materialId: string;
+  key: string;
   tiles: TileConfig[];
   material: THREE.Material;
+  /** Raised tiles cast shadows; ground-level tiles only receive them. */
+  castShadow: boolean;
 };
+
+const GROUND_LEVEL = 0.02;
+
+export function isRaisedTile(tile: TileConfig): boolean {
+  return tile.position.y > GROUND_LEVEL;
+}
+
+/** Batch key for a box tile: its material plus whether it casts shadows. */
+export function getBoxTileBatchKey(materialId: string, tile: TileConfig): string {
+  return isRaisedTile(tile) ? `${materialId}:raised` : materialId;
+}
 
 export function BoxTileBatchMesh({
   batch,
@@ -55,8 +68,8 @@ export function BoxTileBatchMesh({
     <instancedMesh
       ref={ref}
       args={[geometry, batch.material, capacity]}
-      name={`building-batch:tile:${batch.materialId}`}
-      castShadow
+      name={`building-batch:tile:${batch.key}`}
+      castShadow={batch.castShadow}
       receiveShadow
       frustumCulled
     />

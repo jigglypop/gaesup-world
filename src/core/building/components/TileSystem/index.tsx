@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 import * as THREE from 'three';
 
-import { BoxTileBatchMesh, type BoxTileBatch } from './batch';
+import { BoxTileBatchMesh, getBoxTileBatchKey, isRaisedTile, type BoxTileBatch } from './batch';
 import { createTileColliders, getRampLayout, getStairLayout, getTileShape, rotateXZ } from './layout';
 import { TileSystemProps } from './types';
 import { buildWaterPatches } from './waterPatches';
@@ -31,7 +31,11 @@ type TerrainRock = {
 type TerrainBuild = {
   sideGeometry: THREE.BufferGeometry;
   rocks: TerrainRock[];
+  /** Only cliffs cast shadows; the few-centimeter lip of a ground cover does not. */
+  castShadow: boolean;
 };
+
+const SHADOW_CASTING_DROP = TILE_CONSTANTS.HEIGHT_STEP * 0.5;
 
 type TileBounds = {
   id: string;
@@ -151,6 +155,7 @@ function buildTerrainGeometry(subjectTiles: TileLike[], supportTiles: TileLike[]
   const rockWarm = new THREE.Color('#7b6a58');
   const rockDark = new THREE.Color('#433930');
   const segmentSize = TILE_CONSTANTS.GRID_CELL_SIZE;
+  let castShadow = false;
 
   const addSide = (
     bounds: TileBounds,
@@ -168,6 +173,7 @@ function buildTerrainGeometry(subjectTiles: TileLike[], supportTiles: TileLike[]
     if (bounds.topY <= supportY + 0.02) return;
 
     const drop = bounds.topY - supportY;
+    if (drop >= SHADOW_CASTING_DROP) castShadow = true;
     const topTint = 0.72 + hashNoise(seed, bounds.centerX, bounds.centerZ) * 0.16;
     const bottomTint = 0.42 + hashNoise(seed, bounds.topY) * 0.08;
     const topColor = baseColor.clone().lerp(rockWarm, 0.28 + Math.min(drop, 2) * 0.08).multiplyScalar(topTint);
@@ -287,7 +293,7 @@ function buildTerrainGeometry(subjectTiles: TileLike[], supportTiles: TileLike[]
     sideGeometry.computeBoundingSphere();
   }
 
-  return { sideGeometry, rocks };
+  return { sideGeometry, rocks, castShadow };
 }
 
 function shouldCloseStairBack(tile: TileLike, supportTiles: TileLike[]): boolean {
@@ -451,18 +457,19 @@ export function TileSystem({
   }, [defaultMaterial, meshes, tileGroup.floorMeshId, tileGroup.tiles]);
 
   const boxTileBatches = useMemo<BoxTileBatch[]>(() => {
-    const byMaterial = new Map<string, TileLike[]>();
+    const byKey = new Map<string, BoxTileBatch>();
     for (const tile of boxTiles) {
       const materialId = getTileMaterialId(tile, tileGroup.floorMeshId);
-      const list = byMaterial.get(materialId) ?? [];
-      list.push(tile);
-      byMaterial.set(materialId, list);
+      const key = getBoxTileBatchKey(materialId, tile);
+      let batch = byKey.get(key);
+      if (!batch) {
+        const material = materialById.get(materialId) ?? defaultMaterial;
+        batch = { key, tiles: [], material, castShadow: isRaisedTile(tile) };
+        byKey.set(key, batch);
+      }
+      batch.tiles.push(tile);
     }
-    return Array.from(byMaterial.entries()).map(([materialId, tiles]) => ({
-      materialId,
-      tiles,
-      material: materialById.get(materialId) ?? defaultMaterial,
-    }));
+    return [...byKey.values()];
   }, [boxTiles, defaultMaterial, materialById, tileGroup.floorMeshId]);
 
   const terrainColor = useMemo(() => {
@@ -746,7 +753,7 @@ export function TileSystem({
         
         {batches && boxTileBatches.map((batch) => (
           <BoxTileBatchMesh
-            key={`${tileGroup.id}-box-${batch.materialId}`}
+            key={`${tileGroup.id}-box-${batch.key}`}
             batch={batch}
             geometry={baseGeometry}
             dummy={dummy}
@@ -804,9 +811,8 @@ export function TileSystem({
           <mesh
             geometry={terrain.sideGeometry}
             material={sideMaterial}
-            castShadow
+            castShadow={terrain.castShadow}
             receiveShadow
-            frustumCulled={false}
           />
         )}
 

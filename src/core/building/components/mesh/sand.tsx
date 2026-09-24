@@ -284,13 +284,12 @@ export function SandBatch({ entries, toon }: { entries: SandEntry[]; toon?: bool
 
   return (
     <>
-      <mesh name="sand-surface" geometry={surfaceGeo} material={surfaceMat} castShadow receiveShadow />
+      <mesh name="sand-surface" geometry={surfaceGeo} material={surfaceMat} receiveShadow />
       {skirtGeo.getAttribute('position') && (
         <mesh
           name="sand-skirt"
           geometry={skirtGeo}
           material={surfaceMat}
-          castShadow
           receiveShadow
           raycast={disableRaycast}
           userData={{ nonInteractive: true }}
@@ -380,7 +379,7 @@ export default function Sand({ size = 4, toon, color: sandColor, accentColor: sa
 
   return (
     <group position={[0, 0.04, 0]}>
-      <mesh geometry={surfaceGeometry} material={surfaceMat} castShadow receiveShadow />
+      <mesh geometry={surfaceGeometry} material={surfaceMat} receiveShadow />
       <points geometry={grainGeometry} frustumCulled={false}>
         <pointsMaterial
           size={Math.max(0.02, size * 0.008)}

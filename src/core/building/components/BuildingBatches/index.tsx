@@ -6,7 +6,7 @@ import { getDefaultToonMode, getToonGradient } from '../../../rendering/toon';
 import { MaterialManager } from '../../core/MaterialManager';
 import type { MeshConfig, TileGroupConfig, WallGroupConfig } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
-import { BoxTileBatchMesh, type BoxTileBatch } from '../TileSystem/batch';
+import { BoxTileBatchMesh, getBoxTileBatchKey, isRaisedTile, type BoxTileBatch } from '../TileSystem/batch';
 import { getTileShape } from '../TileSystem/layout';
 import { getWallKind, getWallMaterials, WallBatchMesh, type WallBatch } from '../WallSystem/batch';
 
@@ -53,11 +53,12 @@ export const BuildingBatches = memo(function BuildingBatches({
       for (const tile of group.tiles) {
         if (getTileShape(tile) !== 'box') continue;
         const mesh = (tile.materialId ? meshes.get(tile.materialId) : undefined) ?? meshes.get(group.floorMeshId);
-        const materialId = mesh?.id ?? 'default';
-        let batch = byMaterial.get(materialId);
+        const key = getBoxTileBatchKey(mesh?.id ?? 'default', tile);
+        let batch = byMaterial.get(key);
         if (!batch) {
-          batch = { materialId, tiles: [], material: mesh ? manager.getMaterial(mesh) : resources.fallback };
-          byMaterial.set(materialId, batch);
+          const material = mesh ? manager.getMaterial(mesh) : resources.fallback;
+          batch = { key, tiles: [], material, castShadow: isRaisedTile(tile) };
+          byMaterial.set(key, batch);
         }
         batch.tiles.push(tile);
       }
@@ -86,7 +87,7 @@ export const BuildingBatches = memo(function BuildingBatches({
   return (
     <>
       {tileBatches.map((batch) => (
-        <BoxTileBatchMesh key={batch.materialId} batch={batch} geometry={resources.tileGeometry} dummy={resources.dummy} />
+        <BoxTileBatchMesh key={batch.key} batch={batch} geometry={resources.tileGeometry} dummy={resources.dummy} />
       ))}
       {wallBatches.map((batch) => (
         <WallBatchMesh

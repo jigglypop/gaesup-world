@@ -191,7 +191,7 @@ TSL은 WebGL2 backend에서도 동작하므로 TSL을 canonical로 둔다. GLSL 
 | 12-j | batch 재구성 제거(sakura, fire, flag, billboard) | 가시성 변경 시 `computeSpecs`/`makePointsGeo` 호출 0 |
 | 12-k | 에셋 미리보기 단일 renderer 썸네일 | 에셋 패널 스크롤 중 `webglcontextlost` 0 |
 | 12-l | `compileAsync` 워밍업, lamp light pool | warm-up 후 program 증가 0 |
-| 12-m | 섀도 정리(receive only, 추적 섀도 카메라, 갱신 임계) | 섀도 pass draw call 기록 감소 |
+| 12-m | 섀도 정리(receive only, 추적 섀도 카메라, 갱신 임계). 지면류 부분 완료(2026-09-25): 바닥 높이(y ≤ 0.02) box 타일 batch, 모래·눈밭 표면과 skirt는 receive만 한다. 높은 타일은 별도 batch(`:raised`)로 그림자를 유지한다. terrain 측면 메시는 프러스텀 컬링을 켜고 0.5m 이상 절벽이 있을 때만 그림자를 드리운다(지면 덮개 테두리 5cm는 드리우지 않음). `/world?size=m`: draw 77.6→57.4. 추적 섀도 카메라와 갱신 임계는 잔여 | 섀도 pass draw call 기록 감소 |
 | 12-n | TSL 수렴(도메인별 slice), `gpuCulledInstances` deprecate | GLSL 경로가 `compat/webgl/`에만 존재 |
 | 12-o | demand 렌더 옵션, TRAA 리셋 RT 재할당 제거, 3.3절 Low 항목 | 정지 상태 GPU 사용률 감소 기록 |
 | 12-p | D-23 toon 해제, toon 재질 refcount 공유(FR-12-17) | NPC 파츠 mount/unmount 100회 후 `MeshToonMaterial` 수 불변 |

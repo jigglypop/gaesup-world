@@ -294,13 +294,12 @@ export function SnowfieldBatch({ entries, toon }: { entries: SnowfieldEntry[]; t
 
   return (
     <>
-      <mesh name="snowfield-surface" geometry={surfaceGeo} material={surfaceMat} castShadow receiveShadow />
+      <mesh name="snowfield-surface" geometry={surfaceGeo} material={surfaceMat} receiveShadow />
       {skirtGeo.getAttribute('position') && (
         <mesh
           name="snowfield-skirt"
           geometry={skirtGeo}
           material={surfaceMat}
-          castShadow
           receiveShadow
           raycast={disableRaycast}
           userData={{ nonInteractive: true }}
@@ -390,7 +389,7 @@ export default function Snowfield({ size = 4, toon, color: snowColor, accentColo
 
   return (
     <group position={[0, 0.045, 0]}>
-      <mesh geometry={surfaceGeometry} material={surfaceMat} castShadow receiveShadow />
+      <mesh geometry={surfaceGeometry} material={surfaceMat} receiveShadow />
       <points geometry={sparkleGeometry} frustumCulled={false}>
         <pointsMaterial
           size={Math.max(0.03, size * 0.01)}
