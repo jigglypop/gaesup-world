@@ -26,6 +26,7 @@ export default tseslint.config(
       '**/coverage/**',
       '**/.tmp/**',
       '.artifacts/**',
+      '.claude/**',
     ],
   },
   ...tseslint.configs.recommended,

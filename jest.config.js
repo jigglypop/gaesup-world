@@ -44,7 +44,9 @@ export default {
   transformIgnorePatterns: [
     'node_modules/(?!(\\.pnpm|three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand|mitt)/)',
   ],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/scripts/assets/', '/scripts/minihome-room-service.test.mjs$'],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/scripts/assets/', '/scripts/minihome-room-service.test.mjs$', '<rootDir>/.claude/'],
+  // Agent worktrees live under .claude/ and carry their own package.json; keep them out of the module map.
+  modulePathIgnorePatterns: ['<rootDir>/.claude/'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
