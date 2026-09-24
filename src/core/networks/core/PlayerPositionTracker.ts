@@ -15,12 +15,30 @@ export interface PlayerUpdateData {
 export interface PlayerTrackingConfig {
   updateRate: number;
   velocityThreshold: number;
+  /** @deprecated Has no effect on the tracker; `PlayerNetworkManager` applies `sendRateLimit` on the send path. */
   sendRateLimit: number;
+}
+
+// Send thresholds: 1 cm, ~0.1 degree per quaternion component, and 5 cm/s, which moves the
+// receiver's 120 ms prediction by under 1 cm. Physics noise of a resting body stays below all three.
+const POSITION_EPSILON_SQ = 1e-4;
+const ROTATION_EPSILON = 1e-3;
+const VELOCITY_EPSILON_SQ = 25e-4;
+/** A player whose state stops changing still refreshes it at 1 Hz. */
+const KEEPALIVE_MS = 1000;
+
+/** Wire precision stays below the send thresholds: 1 mm, 1e-4 per quaternion component, 1 cm/s. */
+const quantize = (value: number, scale: number) => Math.round(value * scale) / scale;
+
+function rotationChanged(a: THREE.Quaternion, b: THREE.Quaternion): boolean {
+  return Math.abs(a.x - b.x) > ROTATION_EPSILON || Math.abs(a.y - b.y) > ROTATION_EPSILON
+    || Math.abs(a.z - b.z) > ROTATION_EPSILON || Math.abs(a.w - b.w) > ROTATION_EPSILON;
 }
 
 export class PlayerPositionTracker {
   private lastPosition = new THREE.Vector3();
   private lastRotation = new THREE.Quaternion();
+  private lastVelocity = new THREE.Vector3();
   private lastAnimation = 'idle';
   private velocity = new THREE.Vector3();
   private lastUpdateTime = 0;
@@ -41,6 +59,10 @@ export class PlayerPositionTracker {
     this.config = config;
   }
 
+  /**
+   * Samples the body and returns an update when it moved past the send thresholds, its animation or
+   * identity changed, or the keepalive is due; otherwise null. Rate limiting belongs to the send path.
+   */
   trackPosition(
     playerRef: { current: RapierRigidBody | null },
     playerName: string,
@@ -51,10 +73,6 @@ export class PlayerPositionTracker {
     if (!playerRef.current) return null;
 
     const now = Date.now();
-    if (now - this.lastUpdateTime < this.config.sendRateLimit) {
-      return null;
-    }
-
     const currentPos = playerRef.current.translation();
     const currentRot = playerRef.current.rotation();
     this.tempPos.set(currentPos.x, currentPos.y, currentPos.z);
@@ -105,40 +123,37 @@ export class PlayerPositionTracker {
       this.tempSendRot.setFromEuler(this.tempEuler);
     }
 
-    // 위치, 회전 또는 애니메이션이 변경되었을 때만 업데이트
-    const hasPositionChanged = !this.lastPosition.equals(this.tempPos);
-    const hasRotationChanged = !this.lastRotation.equals(this.tempSendRot);
-    const hasAnimationChanged = this.lastAnimation !== currentAnimation;
-    const hasVelocityChanged = this.scratchUpdate.velocity[0] !== this.velocity.x
-      || this.scratchUpdate.velocity[1] !== this.velocity.y
-      || this.scratchUpdate.velocity[2] !== this.velocity.z;
-    const hasIdentityChanged = this.scratchUpdate.name !== playerName
-      || this.scratchUpdate.color !== playerColor
-      || this.scratchUpdate.modelUrl !== modelUrl;
-
-    if (this.hasSentSnapshot && !hasPositionChanged && !hasRotationChanged && !hasAnimationChanged && !hasVelocityChanged && !hasIdentityChanged) {
-      return null;
-    }
-
     const updateData = this.scratchUpdate;
+    // Compared with the last sent state, so slow drift still goes out once it adds up.
+    const changed = !this.hasSentSnapshot
+      || this.lastPosition.distanceToSquared(this.tempPos) > POSITION_EPSILON_SQ
+      || rotationChanged(this.lastRotation, this.tempSendRot)
+      || this.lastVelocity.distanceToSquared(this.velocity) > VELOCITY_EPSILON_SQ
+      || this.lastAnimation !== currentAnimation
+      || updateData.name !== playerName
+      || updateData.color !== playerColor
+      || updateData.modelUrl !== modelUrl;
+    if (!changed && now - this.lastUpdateTime < KEEPALIVE_MS) return null;
+
     updateData.name = playerName;
     updateData.color = playerColor;
-    updateData.position[0] = currentPos.x;
-    updateData.position[1] = currentPos.y;
-    updateData.position[2] = currentPos.z;
-    updateData.rotation[0] = this.tempSendRot.w;
-    updateData.rotation[1] = this.tempSendRot.x;
-    updateData.rotation[2] = this.tempSendRot.y;
-    updateData.rotation[3] = this.tempSendRot.z;
+    updateData.position[0] = quantize(currentPos.x, 1e3);
+    updateData.position[1] = quantize(currentPos.y, 1e3);
+    updateData.position[2] = quantize(currentPos.z, 1e3);
+    updateData.rotation[0] = quantize(this.tempSendRot.w, 1e4);
+    updateData.rotation[1] = quantize(this.tempSendRot.x, 1e4);
+    updateData.rotation[2] = quantize(this.tempSendRot.y, 1e4);
+    updateData.rotation[3] = quantize(this.tempSendRot.z, 1e4);
     updateData.animation = currentAnimation;
-    updateData.velocity[0] = this.velocity.x;
-    updateData.velocity[1] = this.velocity.y;
-    updateData.velocity[2] = this.velocity.z;
+    updateData.velocity[0] = quantize(this.velocity.x, 1e2);
+    updateData.velocity[1] = quantize(this.velocity.y, 1e2);
+    updateData.velocity[2] = quantize(this.velocity.z, 1e2);
     updateData.modelUrl = modelUrl;
 
     // 상태 업데이트
     this.lastPosition.copy(this.tempPos);
     this.lastRotation.copy(this.tempSendRot);
+    this.lastVelocity.copy(this.velocity);
     this.lastAnimation = currentAnimation;
     this.lastUpdateTime = now;
     this.hasSentSnapshot = true;
@@ -153,10 +168,11 @@ export class PlayerPositionTracker {
   reset(): void {
     this.lastPosition.set(0, 0, 0);
     this.lastRotation.set(0, 0, 0, 1);
+    this.lastVelocity.set(0, 0, 0);
     this.lastAnimation = 'idle';
     this.velocity.set(0, 0, 0);
     this.lastUpdateTime = 0;
     this.hasSentSnapshot = false;
     this.baseYaw = null;
   }
-} 
+}

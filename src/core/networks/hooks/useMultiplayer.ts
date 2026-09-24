@@ -102,6 +102,8 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
   const stateRef = useRef<MultiplayerState & { players: LivePlayerMap }>(state);
   const modeTypeRef = useRef(modeType);
   const animationStateRef = useRef(animationState);
+  const characterUrlRef = useRef(characterUrl);
+  characterUrlRef.current = characterUrl;
 
   useEffect(() => {
     stateRef.current = state;
@@ -186,6 +188,7 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
       roomId: connectionOptions.roomId,
       playerName: connectionOptions.playerName,
       playerColor: connectionOptions.playerColor,
+      ...(characterUrlRef.current ? { modelUrl: characterUrlRef.current } : {}),
       reconnectAttempts: effectiveConfig.websocket.reconnectAttempts,
       reconnectDelay: effectiveConfig.websocket.reconnectDelay,
       pingInterval: effectiveConfig.websocket.pingInterval,

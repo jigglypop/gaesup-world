@@ -13,6 +13,8 @@ export interface PlayerNetworkManagerOptions {
   roomId: string;
   playerName: string;
   playerColor: string;
+  /** Sent with Join so peers can load the avatar before its first Update. */
+  modelUrl?: string;
   reconnectAttempts?: number;
   reconnectDelay?: number;
   pingInterval?: number;
@@ -51,12 +53,17 @@ const isTextReadablePayload = (value: WebSocketMessageData): value is TextReadab
   return 'text' in value && typeof value.text === 'function';
 };
 
+type StickyField = 'name' | 'color' | 'modelUrl' | 'animation';
+/** Receivers merge updates, so these ride along only when they differ from what the connection already sent. */
+const STICKY_FIELDS: readonly StickyField[] = ['name', 'color', 'modelUrl', 'animation'];
+
 export class PlayerNetworkManager {
   private ws: WebSocket | null = null;
   private url: string;
   private roomId: string;
   private playerName: string;
   private playerColor: string;
+  private modelUrl: string | undefined;
   private players: Map<string, PlayerState> = new Map();
   private localPlayerId: string | null = null;
   private isConnected: boolean = false;
@@ -77,6 +84,7 @@ export class PlayerNetworkManager {
   private lastUpdateSentAt: number = 0;
   private pendingUpdate: Partial<PlayerState> | null = null;
   private updateFlushTimer: ReturnType<typeof setTimeout> | null = null;
+  private sentFields: Partial<Pick<PlayerState, StickyField>> = {};
 
   private offlineQueueSize: number;
   private pendingChats: Array<{ text: string; range?: number }> = [];
@@ -108,6 +116,7 @@ export class PlayerNetworkManager {
     this.roomId = options.roomId;
     this.playerName = options.playerName;
     this.playerColor = options.playerColor;
+    this.modelUrl = options.modelUrl;
     this.reconnectAttemptsMax = Math.max(0, Math.floor(options.reconnectAttempts ?? 0));
     this.reconnectDelayMs = Math.max(0, Math.floor(options.reconnectDelay ?? 1000));
     this.pingIntervalMs = Math.max(0, Math.floor(options.pingInterval ?? 0));
@@ -204,13 +213,16 @@ export class PlayerNetworkManager {
       this.isConnecting = false;
       this.reconnectAttemptsUsed = 0;
       this.startPingLoop();
-      
+      // A new connection may reach a server that never saw this player, so its first Update is complete.
+      this.sentFields = {};
+
       // Join 메시지 전송
       ws.send(JSON.stringify({
         type: 'Join',
         room_id: this.roomId,
         name: this.playerName,
-        color: this.playerColor
+        color: this.playerColor,
+        ...(this.modelUrl ? { modelUrl: this.modelUrl } : {}),
       }));
 
       // Resend in-flight reliable messages, when present, after reconnect.
@@ -367,13 +379,14 @@ export class PlayerNetworkManager {
     const ws = this.ws;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
+    // The only send-rate limit on the Update path; excess updates coalesce instead of being dropped.
     const now = Date.now();
     if (this.updateRateLimitMs <= 0 || now - this.lastUpdateSentAt >= this.updateRateLimitMs) {
       this.lastUpdateSentAt = now;
       const payload = this.pendingUpdate;
       this.pendingUpdate = null;
       if (!payload) return;
-      ws.send(JSON.stringify({ type: 'Update', state: payload }));
+      this.sendUpdate(ws, payload);
       return;
     }
 
@@ -387,6 +400,20 @@ export class PlayerNetworkManager {
       if (!p) return;
       this.updateLocalPlayer(p);
     }, delay);
+  }
+
+  /** `state` is owned by the manager; unchanged sticky fields are removed before it goes on the wire. */
+  private sendUpdate(ws: WebSocket, state: Partial<PlayerState>): void {
+    const sent = this.sentFields;
+    for (const key of STICKY_FIELDS) {
+      if (state[key] === sent[key]) delete state[key];
+    }
+    if (Object.keys(state).length === 0) return;
+    ws.send(JSON.stringify({ type: 'Update', state }));
+    for (const key of STICKY_FIELDS) {
+      const value = state[key];
+      if (value !== undefined) sent[key] = value;
+    }
   }
 
   sendChat(text: string, options?: { range?: number }): void {

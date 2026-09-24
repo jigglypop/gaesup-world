@@ -254,6 +254,44 @@ describe('PlayerNetworkManager', () => {
 
       jest.useRealTimers();
     });
+
+    test('Join carries the model; Updates repeat name, color, model and animation only on change per connection', () => {
+      jest.useFakeTimers();
+      try {
+        manager = new PlayerNetworkManager({
+          url: 'ws://localhost:9999', roomId: 'room', playerName: 'p', playerColor: '#fff',
+          modelUrl: '/gltf/ally.glb', reconnectAttempts: 1, reconnectDelay: 10,
+        });
+        manager.connect();
+        jest.advanceTimersByTime(1);
+        const first = MockWebSocket.lastCreated!;
+        expect(first.parseSentMessage(0)).toEqual({ type: 'Join', room_id: 'room', name: 'p', color: '#fff', modelUrl: '/gltf/ally.glb' });
+
+        const transform = { rotation: [1, 0, 0, 0] as PlayerState['rotation'], velocity: [0, 0, 0] as [number, number, number] };
+        const full = (x: number, color = '#fff', animation = 'idle'): Partial<PlayerState> => ({
+          name: 'p', color, modelUrl: '/gltf/ally.glb', animation, position: [x, 0, 0], ...transform,
+        });
+        manager.updateLocalPlayer(full(1));
+        manager.updateLocalPlayer(full(2));
+        manager.updateLocalPlayer(full(3, '#000', 'run'));
+        manager.updateLocalPlayer({ name: 'p', animation: 'run' });
+        expect(first.sentMessages.slice(1).map((raw) => JSON.parse(raw).state)).toEqual([
+          full(1),
+          { position: [2, 0, 0], ...transform },
+          { color: '#000', animation: 'run', position: [3, 0, 0], ...transform },
+        ]);
+
+        first.simulateClose(1006);
+        jest.advanceTimersByTime(20);
+        const second = MockWebSocket.lastCreated!;
+        expect(second).not.toBe(first);
+        manager.updateLocalPlayer(full(4, '#000', 'run'));
+        expect(second.parseSentMessage(-1).state).toEqual(full(4, '#000', 'run'));
+      } finally {
+        manager.disconnect();
+        jest.useRealTimers();
+      }
+    });
   });
 
   describe('sendChat', () => {

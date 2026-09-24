@@ -127,6 +127,22 @@ describe('PlayerNetworkManager inbound peer state', () => {
     manager.disconnect();
   });
 
+  test('slim updates keep identity and animation from earlier messages; legacy full updates still apply', () => {
+    const { manager, socket, received } = connect();
+    const identity = { ...peerState, modelUrl: '/gltf/ally.glb', animation: 'run' };
+    socket.receive({ type: 'PlayerJoined', client_id: 'peer-1', state: identity });
+    socket.receive({ type: 'PlayerUpdate', client_id: 'peer-1', state: { position: [4, 5, 6], rotation: [1, 0, 0, 0], velocity: [0, 0, 0] } });
+    expect(received.updates.get('peer-1')).toEqual({ ...identity, position: [4, 5, 6], velocity: [0, 0, 0] });
+
+    const legacy = {
+      name: 'renamed', color: '#00ff00', position: [7, 8, 9], rotation: [0, 0, 1, 0],
+      animation: 'idle', velocity: [1, 0, 0], modelUrl: '/gltf/other.glb',
+    };
+    socket.receive({ type: 'PlayerUpdate', client_id: 'peer-1', state: legacy });
+    expect(received.updates.get('peer-1')).toEqual(legacy);
+    manager.disconnect();
+  });
+
   test('an update for an unknown peer keeps defaults when fields are absent', () => {
     const { manager, socket, received } = connect();
     socket.receive({ type: 'PlayerUpdate', client_id: 'late-peer', state: { position: [4, 5, 6] } });
