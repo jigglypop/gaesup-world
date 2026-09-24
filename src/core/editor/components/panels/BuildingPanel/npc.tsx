@@ -1,3 +1,4 @@
+import { useBuildingStore } from '../../../../building/stores/buildingStore';
 import type {
   NPCAnimation,
   NPCBehaviorConfig,
@@ -44,15 +45,8 @@ export function NPCTemplateSection({
   );
 }
 
-type HoverPosition = {
-  x: number;
-  y: number;
-  z: number;
-} | null;
-
 export type NPCMovementSectionProps = {
   instance: NPCInstanceData;
-  hoverPosition: HoverPosition;
   updateBehavior: (id: string, updates: Partial<NPCBehaviorConfig>) => void;
   setNavigation: (id: string, waypoints: [number, number, number][], speed?: number) => void;
   clearNavigation: (id: string) => void;
@@ -62,11 +56,12 @@ const NPC_BEHAVIOR_MODES: NPCBehaviorMode[] = ['idle', 'patrol', 'wander'];
 
 export function NPCMovementSection({
   instance,
-  hoverPosition,
   updateBehavior,
   setNavigation,
   clearNavigation,
 }: NPCMovementSectionProps) {
+  // The only building panel leaf that shows the hover cell, so hover sweeps re-render nothing else.
+  const hoverPosition = useBuildingStore((state) => state.hoverPosition);
   const speed = instance.behavior?.speed ?? 2.2;
   const wanderRadius = instance.behavior?.wanderRadius ?? 4;
   const waypoints = instance.behavior?.waypoints ?? [];

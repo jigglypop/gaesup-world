@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { Canvas } from '@react-three/fiber';
-
+import { useShallow } from 'zustand/react/shallow';
 
 import { getNPCBrainLabel } from './helpers';
 import {
@@ -12,64 +12,47 @@ import {
   NPCPerceptionSection,
 } from './sections';
 import { NPCInstance as NPCPreviewInstance } from '../../../../npc/components/NPCInstance';
-import type {
-  NPCAnimation,
-  NPCBehaviorConfig,
-  NPCBrainBlueprint,
-  NPCBrainConfig,
-  NPCInstance,
-  NPCNavigationState,
-  NPCPerceptionConfig,
-  NPCTemplate,
-} from '../../../../npc/types';
+import { useNPCStore, useNPCStoreApi } from '../../../../npc/stores/npcStore';
+import type { NPCInstance } from '../../../../npc/types';
 import { FrameSchedulerHost } from '../../../../runtime/frame';
 import { WorldPhysics } from '../../../../world/components/WorldPhysics';
 
 type NPCPanelProps = {
   layout?: 'default' | 'split' | 'sidebars';
-  npcTemplatesArray: NPCTemplate[];
-  selectedNPCTemplateId: string | null | undefined;
-  setSelectedNPCTemplate: (templateId: string) => void;
-  npcInstancesArray: NPCInstance[];
-  selectedNPCInstanceId: string | null;
-  setSelectedNPCInstance: (instanceId: string) => void;
-  selectedNPCInstance: NPCInstance | undefined;
-  npcAnimationsArray: NPCAnimation[];
-  selectedNPCBrainBlueprint: NPCBrainBlueprint | undefined;
-  npcBrainBlueprintsArray: NPCBrainBlueprint[];
-  hoverPosition: { x: number; y: number; z: number } | null;
-  updateNPCBehavior: (id: string, updates: Partial<NPCBehaviorConfig | undefined>) => void;
-  setNPCNavigation: (id: string, waypoints: NPCNavigationState['waypoints'], speed?: number) => void;
-  clearNPCNavigation: (id: string) => void;
-  updateNPCInstance: (id: string, updates: Partial<NPCInstance>) => void;
-  updateNPCBrain: (id: string, updates: Partial<NPCBrainConfig>) => void;
-  addNPCBrainBlueprint: (blueprint: NPCBrainBlueprint) => void;
-  updateNPCBrainBlueprint: (id: string, updates: NPCBrainBlueprint) => void;
-  updateNPCPerception: (id: string, updates: Partial<NPCPerceptionConfig>) => void;
 };
 
-export function NPCPanel({
-  layout = 'default',
-  npcTemplatesArray,
-  selectedNPCTemplateId,
-  setSelectedNPCTemplate,
-  npcInstancesArray,
-  selectedNPCInstanceId,
-  setSelectedNPCInstance,
-  selectedNPCInstance,
-  npcAnimationsArray,
-  selectedNPCBrainBlueprint,
-  npcBrainBlueprintsArray,
-  hoverPosition,
-  updateNPCBehavior,
-  setNPCNavigation,
-  clearNPCNavigation,
-  updateNPCInstance,
-  updateNPCBrain,
-  addNPCBrainBlueprint,
-  updateNPCBrainBlueprint,
-  updateNPCPerception,
-}: NPCPanelProps) {
+// Only the NPC editor subscribes to NPC data, so observation ticks never reach the rest of the building panel.
+export const NPCPanel = React.memo(function NPCPanel({ layout = 'default' }: NPCPanelProps) {
+  const npc = useNPCStore(useShallow((state) => ({
+    templates: state.templates,
+    instances: state.instances,
+    animations: state.animations,
+    brainBlueprints: state.brainBlueprints,
+    selectedTemplateId: state.selectedTemplateId,
+    selectedInstanceId: state.selectedInstanceId,
+  })));
+  const {
+    setSelectedTemplate: setSelectedNPCTemplate,
+    setSelectedInstance: setSelectedNPCInstance,
+    updateInstance: updateNPCInstance,
+    updateInstanceBehavior: updateNPCBehavior,
+    setNavigation: setNPCNavigation,
+    clearNavigation: clearNPCNavigation,
+    updateInstanceBrain: updateNPCBrain,
+    updateInstancePerception: updateNPCPerception,
+    addBrainBlueprint: addNPCBrainBlueprint,
+    updateBrainBlueprint: updateNPCBrainBlueprint,
+  } = useNPCStoreApi().getState();
+  const npcTemplatesArray = React.useMemo(() => Array.from(npc.templates.values()), [npc.templates]);
+  const npcInstancesArray = React.useMemo(() => Array.from(npc.instances.values()), [npc.instances]);
+  const npcAnimationsArray = React.useMemo(() => Array.from(npc.animations.values()), [npc.animations]);
+  const npcBrainBlueprintsArray = React.useMemo(() => Array.from(npc.brainBlueprints.values()), [npc.brainBlueprints]);
+  const selectedNPCTemplateId = npc.selectedTemplateId;
+  const selectedNPCInstanceId = npc.selectedInstanceId ?? null;
+  const selectedNPCInstance = selectedNPCInstanceId ? npc.instances.get(selectedNPCInstanceId) : undefined;
+  const selectedNPCBrainBlueprint = selectedNPCInstance?.brain?.blueprintId
+    ? npc.brainBlueprints.get(selectedNPCInstance.brain.blueprintId)
+    : undefined;
   const [activeControlTab, setActiveControlTab] = React.useState<'movement' | 'animation' | 'perception'>('movement');
   const [brainPreview, setBrainPreview] = React.useState<NPCBrainPreviewState>({
     mode: 'idle',
@@ -106,7 +89,6 @@ export function NPCPanel({
       return (
         <NPCMovementSection
           instance={selectedNPCInstance}
-          hoverPosition={hoverPosition}
           updateBehavior={updateNPCBehavior}
           setNavigation={setNPCNavigation}
           clearNavigation={clearNPCNavigation}
@@ -133,7 +115,6 @@ export function NPCPanel({
   }, [
     activeControlTab,
     clearNPCNavigation,
-    hoverPosition,
     npcAnimationsArray,
     selectedNPCInstance,
     setNPCNavigation,
@@ -146,7 +127,6 @@ export function NPCPanel({
   const movementPanel = selectedNPCInstance ? (
     <NPCMovementSection
       instance={selectedNPCInstance}
-      hoverPosition={hoverPosition}
       updateBehavior={updateNPCBehavior}
       setNavigation={setNPCNavigation}
       clearNavigation={clearNPCNavigation}
@@ -377,7 +357,7 @@ export function NPCPanel({
       {emptyState}
     </div>
   );
-}
+});
 
 const PREVIEW_SCALE = 0.25;
 

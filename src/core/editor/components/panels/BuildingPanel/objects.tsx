@@ -1,9 +1,8 @@
-import {
-  BUILDING_FLAG_STYLE_OPTIONS,
-  BUILDING_TREE_OPTIONS,
-  type BuildingTreeKind,
-  type FlagStyle,
-} from '../../../../building/types';
+import React from 'react';
+
+import { useBuildingFields } from './state';
+import { useBuildingStoreApi } from '../../../../building/stores/buildingStore';
+import { BUILDING_FLAG_STYLE_OPTIONS, BUILDING_TREE_OPTIONS } from '../../../../building/types';
 import { FieldColor, FieldRow } from '../../fields';
 type NumericStepperProps = {
   label: string;
@@ -63,23 +62,11 @@ function TextField({ label, value, placeholder, onChange }: TextFieldProps) {
   );
 }
 
-export type TreeSettingsSectionProps = {
-  currentTreeKind: BuildingTreeKind;
-  setTreeKind: (kind: BuildingTreeKind) => void;
-  currentObjectPrimaryColor: string;
-  setObjectPrimaryColor: (color: string) => void;
-  currentObjectSecondaryColor: string;
-  setObjectSecondaryColor: (color: string) => void;
-};
+const TREE_FIELDS = ['currentTreeKind', 'currentObjectPrimaryColor', 'currentObjectSecondaryColor'] as const;
 
-export function TreeSettingsSection({
-  currentTreeKind,
-  setTreeKind,
-  currentObjectPrimaryColor,
-  setObjectPrimaryColor,
-  currentObjectSecondaryColor,
-  setObjectSecondaryColor,
-}: TreeSettingsSectionProps) {
+export const TreeSettingsSection = React.memo(function TreeSettingsSection() {
+  const { currentTreeKind, currentObjectPrimaryColor, currentObjectSecondaryColor } = useBuildingFields(TREE_FIELDS);
+  const { setTreeKind, setObjectPrimaryColor, setObjectSecondaryColor } = useBuildingStoreApi().getState();
   return (
     <div className="building-panel__section">
       <div className="building-panel__section-title">나무 프리셋</div>
@@ -104,29 +91,13 @@ export function TreeSettingsSection({
       </div>
     </div>
   );
-}
+});
 
-export type FireSettingsSectionProps = {
-  currentFireIntensity: number;
-  setFireIntensity: (intensity: number) => void;
-  currentFireWidth: number;
-  setFireWidth: (width: number) => void;
-  currentFireHeight: number;
-  setFireHeight: (height: number) => void;
-  currentFireColor: string;
-  setFireColor: (color: string) => void;
-};
+const FIRE_FIELDS = ['currentFireIntensity', 'currentFireWidth', 'currentFireHeight', 'currentFireColor'] as const;
 
-export function FireSettingsSection({
-  currentFireIntensity,
-  setFireIntensity,
-  currentFireWidth,
-  setFireWidth,
-  currentFireHeight,
-  setFireHeight,
-  currentFireColor,
-  setFireColor,
-}: FireSettingsSectionProps) {
+export const FireSettingsSection = React.memo(function FireSettingsSection() {
+  const { currentFireIntensity, currentFireWidth, currentFireHeight, currentFireColor } = useBuildingFields(FIRE_FIELDS);
+  const { setFireIntensity, setFireWidth, setFireHeight, setFireColor } = useBuildingStoreApi().getState();
   return (
     <div className="building-panel__section">
       <div className="building-panel__section-title">불 설정</div>
@@ -155,7 +126,7 @@ export function FireSettingsSection({
       </div>
     </div>
   );
-}
+});
 
 const BILLBOARD_COLORS = [
   { value: '#00ff88', label: '초록' },
@@ -165,47 +136,41 @@ const BILLBOARD_COLORS = [
   { value: '#ffdd00', label: '노랑' },
 ];
 
-export type BillboardSettingsSectionProps = {
-  currentBillboardScale: number;
-  setBillboardScale: (scale: number) => void;
-  currentBillboardOffsetY: number;
-  setBillboardOffsetY: (offsetY: number) => void;
-  currentBillboardWidth: number;
-  setBillboardWidth: (width: number) => void;
-  currentBillboardHeight: number;
-  setBillboardHeight: (height: number) => void;
-  currentBillboardElevation: number;
-  setBillboardElevation: (elevation: number) => void;
-  currentBillboardIntensity: number;
-  setBillboardIntensity: (intensity: number) => void;
-  currentBillboardText: string;
-  setBillboardText: (text: string) => void;
-  currentBillboardImageUrl: string;
-  setBillboardImageUrl: (url: string) => void;
-  currentBillboardColor: string;
-  setBillboardColor: (color: string) => void;
-};
+const BILLBOARD_FIELDS = [
+  'currentBillboardScale',
+  'currentBillboardOffsetY',
+  'currentBillboardWidth',
+  'currentBillboardHeight',
+  'currentBillboardElevation',
+  'currentBillboardIntensity',
+  'currentBillboardText',
+  'currentBillboardImageUrl',
+  'currentBillboardColor',
+] as const;
 
-export function BillboardSettingsSection({
-  currentBillboardScale,
-  setBillboardScale,
-  currentBillboardOffsetY,
-  setBillboardOffsetY,
-  currentBillboardWidth,
-  setBillboardWidth,
-  currentBillboardHeight,
-  setBillboardHeight,
-  currentBillboardElevation,
-  setBillboardElevation,
-  currentBillboardIntensity,
-  setBillboardIntensity,
-  currentBillboardText,
-  setBillboardText,
-  currentBillboardImageUrl,
-  setBillboardImageUrl,
-  currentBillboardColor,
-  setBillboardColor,
-}: BillboardSettingsSectionProps) {
+export const BillboardSettingsSection = React.memo(function BillboardSettingsSection() {
+  const {
+    currentBillboardScale,
+    currentBillboardOffsetY,
+    currentBillboardWidth,
+    currentBillboardHeight,
+    currentBillboardElevation,
+    currentBillboardIntensity,
+    currentBillboardText,
+    currentBillboardImageUrl,
+    currentBillboardColor,
+  } = useBuildingFields(BILLBOARD_FIELDS);
+  const {
+    setBillboardScale,
+    setBillboardOffsetY,
+    setBillboardWidth,
+    setBillboardHeight,
+    setBillboardElevation,
+    setBillboardIntensity,
+    setBillboardText,
+    setBillboardImageUrl,
+    setBillboardColor,
+  } = useBuildingStoreApi().getState();
   return (
     <div className="building-panel__section">
       <div className="building-panel__section-title">간판 설정</div>
@@ -279,29 +244,13 @@ export function BillboardSettingsSection({
       </div>
     </div>
   );
-}
+});
 
-export type FlagSettingsSectionProps = {
-  currentFlagStyle: FlagStyle;
-  setFlagStyle: (style: FlagStyle) => void;
-  currentFlagWidth: number;
-  setFlagWidth: (width: number) => void;
-  currentFlagHeight: number;
-  setFlagHeight: (height: number) => void;
-  currentFlagImageUrl: string;
-  setFlagImageUrl: (url: string) => void;
-};
+const FLAG_FIELDS = ['currentFlagStyle', 'currentFlagWidth', 'currentFlagHeight', 'currentFlagImageUrl'] as const;
 
-export function FlagSettingsSection({
-  currentFlagStyle,
-  setFlagStyle,
-  currentFlagWidth,
-  setFlagWidth,
-  currentFlagHeight,
-  setFlagHeight,
-  currentFlagImageUrl,
-  setFlagImageUrl,
-}: FlagSettingsSectionProps) {
+export const FlagSettingsSection = React.memo(function FlagSettingsSection() {
+  const { currentFlagStyle, currentFlagWidth, currentFlagHeight, currentFlagImageUrl } = useBuildingFields(FLAG_FIELDS);
+  const { setFlagStyle, setFlagWidth, setFlagHeight, setFlagImageUrl } = useBuildingStoreApi().getState();
   return (
     <div className="building-panel__section">
       <div className="building-panel__section-title">깃발 설정</div>
@@ -344,4 +293,4 @@ export function FlagSettingsSection({
       </div>
     </div>
   );
-}
+});
