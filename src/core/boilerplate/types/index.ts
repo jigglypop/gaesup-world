@@ -1,5 +1,3 @@
-import { ManagedEntity } from "../entity/ManagedEntity";
-
 export type RuntimeValue =
   | object
   | string
@@ -53,45 +51,6 @@ export type BridgeMiddleware<EngineType, SnapshotType, CommandType> = (
   next: () => void
 ) => void; 
 
-export type ManagedEntityOptions<
-  EngineType extends IDisposable,
-  SnapshotType,
-  CommandType,
-> = {
-  enableCommandQueue?: boolean;
-  maxQueueSize?: number;
-  enableStateCache?: boolean;
-  cacheTimeout?: number;
-  onInit?: (entity: ManagedEntity<EngineType, SnapshotType, CommandType>) => void;
-  onDispose?: (entity: ManagedEntity<EngineType, SnapshotType, CommandType>) => void;
-};
-
-export type UseBaseFrameOptions = {
-    priority?: number;
-    enabled?: boolean;
-    throttle?: number;
-    skipWhenHidden?: boolean;
-}
-
-export type UseBaseLifecycleOptions<EngineType> = {
-    onRegister?: (engine: EngineType) => void | (() => void);
-    onUnregister?: (engine: EngineType) => void;
-    dependencies?: RuntimeValue[];
-    enabled?: boolean;
-}
-
-export type UseManagedEntityOptions<
-  EngineType extends IDisposable,
-  SnapshotType,
-  CommandType,
-> = ManagedEntityOptions<EngineType, SnapshotType, CommandType> &
-  UseBaseFrameOptions &
-  UseBaseLifecycleOptions<EngineType> & {
-    frameCallback?: () => void;
-  };
-
-export const DEFAULT_CACHE_TIMEOUT_MS = 16;
-export const DEFAULT_COMMAND_QUEUE_SIZE = 100;
 export const MILLISECONDS_IN_SECOND = 1000;
 
 export type Constructor<T = object> = new (...args: never[]) => T;

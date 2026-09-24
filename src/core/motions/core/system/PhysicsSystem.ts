@@ -3,7 +3,7 @@ import * as THREE from 'three';
 
 import type { RefObject } from '@core/boilerplate';
 import { AbstractSystem, SystemContext, SystemUpdateArgs } from '@core/boilerplate/engine';
-import { HandleError, ManageRuntime, Profile } from '@core/boilerplate/engine';
+import { HandleError, Profile } from '@core/boilerplate/engine';
 import { GameStatesType } from '@core/world/components/Rideable/types';
 
 import type { ClickNavigationRoute } from '../../../navigation/ClickNavigationRoute';
@@ -67,7 +67,6 @@ function isPhysicsUpdateArgs(context: SystemContext | PhysicsUpdateArgs): contex
   return candidate.calcProp !== undefined && candidate.physicsState !== undefined;
 }
 
-@ManageRuntime({ autoStart: false })
 export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSystemMetrics, PhysicsSystemOptions, PhysicsUpdateArgs> {
   private directionComponent: DirectionComponent;
   private impulseComponent: ImpulseComponent;

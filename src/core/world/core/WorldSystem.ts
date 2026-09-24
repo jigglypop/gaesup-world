@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { RegisterSystem, Profile, HandleError } from '@core/boilerplate/decorators';
+import { Profile, HandleError } from '@core/boilerplate/decorators';
 import { BaseSystem, SystemContext } from '@core/boilerplate/entity/BaseSystem';
 import type { RuntimeRecord } from '@core/boilerplate/types';
 
@@ -44,7 +44,6 @@ export interface InteractionEvent {
 
 
 
-@RegisterSystem('world')
 export class WorldSystem implements BaseSystem {
   private revision = 0;
   getRevision(): number { return this.revision; }

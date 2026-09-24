@@ -2,7 +2,7 @@ import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { AbstractSystem, SystemContext, SystemUpdateArgs, Inject } from '@core/boilerplate/engine';
-import { Profile, HandleError, ManageRuntime } from '@core/boilerplate/engine';
+import { Profile, HandleError } from '@core/boilerplate/engine';
 import type { RuntimeRecord } from '@core/boilerplate/engine';
 import type { GameStatesType } from '@core/world/components/Rideable/types';
 
@@ -144,7 +144,6 @@ function isMotionUpdateArgs(context: SystemContext | MotionUpdateArgs): context 
   );
 }
 
-@ManageRuntime({ autoStart: false })
 export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, MotionSystemOptions, MotionUpdateArgs> {
   @Inject(MotionService)
   private motionService!: MotionService;

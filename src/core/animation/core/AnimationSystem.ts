@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-import { ManageRuntime } from '@/core/boilerplate/decorators';
 import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
 import { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
 import { BaseState, BaseMetrics } from '@/core/boilerplate/types';
@@ -29,7 +28,6 @@ type AnimatorLeaseEntry = {
   definition: AnimatorControllerDefinition;
 };
 
-@ManageRuntime({ autoStart: false })
 export class AnimationSystem extends AbstractSystem<AnimationSystemStateExt, AnimationSystemMetrics> {
   private callbacks: Set<AnimationSystemCallback>;
   private systemType: string;

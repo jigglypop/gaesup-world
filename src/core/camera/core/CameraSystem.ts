@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-import { ManageRuntime } from '@/core/boilerplate/decorators';
 
 import {
   ICameraController,
@@ -22,7 +21,6 @@ import {
   FixedController
 } from '../controllers';
 
-@ManageRuntime({ autoStart: false })
 export class CameraSystem extends BaseCameraSystem {
   private controllers: Map<string, ICameraController> = new Map();
   private activeController?: ICameraController;

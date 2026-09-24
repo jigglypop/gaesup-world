@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-import { RegisterSystem, ManageRuntime } from '@/core/boilerplate/decorators';
 import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
 import { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
 import { BaseState, BaseMetrics } from '@/core/boilerplate/types';
@@ -47,8 +46,6 @@ type TileGroupLike = {
   tiles?: TileLike[];
 };
 
-@RegisterSystem('minimap')
-@ManageRuntime({ autoStart: false })
 export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSystemMetrics> {
   private static instance: MinimapSystem | null = null;
   private lastScale: number | null = null;

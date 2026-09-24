@@ -1,5 +1,4 @@
 import 'reflect-metadata';
-import { Autowired } from '../Autowired';
 import { DIContainer } from '../container';
 import { Inject } from '../Inject';
 import { Service } from '../Service';
@@ -48,7 +47,6 @@ class DependentService {
 }
 
 class PropertyInjectionService {
-  @Autowired()
   public testService!: TestService;
   
   @Inject('custom-token')

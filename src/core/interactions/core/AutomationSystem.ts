@@ -1,6 +1,6 @@
 import type { Vector3 } from 'three';
 
-import { HandleError, ManageRuntime, Profile, RegisterSystem } from '@/core/boilerplate/decorators';
+import { HandleError, Profile } from '@/core/boilerplate/decorators';
 import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
 import type { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
 import type { BaseMetrics, BaseState, SystemUpdateArgs } from '@/core/boilerplate/types';
@@ -73,8 +73,6 @@ const createDefaultConfig = (): AutomationConfig => ({
   },
 });
 
-@RegisterSystem('automation')
-@ManageRuntime({ autoStart: false })
 export class AutomationSystem extends AbstractSystem<AutomationSystemState, AutomationSystemMetrics> {
   private config: AutomationConfig;
   private executionGeneration = 0;

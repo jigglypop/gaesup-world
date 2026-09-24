@@ -139,7 +139,7 @@ ESM 70파일 1.95MB, CJS 70파일 1.55MB, d.ts+d.cts 2,052파일 2.08MB이다. d
 | D-08 | 결정됨(90 PRD G5, 2026-09-24) | 자동 정리는 저장 데이터를 지우는 동작. 월드당 보존 개수 N 결정 후 진행 | - |
 | D-14 | 부분 수정 (2026-09-24) | 공용 `createGLTFLoader()`(meshopt 디코더 설정, 내부 모듈)를 `GLTFAssetCache` 기본 로더로 사용. Draco 로컬 디코더 경로와 KTX2는 소비자 자산 호스팅 방식 결정이 필요해 14-c 잔여 | `assets/__tests__/gltfLoader.test.ts`(메모리 GLB). 공개 export 변경을 피하려고 팩토리는 barrel 밖 `assets/gltfLoader.ts`에 둠. 디코더 제거 시 `setMeshoptDecoder must be called` 실패 확인 |
 | D-18 | 결정됨(90 PRD G6, 2026-09-24) | 복제 저장으로 고치면 기존 테스트가 고정한 identity 계약(`getAllObjects()`가 입력 객체를 그대로 반환, position 없는 객체 허용)이 바뀐다. `boundingBox` JSDoc은 `updateObject` 경유를 계약으로 명시. 복제 저장 또는 계약 문서화 중 선택 필요. 시도한 변경은 되돌림 | - |
-| D-02 | 결정됨(90 PRD G3, 2026-09-24) | `ManagedEntity`/`useManagedEntity`는 공개 API가 아니고 사용처 0. 수정보다 삭제(23-b) 권장 | - |
+| D-02 | 수정 (2026-09-24) | 23-b에서 `ManagedEntity`, `useManagedEntity`, `useBatchManagedEntities`, `@Autowired`와 테스트를 삭제(공개 API 아님) | 전체 jest 통과, export snapshot 불변 |
 | D-04 | 결정됨(90 PRD G2, 2026-09-24) | `@HandleError`를 걷어내면 `FrameScheduler`가 실패 entry를 영구 비활성화하므로 물리 루프 전체가 멈출 수 있다. 예외 전파/삼킴 정책과 production error sink(logger가 production에서 꺼짐)를 먼저 정해야 함 | - |
 | D-13 | 수정 (2026-09-24) | 네트워크 오류·5xx는 30초 뒤 재시도, 404·잘못된 모듈은 계속 캐시 | `wasm/__tests__/loader.test.ts`(wasm 도메인 첫 테스트). 수정 전 1건 실패 확인 |
 | D-09 | 수정 (2026-09-24) | 수정 전 immer로 freeze된 zustand store에서 `Map.clear()`가 throw하고 `loadWorld`가 조용히 `null`을 반환하는 것을 재현. `GaesupStores`의 building/npc store에 선택 `setState`를 추가(비파괴)하고, 있으면 새 Map으로 교체해 구독자에게 통지. getState 전용 adapter는 기존 in-place 경로 유지 | `persistenceSlice.test.ts` 신규 1건. world·save 185 tests 통과 |
