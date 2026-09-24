@@ -6,9 +6,12 @@ const manifest = JSON.parse(readFileSync(filename, 'utf8'));
 let metadata;
 // npm can acknowledge publication before its processing queue exposes the version.
 // Keep deployment gated on the registry instead of retrying an immutable publish.
+// The registry CDN caches 404s for five minutes. Probing a cache-busted URL neither fails on nor
+// poisons the public URL that installs use while the version is still propagating.
 const attempts = 90;
+const fresh = url => `${url}?verify=${Date.now()}`;
 for (let attempt = 0; attempt < attempts; attempt++) {
-  const response = await fetch(`https://registry.npmjs.org/${manifest.name}/${manifest.version}`, { headers: { 'cache-control': 'no-cache' }, signal: AbortSignal.timeout(15000) });
+  const response = await fetch(fresh(`https://registry.npmjs.org/${manifest.name}/${manifest.version}`), { headers: { 'cache-control': 'no-cache' }, signal: AbortSignal.timeout(15000) });
   if (response.ok) { metadata = await response.json(); break; }
   if (response.status !== 404 && response.status !== 429 && response.status < 500) throw new Error(`Registry returned ${response.status}`);
   console.log(`Waiting for registry ${manifest.version}, attempt ${attempt + 1}/${attempts} (${response.status})`);
@@ -19,9 +22,15 @@ if (metadata.gaesupRelease?.sourceCommit !== manifest.sourceCommit || metadata.g
 if (metadata.gitHead && metadata.gitHead !== manifest.releaseCommit) throw new Error('Registry gitHead differs from the release tag.');
 const integrity = metadata.dist.integrity;
 if (!integrity?.startsWith('sha512-')) throw new Error('Expected registry SHA-512 integrity.');
-const response = await fetch(metadata.dist.tarball, { signal: AbortSignal.timeout(60000) });
-if (!response.ok) throw new Error(`Tarball returned ${response.status}`);
-const bytes = Buffer.from(await response.arrayBuffer());
+let bytes;
+for (let attempt = 0; attempt < attempts && !bytes; attempt++) {
+  const response = await fetch(fresh(metadata.dist.tarball), { signal: AbortSignal.timeout(60000) });
+  if (response.ok) { bytes = Buffer.from(await response.arrayBuffer()); break; }
+  if (response.status !== 404 && response.status !== 429 && response.status < 500) throw new Error(`Tarball returned ${response.status}`);
+  console.log(`Waiting for tarball ${manifest.version}, attempt ${attempt + 1}/${attempts} (${response.status})`);
+  if (attempt < attempts - 1) await new Promise(resolve => setTimeout(resolve, 10000));
+}
+if (!bytes) throw new Error('Published tarball is not available.');
 const actual = `sha512-${createHash('sha512').update(bytes).digest('base64')}`;
 if (actual !== integrity) throw new Error('Registry tarball integrity mismatch.');
 writeFileSync('.artifacts/release/package.tgz', bytes);
