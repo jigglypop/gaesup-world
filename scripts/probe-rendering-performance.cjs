@@ -1,22 +1,13 @@
 const assert = require('node:assert/strict');
-const { spawn } = require('node:child_process');
 const fs = require('node:fs');
-const net = require('node:net');
 const path = require('node:path');
 
 const { chromium } = require('@playwright/test');
 const { PNG } = require('pngjs');
 
-const root = path.resolve(__dirname, '..');
+const { ROOT: root, startDevServer } = require('./lib/devServer.cjs');
+
 const output = path.join(root, '.tmp/rendering-performance');
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-async function port() {
-  const server = net.createServer();
-  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  const value = server.address().port;
-  await new Promise(resolve => server.close(resolve));
-  return value;
-}
 function painted(buffer) {
   const png = PNG.sync.read(buffer);
   let visible = 0;
@@ -25,22 +16,11 @@ function painted(buffer) {
 }
 async function main() {
   fs.mkdirSync(output, { recursive: true });
-  const base = `http://127.0.0.1:${await port()}`;
-  const server = spawn(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'), '--host', '127.0.0.1', '--port', new URL(base).port, '--strictPort'],
-    { cwd: root, env: { ...process.env, BROWSER: 'none' }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
-  const serverLog = [];
-  server.stdout.on('data', chunk => serverLog.push(String(chunk)));
-  server.stderr.on('data', chunk => serverLog.push(String(chunk)));
+  const { url: base, logs: serverLog, stop } = await startDevServer();
   let browser;
   const errors = [];
   const result = { scenarios: [] };
   try {
-    let ready = false;
-    for (let i = 0; i < 100; i++) {
-      try { if ((await fetch(base)).ok) { ready = true; break; } } catch {}
-      await delay(200);
-    }
-    assert.ok(ready, 'Vite failed to start');
     browser = await chromium.launch({ channel: process.env.GAESUP_BROWSER_CHANNEL ?? 'chrome', headless: true, args: ['--enable-unsafe-webgpu', '--enable-gpu'] });
     result.browser = browser.version();
     const page = await browser.newPage({ viewport: { width: 960, height: 640 } });
@@ -135,7 +115,7 @@ async function main() {
     console.log(JSON.stringify(result, null, 2));
   } finally {
     await browser?.close();
-    server.kill();
+    stop();
     fs.writeFileSync(path.join(output, 'vite.log'), serverLog.join(''));
     fs.writeFileSync(path.join(output, 'errors.json'), JSON.stringify(errors, null, 2));
   }

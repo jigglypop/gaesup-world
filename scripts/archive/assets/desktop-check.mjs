@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { chromium } from '@playwright/test';
 
-import { buildDelivery } from './build.mjs';
+import { buildDelivery } from '../../assets/build.mjs';
 
 const directory = path.resolve('.asset-work', `desktop-check-${Date.now()}`);
 await mkdir(directory, { recursive: true });

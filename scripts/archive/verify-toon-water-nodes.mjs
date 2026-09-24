@@ -8,7 +8,7 @@ import {
 import ts from 'typescript';
 
 async function loadMaterial(name) {
-  const source = await readFile(new URL(`../src/core/rendering/tsl/${name}.ts`, import.meta.url), 'utf8');
+  const source = await readFile(new URL(`../../src/core/rendering/tsl/${name}.ts`, import.meta.url), 'utf8');
   let js = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 },
   }).outputText;

@@ -2,7 +2,7 @@ const fs = require('node:fs');
 
 const { chromium } = require('@playwright/test');
 
-const { startDevServer, wait } = require('./lib/devServer.cjs');
+const { collectPageErrors, startDevServer, wait } = require('./lib/devServer.cjs');
 
 // examples/main.tsx serves minihome at the root, the seeded R3F world at /world?size=s|m|l.
 const DEFAULT_ROUTE = '/';
@@ -181,8 +181,7 @@ async function measure(options, url) {
     // chrome-headless-shell cannot create a WebGPU device on Windows (dxil.dll); the full chromium channel can.
     browser = await chromium.launch({ headless: true, ...(options.webgpu ? { channel: 'chromium' } : {}), args: browserArgs(options.software, options.webgpu) });
     const page = await browser.newPage({ viewport: VIEWPORT });
-    const pageErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
+    const pageErrors = collectPageErrors(page);
     await page.addInitScript(installProbe, RANDOM_SEED);
     await page.goto(`${url}${options.route}`, { waitUntil: 'domcontentloaded', timeout: CANVAS_TIMEOUT_MS });
     await page.waitForSelector('canvas', { timeout: CANVAS_TIMEOUT_MS });

@@ -1,7 +1,7 @@
 const { chromium } = require('@playwright/test');
 const { PNG } = require('pngjs');
 
-const { startDevServer } = require('./lib/devServer.cjs');
+const { collectPageErrors, startDevServer } = require('./lib/devServer.cjs');
 
 async function expectWorldCanvasPaint(page) {
   await page.waitForFunction(() => {
@@ -126,8 +126,7 @@ async function main() {
   try {
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-    const pageErrors = [];
-    page.on('pageerror', (error) => pageErrors.push(error.message));
+    const pageErrors = collectPageErrors(page);
 
     await page.goto(`${baseUrl}/minimal`, { waitUntil: 'domcontentloaded' });
     await page.getByRole('heading', { name: '미니멀 개숲 런타임' }).waitFor({ timeout: 15_000 });
@@ -149,7 +148,11 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+// probe-webgpu-world reuses the canvas paint check.
+module.exports = { expectWorldCanvasPaint };
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

@@ -239,7 +239,7 @@
     "test:package:built": "node scripts/verify-package-consumer.cjs",
     "test:demo": "node scripts/verify-demo-surface-chunk.cjs",
     "assets:parts": "node scripts/build-character-parts.cjs",
-    "test:browser": "playwright install chromium && node scripts/browser-smoke.cjs",
+    "test:browser": "node scripts/browser-smoke.cjs",
     "bench:frame": "node scripts/frame-harness.cjs",
     "perf:check": "node scripts/frame-harness.cjs --route=/ --runs=3 --webgpu --baseline=scripts/performance/frame-baseline.json",
     "perf:world": "node scripts/frame-harness.cjs --route=/world?size=m --webgpu --runs=3",
@@ -248,9 +248,8 @@
     "test:memory": "jest --config jest.memory.config.js --runInBand",
     "test:memory:verbose": "jest --config jest.memory.config.js --runInBand --verbose --logHeapUsage",
     "test:memory:ci": "jest --config jest.memory.config.js --runInBand --logHeapUsage",
-    "policy:dev": "uv run --project server -- python server/main.py",
     "release": "semantic-release",
-    "publish:full": "npm run prepare && npm publish"
+    "publish:full": "npm publish"
   },
   "dependencies": {
     "@xyflow/react": "^12.11.6",

@@ -1,33 +1,20 @@
 const assert = require('node:assert/strict');
-const { spawn } = require('node:child_process');
 const fs = require('node:fs');
-const net = require('node:net');
 const path = require('node:path');
 
 const { chromium } = require('@playwright/test');
 const { PNG } = require('pngjs');
 
-const root = path.resolve(__dirname, '..');
+const { ROOT: root, startDevServer } = require('./lib/devServer.cjs');
+
 const output = path.join(root, '.tmp/unified-world');
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function main() {
   fs.mkdirSync(output, { recursive: true });
-  const socket = net.createServer();
-  await new Promise(resolve => socket.listen(0, '127.0.0.1', resolve));
-  const port = socket.address().port;
-  await new Promise(resolve => socket.close(resolve));
-  const base = `http://127.0.0.1:${port}`;
-  const server = spawn(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'), '--host', '127.0.0.1', '--port', String(port), '--strictPort'], { cwd: root, env: { ...process.env, BROWSER: 'none' }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
-  const logs = [], errors = [], warnings = [];
-  server.stdout.on('data', data => logs.push(String(data)));
-  server.stderr.on('data', data => logs.push(String(data)));
+  const { url: base, logs, stop } = await startDevServer();
+  const errors = [], warnings = [];
   let browser;
   const result = {};
   try {
-    for (let i = 0; i < 100; i++) {
-      try { if ((await fetch(base)).ok) break; } catch {}
-      await delay(200);
-    }
     browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--enable-unsafe-webgpu', '--enable-gpu'] });
     result.browser = browser.version();
     const page = await browser.newPage({ viewport: { width: 960, height: 640 } });
@@ -128,7 +115,7 @@ async function main() {
     fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result, null, 2));
   } finally {
-    await browser?.close(); server.kill();
+    await browser?.close(); stop();
     fs.writeFileSync(path.join(output, 'vite.log'), logs.join(''));
     fs.writeFileSync(path.join(output, 'errors.json'), JSON.stringify({ errors, warnings, result }, null, 2));
   }

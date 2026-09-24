@@ -1,13 +1,11 @@
 const assert = require('node:assert/strict');
-const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
 const { chromium } = require('@playwright/test');
 
-const { expectWorldCanvasPaint, findPort, waitForServer } = require('./browser-smoke.cjs');
-
-const root = path.resolve(__dirname, '..');
+const { expectWorldCanvasPaint } = require('./browser-smoke.cjs');
+const { ROOT: root, startProbeServer } = require('./lib/devServer.cjs');
 
 async function inspectRenderer(page) {
   return page.evaluate(async () => {
@@ -25,17 +23,10 @@ async function inspectRenderer(page) {
 }
 
 async function main() {
-  const logs = [];
-  const baseUrl = process.env.GAESUP_PROBE_URL ?? `http://127.0.0.1:${await findPort()}`;
-  const server = process.env.GAESUP_PROBE_URL ? null : spawn(process.execPath, [
-    path.join(root, 'node_modules/vite/bin/vite.js'), '--host', '127.0.0.1',
-    '--port', new URL(baseUrl).port, '--strictPort',
-  ], { cwd: root, env: { ...process.env, BROWSER: 'none' }, stdio: ['ignore', 'pipe', 'pipe'] });
-  server?.stdout.on('data', (chunk) => logs.push(chunk.toString()));
-  server?.stderr.on('data', (chunk) => logs.push(chunk.toString()));
+  const server = await startProbeServer();
+  const baseUrl = server.url;
   let browser;
   try {
-    await waitForServer(baseUrl, logs);
     browser = await chromium.launch({
       channel: process.env.GAESUP_BROWSER_CHANNEL ?? (process.platform === 'win32' ? 'chrome' : 'chromium'),
       headless: true,
@@ -85,7 +76,7 @@ async function main() {
     console.log(JSON.stringify(result, null, 2));
   } finally {
     await browser?.close();
-    server?.kill();
+    server.stop();
   }
 }
 

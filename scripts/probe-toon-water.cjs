@@ -7,15 +7,18 @@ const { chromium } = require('@playwright/test');
 const { PNG } = require('pngjs');
 const ts = require('typescript');
 
+const { collectPageErrors, startProbeServer } = require('./lib/devServer.cjs');
+
 (async () => {
   const flag = process.argv.includes('--flag');
   const output = fs.mkdtempSync(
     path.join(os.tmpdir(), flag ? 'gaesup-flag-' : 'gaesup-toon-water-'),
   );
+  const server = await startProbeServer();
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 660, height: 350 } });
-    const errors = [];
+    const errors = collectPageErrors(page);
     const root = path.resolve(__dirname, '..');
     const replacements = new Map([
       ['three', '/water-vendor/three.module.js'],
@@ -81,7 +84,6 @@ const ts = require('typescript');
         }),
       );
     }
-    page.on('pageerror', (error) => errors.push(error.message));
     page.on('console', (message) => {
       if (message.type() === 'error') errors.push(message.text());
     });
@@ -91,7 +93,7 @@ const ts = require('typescript');
         body: '<!doctype html><html><body style="margin:0;display:flex;gap:10px;background:#222"><script type="module" src="/scripts/fixtures/toon-water-compare.js"></script></body></html>',
       }),
     );
-    await page.goto('http://127.0.0.1:5173/water-comparison');
+    await page.goto(`${server.url}/water-comparison`);
     await page
       .waitForFunction(() => !!window.waterCompare, undefined, { timeout: 30000 })
       .catch((error) => {
@@ -169,6 +171,7 @@ const ts = require('typescript');
     }
   } finally {
     await browser.close();
+    server.stop();
   }
 })().catch((error) => {
   process.stderr.write(`${error.stack}\n`);

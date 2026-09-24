@@ -11,7 +11,7 @@ import { KHRMaterialsUnlit } from '@gltf-transform/extensions';
 import { dedup, mergeDocuments, prune, unpartition } from '@gltf-transform/functions';
 import validator from 'gltf-validator';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const ARCHIVE_URL = 'https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip';
 const work = path.join(root, '.asset-work/kenney');
 const archive = path.join(work, 'nature-kit.zip');

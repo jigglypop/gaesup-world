@@ -3,11 +3,15 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const { chromium } = require('@playwright/test');
+
+const { startProbeServer } = require('./lib/devServer.cjs');
+
 const output = path.resolve('.artifacts/minihome', `town-${new Date().toISOString().replace(/[:.]/g, '-')}`);
 fs.mkdirSync(output, { recursive: true });
-const base = process.env.GAESUP_PROBE_URL ?? 'http://127.0.0.1:5174';
 
 (async () => {
+  const server = await startProbeServer();
+  const base = server.url;
   const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--enable-unsafe-webgpu', '--enable-gpu'] });
   const errors = []; const result = { output, checks: [], errors };
   async function bind(page) {
@@ -157,5 +161,5 @@ const base = process.env.GAESUP_PROBE_URL ?? 'http://127.0.0.1:5174';
     result.checks.push('two independent browser sessions / real remote avatar / proximity chat / host world sync / guest storage preserved after host transfer / leave cleanup');
     assert.deepEqual(errors, []);
     console.log(JSON.stringify({ output, checks: result.checks, errors }, null, 2));
-  } finally { fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify(result, null, 2)); await browser.close(); }
+  } finally { fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify(result, null, 2)); await browser.close(); server.stop(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

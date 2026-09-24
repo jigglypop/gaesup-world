@@ -2,17 +2,20 @@ const path = require('node:path');
 
 const { chromium, expect } = require('@playwright/test');
 
+const { startProbeServer } = require('./lib/devServer.cjs');
+
 (async () => {
   const startedAt = Date.now();
   const heartbeat = setInterval(() => console.log(JSON.stringify({ stage: 'heartbeat', elapsedMs: Date.now() - startedAt })), 10000);
   heartbeat.unref();
+  const server = await startProbeServer();
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
     page.setDefaultTimeout(15000);
     const errors = [];
     page.on('pageerror', (error) => { errors.push(error.message); console.error(error.message); });
-    await page.goto('http://127.0.0.1:5173/creator');
+    await page.goto(`${server.url}/creator`);
     const hierarchy = page.getByRole('button', { name: '계층', exact: true });
     await hierarchy.waitFor({ state: 'visible' });
     await hierarchy.click();
@@ -93,6 +96,7 @@ const { chromium, expect } = require('@playwright/test');
   } finally {
     clearInterval(heartbeat);
     await browser.close();
+    server.stop();
   }
 })().catch((error) => {
   console.error(error);

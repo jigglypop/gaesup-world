@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const destination = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../public/texture/forest-ground');
+const destination = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../public/texture/forest-ground');
 const id = 'aerial_grass_rock';
 const response = await fetch(`https://api.polyhaven.com/files/${id}`);
 if (!response.ok) throw new Error(`Source API: ${response.status}`);

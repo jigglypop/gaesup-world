@@ -4,9 +4,12 @@ const path = require('node:path');
 
 const { chromium } = require('@playwright/test');
 
+const { startProbeServer } = require('./lib/devServer.cjs');
+
 async function main() {
   const output = path.resolve('.artifacts/minihome', new Date().toISOString().replace(/[:.]/g, '-'));
   fs.mkdirSync(output, { recursive: true });
+  const server = await startProbeServer();
   const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--enable-unsafe-webgpu', '--enable-gpu'] });
   const errors = [];
   const screenshots = [];
@@ -28,7 +31,7 @@ async function main() {
     });
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => { if (/GPUValidationError|Invalid RenderPipeline/.test(message.text())) errors.push(message.text()); });
-    await page.goto(process.env.GAESUP_PROBE_URL ?? 'http://127.0.0.1:5174');
+    await page.goto(server.url);
     await page.waitForFunction(() => !!window.miniroom, { timeout: 60000 });
     const waitStyle = style => page.waitForFunction(expected => {
       const avatar = window.miniroom?.diagnostics().avatar;
@@ -105,7 +108,7 @@ async function main() {
     assert.deepEqual(errors, []);
   } finally {
     fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ evidence, errors, screenshots }, null, 2));
-    await browser.close(); console.log(JSON.stringify({ output, evidence, errors }, null, 2));
+    await browser.close(); server.stop(); console.log(JSON.stringify({ output, evidence, errors }, null, 2));
   }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

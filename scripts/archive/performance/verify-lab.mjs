@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import { chromium } from '@playwright/test';
 
-import { exerciseWorldKeyboard } from './keyboard-driver.mjs';
+import { exerciseWorldKeyboard } from '../../performance/keyboard-driver.mjs';
 
 const url = process.argv[2] ?? 'http://127.0.0.1:5191/performance';
 const output = path.resolve('.artifacts/performance', `lab-ui-${new Date().toISOString().replace(/[:.]/g, '-')}`);

@@ -6,7 +6,7 @@ const { chromium } = require('@playwright/test');
 
 async function main() {
   const baseUrl = process.env.GAESUP_PROBE_URL ?? 'http://127.0.0.1:5174';
-  const output = path.resolve(__dirname, '../.tmp/engine-showcase');
+  const output = path.resolve(__dirname, '../../.tmp/engine-showcase');
   fs.mkdirSync(output, { recursive: true });
   const browser = await chromium.launch({
     channel: 'chrome',

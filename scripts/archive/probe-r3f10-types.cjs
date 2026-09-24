@@ -3,7 +3,7 @@ const path = require('node:path');
 const ts = require('typescript');
 
 if (!process.argv[2]) throw Error('Usage: node scripts/probe-r3f10-types.cjs <isolated-fixture-directory>');
-const workspace = path.resolve(__dirname, '..');
+const workspace = path.resolve(__dirname, '../..');
 const fixture = path.resolve(process.argv[2]);
 const configPath = path.join(workspace, 'tsconfig.json');
 const config = ts.readConfigFile(configPath, ts.sys.readFile);

@@ -5,8 +5,11 @@ const path = require('node:path');
 const { chromium } = require('@playwright/test');
 const { PNG } = require('pngjs');
 
+const { startProbeServer } = require('./lib/devServer.cjs');
+
 async function main() {
-  const url = process.env.GAESUP_PROBE_URL ?? 'http://127.0.0.1:5174';
+  const server = await startProbeServer();
+  const { url } = server;
   const output = path.resolve(process.env.GAESUP_PROBE_OUTPUT ?? path.join(__dirname, '../.tmp/minihome'));
   const deviceScaleFactor = Number(process.env.GAESUP_PROBE_DPR ?? '1');
   assert.ok(Number.isFinite(deviceScaleFactor) && deviceScaleFactor >= 1 && deviceScaleFactor <= 3);
@@ -307,6 +310,7 @@ async function main() {
     console.log(JSON.stringify(result, null, 2));
   } finally {
     await browser.close();
+    server.stop();
   }
 }
 main().catch((error) => {

@@ -3,13 +3,15 @@ const path = require('node:path');
 
 const { chromium, expect } = require('@playwright/test');
 
+const { collectPageErrors, startProbeServer } = require('./lib/devServer.cjs');
+
 (async () => {
+  const server = await startProbeServer();
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-    const errors = [];
+    const errors = collectPageErrors(page);
     const chats = [];
-    page.on('pageerror', (error) => errors.push(error.message));
     await page.routeWebSocket('ws://localhost:8090', (socket) => {
       socket.onMessage((raw) => {
         const message = JSON.parse(String(raw));
@@ -25,7 +27,7 @@ const { chromium, expect } = require('@playwright/test');
         if (message.ackId) socket.send(JSON.stringify({ type: 'Ack', ackId: message.ackId }));
       });
     });
-    await page.goto('http://127.0.0.1:5173/multiplayer');
+    await page.goto(`${server.url}/multiplayer`);
     await expect(page.getByRole('form', { name: '함께 플레이하기' })).toBeVisible();
     await page.getByLabel('플레이어 이름', { exact: true }).fill('패널 검증');
     await page.getByRole('button', { name: '방에 입장하기' }).click();
@@ -73,5 +75,6 @@ const { chromium, expect } = require('@playwright/test');
     console.log('Panel layout, synthetic IME guard, chat and disconnect passed; no page errors.');
   } finally {
     await browser.close();
+    server.stop();
   }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

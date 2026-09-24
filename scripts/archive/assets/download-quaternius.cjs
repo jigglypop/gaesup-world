@@ -4,7 +4,7 @@ const path = require('node:path');
 const { chromium } = require('@playwright/test');
 
 async function main() {
-  const output = path.resolve(__dirname, '../../.asset-work/quaternius');
+  const output = path.resolve(__dirname, '../../../.asset-work/quaternius');
   const packs = {
     'stylized-nature-megakit': 'Stylized Nature MegaKit[Standard].zip',
     'universal-base-characters': 'Universal Base Characters[Standard].zip',

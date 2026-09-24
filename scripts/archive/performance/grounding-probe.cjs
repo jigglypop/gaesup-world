@@ -4,7 +4,7 @@ const path = require('node:path');
 const { performance } = require('node:perf_hooks');
 
 async function main() {
-  const root = path.resolve(__dirname, '../..');
+  const root = path.resolve(__dirname, '../../..');
   const output = path.join(root, '.artifacts/performance/grounding', new Date().toISOString().replace(/[:.]/g, '-'));
   fs.mkdirSync(output, { recursive: true });
   const ts = require('typescript');
@@ -12,7 +12,7 @@ async function main() {
   const source = fs.readFileSync(path.join(root, 'src/core/motions/core/system/GroundContactProbe.ts'), 'utf8');
   fs.writeFileSync(modulePath, ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText);
   const { GroundContactProbe } = require(modulePath);
-  const { sourceIdentity } = await import('./source-identity.mjs');
+  const { sourceIdentity } = await import('../../performance/source-identity.mjs');
   const modules = process.argv.slice(2);
   if (!modules.length) modules.push(createRequire(require.resolve('@react-three/rapier')).resolve('@dimforge/rapier3d-compat'));
   const result = { source: sourceIdentity(root), kind: 'exploratory-node-contact-query', results: [] };

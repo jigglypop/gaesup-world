@@ -10,7 +10,7 @@ if (!process.argv[2])
 const fixtureRequire = Module.createRequire(
   path.join(path.resolve(process.argv[2]), 'package.json'),
 );
-const workspaceRequire = Module.createRequire(path.join(__dirname, '..', 'package.json'));
+const workspaceRequire = Module.createRequire(path.join(__dirname, '..', '..', 'package.json'));
 const installedRapier = process.argv.includes('--installed-rapier');
 if (installedRapier) {
   const rapierRequire = Module.createRequire(fixtureRequire.resolve('@react-three/rapier'));

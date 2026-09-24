@@ -4,6 +4,7 @@ const path = require('node:path');
 
 const { chromium, expect } = require('@playwright/test');
 
+const { collectPageErrors, startProbeServer } = require('./lib/devServer.cjs');
 const { sceneSnapshot } = require('./probe-social-world.cjs');
 
 async function state(page) {
@@ -24,12 +25,12 @@ async function state(page) {
 async function main() {
   const output = path.resolve(__dirname, '../.tmp/editor-return-proof');
   fs.mkdirSync(output, { recursive: true });
+  const server = await startProbeServer();
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
+  const errors = collectPageErrors(page);
   try {
-    await page.goto(process.env.GAESUP_PROBE_URL ?? 'http://127.0.0.1:5188/world');
+    await page.goto(`${server.url}/world`);
     await expect(page.getByRole('button', { name: '저장', exact: true })).toBeEnabled({ timeout: 45000 });
     await expect.poll(async () => (await sceneSnapshot(page)).skinned.length, { timeout: 30000 }).toBeGreaterThan(0);
     await page.waitForTimeout(1500);
@@ -79,6 +80,6 @@ async function main() {
     assert.equal(after.options.zoom, 1);
     assert.notEqual(editor.options.zoom, 1, 'Editor wheel must change zoom');
     assert.deepEqual(errors, []);
-  } finally { await browser.close(); }
+  } finally { await browser.close(); server.stop(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

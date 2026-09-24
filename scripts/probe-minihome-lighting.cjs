@@ -6,9 +6,12 @@ const path = require('node:path');
 const { chromium } = require('@playwright/test');
 const { PNG } = require('pngjs');
 
+const { startProbeServer } = require('./lib/devServer.cjs');
+
 async function main() {
   const output = path.resolve('.artifacts/minihome', `lighting-${new Date().toISOString().replace(/[:.]/g, '-')}`);
   fs.mkdirSync(output, { recursive: true });
+  const server = await startProbeServer();
   const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--enable-unsafe-webgpu', '--enable-gpu'] });
   const rows = []; const errors = [];
   try {
@@ -28,7 +31,7 @@ async function main() {
       await page.getByLabel(label, { exact: true }).selectOption(value);
       if (label === '미니룸 아바타') await page.waitForFunction(style => window.miniroom?.diagnostics().avatar.style === style, value, { timeout: 60000 });
     }
-    await page.goto(process.env.GAESUP_PROBE_URL ?? 'http://127.0.0.1:5174'); await shot('01-initial');
+    await page.goto(server.url); await shot('01-initial');
     await select('미니룸 아바타', 'blue'); await shot('02-avatar');
     await select('미니룸 조명', 'evening'); await shot('03-evening');
     await select('미니룸 화질', 'economy'); await shot('04-economy');
@@ -44,7 +47,7 @@ async function main() {
     assert.ok(rows.every(row => row.darkFraction < 0.1), 'Unlit room silhouette detected; inspect stage captures.');
   } finally {
     fs.writeFileSync(path.join(output, 'manifest.json'), JSON.stringify({ output, rows, errors }, null, 2));
-    await browser.close(); console.log(`Evidence: ${output}`);
+    await browser.close(); server.stop(); console.log(`Evidence: ${output}`);
   }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

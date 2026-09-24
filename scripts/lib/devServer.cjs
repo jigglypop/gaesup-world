@@ -57,6 +57,9 @@ async function startDevServer() {
   server.stdout.on('data', (chunk) => logs.push(chunk.toString()));
   server.stderr.on('data', (chunk) => logs.push(chunk.toString()));
   const stop = () => server.kill();
+  // A probe that fails before its finally block (e.g. no browser installed) must still exit and stop Vite.
+  for (const handle of [server, server.stdout, server.stderr]) handle.unref();
+  process.once('exit', stop);
   try {
     await waitForServer(url, logs);
   } catch (error) {
@@ -66,4 +69,17 @@ async function startDevServer() {
   return { url, logs, stop };
 }
 
-module.exports = { ROOT, wait, startDevServer };
+/** GAESUP_PROBE_URL targets an already running server; otherwise start one on a free port. */
+async function startProbeServer() {
+  const url = process.env.GAESUP_PROBE_URL;
+  return url ? { url: url.replace(/\/+$/, ''), logs: [], stop: () => {} } : startDevServer();
+}
+
+/** Uncaught page errors, recorded for the probe to assert on before it reports success. */
+function collectPageErrors(page) {
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  return errors;
+}
+
+module.exports = { ROOT, wait, startDevServer, startProbeServer, collectPageErrors };

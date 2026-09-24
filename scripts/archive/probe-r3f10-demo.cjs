@@ -4,7 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 if (!process.argv[2]) throw Error('Usage: node scripts/probe-r3f10-demo.cjs <isolated-fixture-directory>');
-const workspace = path.resolve(__dirname, '..');
+const workspace = path.resolve(__dirname, '../..');
 const fixture = path.resolve(process.argv[2]);
 const packagePath = name => fs.realpathSync(path.join(fixture, 'node_modules', name)).replaceAll('\\', '/');
 const boundary = path.join(workspace, 'src/core/rendering/legacyDrei.ts').replaceAll('\\', '/');

@@ -3,7 +3,7 @@ const { createRequire } = require('node:module');
 const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
-const workspace = path.resolve(__dirname, '..');
+const workspace = path.resolve(__dirname, '../..');
 const requireWorkspace = createRequire(path.join(workspace, 'package.json'));
 const { chromium } = requireWorkspace('@playwright/test');
 if (!process.argv[2])

@@ -8,7 +8,7 @@ import { dedup, prune, mergeDocuments, unpartition } from '@gltf-transform/funct
 import validator from 'gltf-validator';
 import sharp from 'sharp';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const source = path.join(root, '.asset-work/quaternius/nature-standard');
 const destination = path.join(root, 'public/gltf/nature');
 const license = await readFile(path.join(source, 'License_Standard.txt'));

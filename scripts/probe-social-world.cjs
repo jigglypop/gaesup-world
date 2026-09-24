@@ -4,7 +4,8 @@ const path = require('node:path');
 
 const { chromium, expect } = require('@playwright/test');
 
-const baseUrl = process.env.GAESUP_PROBE_URL ?? 'http://127.0.0.1:5188';
+const { collectPageErrors, startProbeServer } = require('./lib/devServer.cjs');
+
 const output = path.resolve(__dirname, '../.tmp/social-world-proof');
 
 async function sceneSnapshot(page) {
@@ -33,11 +34,12 @@ async function sceneSnapshot(page) {
 
 async function main() {
   fs.mkdirSync(output, { recursive: true });
+  const server = await startProbeServer();
+  const baseUrl = server.url;
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  const errors = [];
+  const errors = collectPageErrors(page);
   const legacyAssets = [];
-  page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   page.on('request', (request) => { if (/ally.*\.glb/i.test(request.url())) legacyAssets.push(request.url()); });
   try {
@@ -107,6 +109,7 @@ async function main() {
     throw error;
   } finally {
     await browser.close();
+    server.stop();
   }
 }
 module.exports = { sceneSnapshot };
