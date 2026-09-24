@@ -90,7 +90,12 @@ jest.mock('../../../weather', () => ({
 
 // mesh 하위 컴포넌트들은 GLSL 셰이더를 import하므로 jsdom 환경에서는 모킹.
 jest.mock('../mesh/sakura', () => ({
-  SakuraBatch: () => <group name="sakura-batch" />,
+  SakuraBatch: ({ trees }: { trees: unknown[] }) => <group name="sakura-batch" userData={{ trees }} />,
+}));
+
+jest.mock('../mesh/model', () => ({
+  __esModule: true,
+  default: ({ label }: { label?: string }) => <group name={`model-${label}`} />,
 }));
 
 jest.mock('../mesh/flag', () => ({
@@ -337,6 +342,34 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       expectSceneMissingName(renderer, 'tile-system-tile-group-2');
 
       renderer.unmount();
+    });
+
+    test('residency changes filter models but never rebuild batched objects', async () => {
+      const object = (id: string, type: 'tree' | 'model', x: number) => ({
+        id, type, position: { x, y: 0, z: 0 }, ...(type === 'model' ? { config: { modelLabel: id } } : {}),
+      });
+      mockStore({ objects: [object('near-tree', 'tree', 0), object('far-tree', 'tree', 500), object('near-model', 'model', 0), object('far-model', 'model', 500)] });
+      useBuildingVisibilityStore.getState().setVisible({
+        tileIds: new Set(), wallIds: new Set(), blockIds: new Set(), objectIds: new Set(['near-tree', 'near-model']),
+      });
+
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+      try {
+        const treesOf = () => (renderer.scene.findByProps({ name: 'sakura-batch' }).props['userData'] as { trees: unknown[] }).trees;
+        const trees = treesOf();
+        expect(trees).toHaveLength(2);
+        expectSceneHasName(renderer, 'model-near-model');
+        expectSceneMissingName(renderer, 'model-far-model');
+        useBuildingVisibilityStore.getState().setVisible({
+          tileIds: new Set(), wallIds: new Set(), blockIds: new Set(), objectIds: new Set(['far-tree', 'far-model']),
+        });
+        await renderer.update(<BuildingSystem />);
+        expect(treesOf()).toBe(trees);
+        expectSceneHasName(renderer, 'model-far-model');
+        expectSceneMissingName(renderer, 'model-near-model');
+      } finally {
+        await renderer.unmount();
+      }
     });
 
     test('visibility로 숨겨진 그룹도 물리 collider는 유지해야 함', async () => {

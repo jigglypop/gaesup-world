@@ -130,11 +130,14 @@ export const BuildingSystem = React.memo(function BuildingSystem({
     const list = blocks ?? [];
     return visibilityReady ? list.filter((block) => visibleBlockIds.has(block.id)) : list;
   }, [blocks, visibilityReady, visibleBlockIds]);
-  const buckets = useMemo(
-    () => bucketObjects(visibilityReady ? objects.filter((object) => visibleObjectIds.has(object.id)) : objects),
-    [objects, visibilityReady, visibleObjectIds],
+  // Batched objects draw in a fixed number of calls however many there are, so they are built once from every
+  // object and residency changes never rebuild them. Only per-object models follow residency.
+  const buckets = useMemo(() => bucketObjects(objects), [objects]);
+  const { sakura: sakuraEntries, flag: flagObjects, fire: fireEntries, billboard: billboardObjects } = buckets;
+  const modelObjects = useMemo(
+    () => (visibilityReady ? buckets.model.filter((object) => visibleObjectIds.has(object.id)) : buckets.model),
+    [buckets.model, visibilityReady, visibleObjectIds],
   );
-  const { sakura: sakuraEntries, flag: flagObjects, fire: fireEntries, billboard: billboardObjects, model: modelObjects } = buckets;
 
   return (
     <Suspense fallback={null}>
