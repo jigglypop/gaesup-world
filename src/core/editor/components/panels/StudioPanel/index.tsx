@@ -12,6 +12,7 @@ import {
   createAgentBehaviorBlueprintFromNPCBehaviorBlueprint,
   createNPCBehaviorBlueprintFromInstance,
   useNPCStore,
+  useNPCStoreApi,
   type AgentBehaviorBlueprint,
   type NPCBehaviorBlueprint,
 } from '../../../../npc';
@@ -89,22 +90,8 @@ export function StudioPanel({
     () => assetIds.map((id) => assetRecords[id]).filter((asset): asset is NonNullable<typeof asset> => Boolean(asset)),
     [assetIds, assetRecords],
   );
-  const npcInstances = useNPCStore((state) => state.instances);
-  const npcBehaviorBlueprints = useMemo(
-    () => Array.from(npcInstances.values()).map((instance) =>
-      createNPCBehaviorBlueprintFromInstance(instance, { id: `npc-behavior-${instance.id}` }),
-    ),
-    [npcInstances],
-  );
-  const agentBehaviorBlueprints = useMemo(
-    () => npcBehaviorBlueprints.map((blueprint) =>
-      createAgentBehaviorBlueprintFromNPCBehaviorBlueprint(blueprint, {
-        id: `agent-behavior-${blueprint.id}`,
-        ownerType: 'npc',
-      }),
-    ),
-    [npcBehaviorBlueprints],
-  );
+  const npcStore = useNPCStoreApi();
+  const npcCount = useNPCStore((state) => state.instances.size);
 
   const [slot, setSlot] = useState(defaultSlot);
   const [bundleId, setBundleId] = useState(defaultBundleId);
@@ -133,6 +120,14 @@ export function StudioPanel({
   };
 
   const buildBundle = useCallback((): ContentBundle => {
+    // Converted on demand: NPC decision ticks must not rebuild every blueprint while the panel is open.
+    const npcBehaviorBlueprints = Array.from(npcStore.getState().instances.values(), (instance) =>
+      createNPCBehaviorBlueprintFromInstance(instance, { id: `npc-behavior-${instance.id}` }));
+    const agentBehaviorBlueprints = npcBehaviorBlueprints.map((blueprint) =>
+      createAgentBehaviorBlueprintFromNPCBehaviorBlueprint(blueprint, {
+        id: `agent-behavior-${blueprint.id}`,
+        ownerType: 'npc',
+      }));
     const context: StudioPanelBundleContext = {
       assets,
       bundleId,
@@ -152,13 +147,12 @@ export function StudioPanel({
       agentBehaviorBlueprints,
     });
   }, [
-    agentBehaviorBlueprints,
     assets,
     buildBundleProp,
     bundleId,
     bundleName,
     gameplayEvents,
-    npcBehaviorBlueprints,
+    npcStore,
     saveSystem,
     version,
   ]);
@@ -272,7 +266,7 @@ export function StudioPanel({
           </div>
         )}
         <div className="studio-panel__meta">
-          에셋 {assets.length}개 · 이벤트 {gameplayEvents.length}개 · NPC 행동 {npcBehaviorBlueprints.length}개 · 에이전트 행동 {agentBehaviorBlueprints.length}개 · 저장 도메인 {Array.from(saveSystem.getBindings()).length}개
+          에셋 {assets.length}개 · 이벤트 {gameplayEvents.length}개 · NPC 행동 {npcCount}개 · 에이전트 행동 {npcCount}개 · 저장 도메인 {Array.from(saveSystem.getBindings()).length}개
         </div>
         <div className="studio-panel__actions">
           <button type="button" disabled={busy} onClick={() => { void runTask('번들 검증', validateWorld); }}>번들 검증</button>

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 import { useThree } from '@react-three/fiber';
+import { useShallow } from 'zustand/react/shallow';
 
 import { useEngineFrame } from '@core/runtime/frame';
 
@@ -14,11 +15,22 @@ import { NPCInstance } from '../NPCInstance';
 import { isNPCInLodRange } from './lod';
 import './styles.css';
 
+/** Subscribes to one NPC, so a change to another NPC never reaches this subtree. */
+const NPCInstanceSlot = memo(function NPCInstanceSlot({ id, isEditMode, onSelect }: {
+  id: string;
+  isEditMode: boolean;
+  onSelect: (id: string) => void;
+}) {
+  const instance = useNPCStore((state) => state.instances.get(id));
+  return instance ? <NPCInstance instance={instance} isEditMode={isEditMode} onSelect={onSelect} /> : null;
+});
+
 export function NPCSystem() {
   const simulation = useNPCSimulation();
   const gl = useThree((state) => state.gl);
   const getThreeState = useThree((state) => state.get);
-  const instances = useNPCStore((state) => state.instances);
+  // Only additions and removals re-render the list; decision ticks update single NPCs.
+  const instanceIds = useNPCStore(useShallow((state) => Array.from(state.instances.keys())));
   const npcStore = useNPCStoreApi();
   const buildingStore = useBuildingStoreApi();
   const selectedInstanceId = useNPCStore((state) => state.selectedInstanceId);
@@ -67,7 +79,7 @@ export function NPCSystem() {
 
     const cam = getThreeState().camera.position;
     const next = new Set<string>();
-    instances.forEach((inst) => {
+    npcStore.getState().instances.forEach((inst) => {
       const [x, y, z] = simulation.getPose(inst.id)?.position ?? inst.position;
       const dx = x - cam.x, dy = y - cam.y, dz = z - cam.z;
       const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
@@ -137,17 +149,10 @@ export function NPCSystem() {
         navigation={navigation}
         enabled={navigationReady}
       />
-      {Array.from(instances.values()).map((instance) => {
+      {instanceIds.map((id) => {
         // In edit mode show all; otherwise respect LOD.
-        if (!isNPCMode && !visibleIds.has(instance.id)) return null;
-        return (
-          <NPCInstance
-            key={instance.id}
-            instance={instance}
-            isEditMode={isNPCMode}
-            onSelect={selectInstance}
-          />
-        );
+        if (!isNPCMode && !visibleIds.has(id)) return null;
+        return <NPCInstanceSlot key={id} id={id} isEditMode={isNPCMode} onSelect={selectInstance} />;
       })}
     </group>
   );
