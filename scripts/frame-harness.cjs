@@ -4,7 +4,7 @@ const { chromium } = require('@playwright/test');
 
 const { startDevServer, wait } = require('./lib/devServer.cjs');
 
-// examples/main.tsx serves minihome at the root; unknown paths such as /world fall back to it.
+// examples/main.tsx serves minihome at the root, the seeded R3F world at /world?size=s|m|l.
 const DEFAULT_ROUTE = '/';
 const DEFAULT_DURATION_MS = 20_000;
 const WARMUP_MS = 8_000;

@@ -104,15 +104,30 @@ Git Bash에서는 `MSYS_NO_PATHCONV=1` 없이 `--route=/...`가 Windows 경로�
 
 마이크로 벤치는 jest 안에서 재지 않는다. jest의 vm 컨텍스트(jsdom, node 환경 모두)에서는 `Math` 같은 전역 조회가 느려서, 같은 코드가 순수 Node보다 수십~수백 배 느리게 나온다(20k 타일 그룹 bounds 계산이 jest에서 9.7ms, 순수 Node에서 0.06ms). 상대 비교만 참고하고 절대값은 TypeScript로 트랜스파일해 순수 Node에서 잰다. 13-d의 `addTile` 수치는 jest(jsdom) 기준이다.
 
+### 3.1.3 R3F 월드 기준선 [실측] (2026-09-25, 10-a)
+
+`pnpm perf:world`(= `frame-harness --route=/world?size=m --webgpu`). `examples/world`가 실제 `GaesupWorld` + `WorldPhysics` + `GaesupController` + `BuildingController`에 결정적 건설 데이터(`seed.ts`, S 900·M 10,000·L 40,000 타일, 1/6은 잔디·물·모래)를 올린다. 조건은 3.1.2와 같다(1회).
+
+| 지표 | S | M |
+|---|---|---|
+| fps / frame p50 / p95 | 9.7 / 50ms / 233ms | 10.1 / 50ms / 200ms |
+| CPU script | 96.3ms/frame | 90.5ms/frame |
+| heap 할당, GC | 7,293KB/frame, 54회/20초 | 7,264KB/frame, 57회/20초 |
+| draw call / `render()` | 493 / 3 | 467 / 3 |
+| triangles | 약 197만 | 약 191만 |
+| geometries / textures | 2,062 / 998 | 2,091 / 954 |
+
+S와 M이 거의 같다. 거리 상주(12-e)로 플레이어 주변 140m만 올라오기 때문이고, 비용은 월드 크기가 아니라 상주 내용의 구조에서 나온다. 장면 그래프는 약 1,950 객체(Object3D 1,011, Group 419, Mesh 458)이고, CPU 프로파일(5.5초) 상위는 세 갈래다.
+- 장면 그래프 행렬 갱신(`updateMatrixWorld`·`updateWorldMatrix`·`multiplyMatrices`) 약 11ms/frame: 타일 collider가 Object3D로 장면에 있다(11-k).
+- 카메라 충돌이 매 프레임 메시마다 world box를 만든다(`setFromPoints`·`Box3.applyMatrix4`·`sweepCameraPath`) 약 10ms/frame(11-b).
+- WebGPU 객체별 처리(`_update`·`_renderObjectDirect`·`_projectObject`·`writeBuffer`) 약 30ms/frame: draw 약 480. 잔디가 타일마다 메시와 텍스처 2장을 가진다(12-F09, 12-f).
+
 ### 3.2 미측정 기준선
 
 아래 수치는 이번 분석에서 얻지 못했다. [10](10-perf-budget.md) slice 10-a에서 측정해 이 표를 채운다.
 
 | 지표 | 측정 방법 |
 |---|---|
-| 기준 장면 frame time p50/p95/p99 | `scripts/frame-harness.cjs` + seeded 월드 |
-| 프레임당 heap 할당, GC 횟수 | frame-harness의 precise memory |
-| draw call, programs, geometries, textures | `readRendererStats` (`src/core/perf/rendererStats.ts`) |
 | 섀도 pass draw call | Spector.js 또는 renderer info 분리 계측 |
 | 정지 카메라와 이동 카메라의 React commit 수 | React Profiler API |
 | 원격 플레이어 1명당 송신 바이트/초 | ws mock 계측 |

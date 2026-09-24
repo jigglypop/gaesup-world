@@ -7,6 +7,8 @@ const Page = route.startsWith('performance')
   ? lazy(() => import('./performance/PerformanceLab'))
   : route.startsWith('engine')
   ? lazy(() => import('./engine/EngineShowcase'))
+  : route.startsWith('world')
+  ? lazy(() => import('./world/PerfWorld'))
   : lazy(() => import('./minihome/Minihome'));
 
 const root = document.getElementById('root');
