@@ -191,13 +191,6 @@
     "public/gltf/props/**/*",
     "README.md",
     "README.ko.md",
-    "docs/minihome.md",
-    "docs/minihome.en.md",
-    "docs/unity*.md",
-    "docs/release-1.0.32.md",
-    "docs/world-physics-clock.md",
-    "docs/physics-grounding.md",
-    "docs/2026-09-19-web-studio-plan*.md",
     "integrations/unity/**/*",
     "LICENSE.txt"
   ],

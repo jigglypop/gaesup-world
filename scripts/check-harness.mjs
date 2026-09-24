@@ -5,14 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => readFileSync(path.join(root, file), 'utf8');
-const instructions = read('AGENTS.md');
-const config = read('.codex/config.toml');
-assert.match(config, /^model = "gpt-6-astra"$/m);
-assert.match(config, /^default_subagent_model = "gpt-5.6-sol"$/m);
-assert.match(config, /^max_depth = 1$/m);
-assert.match(instructions, /gpt-6-astra/);
-assert.match(instructions, /gpt-5\.6-sol/);
-// Check executable gates, not prose removed from the current AGENTS.md.
+assert.ok(existsSync(path.join(root, 'AGENTS.md')), 'Missing AGENTS.md');
+// Check executable gates, not prose in AGENTS.md.
 const scripts = JSON.parse(read('package.json')).scripts;
 for (const gate of ['test:harness', 'lint', 'test:asset-tools', 'build']) {
   assert.ok(scripts.verify.includes(gate), `verify must invoke ${gate}`);

@@ -2,7 +2,7 @@
 
 브라우저에서 플레이 가능한 3D 방을 만들고, React에서 사용하고, Unity와 배치를 주고받는 라이브러리입니다.
 
-[미니홈피 바로 사용하기](https://jigglypop.github.io/gaesup-world/) · [English](README.md) · [미니홈피 사용법](docs/minihome.md) · [Unity 연결](docs/unity.md)
+[미니홈피 바로 사용하기](https://jigglypop.github.io/gaesup-world/) · [English](README.md)
 
 TypeScript 월드 라이브러리와 싸이월드에서 영감을 받은 미니홈피 예제를 제공합니다. 3D 방, 걸어 다니는 아바타, 가구 편집, 프로필, 다이어리, 방명록이 있습니다. 현재 브라우저에 저장하며 공유 링크는 방의 사본을 전달합니다. 실시간 멀티플레이 서비스는 아닙니다.
 
@@ -52,7 +52,7 @@ SceneDocument는 저장 가능한 데이터입니다. React·Three.js·물리 �
 
 ## Unity
 
-프리뷰의 `exportUnityScene`과 `importUnityScene`은 로컬 transform, 계층, ID, component 메타데이터를 교환합니다. 미터 단위, quaternion, Z축 변환을 사용합니다. 포함된 Unity Editor 스크립트가 이 JSON을 읽고 씁니다. GLB는 geometry와 material을 내보냅니다. 임의의 게임 스크립트나 네이티브 `.unity` 파일을 자동 호환하지 않습니다. [설치와 제한](docs/unity.md).
+프리뷰의 `exportUnityScene`과 `importUnityScene`은 로컬 transform, 계층, ID, component 메타데이터를 교환합니다. 미터 단위, quaternion, Z축 변환을 사용합니다. 포함된 Unity Editor 스크립트가 이 JSON을 읽고 씁니다. GLB는 geometry와 material을 내보냅니다. 임의의 게임 스크립트나 네이티브 `.unity` 파일을 자동 호환하지 않습니다.
 
 ## 검증과 배포
 
@@ -75,4 +75,3 @@ npm은 검증과 `npm login` 인증 후, 검토한 tarball을 별도 태그 없�
 - shear는 world matrix에 보존합니다. TRS로 표현 불가능하면 `getWorldTransform`이 오류를 내므로 `getWorldMatrix`를 사용하세요.
 - Unity Editor 컴파일과 실제 왕복은 Unity 설치 환경에서 따로 검증해야 합니다.
 
-[실행계획](docs/2026-09-19-web-studio-plan.md) · [릴리스 노트](docs/release-1.0.32.md)

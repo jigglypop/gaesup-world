@@ -2,7 +2,7 @@
 
 Build a playable 3D room in your browser. Use scene data in React and exchange layouts with Unity.
 
-[Live mini-home](https://jigglypop.github.io/gaesup-world/) · [한국어](README.ko.md) · [Mini-home guide](docs/minihome.en.md) · [Unity bridge](docs/unity.en.md)
+[Live mini-home](https://jigglypop.github.io/gaesup-world/) · [한국어](README.ko.md)
 
 This repository contains a TypeScript world library and a Cyworld-inspired mini-home: a 3D room, walking avatar, furniture, profile, diary and guestbook. It saves in your browser. Shared links contain a snapshot; they are not a multiplayer service.
 
@@ -52,7 +52,7 @@ Scene data is serializable. React, Three.js and physics objects belong to runtim
 
 ## Unity
 
-The preview adds `exportUnityScene` and `importUnityScene`: local transforms, hierarchy, IDs and component metadata, in meters, with quaternion and Z-axis conversion. Included Unity Editor scripts read/write this JSON. GLB exports geometry and materials for compatible importers. Neither path transfers arbitrary scripts or imports native `.unity` files. [Setup and limits](docs/unity.en.md).
+The preview adds `exportUnityScene` and `importUnityScene`: local transforms, hierarchy, IDs and component metadata, in meters, with quaternion and Z-axis conversion. Included Unity Editor scripts read/write this JSON. GLB exports geometry and materials for compatible importers. Neither path transfers arbitrary scripts or imports native `.unity` files.
 
 ## Verify and deploy
 
@@ -75,4 +75,3 @@ For npm, validate, authenticate with `npm login`, pack the reviewed build and ru
 - World matrices preserve shear. `getWorldTransform` throws for shear or singular bases; use `getWorldMatrix` when TRS cannot represent the result.
 - Unity compilation and real Editor round-trip require a Unity installation. TypeScript tests alone do not prove them.
 
-[Implementation plan](docs/2026-09-19-web-studio-plan.en.md) · [Release notes](docs/release-1.0.32.md)
