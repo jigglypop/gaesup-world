@@ -2,11 +2,10 @@ import { useCallback, useRef, useState } from 'react';
 
 import * as THREE from 'three';
 
-import { MILLISECONDS_IN_SECOND } from '../../../boilerplate/types';
 import { useEventsStoreApi } from '../../../events/stores/eventsStore';
 import { useInventoryStoreApi } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
-import { useEngineFrame } from '../../../runtime/frame';
+import { useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
 import { notify } from '../../../ui/components/Toast/toastStore';
@@ -50,6 +49,8 @@ function pickWeighted(pool: CatchEntry[]): string | null {
   }
   return pool[pool.length - 1]!.itemId;
 }
+
+const BUG_SPOT_FRAME: SharedFrameChannel = { phase: 'lateUpdate', label: 'world:bug-spot' };
 
 export function BugSpot({
   position,
@@ -98,17 +99,16 @@ export function BugSpot({
 
   useToolUse('net', onNet);
 
-  useEngineFrame('lateUpdate', (_, elapsedMs) => {
+  useSharedFrame(BUG_SPOT_FRAME, (_, t) => {
     const now = performance.now();
     if (!present && now >= respawnAtRef.current) setPresent(true);
     const b = bugRef.current;
     if (!b || !present) return;
-    const t = elapsedMs / MILLISECONDS_IN_SECOND;
     b.position.x = Math.sin(t * 1.2) * 0.6;
     b.position.z = Math.cos(t * 0.9) * 0.6;
     b.position.y = hoverHeight + Math.sin(t * 2.6) * 0.15;
     b.rotation.y = t * 1.4;
-  }, { label: 'world:bug-spot' });
+  });
 
   if (!present) return <group position={position} />;
   return (

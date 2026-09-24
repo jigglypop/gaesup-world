@@ -2,9 +2,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import * as THREE from 'three';
 
-import { MILLISECONDS_IN_SECOND } from '../../../boilerplate/types';
 import { useInventoryStoreApi } from '../../../inventory/stores/inventoryStore';
-import { useEngineFrame } from '../../../runtime/frame';
+import { useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
 import { useTimeStoreApi } from '../../../time/stores/timeStore';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
@@ -26,6 +25,8 @@ function inRange(plot: Plot, evt: ToolUseEvent, hit: number): boolean {
   const dz = evt.origin[2] - plot.position[2];
   return dx * dx + dz * dz <= hit * hit;
 }
+
+const CROP_SWAY_FRAME: SharedFrameChannel = { phase: 'lateUpdate', label: 'farming:crop-sway' };
 
 export function CropPlot({ id, position, size = 1.4, hitRange = 1.6 }: CropPlotProps) {
   const plotStore = usePlotStoreApi();
@@ -93,13 +94,12 @@ export function CropPlot({ id, position, size = 1.4, hitRange = 1.6 }: CropPlotP
   }, [plot]);
 
   const cropRef = useRef<THREE.Mesh>(null);
-  useEngineFrame('lateUpdate', (_, elapsedMs) => {
+  useSharedFrame(CROP_SWAY_FRAME, (_, t) => {
     const m = cropRef.current;
     if (!m) return;
-    const t = elapsedMs / MILLISECONDS_IN_SECOND;
     m.rotation.y = Math.sin(t * 0.4) * 0.05;
     m.position.y = (stage?.scale ?? 0.3) * 0.5 + Math.sin(t * 1.2) * 0.01;
-  }, { label: 'farming:crop-sway' });
+  });
 
   return (
     <group position={plot?.position ?? position}>

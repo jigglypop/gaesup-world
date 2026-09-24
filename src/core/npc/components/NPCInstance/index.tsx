@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useMemo, useCallback } from 'react';
 
-import { useAnimations, useGLTF } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
 import { CapsuleCollider, RigidBody, RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -10,6 +10,7 @@ import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
 
 import { sameNPCInstanceProps } from './memo';
 import { NPCPartMeshProps, NPCInstanceProps } from './types';
+import { useSharedAnimations } from '../../../animation/hooks/useSharedAnimations';
 import { useSceneToon } from '../../../rendering/useSceneToon';
 import { useWorldPhysicsInterpolation } from '../../../simulation/physicsContext';
 import { useNPCSimulation } from '../../hooks/useNPCSimulation';
@@ -92,7 +93,7 @@ function NPCPartGltfMesh({ part, currentAnimation }: NPCPartMeshProps) {
   const gltf = useGLTF(assetUrl);
   const clone = useMemo(() => SkeletonUtils.clone(gltf.scene), [gltf]);
   useSceneToon(clone);
-  const { actions } = useAnimations(gltf.animations, clone);
+  const { actions } = useSharedAnimations(gltf.animations, clone);
   const activeAnimationRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {

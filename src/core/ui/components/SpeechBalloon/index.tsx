@@ -4,7 +4,7 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { SpeechBalloonProps } from './types';
-import { useEngineFrame } from '../../../runtime/frame';
+import { useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
 import { useSpeechBalloonPosition } from '../../hooks/useSpeechBalloonPosition';
 import { useUIConfigStore } from '../../stores/UIConfigStore';
 import './styles.css';
@@ -174,6 +174,8 @@ function createTextTexture({
   }
 }
 
+const SPEECH_BALLOON_FRAME: SharedFrameChannel = { phase: 'effects', label: 'ui:speech-balloon-scale' };
+
 export function SpeechBalloon({
   text,
   position = new THREE.Vector3(0, 2, 0),
@@ -295,7 +297,7 @@ export function SpeechBalloon({
   }, [textureData, config.scaleMultiplier]);
 
     // Delta 기반 안정적인 스케일링 (미세진동 완전 제거)
-  useEngineFrame('effects', () => {
+  useSharedFrame(SPEECH_BALLOON_FRAME, () => {
     if (!spriteRef.current || !textureData || !visible) return;
     
     lodAccumRef.current++;
@@ -321,7 +323,7 @@ export function SpeechBalloon({
     } catch (error) {
       console.warn('Error in sprite scaling:', error);
     }
-  }, { label: 'ui:speech-balloon-scale', active: visible && textureData !== null });
+  }, visible && textureData !== null);
 
   useEffect(() => {
     return () => {

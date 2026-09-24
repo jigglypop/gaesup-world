@@ -7,12 +7,13 @@ import {
   useRef,
 } from 'react';
 
-import { useAnimations, useGLTF } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
 import { CapsuleCollider, RapierRigidBody, RigidBody, euler, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
+import { useSharedAnimations } from '@core/animation/hooks/useSharedAnimations';
 import { useEntity } from '@core/boilerplate/hooks/useEntity';
 import { useWorldPhysicsInterpolation } from '@core/simulation/physicsContext';
 
@@ -58,7 +59,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const { size } = useGltfAndSize({ url: props.url || '' });
     const modelUrl = props.url?.trim() ? props.url : EMPTY_GLTF_DATA_URI;
     const { scene, animations } = useGLTF(modelUrl);
-    const { actions, ref: animationRef } = useAnimations(animations);
+    const { actions, ref: animationRef } = useSharedAnimations(animations);
     const activeAnimationRef = useRef<string | undefined>(undefined);
 
     const { handleIntersectionEnter, handleIntersectionExit, handleCollisionEnter } = useEntity({

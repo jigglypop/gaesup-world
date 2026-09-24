@@ -4,7 +4,7 @@ import * as THREE from 'three';
 
 import { useTeleport } from '../../../hooks/useTeleport';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
-import { AFTER_MOTION_FRAME_ORDER, useEngineFrame } from '../../../runtime/frame';
+import { AFTER_MOTION_FRAME_ORDER, useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
 import { useSceneStore } from '../../stores/sceneStore';
 import type { SceneEntry, SceneId } from '../../types';
 
@@ -38,6 +38,8 @@ export type HouseDoorProps = {
  * a sensor mid-event. Polling the player's position with a small radius is
  * cheap and survives scene swaps.
  */
+const HOUSE_DOOR_FRAME: SharedFrameChannel = { phase: 'postPhysics', label: 'scene:house-door', order: AFTER_MOTION_FRAME_ORDER };
+
 export function HouseDoor({
   position,
   sceneId,
@@ -58,7 +60,7 @@ export function HouseDoor({
 
   useEffect(() => () => padGeometry.dispose(), [padGeometry]);
 
-  useEngineFrame('postPhysics', () => {
+  useSharedFrame(HOUSE_DOOR_FRAME, () => {
     const now = performance.now();
     if (now - lastTriggerRef.current < cooldownMs) return;
 
@@ -71,7 +73,7 @@ export function HouseDoor({
 
     if (current === sceneId) return;
     void enterScene();
-  }, { order: AFTER_MOTION_FRAME_ORDER, label: 'scene:house-door' });
+  });
 
   async function enterScene() {
     // Save where the player came from so the exit door knows where to drop them.

@@ -47,17 +47,19 @@ describe('useSharedFrame', () => {
     await renderer.unmount();
   });
 
-  test('예외가 난 인스턴스만 제외하고 나머지는 계속 실행한다', async () => {
+  test('예외가 난 콜백도 다음 프레임에 계속 실행하고 나머지도 실행한다', async () => {
     const healthy = jest.fn();
+    const failing = jest.fn(() => { throw new Error('boom'); });
     const renderer = await ReactThreeTestRenderer.create(
       <>
         <FrameSchedulerHost />
-        <Probe onFrame={() => { throw new Error('boom'); }} />
+        <Probe onFrame={failing} />
         <Probe onFrame={healthy} />
       </>,
     );
     await renderer.advanceFrames(2, 1 / 60);
     expect(healthy).toHaveBeenCalledTimes(2);
+    expect(failing).toHaveBeenCalledTimes(2);
     await renderer.unmount();
   });
 });

@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { useEventsStoreApi } from '../../../events/stores/eventsStore';
 import { useInventoryStoreApi } from '../../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
-import { useEngineFrame } from '../../../runtime/frame';
+import { useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
 import { notify } from '../../../ui/components/Toast/toastStore';
@@ -50,6 +50,8 @@ function pickWeighted(pool: CatchEntry[]): string | null {
   return pool[pool.length - 1]!.itemId;
 }
 
+const FISH_RIPPLE_FRAME: SharedFrameChannel = { phase: 'lateUpdate', label: 'world:fish-spot-ripple' };
+
 export function FishSpot({
   position,
   radius = 3.0,
@@ -92,7 +94,7 @@ export function FishSpot({
 
   useToolUse('rod', onRod);
 
-  useEngineFrame('lateUpdate', () => {
+  useSharedFrame(FISH_RIPPLE_FRAME, () => {
     const m = rippleRef.current;
     if (!m) return;
     const since = (performance.now() - flashRef.current) / 1000;
@@ -104,7 +106,7 @@ export function FishSpot({
     } else {
       m.scale.setScalar(0);
     }
-  }, { active: showRipple, label: 'world:fish-spot-ripple' });
+  }, showRipple);
 
   return (
     <group position={position}>

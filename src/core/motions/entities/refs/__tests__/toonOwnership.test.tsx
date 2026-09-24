@@ -41,8 +41,11 @@ const mockUseGraph = jest.fn((root: THREE.Object3D): MockGraph => {
   return graph;
 });
 
+jest.mock('@core/animation/hooks/useSharedAnimations', () => ({
+  useSharedAnimations: () => ({ actions: {}, ref: { current: null } }),
+}));
+
 jest.mock('@react-three/drei', () => ({
-  useAnimations: () => ({ actions: {}, ref: { current: null } }),
   useGLTF: (url: string) => {
     const gltf = mockGltfs.get(url);
     if (!gltf) throw new Error(`Missing mock GLTF: ${url}`);

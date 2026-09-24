@@ -3,11 +3,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 import { useInventoryStoreApi } from '../../../inventory/stores/inventoryStore';
-import { useEngineFrame } from '../../../runtime/frame';
+import { useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
 import { useTimeStoreApi } from '../../../time/stores/timeStore';
 import { useToolUse } from '../../../tools/hooks/useToolUse';
 import type { ToolUseEvent } from '../../../tools/types';
 import { notify } from '../../../ui/components/Toast/toastStore';
+
+const TREE_SWAY_FRAME: SharedFrameChannel = { phase: 'lateUpdate', label: 'world:tree-sway' };
 
 export type TreeObjectProps = {
   id?: string;
@@ -79,7 +81,7 @@ export function TreeObject({
     return off;
   }, [fallen, hp, timeStore]);
 
-  useEngineFrame('lateUpdate', (delta) => {
+  useSharedFrame(TREE_SWAY_FRAME, (delta) => {
     const g = groupRef.current;
     if (!g) return;
     const since = (performance.now() - hitAtRef.current) / 1000;
@@ -90,7 +92,7 @@ export function TreeObject({
     } else if (Math.abs(g.rotation.z) > 0.0001) {
       g.rotation.z *= Math.max(0, 1 - delta * 12);
     }
-  }, { label: 'world:tree-sway' });
+  });
 
   const shake = remaining < hp;
   const trunkHeight = 1.6 * scale;

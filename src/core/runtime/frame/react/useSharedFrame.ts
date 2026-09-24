@@ -3,13 +3,14 @@ import { useRef } from 'react';
 import { useThree, type RootState } from '@react-three/fiber';
 
 import { MILLISECONDS_IN_SECOND } from '../../../boilerplate/types';
-import { logger } from '../../../utils/logger';
+import { createErrorReportState, reportThrottled, type ErrorReportState } from '../../../utils/reportError';
 import type { FrameScheduler } from '../FrameScheduler';
 import { retainImplicitFrameHost, useCanvasFrameScheduler, useFrameRegistrationEffect, useRootStore } from './canvasScheduler';
 import type { SharedFrameCallback, SharedFrameChannel } from './types';
 
 type SharedFrameEntry = {
   callback: { current: SharedFrameCallback };
+  errors: ErrorReportState;
 };
 
 type SharedFrameGroup = {
@@ -35,11 +36,8 @@ function runGroup(group: SharedFrameGroup, delta: number, elapsedMs: number): vo
     try {
       entry.callback.current(delta, elapsedSeconds, three);
     } catch (error) {
-      entries.splice(i--, 1);
-      logger.error(
-        `[FrameScheduler Error]: 공유 프레임 콜백 실패로 제외 ${group.channel.label}`,
-        error instanceof Error ? error : String(error),
-      );
+      // Like FrameScheduler entries, a throwing callback keeps running next frame with rate-limited reports.
+      reportThrottled(entry.errors, elapsedMs, error, { source: 'frame', label: group.channel.label });
     }
   }
 }
@@ -94,7 +92,7 @@ export function useSharedFrame(channel: SharedFrameChannel, callback: SharedFram
 
   useFrameRegistrationEffect(() => {
     if (!active) return undefined;
-    const leave = joinGroup(scheduler, key, channelRef.current, getThree, { callback: callbackRef });
+    const leave = joinGroup(scheduler, key, channelRef.current, getThree, { callback: callbackRef, errors: createErrorReportState() });
     const releaseHost = retainImplicitFrameHost(scheduler, canvasStore);
     return () => {
       releaseHost();

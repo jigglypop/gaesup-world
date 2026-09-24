@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useRef } from 'react';
 
 import { useGLTF } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import type { PartsGroupRefProps } from './types';
 import type { CharacterBoneAttachment } from '../../../character/attachments';
 import { findAttachmentBone, updateBoneAttachmentMatrix } from '../../../character/boneAttachment';
+import { useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
 import { logger } from '../../../utils/logger';
 
 type RigidPartRefProps = PartsGroupRefProps & { attachment: CharacterBoneAttachment };
+
+/** After the animation phase has posed the skeleton, so parts never trail the bones by a frame. */
+const BONE_ATTACHMENT_FRAME: SharedFrameChannel = { phase: 'lateUpdate', label: 'character:bone-attachments' };
 
 export function RigidPartRef({ url, color, skeleton, attachment }: RigidPartRefProps) {
   const { scene } = useGLTF(url);
@@ -47,7 +50,7 @@ export function RigidPartRef({ url, color, skeleton, attachment }: RigidPartRefP
     if (hasSkin) logger.warn(`Rigid part ${url}: skinned meshes require the shared-skeleton garment path.`);
   }, [attachment.bone, bone, hasSkin, url]);
 
-  useFrame(() => {
+  useSharedFrame(BONE_ATTACHMENT_FRAME, () => {
     if (follower.current && bone && !hasSkin) updateBoneAttachmentMatrix(follower.current, bone);
   });
 
