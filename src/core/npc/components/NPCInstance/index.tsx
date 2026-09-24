@@ -359,7 +359,10 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   );
 }); 
 
+/** Characters never block the camera or other ray probes, matching `PhysicsEntity`. */
+const INTANGIBLE = { intangible: true };
+
 function NPCVisual({ bodyRef, children }: { bodyRef: React.RefObject<RapierRigidBody | null>; children: React.ReactNode }) {
   const visual = useWorldPhysicsInterpolation(bodyRef);
-  return <group ref={visual}>{children}</group>;
+  return <group ref={visual} userData={INTANGIBLE}>{children}</group>;
 }

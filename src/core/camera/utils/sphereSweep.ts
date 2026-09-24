@@ -14,11 +14,22 @@ const worldMatrix = new Matrix4();
 const morphProxies = new WeakMap<InstancedMesh, Mesh>();
 const batchRange = { vertexStart: 0, vertexCount: 0, reservedVertexCount: 0, indexStart: 0, indexCount: 0, reservedIndexCount: 0, start: 0, count: 0 };
 
-/** Reject static meshes before matrix inversion, raycast and triangle traversal. */
+/** Reject static meshes before matrix inversion, raycast and triangle traversal.
+ * InstancedMesh uses its all-instance bounds, so a far batch never reaches the per-instance loop.
+ */
 export function cameraMeshMayIntersect(mesh: Mesh, ray: Ray, radius: number, maxDistance: number): boolean {
-  if (mesh.raycast !== Mesh.prototype.raycast || mesh.morphTargetInfluences?.length) return true;
-  if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
-  const sphere = mesh.geometry.boundingSphere;
+  const instanced = (mesh as InstancedMesh).isInstancedMesh ? mesh as InstancedMesh : null;
+  if (instanced) {
+    if (instanced.morphTexture) return true;
+    if (!instanced.boundingSphere) instanced.computeBoundingSphere();
+    if (!instanced.boundingBox) instanced.computeBoundingBox();
+  } else if (mesh.raycast !== Mesh.prototype.raycast || mesh.morphTargetInfluences?.length) {
+    return true;
+  } else if (!mesh.geometry.boundingSphere) {
+    mesh.geometry.computeBoundingSphere();
+  }
+  const bounds = instanced ?? mesh.geometry;
+  const sphere = bounds.boundingSphere;
   if (sphere && sphere.radius >= 0) {
     // One matrix-vector product rejects most far meshes before transforming eight box corners.
     center.copy(sphere.center).applyMatrix4(mesh.matrixWorld);
@@ -28,11 +39,33 @@ export function cameraMeshMayIntersect(mesh: Mesh, ray: Ray, radius: number, max
       return false;
     }
   }
-  if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
-  if (!mesh.geometry.boundingBox) return true;
-  box.copy(mesh.geometry.boundingBox).applyMatrix4(mesh.matrixWorld).expandByScalar(radius);
+  if (!instanced && !mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+  if (!bounds.boundingBox) return true;
+  box.copy(bounds.boundingBox).applyMatrix4(mesh.matrixWorld).expandByScalar(radius);
   if (box.containsPoint(ray.origin)) return true;
   return Boolean(ray.intersectBox(box, contact) && contact.distanceToSquared(ray.origin) <= maxDistance * maxDistance);
+}
+
+/** Sphere sweep against the mesh's world bounding sphere (bind pose for skinned meshes). */
+export function sweepSphereBounds(mesh: Mesh, ray: Ray, radius: number, maxDistance: number, point: Vector3): number {
+  if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
+  const sphere = mesh.geometry.boundingSphere;
+  if (!sphere) return Infinity;
+  center.copy(sphere.center).applyMatrix4(mesh.matrixWorld);
+  const reach = sphere.radius * mesh.matrixWorld.getMaxScaleOnAxis() + radius;
+  offset.subVectors(ray.origin, center);
+  const b = offset.dot(ray.direction);
+  const c = offset.lengthSq() - reach * reach;
+  if (c <= 0) {
+    point.copy(ray.origin);
+    return 0;
+  }
+  const discriminant = b * b - c;
+  if (discriminant < 0) return Infinity;
+  const time = -b - Math.sqrt(discriminant);
+  if (time < 0 || time > maxDistance) return Infinity;
+  point.copy(ray.origin).addScaledVector(ray.direction, time);
+  return time;
 }
 
 function vertexTime(ray: Ray, vertex: Vector3, radius: number): number {

@@ -56,7 +56,7 @@ test('inherits collision exclusion from ancestors and observes later changes', (
   }
 });
 
-test('prunes excluded subtrees and sees an obstacle as soon as exclusion is removed', () => {
+test('cached queries skip excluded subtrees without reading children and see an obstacle once exclusion is removed', () => {
   const scene = new THREE.Scene();
   const group = new THREE.Group();
   const geometry = new THREE.BoxGeometry(2, 2, 2);
@@ -67,11 +67,12 @@ test('prunes excluded subtrees and sees an obstacle as soon as exclusion is remo
   group.add(obstacle);
   scene.add(group);
   scene.updateMatrixWorld(true);
+  const from = new THREE.Vector3();
+  const to = new THREE.Vector3(0, 0, 10);
+  cameraUtils.improvedCollisionCheck(from, to, scene, 0.5, [group]);
   const children = group.children;
   const readChildren = jest.fn(() => children);
   Object.defineProperty(group, 'children', { configurable: true, get: readChildren });
-  const from = new THREE.Vector3();
-  const to = new THREE.Vector3(0, 0, 10);
   try {
     expect(cameraUtils.improvedCollisionCheck(from, to, scene, 0.5, [group]).safe).toBe(true);
     expect(readChildren).not.toHaveBeenCalled();

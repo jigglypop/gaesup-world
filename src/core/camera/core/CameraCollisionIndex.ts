@@ -14,6 +14,19 @@ function isRaycastableMesh(object: RaycastCandidate): object is THREE.Mesh {
   return object.isMesh === true && object.isLineSegments2 !== true && !!object.geometry;
 }
 
+function hasAncestorIn(object: THREE.Object3D, ancestors: readonly THREE.Object3D[]): boolean {
+  for (let current: THREE.Object3D | null = object; current; current = current.parent) {
+    if (ancestors.includes(current)) return true;
+  }
+  return false;
+}
+
+function sameItems(a: readonly THREE.Object3D[], b: readonly THREE.Object3D[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
 export class CameraCollisionIndex {
   private readonly scene: THREE.Scene;
   private readonly allMeshes: THREE.Mesh[] = [];
@@ -22,6 +35,9 @@ export class CameraCollisionIndex {
   private dirty = true;
   private generation = globalGeneration;
   private rebuildCount = 0;
+  private excludedKey: readonly THREE.Object3D[] = [];
+  private readonly excludedMeshes: THREE.Mesh[] = [];
+  private excludedRevision = -1;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -30,6 +46,19 @@ export class CameraCollisionIndex {
   getTargets(): readonly THREE.Mesh[] {
     this.refresh();
     return this.colliderMeshes.length > 0 ? this.colliderMeshes : this.allMeshes;
+  }
+
+  /** Every raycastable mesh in the scene, in pre-order, minus meshes under `excluded` (cached per exclusion list). */
+  getMeshes(excluded: readonly THREE.Object3D[] = []): readonly THREE.Mesh[] {
+    this.refresh();
+    if (excluded.length === 0) return this.allMeshes;
+    if (this.excludedRevision !== this.rebuildCount || !sameItems(excluded, this.excludedKey)) {
+      this.excludedKey = excluded.slice();
+      this.excludedRevision = this.rebuildCount;
+      this.excludedMeshes.length = 0;
+      for (const mesh of this.allMeshes) if (!hasAncestorIn(mesh, excluded)) this.excludedMeshes.push(mesh);
+    }
+    return this.excludedMeshes;
   }
 
   getColliders(): readonly THREE.Mesh[] {
@@ -50,6 +79,8 @@ export class CameraCollisionIndex {
     this.observed.clear();
     this.allMeshes.length = 0;
     this.colliderMeshes.length = 0;
+    this.excludedMeshes.length = 0;
+    this.excludedKey = [];
   }
 
   private readonly handleChildAdded = (): void => {

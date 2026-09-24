@@ -111,19 +111,20 @@ test('batched geometry uses active visible instances, their transforms and geome
   batch.dispose(); geometry.dispose(); material.dispose();
 });
 
-test('skinned vertices observe changed bone transforms without a render', () => {
+test('skinned meshes block by their bind-pose bounding sphere without skinning vertices', () => {
   const geometry = new BoxGeometry(1, 2, 1); const count = geometry.getAttribute('position').count;
   geometry.setAttribute('skinIndex', new Uint16BufferAttribute(new Uint16Array(count * 4), 4));
   const weights = new Float32Array(count * 4); for (let i = 0; i < count; i++) weights[i * 4] = 1;
   geometry.setAttribute('skinWeight', new Float32BufferAttribute(weights, 4));
   const mesh = new SkinnedMesh(geometry, new MeshBasicMaterial()); const bone = new Bone();
   mesh.add(bone); mesh.bind(new Skeleton([bone]));
-  const scene = new Scene(); scene.add(mesh); bone.position.set(0.8, 0, 5);
-  expect(cameraUtils.improvedCollisionCheck(from, to, scene, 0.5).position.z).toBeCloseTo(4.1);
-  bone.position.z = 7;
-  expect(cameraUtils.improvedCollisionCheck(from, to, scene, 0.5).position.z).toBeCloseTo(6.1);
-  mesh.position.z = 1;
-  expect(cameraUtils.improvedCollisionCheck(from, to, scene, 0.5).position.z).toBeCloseTo(7.1);
+  const scene = new Scene(); scene.add(mesh); mesh.position.z = 5; bone.position.set(0.8, 0, 3);
+  const vertex = jest.spyOn(mesh, 'getVertexPosition');
+  const reach = Math.hypot(0.5, 1, 0.5) + 0.5;
+  expect(cameraUtils.improvedCollisionCheck(from, to, scene, 0.5).position.z).toBeCloseTo(5 - reach);
+  mesh.position.z = 7;
+  expect(cameraUtils.improvedCollisionCheck(from, to, scene, 0.5).position.z).toBeCloseTo(7 - reach);
+  expect(vertex).not.toHaveBeenCalled();
   geometry.dispose(); mesh.material.dispose(); mesh.skeleton.dispose();
 });
 

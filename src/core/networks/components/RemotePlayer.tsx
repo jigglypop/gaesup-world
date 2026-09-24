@@ -35,6 +35,8 @@ type RemotePlayerContentProps = {
 type ColorableMaterial = THREE.Material & { color: THREE.Color };
 
 const REMOTE_MODEL_FALLBACK = <group name="remote-player-model-fallback" />;
+/** Remote avatars never block the camera or other ray probes, matching the local player. */
+const INTANGIBLE = { intangible: true };
 
 function isColorableMaterial(material: THREE.Material): material is ColorableMaterial {
   return 'color' in material && material.color instanceof THREE.Color;
@@ -445,7 +447,7 @@ function RemotePlayerContent({ state, config, speechText, modelUrl }: RemotePlay
   }, { label: 'network:remote-player' });
 
   return (
-    <group>
+    <group userData={INTANGIBLE}>
       <RigidBody
         ref={bodyRef}
         type="kinematicPosition"

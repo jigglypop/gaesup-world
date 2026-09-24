@@ -177,7 +177,7 @@ input → prePhysics → physics.step(FixedStepClock.advance) → present(보간
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
 | 11-a | D-01 재진입 guard, D-10 이월 상한과 설정 주입 | 재현 테스트 통과. `advance(0.2)` 100회 후 `deferredSeconds ≤ maxSubSteps*dt` |
-| 11-b | 카메라 충돌 1단계(캐시, 후보만 행렬 갱신, SkinnedMesh 근사, `intangible` 일관화) | `benchmark-camera-collision.cjs`에 SkinnedMesh(본 30, 삼각형 5k)·InstancedMesh(1k/10k) 케이스 추가. `updateWorldMatrix`·`getVertexPosition` 호출 수가 씬 크기와 무관 |
+| 11-b | 카메라 충돌 1단계(캐시, 후보만 행렬 갱신, SkinnedMesh 근사, `intangible` 일관화). 완료(2026-09-25): `'scene'` target도 `CameraCollisionIndex` 캐시를 쓰고(제외 목록별 필터 캐시), 지난 프레임 행렬로 거른 뒤 통과한 메시만 행렬을 갱신한다. InstancedMesh는 전체 인스턴스 bounds로 먼저 거르고, SkinnedMesh는 bind 자세 bounding sphere로 근사한다. 잔디·NPC·원격 아바타 루트에 `intangible`. 벤치(쿼리당): 화면 밖 메시 1만 5.0→0.45ms, InstancedMesh 1만 1.32→0.007ms, SkinnedMesh 6.8→0.005ms, `updateWorldMatrix` 2회로 크기와 무관. `/world?size=m` 할당 7.26→4.58MB/frame | `benchmark-camera-collision.cjs`에 SkinnedMesh(본 30, 삼각형 5k)·InstancedMesh(1k/10k) 케이스 추가. `updateWorldMatrix`·`getVertexPosition` 호출 수가 씬 크기와 무관 |
 | 11-c | timeStore 분 단위 publish, farming tick guard | scale=1로 60틱 동안 subscriber 호출 ≤ 1 |
 | 11-d | 클릭 이동 입력 publish 조건 변경 | 클릭 이동 60틱 동안 gaesupStore 알림 ≤ waypoint 변경 수 |
 | 11-e | NPC 배치 단일 `set`, side table, 변경 NPC만 kinematic 쓰기 | 결정 배치 1회당 `setState` 1회 |

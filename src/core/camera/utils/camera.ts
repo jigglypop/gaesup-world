@@ -1,7 +1,7 @@
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
-import { cameraMeshMayIntersect, sweepSphereMesh } from './sphereSweep';
+import { cameraMeshMayIntersect, sweepSphereBounds, sweepSphereMesh } from './sphereSweep';
 import { ActiveStateType } from '../../motions/core/types';
 import { getCameraCollisionIndex, invalidateCameraColliders } from '../core/CameraCollisionIndex';
 import { CAMERA_CONSTANTS } from '../core/constants';
@@ -24,84 +24,17 @@ const fallbackVelocity = new THREE.Vector3();
 const fallbackOffset = new THREE.Vector3();
 const fallbackToVec3 = new THREE.Vector3();
 
-// Reuse storage, but observe hierarchy changes on every query (including before rendering).
-const uncachedCollisionMeshes: THREE.Mesh[] = [];
-const noCollisionExclusions: THREE.Object3D[] = [];
-
-const traversalStack: THREE.Object3D[] = [];
-
-type CollisionCandidate = THREE.Object3D & { isMesh?: boolean; isLineSegments2?: boolean; geometry?: unknown };
-
-function collectCollisionMeshes(
-  scene: THREE.Scene,
-  meshes: THREE.Mesh[] = [],
-  excludedObjects?: THREE.Object3D[],
-): THREE.Mesh[] {
-  meshes.length = 0;
-  const excluded = excludedObjects && excludedObjects.length > 0 ? excludedObjects : null;
-  const stack = traversalStack;
-  stack.length = 0;
-  scene.updateWorldMatrix(true, false);
-  stack.push(scene);
-  // Iterative pre-order walk: parents refresh their world matrix before children, same order as recursion.
-  while (stack.length > 0) {
-    const object = stack.pop() as CollisionCandidate;
-    // Exclusion is inherited: entire avatar/helper subtrees can be skipped.
-    if (excludedObjects && (object.userData['intangible'] || (excluded !== null && excluded.includes(object)))) continue;
-    object.updateWorldMatrix(false, false);
-    if (object.isMesh === true && object.isLineSegments2 !== true
-      && !object.userData['intangible'] && object.geometry) {
-      meshes.push(object as THREE.Mesh);
-    }
-    const children = object.children;
-    for (let i = children.length - 1; i >= 0; i--) {
-      const child = children[i];
-      if (child) stack.push(child);
-    }
-  }
-  return meshes;
-}
-
-function isCollidableInScene(mesh: THREE.Mesh, scene: THREE.Scene, excludedObjects: THREE.Object3D[]): boolean {
+function isCollidableInScene(mesh: THREE.Mesh, scene: THREE.Scene, excludedObjects: readonly THREE.Object3D[] | undefined): boolean {
   let object: THREE.Object3D | null = mesh;
   while (object) {
-    if (object.userData['intangible'] || excludedObjects.includes(object)) return false;
+    if (object.userData['intangible'] || excludedObjects?.includes(object)) return false;
     if (object === scene) return true;
     object = object.parent;
   }
   return false;
 }
 
-// Collider mode refreshes only the tagged meshes and their ancestor chains instead of the whole scene.
-function collectColliderMeshes(
-  scene: THREE.Scene,
-  meshes: THREE.Mesh[],
-  excludedObjects: THREE.Object3D[],
-): THREE.Mesh[] | null {
-  const colliders = getCameraCollisionIndex(scene).getColliders();
-  if (colliders.length === 0) return null;
-  meshes.length = 0;
-  for (let i = 0, len = colliders.length; i < len; i++) {
-    const mesh = colliders[i];
-    if (!mesh || !isCollidableInScene(mesh, scene, excludedObjects)) continue;
-    mesh.updateWorldMatrix(true, false);
-    meshes.push(mesh);
-  }
-  return meshes;
-}
-
-function getCollisionMeshes(
-  scene: THREE.Scene,
-  excludedObjects: THREE.Object3D[] | undefined,
-  targets: CameraCollisionTargets,
-): THREE.Mesh[] {
-  const excluded = excludedObjects ?? noCollisionExclusions;
-  return (targets === 'colliders' ? collectColliderMeshes(scene, uncachedCollisionMeshes, excluded) : null)
-    ?? collectCollisionMeshes(scene, uncachedCollisionMeshes, excluded);
-}
-
 export function invalidateCollisionCache(): void {
-  uncachedCollisionMeshes.length = 0;
   invalidateCameraColliders();
 }
 
@@ -127,20 +60,28 @@ function sweepCameraPath(
   let blocked = false;
   let safeDistance = distance;
 
+  // Candidates come from the event-invalidated index. Collider mode refreshes every tagged collider so edits
+  // made without a render count immediately; scene mode rejects with last frame's matrices and refreshes only
+  // the survivors, so a query never walks or re-multiplies the whole scene.
+  const index = getCameraCollisionIndex(scene);
+  const colliders = targets === 'colliders' ? index.getColliders() : null;
+  const colliderMode = colliders !== null && colliders.length > 0;
+  const meshes = colliderMode ? colliders : index.getMeshes(excludedObjects);
   try {
-    const meshes = getCollisionMeshes(scene, excludedObjects, targets);
     for (let i = 0, len = meshes.length; i < len; i++) {
       const mesh = meshes[i];
       if (!mesh) continue;
+      if (!colliderMode && !cameraMeshMayIntersect(mesh, collisionRaycaster.ray, radius, distance)) continue;
+      if (!isCollidableInScene(mesh, scene, excludedObjects)) continue;
+      mesh.updateWorldMatrix(true, false);
       if (!cameraMeshMayIntersect(mesh, collisionRaycaster.ray, radius, distance)) continue;
-      if (mesh instanceof THREE.SkinnedMesh) {
-        // SkinnedMesh updates its attached bind inverse in this override.
-        mesh.updateMatrixWorld(true);
-        for (const bone of mesh.skeleton.bones) bone.updateWorldMatrix(true, false);
-      }
+      // Skinning every triangle each frame costs more than it gains; bind-pose bounds approximate the body.
+      const skinned = (mesh as THREE.SkinnedMesh).isSkinnedMesh === true;
       // A swept sphere contains its center ray, so the ray narrow phase only runs for zero-radius probes.
-      if (radius > 0) {
-        const sweptDistance = sweepSphereMesh(mesh, collisionRaycaster.ray, radius, distance, collisionContact);
+      if (skinned || radius > 0) {
+        const sweptDistance = skinned
+          ? sweepSphereBounds(mesh, collisionRaycaster.ray, radius, distance, collisionContact)
+          : sweepSphereMesh(mesh, collisionRaycaster.ray, radius, distance, collisionContact);
         if (!Number.isFinite(sweptDistance)) continue;
         blocked = true;
         safeDistance = Math.min(safeDistance, sweptDistance);
@@ -157,7 +98,6 @@ function sweepCameraPath(
       }
     }
   } finally {
-    uncachedCollisionMeshes.length = 0;
     collisionIntersections.length = 0;
   }
 

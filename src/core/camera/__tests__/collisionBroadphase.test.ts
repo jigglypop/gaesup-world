@@ -76,11 +76,20 @@ test('the broadphase is conservative for scaled parents, sweep radius and segmen
   expect(cameraMeshMayIntersect(behind, ray, 0.5, 10)).toBe(true);
 });
 
-test('meshes with custom raycasts or morph targets bypass the broadphase', () => {
+test('instanced meshes use their all-instance bounds; morphed instances bypass the broadphase', () => {
   const ray = rayAlongZ();
-  const instanced = new THREE.InstancedMesh(geometry, material, 1);
-  instanced.position.set(100, 0, 0);
+  const instanced = new THREE.InstancedMesh(geometry, material, 2);
+  instanced.setMatrixAt(0, new THREE.Matrix4().makeTranslation(100, 0, 0));
+  instanced.setMatrixAt(1, new THREE.Matrix4().makeTranslation(120, 0, 0));
   instanced.updateMatrixWorld(true);
+  expect(cameraMeshMayIntersect(instanced, ray, 0, 10)).toBe(false);
+  instanced.setMatrixAt(1, new THREE.Matrix4().makeTranslation(0, 0, 5));
+  instanced.computeBoundingSphere();
+  instanced.computeBoundingBox();
+  expect(cameraMeshMayIntersect(instanced, ray, 0, 10)).toBe(true);
+  instanced.setMatrixAt(1, new THREE.Matrix4().makeTranslation(120, 0, 0));
+  instanced.computeBoundingSphere();
+  instanced.morphTexture = new THREE.DataTexture(new Float32Array(4), 1, 1);
   expect(cameraMeshMayIntersect(instanced, ray, 0, 10)).toBe(true);
   instanced.dispose();
 });

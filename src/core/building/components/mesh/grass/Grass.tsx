@@ -98,6 +98,8 @@ const noise2D = createNoise2D();
 const GROUND_LIGHT = new THREE.Color('#5a7a35');
 const GROUND_ACCENT = new THREE.Color('#7a8e3a');
 const GROUND_DIRT = new THREE.Color('#5b4628');
+/** Blades never stop the camera or other ray probes. */
+const GRASS_USER_DATA = { intangible: true };
 
 const GrassMaterial = shaderMaterial(
   {
@@ -513,7 +515,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
 
     return (
       <group ref={groupRef} {...props}>
-        <mesh ref={meshRef} frustumCulled castShadow receiveShadow>
+        <mesh ref={meshRef} frustumCulled castShadow receiveShadow userData={GRASS_USER_DATA}>
           <instancedBufferGeometry
             key={resolvedInstances}
             ref={geometryRef}
