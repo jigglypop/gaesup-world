@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 type WebGPUModuleFactory = () => object;
 
 type DisposableRenderer = {

@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import { createSceneDocumentController } from 'gaesup-world';
 
 import { BACKUP_KEY, createMinihome, loadMinihome, makeFurniture, MAX_FURNITURE, parseMinihome, saveMinihome, STORAGE_KEY } from '../model';

@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import { createAudioEngine, getAudioEngine } from '../core/AudioEngine';
 
 const parameter = () => ({ value: 1, setValueAtTime: jest.fn(), linearRampToValueAtTime: jest.fn(), exponentialRampToValueAtTime: jest.fn() });

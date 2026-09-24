@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import { enableMapSet } from 'immer';
 import * as THREE from 'three';
 import { create } from 'zustand';

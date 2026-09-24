@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import 'reflect-metadata';
 
 import { renderHook, act } from '@testing-library/react';

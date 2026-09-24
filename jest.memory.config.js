@@ -1,7 +1,8 @@
-import baseConfig from './jest.config.js';
+import { base } from './jest.config.js';
 
 export default {
-  ...baseConfig,
+  ...base,
+  testEnvironment: 'node',
   testMatch: [
     '<rootDir>/src/core/boilerplate/__tests__/AbstractBridge.test.ts',
     '<rootDir>/src/core/boilerplate/__tests__/ManagedEntity.test.ts',

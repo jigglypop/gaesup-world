@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import { renderHook } from '@testing-library/react';
 import * as THREE from 'three';
 

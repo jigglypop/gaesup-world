@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import { createMemoryInputBackend, type InputStateListener } from '../../interactions/core';
 import { logger } from '../../utils/logger';
 import { WorldInputActions } from '../WorldInputActions';

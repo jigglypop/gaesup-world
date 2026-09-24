@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import { createWorldInputScope } from '../WorldInputScope';
 
 const key = (target: EventTarget, code = 'KeyW', type = 'keydown') => target.dispatchEvent(new KeyboardEvent(type, { code, key: code.slice(-1).toLowerCase(), bubbles: true, cancelable: true }));

@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import {
   SCENE_DOCUMENT_SAVE_KEY,
   createSceneDocument,

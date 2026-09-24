@@ -1,6 +1,6 @@
-export default {
+/** Options shared by every project and by jest.memory.config.js. */
+export const base = {
   preset: 'ts-jest',
-  testEnvironment: 'jsdom',
   moduleNameMapper: {
     '^gaesup-world$': '<rootDir>/src/index.ts',
     '^gaesup-world/admin$': '<rootDir>/src/admin-entry.ts',
@@ -44,15 +44,33 @@ export default {
   transformIgnorePatterns: [
     'node_modules/(?!(\\.pnpm|three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand|mitt)/)',
   ],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/scripts/assets/', '/scripts/minihome-room-service.test.mjs$', '<rootDir>/.claude/'],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '<rootDir>/.claude/'],
   // Agent worktrees live under .claude/ and carry their own package.json; keep them out of the module map.
   modulePathIgnorePatterns: ['<rootDir>/.claude/'],
+  // A no-op without a DOM, so node tests that opt into jsdom still get a canvas.
+  setupFiles: ['jest-canvas-mock'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+};
+
+export default {
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
     '!src/**/*.test.{ts,tsx}',
     '!src/**/index.ts',
   ],
-  setupFiles: ['jest-canvas-mock'],
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  projects: [
+    // Logic tests skip jsdom setup. A .test.ts that needs a DOM starts with `/** @jest-environment jsdom */`, as does
+    // one whose code checks prototypes of structuredClone results: jest's node realm gets the host's clones.
+    {
+      ...base,
+      displayName: 'node',
+      testEnvironment: 'node',
+      testMatch: ['**/*.test.ts'],
+      testPathIgnorePatterns: [...base.testPathIgnorePatterns, '/src/__tests__/'],
+    },
+    { ...base, displayName: 'dom', testEnvironment: 'jsdom', testMatch: ['**/*.test.tsx'] },
+    // Package, export and public API contracts.
+    { ...base, displayName: 'package', testEnvironment: 'node', testMatch: ['**/src/__tests__/**/*.test.ts'] },
+  ],
 };

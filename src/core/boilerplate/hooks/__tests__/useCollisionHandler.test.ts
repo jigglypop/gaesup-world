@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import { CollisionEnterPayload, CollisionExitPayload } from '@react-three/rapier';
 import { renderHook } from '@testing-library/react';
 

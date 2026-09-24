@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import { createMemoryInputBackend, InteractionSystem } from '../../core';
 import { InteractionBridge } from '../InteractionBridge';
 import type { BridgeEvent } from '../types';

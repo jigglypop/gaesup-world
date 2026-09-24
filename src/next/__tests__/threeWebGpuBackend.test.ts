@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import type { RendererBackend } from '../types';
 
 type WebGpuModuleFactory = () => object;

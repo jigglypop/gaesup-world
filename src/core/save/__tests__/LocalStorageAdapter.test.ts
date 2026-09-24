@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import { LocalStorageAdapter } from '../adapters/LocalStorageAdapter';
 import type { SaveBlob } from '../types';
 

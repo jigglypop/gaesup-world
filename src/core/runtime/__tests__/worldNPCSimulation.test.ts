@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import type { RapierRigidBody } from '@react-three/rapier';
 
 import { createNPCPlugin, hydrateNPCState, serializeNPCState } from '../../npc/plugin';

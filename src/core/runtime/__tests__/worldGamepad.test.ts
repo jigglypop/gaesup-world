@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import { getBrowserGamepadHub, type BrowserGamepad, type GamepadSnapshotListener } from '../../input/BrowserGamepadHub';
 import { createMemoryInputBackend, type InputBackend } from '../../interactions/core/adapter';
 import { createMotionsPlugin } from '../../motions/plugin';

@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import { createContentBundleFromSaveSystem } from '../../content';
 import { applyVisitSnapshot, serializeVisit } from '../../networks/visit/serializer';
 import { SaveSystem } from '../../save';

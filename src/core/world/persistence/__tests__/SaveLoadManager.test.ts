@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import { SaveLoadManager, type LegacySaveStorage } from '../SaveLoadManager';
 import type { SaveData, WorldSaveData } from '../types';
 

@@ -1,4 +1,3 @@
-/** @jest-environment node */
 import * as THREE from 'three';
 
 import { createGLTFLoader } from '../gltfLoader';

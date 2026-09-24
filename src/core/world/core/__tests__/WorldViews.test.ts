@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import * as THREE from 'three';
 
 import { WorldViews } from '../WorldViews';

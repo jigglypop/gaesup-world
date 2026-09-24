@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import { Vector3 } from 'three';
 
 import { MinimapSystem } from '../MinimapSystem';
