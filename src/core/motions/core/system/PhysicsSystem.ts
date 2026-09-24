@@ -10,6 +10,7 @@ import type { ClickNavigationRoute } from '../../../navigation/ClickNavigationRo
 import type { PhysicsCalcProps, PhysicsState } from '../../types';
 import type { PhysicsConfigType } from '../config';
 import { GravityComponent } from '../forces';
+import { applyEnabledRotations, applyLinearDamping } from './bodySettings';
 import { EntityStateManager } from './EntityStateManager';
 import { GroundContactProbe } from './GroundContactProbe';
 import { PhysicsSystemState, PhysicsSystemMetrics, PhysicsSystemOptions } from './types';
@@ -232,26 +233,26 @@ export class PhysicsSystem extends AbstractSystem<PhysicsSystemState, PhysicsSys
           airDamping = 0.2,
           stopDamping = 1,
         } = this.config;
-        rigidBody.setLinearDamping(
+        applyLinearDamping(rigidBody,
           isJumping || isFalling
             ? airDamping
             : isNotMoving
             ? linearDamping * stopDamping
             : linearDamping,
         );
-        rigidBody.setEnabledRotations(false, false, false, false);
+        applyEnabledRotations(rigidBody, false, false, false);
         break;
       }
       case 'vehicle': {
         const { linearDamping = 0.9, brakeRatio = linearDamping } = this.config;
-        rigidBody.setLinearDamping(physicsState.keyboard.space ? brakeRatio : linearDamping);
-        rigidBody.setEnabledRotations(false, true, false, false);
+        applyLinearDamping(rigidBody, physicsState.keyboard.space ? brakeRatio : linearDamping);
+        applyEnabledRotations(rigidBody, false, true, false);
         break;
       }
       case 'airplane': {
         const { linearDamping = 0.2 } = this.config;
-        rigidBody.setLinearDamping(linearDamping);
-        rigidBody.setEnabledRotations(false, false, false, false);
+        applyLinearDamping(rigidBody, linearDamping);
+        applyEnabledRotations(rigidBody, false, false, false);
         break;
       }
     }

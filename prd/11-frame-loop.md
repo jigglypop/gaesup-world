@@ -189,6 +189,8 @@ input → prePhysics → physics.step(FixedStepClock.advance) → present(보간
 | 11-k | 건물 collider 구조(FR-11-13). 먼저 fixed body 순회 비용을 계측 | 타일 1k에서 collider 수와 step 후 순회 body 수 기록 후 감소 |
 | 11-l | setter 캐시, 하늘 색 사전 파싱, 스크립트 hook, 인덱스 조회, water patch(FR-11-14) | 정지 캐릭터에서 setter 호출 0, 발소리 1회당 타일 순회 0 |
 
+11-l 진행(2026-09-24): Rapier setter 캐시 완료(`motions/core/system/bodySettings.ts`, 바디별 마지막 적용값). 발소리 지면 판정은 타일 인덱스에 타일 종류가 없고 겹친 타일에서 결과가 달라질 수 있어 보류(초당 최대 6회 호출). 하늘 색, 스크립트 hook, water patch는 잔여.
+
 ## 7. 공개 API 영향
 
 - `usePlayerPosition`의 `reactive` 기본값 변경은 13 PRD에서 다룬다.
