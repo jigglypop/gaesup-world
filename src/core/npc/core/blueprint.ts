@@ -1,5 +1,3 @@
-import { useQuestStore, type QuestStore } from '../../quests/stores/questStore';
-import { useFriendshipStore, type FriendshipStore } from '../../relations/stores/friendshipStore';
 import type {
   AgentBehaviorBlueprint,
   NPCAction,
@@ -17,14 +15,25 @@ import type {
 } from '../types';
 
 const MAX_BLUEPRINT_STEPS = 32;
+/** Read-only condition sources. Structural so quest and friendship stores satisfy it without Layer 1 importing them. */
 export type NPCBrainConditionStores = {
-  questStore: QuestStore;
-  friendshipStore: FriendshipStore;
+  questStore: { getState(): { statusOf(questId: string): string } };
+  friendshipStore: { getState(): { scoreOf(npcId: string): number } };
 };
-const legacyConditionStores: NPCBrainConditionStores = {
-  questStore: useQuestStore,
-  friendshipStore: useFriendshipStore,
+const EMPTY_CONDITION_STORES: NPCBrainConditionStores = {
+  questStore: { getState: () => ({ statusOf: () => '' }) },
+  friendshipStore: { getState: () => ({ scoreOf: () => 0 }) },
 };
+let defaultConditionStores = EMPTY_CONDITION_STORES;
+
+/** Fallback for calls without explicit stores; the npc store layer registers the legacy global stores. */
+export function setDefaultNPCBrainConditionStores(stores: NPCBrainConditionStores): () => void {
+  const previous = defaultConditionStores;
+  defaultConditionStores = stores;
+  return () => {
+    if (defaultConditionStores === stores) defaultConditionStores = previous;
+  };
+}
 const blueprints = new Map<string, NPCBrainBlueprint>();
 
 export function registerNPCBrainBlueprint(blueprint: NPCBrainBlueprint): () => void {
@@ -230,7 +239,7 @@ function findNextEdge(
 export function compileNPCBrainBlueprint(
   blueprint: NPCBrainBlueprint,
   observation: NPCObservation,
-  stores: NPCBrainConditionStores = legacyConditionStores,
+  stores: NPCBrainConditionStores = defaultConditionStores,
 ): NPCAction[] {
   const nodes = new Map(blueprint.nodes.map((node) => [node.id, node]));
   const actions: NPCAction[] = [];

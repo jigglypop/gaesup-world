@@ -110,18 +110,6 @@ const LOCAL_UPWARD_EDGE_BASELINE: DependencyEdge[] = [
     specifier: '@stores/types',
     target: 'src/core/stores/types.ts',
   },
-  {
-    from: 'src/core/npc/core/blueprint.ts',
-    kind: 'import',
-    specifier: '../../quests/stores/questStore',
-    target: 'src/core/quests/stores/questStore.ts',
-  },
-  {
-    from: 'src/core/npc/core/blueprint.ts',
-    kind: 'import',
-    specifier: '../../relations/stores/friendshipStore',
-    target: 'src/core/relations/stores/friendshipStore.ts',
-  },
 ];
 
 const LAYER_ONE_RAPIER_EDGE_BASELINE: DependencyEdge[] = [
@@ -543,7 +531,7 @@ describe('architecture dependency boundaries', () => {
   test('keeps the exact local Layer 1 and Layer 2 upward-edge baseline', () => {
     const { localUpwardEdges } = collectArchitectureDebt();
 
-    expect(LOCAL_UPWARD_EDGE_BASELINE).toHaveLength(14);
+    expect(LOCAL_UPWARD_EDGE_BASELINE).toHaveLength(12);
     expect(getBaselineDiff(localUpwardEdges, LOCAL_UPWARD_EDGE_BASELINE)).toEqual({
       additions: [],
       stale: [],

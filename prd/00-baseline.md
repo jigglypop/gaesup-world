@@ -174,7 +174,7 @@ ESM 70파일 1.95MB, CJS 70파일 1.55MB, d.ts+d.cts 2,052파일 2.08MB이다. d
 | 도메인 간 barrel import | 298 | 감소 | 20 |
 | 테스트 없는 도메인 | effects, wasm, ops, error, items | 0 | 25 |
 | `plugin.ts` 복제 | 13개 도메인, 약 550줄 | 테이블 기반 1개 | 24 |
-| Layer1 전이 누수(`check:layer1`) | 5(npc/core → zustand) | 0 | 20 |
+| Layer1 전이 누수(`check:layer1`) | 5(npc/core → zustand) → 0(2026-09-24, 20-b) | 0 | 20 |
 | 엔진 → 게임플레이 import(composition root 밖) | 18(2차) | 0 | 20 |
 | Layer 1 검사 대상 비율 | 11%(77파일, 2차) | React-free 폴더 전체 | 20 |
 | `runtime` 엔트리 폐포 | 427파일 48,737줄 50도메인(2차) | kernel + engine + world shell | 15 |

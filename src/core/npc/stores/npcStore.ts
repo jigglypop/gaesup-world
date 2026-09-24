@@ -2,8 +2,14 @@ import { enableMapSet } from 'immer';
 import { create, useStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
+import { useQuestStore } from '../../quests/stores/questStore';
+import { useFriendshipStore } from '../../relations/stores/friendshipStore';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
-import { registerNPCBrainBlueprint, unregisterNPCBrainBlueprint } from '../core/blueprint';
+import {
+  registerNPCBrainBlueprint,
+  setDefaultNPCBrainConditionStores,
+  unregisterNPCBrainBlueprint,
+} from '../core/blueprint';
 import { 
   NPCSystemState, 
   NPCTemplate, 
@@ -998,6 +1004,8 @@ export function createNPCStore(options: { onInvalidateBrain?: (id?: string) => v
 }
 export type NPCStoreApi = ReturnType<typeof createNPCStore>;
 const legacyStore = buildNPCStore(true);
+// Legacy global brain conditions pair with the legacy global NPC store; runtimes pass their own stores.
+setDefaultNPCBrainConditionStores({ questStore: useQuestStore, friendshipStore: useFriendshipStore });
 export function useNPCStoreApi(): NPCStoreApi {
   return useGaesupRuntime()?.npcStore ?? useNPCStore;
 }

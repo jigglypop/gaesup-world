@@ -146,7 +146,7 @@ editor      editor, project-settings, blueprints/editor, admin
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
 | 20-a | ESLint patterns 추가, `consistent-type-imports` | lint 통과, Layer 1 새 위반을 넣으면 실패 |
-| 20-b | npc/core port 주입 | `check:layer1 --max-violations=0` 통과 |
+| 20-b | npc/core port 주입. 완료(2026-09-24): `NPCBrainConditionStores`를 구조 타입으로, 전역 기본값은 npcStore에서 등록. `check:layer1` 허용치 0, `check:layer1`·`check:entries`·`check:quality`를 `verify`에 연결(FR-20-08) | `check:layer1 --max-violations=0` 통과 |
 | 20-c | boilerplate barrel 분리, bridge import 경로 변경 | Layer 2 React 도달 0 |
 | 20-d | `useCameraBridge`, `useEntity` 이동 | export snapshot 불변 |
 | 20-e | SCC baseline 테스트 추가 | 현재값 고정, 새 도메인 간 edge 추가 시 실패 |

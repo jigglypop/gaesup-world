@@ -8,7 +8,10 @@ import {
   createAgentBehaviorBlueprintFromNPCBehaviorBlueprint,
   createNPCBehaviorBlueprintFromAgentBehaviorBlueprint,
   createNPCBehaviorBlueprintFromInstance,
+  setDefaultNPCBrainConditionStores,
 } from '../blueprint';
+
+const conditionStores = { questStore: useQuestStore, friendshipStore: useFriendshipStore };
 
 const createInstance = (id: string): NPCInstance => ({
   id,
@@ -144,7 +147,7 @@ describe('NPC behavior blueprint helpers', () => {
         { id: 'e1', source: 'start', target: 'cond', branch: 'next' },
         { id: 'e2', source: 'cond', target: 'act', branch: 'true' },
       ],
-    }, observation);
+    }, observation, conditionStores);
 
     expect(actions).toEqual([{ type: 'idle' }]);
   });
@@ -186,8 +189,34 @@ describe('NPC behavior blueprint helpers', () => {
         { id: 'e1', source: 'start', target: 'cond', branch: 'next' },
         { id: 'e2', source: 'cond', target: 'act', branch: 'true' },
       ],
-    }, observation);
+    }, observation, conditionStores);
 
+    expect(actions).toEqual([{ type: 'idle' }]);
+  });
+
+  it('uses registered default condition stores when none are passed', () => {
+    const release = setDefaultNPCBrainConditionStores({
+      questStore: { getState: () => ({ statusOf: () => 'active' }) },
+      friendshipStore: { getState: () => ({ scoreOf: () => 0 }) },
+    });
+    const actions = compileNPCBrainBlueprint({
+      id: 'default-quest-check',
+      name: 'Default Quest Check',
+      nodes: [
+        { id: 'start', type: 'start' },
+        { id: 'cond', type: 'condition', condition: { type: 'questStatus', questId: 'welcome', status: 'active' } },
+        { id: 'act', type: 'action', action: { type: 'idle' } },
+      ],
+      edges: [
+        { id: 'e1', source: 'start', target: 'cond', branch: 'next' },
+        { id: 'e2', source: 'cond', target: 'act', branch: 'true' },
+      ],
+    }, {
+      instanceId: 'npc-a', templateId: 'villager', timestamp: 0, position: [0, 0, 0], rotation: [0, 0, 0],
+      currentAnimation: 'idle', navigationState: 'idle', behaviorMode: 'idle', brainMode: 'scripted',
+      perceptionEnabled: false, perceived: [],
+    });
+    release();
     expect(actions).toEqual([{ type: 'idle' }]);
   });
 });
