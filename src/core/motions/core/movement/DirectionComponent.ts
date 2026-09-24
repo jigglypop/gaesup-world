@@ -247,12 +247,12 @@ export class DirectionComponent {
     }
 
     const nextAngle = Math.atan2(nextTarget.z - currentPosition.z, nextTarget.x - currentPosition.x);
-    if (
-      mouse.isActive &&
-      mouse.shouldRun === shouldRun &&
-      mouse.angle === nextAngle &&
-      mouse.target.equals(nextTarget)
-    ) return;
+    // Steering follows the body every tick locally; the shared input store only hears about a new waypoint
+    // or a changed run/active state, not every float change of the angle.
+    if (mouse.isActive && mouse.shouldRun === shouldRun && mouse.target.equals(nextTarget)) {
+      mouse.angle = nextAngle;
+      return;
+    }
     calcProp?.setMouseInput?.({
       target: nextTarget,
       angle: nextAngle,

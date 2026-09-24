@@ -59,19 +59,21 @@ test('retains waypoint progression without dispatching identical input on every 
   fixture.component.dispose();
 });
 
-test('updates steering after displacement and propagates changed run settings', () => {
+test('updates steering after displacement locally and publishes only changed run settings', () => {
   const fixture = createFixture();
   const target = new THREE.Vector3(10, 0, 0);
   setClickNavigationRoute([target], 0.5, false);
   fixture.tick();
-  fixture.position.z = 2;
-  fixture.tick();
-  expect(fixture.mouse.angle).toBeCloseTo(Math.atan2(-2, 10));
-  expect(fixture.setMouseInput).toHaveBeenCalledTimes(2);
+  for (let frame = 1; frame <= 60; frame++) {
+    fixture.position.set(frame * 0.1, 0, frame * 0.02);
+    fixture.tick();
+  }
+  expect(fixture.mouse.angle).toBeCloseTo(Math.atan2(-1.2, 4));
+  expect(fixture.setMouseInput).toHaveBeenCalledTimes(1);
   setClickNavigationRoute([target], 0.5, true);
   fixture.tick();
   expect(fixture.mouse.shouldRun).toBe(true);
-  expect(fixture.setMouseInput).toHaveBeenCalledTimes(3);
+  expect(fixture.setMouseInput).toHaveBeenCalledTimes(2);
   fixture.component.dispose();
 });
 

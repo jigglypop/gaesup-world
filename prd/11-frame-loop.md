@@ -179,7 +179,7 @@ input → prePhysics → physics.step(FixedStepClock.advance) → present(보간
 | 11-a | D-01 재진입 guard, D-10 이월 상한과 설정 주입 | 재현 테스트 통과. `advance(0.2)` 100회 후 `deferredSeconds ≤ maxSubSteps*dt` |
 | 11-b | 카메라 충돌 1단계(캐시, 후보만 행렬 갱신, SkinnedMesh 근사, `intangible` 일관화). 완료(2026-09-25): `'scene'` target도 `CameraCollisionIndex` 캐시를 쓰고(제외 목록별 필터 캐시), 지난 프레임 행렬로 거른 뒤 통과한 메시만 행렬을 갱신한다. InstancedMesh는 전체 인스턴스 bounds로 먼저 거르고, SkinnedMesh는 bind 자세 bounding sphere로 근사한다. 잔디·NPC·원격 아바타 루트에 `intangible`. 벤치(쿼리당): 화면 밖 메시 1만 5.0→0.45ms, InstancedMesh 1만 1.32→0.007ms, SkinnedMesh 6.8→0.005ms, `updateWorldMatrix` 2회로 크기와 무관. `/world?size=m` 할당 7.26→4.58MB/frame | `benchmark-camera-collision.cjs`에 SkinnedMesh(본 30, 삼각형 5k)·InstancedMesh(1k/10k) 케이스 추가. `updateWorldMatrix`·`getVertexPosition` 호출 수가 씬 크기와 무관 |
 | 11-c | timeStore 분 단위 publish, farming tick guard. 완료(2026-09-25): 소수 분은 store 밖에서 누적하고 `floor`가 바뀔 때만 `set`한다. 진행 중 값은 비반응 `exactMinutes()`. farming clock은 `totalMinutes` 변화에만 tick하므로 분당 1회. 60틱 알림 ≤ 1 테스트 | scale=1로 60틱 동안 subscriber 호출 ≤ 1 |
-| 11-d | 클릭 이동 입력 publish 조건 변경 | 클릭 이동 60틱 동안 gaesupStore 알림 ≤ waypoint 변경 수 |
+| 11-d | 클릭 이동 입력 publish 조건 변경. 완료(2026-09-25): 각도는 매 틱 지역 상태로 갱신하고, 공유 입력에는 waypoint·run·active 변화만 알린다. 이동 60틱 동안 알림 1회 테스트 | 클릭 이동 60틱 동안 gaesupStore 알림 ≤ waypoint 변경 수 |
 | 11-e | NPC 배치 단일 `set`, side table, 변경 NPC만 kinematic 쓰기 | 결정 배치 1회당 `setState` 1회 |
 | 11-f | 물리 시계 통합, present·카메라 순서 정리(Epoch) | frame-harness에 physics tick ↔ R3F frame lag probe 추가. 144Hz에서 카메라 target 2차 차분 감소 |
 | 11-g | mixer 일괄 채널, 본 부착 late 채널, 인스턴스별 `useEngineFrame` 통합 | R3F 구독 수와 스케줄러 count 비교 테스트. 스케줄러 밖 콜백 0 |
