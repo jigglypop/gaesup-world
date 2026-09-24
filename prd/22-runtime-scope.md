@@ -63,7 +63,7 @@ runtime별 store factory와 `createScopedStoreHook`/Provider로 world를 격리�
 ## 4. 요구사항
 
 **FR**
-- FR-22-01: 서비스 키는 `defineService<T>(id)`로 만든 typed key로 한다. 키 모듈은 kernel(20 PRD)에 두고 runtime과 plugin이 같이 import한다. 문자열 literal 키를 금지한다.
+- FR-22-01: 서비스 키는 `defineService<T>(id)`로 만든 typed key로 한다. 키는 값을 소유한 도메인 모듈이 export하고 runtime과 plugin이 같이 import한다(한곳에 모으면 모든 도메인 타입을 import해 SCC가 커진다). 문자열 literal 키를 금지한다.
 - FR-22-02: legacy fallback이 발생하면 dev에서 1회 경고한다(키, 호출 위치).
 - FR-22-03: legacy store는 import 시점이 아니라 첫 접근 시 `??=` lazy 생성한다(`worldObjectStore.ts:16` 방식).
 - FR-22-04: `useXStore.getState/setState`를 store 모듈 밖에서 쓰지 못하게 lint(`no-restricted-syntax`)로 막고, runtime API(`runtime.stores.x.getState()`)를 쓰게 한다.
@@ -98,8 +98,6 @@ legacy 경로 = getDefaultRuntime() (lazy, dev 경고)
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
 | 22-a | typed 서비스 키(`defineService<T>`), fallback dev 경고 | 문자열 literal 서비스 키 0 |
-
-22-a 진행(2026-09-24): `plugins/serviceKey.ts`(`ServiceKey<T>`, `defineService`, `runtimeStoreServiceKey`, import 0)와 registry·`runtime.getService` 키 overload를 추가했다. 도메인 store 18종이 자기 모듈에서 키를 export하고 runtime 등록과 plugin 조회가 같은 키를 쓴다(`runtime/__tests__/serviceKeys.test.ts`). 키를 kernel 한 곳에 모으면 그 모듈이 모든 도메인 store 타입을 import해 SCC가 커지므로 도메인별로 둔다. 남은 literal: runtime 내부 비-store 서비스 13개, world·time store 상수(이미 단일 상수). fallback dev 경고는 plugin 단독 사용이 정상 경로라 보류.
 | 22-b | D-17 groundContacts, autoSaveSuspension 인스턴스화 | runtime 2개 접지 상태 분리 테스트 |
 | 22-c | legacy store lazy 생성, import 부수효과 제거(구독 등록을 runtime 생성으로) | 모듈 import 후 전역 구독 0 테스트 |
 | 22-d | 순수 전역 store 4종 runtime 스코프 이동 | runtime 2개 toast·editor 상태 분리 |
@@ -107,6 +105,8 @@ legacy 경로 = getDefaultRuntime() (lazy, dev 경고)
 | 22-f | legacy store 제거(도메인별, major) | `?? useXStore` fallback 0 |
 | 22-g | `runtime.get(key)`, `GaesupRuntime` store 필드 getter화(FR-22-10) | `runtime/types.ts` 도메인 import 수 감소 기록, 타입 수준 SCC 감소 |
 | 22-h | 게임플레이 kit 자체 등록, 기본 preset(FR-22-11). 의존이 적은 kit(mail, town, catalog)부터 | kit 없이 만든 runtime에서 해당 store 0, preset runtime은 기존 테스트 통과 |
+
+22-a 진행(2026-09-24): `plugins/serviceKey.ts`(`ServiceKey<T>`, `defineService`, `runtimeStoreServiceKey`, import 0)와 registry·`runtime.getService` 키 overload를 추가했다. 도메인 store 18종이 자기 모듈에서 키를 export하고 runtime 등록과 plugin 조회가 같은 키를 쓴다(`runtime/__tests__/serviceKeys.test.ts`). 키를 kernel 한 곳에 모으면 그 모듈이 모든 도메인 store 타입을 import해 SCC가 커지므로 도메인별로 둔다. 남은 literal: runtime 내부 비-store 서비스 13개, world·time store 상수(이미 단일 상수). fallback dev 경고는 plugin 단독 사용이 정상 경로라 보류.
 
 ## 7. 공개 API 영향
 
