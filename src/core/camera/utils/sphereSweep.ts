@@ -1,4 +1,5 @@
 import { BatchedMesh, Box3, InstancedMesh, Matrix4, Mesh, Ray, Triangle, Vector3 } from 'three';
+import type { BufferAttribute, InterleavedBufferAttribute } from 'three';
 
 const triangle = new Triangle();
 const closest = new Vector3();
@@ -9,8 +10,11 @@ const edge = new Vector3();
 const offset = new Vector3();
 const box = new Box3();
 const segmentBox = new Box3();
+const sweptBox = new Box3();
+const localBox = new Box3();
 const instanceMatrix = new Matrix4();
 const worldMatrix = new Matrix4();
+const inverseMatrix = new Matrix4();
 const morphProxies = new WeakMap<InstancedMesh, Mesh>();
 const boundsCenter = new Vector3();
 type InstanceSpheres = { version: number; count: number; radius: number; world: Matrix4; spheres: Float32Array };
@@ -168,6 +172,46 @@ export function sweepSphereTriangle(ray: Ray, radius: number, surface: Triangle,
   return best;
 }
 
+type Positions = BufferAttribute | InterleavedBufferAttribute;
+
+// Per-sweep state for visitTriangles; sweeps never nest.
+let nearest = Infinity;
+
+/** Bounds of the swept sphere in the current instance's local space. False when the transform cannot be inverted. */
+function prepareLocalBox(): boolean {
+  if (worldMatrix.determinant() === 0) return false;
+  localBox.copy(sweptBox).applyMatrix4(inverseMatrix.copy(worldMatrix).invert());
+  return true;
+}
+
+/** Tests triangles [start, end). With `cull`, triangles whose raw vertices all lie beyond one face of the swept
+ * sphere's local bounds are rejected before any vector math, so a large mesh costs one comparison per triangle. */
+function visitTriangles(
+  vertices: Mesh, positions: Positions, index: BufferAttribute | null, start: number, end: number,
+  ray: Ray, radius: number, maxDistance: number, cull: boolean, point: Vector3,
+): void {
+  const minX = localBox.min.x; const minY = localBox.min.y; const minZ = localBox.min.z;
+  const maxX = localBox.max.x; const maxY = localBox.max.y; const maxZ = localBox.max.z;
+  for (let i = start; i + 2 < end; i += 3) {
+    const a = index ? index.getX(i) : i;
+    const b = index ? index.getX(i + 1) : i + 1;
+    const c = index ? index.getX(i + 2) : i + 2;
+    if (cull) {
+      const ax = positions.getX(a); const bx = positions.getX(b); const cx = positions.getX(c);
+      if ((ax < minX && bx < minX && cx < minX) || (ax > maxX && bx > maxX && cx > maxX)) continue;
+      const az = positions.getZ(a); const bz = positions.getZ(b); const cz = positions.getZ(c);
+      if ((az < minZ && bz < minZ && cz < minZ) || (az > maxZ && bz > maxZ && cz > maxZ)) continue;
+      const ay = positions.getY(a); const by = positions.getY(b); const cy = positions.getY(c);
+      if ((ay < minY && by < minY && cy < minY) || (ay > maxY && by > maxY && cy > maxY)) continue;
+    }
+    vertices.getVertexPosition(a, triangle.a).applyMatrix4(worldMatrix);
+    vertices.getVertexPosition(b, triangle.b).applyMatrix4(worldMatrix);
+    vertices.getVertexPosition(c, triangle.c).applyMatrix4(worldMatrix);
+    const distance = sweepSphereTriangle(ray, radius, triangle, Math.min(maxDistance, nearest), closest);
+    if (distance < nearest) { nearest = distance; point.copy(closest); }
+  }
+}
+
 /** Mesh sweep uses exact triangles after a conservative world-AABB broad phase.
  * Output point is caller-owned. Animated vertices use Mesh.getVertexPosition.
  */
@@ -192,17 +236,11 @@ export function sweepSphereMesh(mesh: Mesh, ray: Ray, radius: number, maxDistanc
   if (!animated && !geometry.boundingBox) geometry.computeBoundingBox();
   if (!animated && !geometry.boundingSphere) geometry.computeBoundingSphere();
   const bounds = animated || instanced?.morphTexture ? null : geometry.boundingSphere;
+  // Deformed vertices differ from the raw attribute, so only static geometry is culled per triangle.
+  const cullable = !animated && !instanced?.morphTexture;
   segmentBox.set(ray.origin, ray.origin).expandByPoint(center.copy(ray.origin).addScaledVector(ray.direction, maxDistance));
-  let nearest = Infinity;
-  const visit = (start: number, end: number) => {
-    for (let i = start; i + 2 < end; i += 3) {
-      vertices.getVertexPosition(index ? index.getX(i) : i, triangle.a).applyMatrix4(worldMatrix);
-      vertices.getVertexPosition(index ? index.getX(i + 1) : i + 1, triangle.b).applyMatrix4(worldMatrix);
-      vertices.getVertexPosition(index ? index.getX(i + 2) : i + 2, triangle.c).applyMatrix4(worldMatrix);
-      const distance = sweepSphereTriangle(ray, radius, triangle, Math.min(maxDistance, nearest), closest);
-      if (distance < nearest) { nearest = distance; point.copy(closest); }
-    }
-  };
+  sweptBox.copy(segmentBox).expandByScalar(radius);
+  nearest = Infinity;
   if (batched) {
     // Public IDs can have holes after deletion. Stop after the active instance count.
     let remaining = batched.instanceCount;
@@ -217,7 +255,10 @@ export function sweepSphereMesh(mesh: Mesh, ray: Ray, radius: number, maxDistanc
       batched.getBoundingBoxAt(geometryId, box);
       if (!box.applyMatrix4(worldMatrix).expandByScalar(radius).intersectsBox(segmentBox)) continue;
       const range = batched.getGeometryRangeAt(geometryId, batchRange);
-      if (range) visit(range.start, range.start + range.count);
+      if (range) {
+        visitTriangles(vertices, positions, index, range.start, range.start + range.count,
+          ray, radius, maxDistance, cullable && prepareLocalBox(), point);
+      }
     }
     return nearest;
   }
@@ -236,11 +277,14 @@ export function sweepSphereMesh(mesh: Mesh, ray: Ray, radius: number, maxDistanc
       if (!segmentNearSphere(ray, maxDistance, boundsCenter.x, boundsCenter.y, boundsCenter.z,
         bounds.radius * worldMatrix.getMaxScaleOnAxis() + radius)) continue;
     }
+    const cull = cullable && prepareLocalBox();
     if (Array.isArray(mesh.material)) {
       for (const group of geometry.groups) {
-        if (mesh.material[group.materialIndex ?? 0]) visit(Math.max(drawStart, group.start), Math.min(drawEnd, group.start + group.count));
+        if (!mesh.material[group.materialIndex ?? 0]) continue;
+        visitTriangles(vertices, positions, index, Math.max(drawStart, group.start), Math.min(drawEnd, group.start + group.count),
+          ray, radius, maxDistance, cull, point);
       }
-    } else if (mesh.material) visit(drawStart, drawEnd);
+    } else if (mesh.material) visitTriangles(vertices, positions, index, drawStart, drawEnd, ray, radius, maxDistance, cull, point);
   }
   return nearest;
 }

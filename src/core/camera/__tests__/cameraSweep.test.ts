@@ -1,4 +1,4 @@
-import { BatchedMesh, Bone, BoxGeometry, Float32BufferAttribute, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Ray, Scene, Skeleton, SkinnedMesh, Triangle, Uint16BufferAttribute, Vector3 } from 'three';
+import { BatchedMesh, Bone, BoxGeometry, Float32BufferAttribute, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, PlaneGeometry, Ray, Scene, Skeleton, SkinnedMesh, Triangle, Uint16BufferAttribute, Vector3 } from 'three';
 
 import { cameraUtils } from '../utils/camera';
 import { sweepSphereTriangle } from '../utils/sphereSweep';
@@ -167,5 +167,21 @@ test('triangle contact agrees with independent convex-distance minimization over
     const actual = sweepSphereTriangle(ray, radius, surface, length, contact);
     if (expected === Infinity) expect(actual).toBe(Infinity);
     else expect(actual).toBeCloseTo(expected, 6);
+  }
+});
+
+test('a large static mesh only runs the exact test on triangles near the swept sphere', () => {
+  const geometry = new PlaneGeometry(100, 100, 64, 64).rotateX(-Math.PI / 2);
+  const material = new MeshBasicMaterial(); const mesh = new Mesh(geometry, material);
+  mesh.position.set(40, 0, 40); mesh.scale.set(2, 1, 2);
+  const scene = new Scene(); scene.add(mesh);
+  const exact = jest.spyOn(Triangle.prototype, 'closestPointToPoint');
+  try {
+    const result = cameraUtils.improvedCollisionCheck(new Vector3(1, 5, 1), new Vector3(1, -5, 1), scene, 0.5);
+    expect(result.position.y).toBeCloseTo(0.5);
+    // 64 × 64 × 2 = 8,192 triangles; only the few under the sphere reach the analytic test.
+    expect(exact.mock.calls.length).toBeLessThan(40);
+  } finally {
+    exact.mockRestore(); geometry.dispose(); material.dispose();
   }
 });
