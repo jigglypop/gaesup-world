@@ -13,19 +13,19 @@ test('resets only the active character and preserves other saved profiles', () =
   store.setActiveCharacter('other');
   store.setName('다른 캐릭터');
   store.equipOutfit('hat', 'other-hat');
-  const other = useCharacterStore.getState().characters.other;
+  const other = useCharacterStore.getState().characters['other'];
   store.setActiveCharacter('editing');
   store.setName('편집 중');
   store.equipOutfit('top', 'editing-shirt');
   const view = render(<CharacterAssetPanel />);
   try {
-    fireEvent.click(screen.getByRole('button', { name: '초기화', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: '초기화' }));
     const current = useCharacterStore.getState();
     expect(current.activeCharacterId).toBe('editing');
-    expect(current.characters.other).toBe(other);
+    expect(current.characters['other']).toBe(other);
     expect(current.outfits.top).toBeNull();
-    expect(current.characters.editing?.outfits).toBe(current.outfits);
-    expect(current.serialize().characters.other).toEqual(other);
+    expect(current.characters['editing']?.outfits).toBe(current.outfits);
+    expect(current.serialize().characters['other']).toEqual(other);
   } finally {
     view.unmount();
     useCharacterStore.setState(previousCharacter, true);

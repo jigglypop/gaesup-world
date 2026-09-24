@@ -15,6 +15,8 @@ export interface CameraConstants {
   FRAME_RATE_LERP_SPEED: number;
 }
 
+export type CameraCollisionTargets = 'scene' | 'colliders';
+
 export interface CameraBounds {
   minX?: number;
   maxX?: number;
@@ -46,6 +48,8 @@ export interface CameraOption {
   enableFocus?: boolean;
   enableCollision?: boolean;
   collisionMargin?: number;
+  /** 'colliders' tests only meshes on CAMERA_COLLIDER_LAYER and falls back to the whole scene when none exist. */
+  collisionTargets?: CameraCollisionTargets;
   smoothing?: {
     position?: number;
     rotation?: number;
@@ -134,8 +138,14 @@ export interface CameraTransition {
   conditions?: CameraTransitionCondition[];
 }
 
+export type CameraRuntimeState = {
+  orbitYaw: number;
+  orbitPitch: number;
+};
+
 export interface CameraSystemState {
   config: CameraSystemConfig;
+  runtime?: CameraRuntimeState;
   activeController?: ICameraController;
   lastUpdate: number; // 추가
 }
@@ -150,6 +160,7 @@ export interface CameraSystemConfig {
   bounds?: CameraBounds; // optional로 변경
   enableCollision: boolean;
   collisionMargin?: number;
+  collisionTargets?: CameraCollisionTargets;
   orbitYaw?: number;
   orbitPitch?: number;
   smoothing?: {
@@ -188,12 +199,15 @@ export interface ICameraController {
 
 export interface Obstacle {
   object: THREE.Mesh;
+  /** World-space distance from the query origin to the surface contact point. */
   distance: number;
+  /** Caller-owned contact point, unchanged by subsequent queries. */
   point: THREE.Vector3;
 }
 
 export interface CollisionCheckResult {
   safe: boolean;
+  /** Caller-owned camera center; includes the requested collision radius. */
   position: THREE.Vector3;
   obstacles: Obstacle[];
 }

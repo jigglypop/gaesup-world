@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { getGlobalAnimationBridge } from './useAnimationBridge';
+import { useScopedAnimationBridge } from './useAnimationBridge';
 import type { AnimatorEventListener } from '../core/animator/types';
 import type { AnimationType } from '../core/types';
 
@@ -11,11 +11,13 @@ export function useAnimatorEvent(
 ) {
   const listenerRef = useRef(listener);
   listenerRef.current = listener;
+  const bridge = useScopedAnimationBridge();
 
   useEffect(() => {
-    return getGlobalAnimationBridge().onAnimatorEvent(type, (event) => {
+    if (!bridge) return undefined;
+    return bridge.onAnimatorEvent(type, (event) => {
       if (eventName !== undefined && event.name !== eventName) return;
       listenerRef.current(event);
     });
-  }, [type, eventName]);
+  }, [bridge, type, eventName]);
 }

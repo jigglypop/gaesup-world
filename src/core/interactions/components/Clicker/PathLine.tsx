@@ -1,8 +1,10 @@
 import { RefObject, useEffect, useMemo, useRef } from 'react';
 
-import { useFrame, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Line2, LineGeometry, LineMaterial } from 'three-stdlib';
+
+import { useEngineFrame } from '../../../runtime/frame';
 
 const MAX_POINTS = 128;
 const UPDATE_INTERVAL_MS = 100;
@@ -49,7 +51,7 @@ export function PathLine({ pointsRef, color }: PathLineProps) {
     };
   }, [line]);
 
-  useFrame(() => {
+  useEngineFrame('lateUpdate', () => {
     const now = performance.now();
     if (now - lastUpdateRef.current < UPDATE_INTERVAL_MS) return;
     lastUpdateRef.current = now;
@@ -70,7 +72,7 @@ export function PathLine({ pointsRef, color }: PathLineProps) {
     line.geometry.setPositions(positions.slice(0, count * 3));
     line.computeLineDistances();
     line.visible = true;
-  });
+  }, { label: 'interactions:path-line' });
 
   return <primitive object={line} />;
 }

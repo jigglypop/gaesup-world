@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 
-import { ManageRuntime } from '@/core/boilerplate/decorators';
 
 import {
   ICameraController,
   CameraSystemState,
   CameraCalcProps,
+  CameraRuntimeState,
   CameraState,
   CameraTransition,
 } from './types';
@@ -21,28 +21,39 @@ import {
   FixedController
 } from '../controllers';
 
-@ManageRuntime({ autoStart: false })
 export class CameraSystem extends BaseCameraSystem {
   private controllers: Map<string, ICameraController> = new Map();
   private activeController?: ICameraController;
   private activeControllerMode?: string;
   private state: CameraSystemState;
+  private readonly runtime: CameraRuntimeState;
   private cameraStates: Map<string, CameraState> = new Map();
   private currentCameraStateName: string = 'default';
   private cameraTransitions: CameraTransition[] = [];
-  
+
   constructor(config: CameraSystemConfig) {
     super(config);
+    this.runtime = { orbitYaw: config.orbitYaw ?? 0, orbitPitch: config.orbitPitch ?? 0 };
     this.state = this.createInitialState(config);
     this.registerControllers();
     this.initializeCameraStates();
   }
-  
+
   private createInitialState(config: CameraSystemConfig): CameraSystemState {
     return {
       config: cloneCameraSystemConfig(config),
+      runtime: this.runtime,
       lastUpdate: Date.now(),
     };
+  }
+
+  setOrbit(yaw: number, pitch: number): void {
+    this.runtime.orbitYaw = yaw;
+    this.runtime.orbitPitch = pitch;
+  }
+
+  getRuntimeState(): Readonly<CameraRuntimeState> {
+    return this.runtime;
   }
   
   private initializeCameraStates(): void {
@@ -77,9 +88,20 @@ export class CameraSystem extends BaseCameraSystem {
     const previousMode = this.state.config.mode;
     super.updateConfig(config);
     this.state.config = this.getConfig();
+    if (config.orbitYaw !== undefined) this.runtime.orbitYaw = config.orbitYaw;
+    if (config.orbitPitch !== undefined) this.runtime.orbitPitch = config.orbitPitch;
     if (config.mode !== undefined && config.mode !== previousMode) {
       this.resolveActiveController();
     }
+  }
+
+  /** Frame-local orbit input; keep the owned configuration and controller view in sync. */
+  updateOrbit(orbitYaw: number, orbitPitch: number): void {
+    this.setOrbit(orbitYaw, orbitPitch);
+    this.config.orbitYaw = this.state.config.orbitYaw = orbitYaw;
+    this.config.orbitPitch = this.state.config.orbitPitch = orbitPitch;
+    this.emitter.emit('configChange', { key: 'orbitYaw', value: orbitYaw });
+    this.emitter.emit('configChange', { key: 'orbitPitch', value: orbitPitch });
   }
   
   update(deltaTime: number): void {

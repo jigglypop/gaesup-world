@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react';
 
-import { useFrame, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { useEngineFrame } from '../../../runtime/frame';
 import { logger } from '../../../utils/logger';
 import { parseBuildingGpuVisibilityFlags } from '../../render/culling';
-import { useBuildingGpuCullingStore } from '../../render/cullingStore';
-import { useBuildingRenderStateStore } from '../../render/store';
+import { useBuildingGpuCullingStore, useBuildingGpuCullingStoreApi } from '../../render/cullingStore';
+import { useBuildingRenderStateStore, useBuildingRenderStateStoreApi } from '../../render/store';
 import { getWebGPUDeviceFromRenderer } from '../../render/upload';
 import { VISIBILITY_MAX_DISTANCE } from '../../visibility/core';
 
@@ -208,7 +209,10 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
 }
 
 export function BuildingGpuCullingDriver() {
+  const cullingStore = useBuildingGpuCullingStoreApi();
+  const renderStore = useBuildingRenderStateStoreApi();
   const gl = useThree((s) => s.gl);
+  const getThreeState = useThree((s) => s.get);
   const snapshot = useBuildingRenderStateStore((s) => s.snapshot);
   const uploadResources = useBuildingRenderStateStore((s) => s.uploadResources);
   const setResult = useBuildingGpuCullingStore((s) => s.setResult);
@@ -245,7 +249,7 @@ export function BuildingGpuCullingDriver() {
     }
   }, [snapshot.ids.length, uploadResources]);
 
-  useFrame((state) => {
+  useEngineFrame('effects', () => {
     if (snapshot.version === 0 || snapshot.ids.length === 0) return;
     if (uploadResources.backend !== 'webgpu') return;
     const device = getWebGPUDeviceFromRenderer(gl) as GpuDeviceLike | null;
@@ -277,17 +281,18 @@ export function BuildingGpuCullingDriver() {
 
     const resources = refs.current.resources;
     const uniform = scratch.uniform;
-    state.camera.updateWorldMatrix(true, false);
+    const viewCamera = getThreeState().camera;
+    viewCamera.updateWorldMatrix(true, false);
     scratch.viewProj.multiplyMatrices(
-      state.camera.projectionMatrix,
-      state.camera.matrixWorldInverse,
+      viewCamera.projectionMatrix,
+      viewCamera.matrixWorldInverse,
     );
-    state.camera.getWorldPosition(scratch.camera);
-    const previous = useBuildingGpuCullingStore.getState();
+    viewCamera.getWorldPosition(scratch.camera);
+    const previous = cullingStore.getState();
     const previousCamera = previous.camera;
     if (previous.active && previous.version === snapshot.version && previousCamera &&
-      previousCamera.coordinateSystem === state.camera.coordinateSystem &&
-      previousCamera.reversedDepth === state.camera.reversedDepth &&
+      previousCamera.coordinateSystem === viewCamera.coordinateSystem &&
+      previousCamera.reversedDepth === viewCamera.reversedDepth &&
       previousCamera.position[0] === scratch.camera.x &&
       previousCamera.position[1] === scratch.camera.y &&
       previousCamera.position[2] === scratch.camera.z) {
@@ -302,8 +307,8 @@ export function BuildingGpuCullingDriver() {
     }
     scratch.frustum.setFromProjectionMatrix(
       scratch.viewProj,
-      state.camera.coordinateSystem,
-      state.camera.reversedDepth,
+      viewCamera.coordinateSystem,
+      viewCamera.reversedDepth,
     );
     for (let i = 0; i < scratch.frustum.planes.length; i++) {
       const plane = scratch.frustum.planes[i]!;
@@ -355,8 +360,8 @@ export function BuildingGpuCullingDriver() {
     const camera = {
       viewProjection: scratch.viewProj.toArray(),
       position: scratch.camera.toArray(),
-      coordinateSystem: state.camera.coordinateSystem,
-      reversedDepth: state.camera.reversedDepth,
+      coordinateSystem: viewCamera.coordinateSystem,
+      reversedDepth: viewCamera.reversedDepth,
     };
     void Promise.resolve()
       .then(() => {
@@ -365,7 +370,7 @@ export function BuildingGpuCullingDriver() {
       })
       .then(() => {
         if (refs.current.resources !== resources) return;
-        if (useBuildingRenderStateStore.getState().snapshot !== snapshot) {
+        if (renderStore.getState().snapshot !== snapshot) {
           resources.readBuffer?.unmap?.();
           return;
         }
@@ -388,13 +393,16 @@ export function BuildingGpuCullingDriver() {
         destroyResources(resources);
         refs.current.resources = createEmptyResources();
         refs.current.busy = false;
-        if (useBuildingRenderStateStore.getState().snapshot === snapshot) reset();
+        if (renderStore.getState().snapshot === snapshot) reset();
         logger.warn('Building GPU culling readback failed; using CPU visibility',
           error instanceof Error ? error : String(error));
       })
       .finally(() => {
         if (refs.current.resources === resources) refs.current.busy = false;
       });
+  }, {
+    label: 'building:gpu-culling',
+    active: snapshot.version !== 0 && snapshot.ids.length > 0 && uploadResources.backend === 'webgpu',
   });
 
   useEffect(() => {

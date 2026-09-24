@@ -12,6 +12,8 @@ export const FRAME_PHASES = [
 
 export type FramePhase = (typeof FRAME_PHASES)[number];
 
+export const AFTER_MOTION_FRAME_ORDER = 10;
+
 export type FrameCallback = (delta: number, elapsedMs: number) => void;
 
 export type FrameSubscriptionOptions = {

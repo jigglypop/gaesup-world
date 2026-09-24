@@ -1,4 +1,4 @@
-import { useCharacterStore } from './stores/characterStore';
+import { useCharacterStore, type CharacterStore } from './stores/characterStore';
 import type { AppearanceColors, FaceStyle, HairStyle, OutfitSlot } from './types';
 
 export type CharacterEquipmentPreset = {
@@ -40,8 +40,8 @@ export const DEFAULT_CHARACTER_EQUIPMENT_PRESETS: CharacterEquipmentPreset[] = [
   },
 ];
 
-export function applyCharacterEquipmentPreset(preset: CharacterEquipmentPreset): void {
-  const store = useCharacterStore.getState();
+export function applyCharacterEquipmentPreset(preset: CharacterEquipmentPreset, characterStore: CharacterStore = useCharacterStore): void {
+  const store = characterStore.getState();
   if (preset.face) store.setFace(preset.face);
   if (preset.hair) store.setHair(preset.hair);
   if (preset.colors) {
@@ -56,7 +56,7 @@ export function applyCharacterEquipmentPreset(preset: CharacterEquipmentPreset):
   }
 }
 
-export function toggleCharacterWeapon(itemId = 'starter-weapon-layer'): void {
-  const store = useCharacterStore.getState();
+export function toggleCharacterWeapon(itemId = 'starter-weapon-layer', characterStore: CharacterStore = useCharacterStore): void {
+  const store = characterStore.getState();
   store.equipOutfit('weapon', store.outfits.weapon === itemId ? null : itemId);
 }

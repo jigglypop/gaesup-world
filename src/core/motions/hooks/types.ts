@@ -25,7 +25,7 @@ export type GltfAndSizeResult = {
 
 export type GaesupGltfUtils = {
   getSizesByUrls: (urls?: ResourceUrlsType) => Record<string, THREE.Vector3 | null>;
-  preloadSizes: (urls: string[]) => void;
+  preloadSizes: (urls: string[]) => Promise<void>;
 };
 
 export interface UsePhysicsEntityProps
@@ -55,3 +55,4 @@ export type UseCharacterAnimatorOptions = {
   controller?: AnimatorControllerDefinition;
   locomotionResponse?: number;
 };
+

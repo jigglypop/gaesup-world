@@ -15,7 +15,9 @@ export {
 export type { FarmingPluginOptions } from './plugin';
 export { getCropRegistry } from './registry/CropRegistry';
 export type { CropRegistry } from './registry/CropRegistry';
-export { usePlotStore } from './stores/plotStore';
+export { usePlotStore, usePlotStoreApi, createPlotStore } from './stores/plotStore';
 export { CropPlot } from './components/CropPlot';
 export type { CropPlotProps } from './components/CropPlot';
 export { SEED_CROPS, registerSeedCrops } from './data/crops';
+
+export type { PlotStore } from './stores/plotStore';

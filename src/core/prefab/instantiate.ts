@@ -1,13 +1,12 @@
 import type { SceneComponent, SceneObject, SceneObjectId, SceneTransform } from '../scene-object';
 import type { InstantiatePrefabOptions, PrefabDocument } from './types';
-
-let prefabInstanceCounter = 0;
+import { createUniqueId } from '../utils/id';
 
 export function instantiatePrefabObjects(
   prefab: PrefabDocument,
   options: InstantiatePrefabOptions = {},
 ): SceneObject[] {
-  const idPrefix = options.idPrefix ?? `${prefab.id}-${++prefabInstanceCounter}`;
+  const idPrefix = options.idPrefix ?? createUniqueId(prefab.id);
   const idMap = new Map<SceneObjectId, SceneObjectId>();
   for (const object of prefab.objects) {
     idMap.set(object.id, `${idPrefix}:${object.id}`);

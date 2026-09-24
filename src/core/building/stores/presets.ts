@@ -1,6 +1,6 @@
-import { create } from 'zustand';
+import { create, useStore } from 'zustand';
 
-import { useBuildingStore } from './buildingStore';
+import { useBuildingStore, useBuildingStoreApi, type BuildingStoreApi } from './buildingStore';
 
 /**
  * 사용자 배치 프리셋: 현재 선택된 타일/벽/오브젝트 설정 조합을 이름으로
@@ -80,8 +80,8 @@ function writeStoredPresets(presets: PlacementPreset[]): void {
   }
 }
 
-export function capturePlacementPreset(name: string): PlacementPreset {
-  const state = useBuildingStore.getState();
+export function capturePlacementPreset(name: string, store: BuildingStoreApi = useBuildingStore): PlacementPreset {
+  const state = store.getState();
   const values: PlacementPresetValues = {};
   for (const field of PLACEMENT_PRESET_FIELDS) {
     (values as Record<string, unknown>)[field] = state[field];
@@ -96,13 +96,14 @@ type PlacementPresetState = {
   remove: (name: string) => void;
 };
 
-export const usePlacementPresets = create<PlacementPresetState>((set, get) => ({
+function createPlacementPresets(store: BuildingStoreApi) {
+return create<PlacementPresetState>((set, get) => ({
   presets: readStoredPresets(),
 
   save: (name) => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    const preset = capturePlacementPreset(trimmed);
+    const preset = capturePlacementPreset(trimmed, store);
     const presets = [...get().presets.filter((item) => item.name !== trimmed), preset];
     writeStoredPresets(presets);
     set({ presets });
@@ -111,7 +112,7 @@ export const usePlacementPresets = create<PlacementPresetState>((set, get) => ({
   apply: (name) => {
     const preset = get().presets.find((item) => item.name === name);
     if (!preset) return;
-    useBuildingStore.setState((state) => {
+    store.setState((state) => {
       for (const field of PLACEMENT_PRESET_FIELDS) {
         if (field in preset.values) {
           (state as Record<string, unknown>)[field] = preset.values[field];
@@ -126,3 +127,16 @@ export const usePlacementPresets = create<PlacementPresetState>((set, get) => ({
     set({ presets });
   },
 }));
+}
+
+const legacyPresets = createPlacementPresets(useBuildingStore);
+const scopedPresets = new WeakMap<BuildingStoreApi, ReturnType<typeof createPlacementPresets>>();
+function useScopedPresets(): PlacementPresetState;
+function useScopedPresets<T>(selector: (state: PlacementPresetState) => T): T;
+function useScopedPresets(selector: (state: PlacementPresetState) => unknown = state => state) {
+  const building = useBuildingStoreApi();
+  let presets = building === useBuildingStore ? legacyPresets : scopedPresets.get(building);
+  if (!presets) { presets = createPlacementPresets(building); scopedPresets.set(building, presets); }
+  return useStore(presets, selector);
+}
+export const usePlacementPresets = Object.assign(useScopedPresets, legacyPresets);

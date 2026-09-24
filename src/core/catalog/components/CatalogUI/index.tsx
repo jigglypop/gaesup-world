@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import { useWorldInputScope } from '../../../input/useWorldInputScope';
+import { WorldInputSurface } from '../../../input/WorldInputSurface';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
 import type { ItemCategory } from '../../../items/types';
 import { canHandleOverlayShortcut } from '../../../ui/overlayKeyboard';
@@ -27,6 +29,7 @@ const PANEL_HEIGHT = 520;
 const UNSEEN_OPACITY = 0.4;
 
 export function CatalogUI({ toggleKey = 'k' }: CatalogUIProps) {
+  const inputScope = useWorldInputScope();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<ItemCategory>('fish');
   const entries = useCatalogStore((s) => s.entries);
@@ -37,9 +40,9 @@ export function CatalogUI({ toggleKey = 'k' }: CatalogUIProps) {
       if (e.key.toLowerCase() === toggleKey.toLowerCase()) setOpen((v) => !v);
       if (e.key === 'Escape') setOpen(false);
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [toggleKey]);
+    const offKey = inputScope.listen('keydown', onKey);
+    return () => offKey();
+  }, [inputScope, toggleKey]);
 
   const allItems = useMemo(() => open ? getItemRegistry().all() : [], [open]);
   const itemsByCategory = useMemo(() => {
@@ -60,7 +63,7 @@ export function CatalogUI({ toggleKey = 'k' }: CatalogUIProps) {
   const collectedInTab = list.filter((d) => entries[d.id]).length;
 
   return (
-    <div style={OVERLAY_BACKDROP_STYLE} onClick={() => setOpen(false)}>
+    <WorldInputSurface style={OVERLAY_BACKDROP_STYLE} onClick={() => setOpen(false)}>
       <div
         data-world-overlay="catalog"
         onClick={(e) => e.stopPropagation()}
@@ -160,7 +163,7 @@ export function CatalogUI({ toggleKey = 'k' }: CatalogUIProps) {
           )}
         </div>
       </div>
-    </div>
+    </WorldInputSurface>
   );
 }
 

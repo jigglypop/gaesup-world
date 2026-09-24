@@ -72,6 +72,8 @@ export function EntityController({ props, children }: EntityControllerProps) {
       ...(props.position ? { position: props.position } : {}),
       ...(props.rotation ? { rotation: props.rotation } : {}),
       ...(props.scale ? { scale: props.scale } : {}),
+      ...(props.modelHierarchy !== undefined ? { modelHierarchy: props.modelHierarchy } : {}),
+      ...(props.modelYawOffset !== undefined ? { modelYawOffset: props.modelYawOffset } : {}),
     };
 
     const ridingUrl = isRiding && mode.type !== 'character' ? urls.ridingUrl : undefined;

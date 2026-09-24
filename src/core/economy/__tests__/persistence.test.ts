@@ -3,7 +3,7 @@ import { SaveSystem } from '../../save';
 import { createEconomyPlugin } from '../plugin';
 import { useShopStore } from '../stores/shopStore';
 import { useWalletStore } from '../stores/walletStore';
-import type { ShopSerialized } from '../types';
+import type { ShopOffer, ShopSerialized } from '../types';
 
 test.each([NaN, Infinity, -1])('rejects invalid wallet values before changing state: %s', (value) => {
   const before = useWalletStore.getState();
@@ -13,13 +13,14 @@ test.each([NaN, Infinity, -1])('rejects invalid wallet values before changing st
   }
 });
 
-test.each([
-  [{ itemId: 'apple', price: -1 }], [{ itemId: 'apple', price: Infinity }],
-  [{ itemId: 'apple', stock: -1 }], [{ itemId: 'apple', stock: 0.5 }],
-  [{ itemId: 'apple' }, { itemId: 'apple' }],
+test.each<[ShopOffer[]]>([
+  [[{ itemId: 'apple', price: -1 }]], [[{ itemId: 'apple', price: Infinity }]],
+  [[{ itemId: 'apple', stock: -1 }]], [[{ itemId: 'apple', stock: 0.5 }]],
+  [[{ itemId: 'apple' }, { itemId: 'apple' }]],
 ])('rejects malformed shop offers without mutation: %j', (dailyStock) => {
   const before = useShopStore.getState();
-  expect(() => before.prepareHydrate({ version: 1, lastRolledDay: 0, dailyStock })).toThrow(TypeError);
+  expect(() => before.prepareHydrate({ version: 1, lastRolledDay: 0, dailyStock }))
+    .toThrow(new TypeError('Invalid shop offer'));
   expect(useShopStore.getState()).toBe(before);
 });
 

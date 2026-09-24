@@ -1,5 +1,7 @@
 import 'reflect-metadata';
-import './core/initializeBridges';
+import { initializeBridges } from './core/initializeBridges';
+
+initializeBridges();
 
 export * from './core/runtime';
 export * from './core/world';

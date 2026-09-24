@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { DEFAULT_BUILDING_OBJECT_CATALOG, getDefaultBuildingObject } from '../../catalog';
 import { createBuildingScopeId } from '../../id';
-import { useBuildingStore } from '../../stores/buildingStore';
+import { useBuildingStore, useBuildingStoreApi } from '../../stores/buildingStore';
 import {
   BUILDING_BASIC_OBJECT_OPTIONS,
   BUILDING_FLAG_STYLE_OPTIONS,
@@ -43,6 +43,7 @@ export function BuildingUI({
   npcPanel = false,
   extensionPanel,
 }: BuildingUIProps) {
+  const buildingStore = useBuildingStoreApi();
   const {
     setEditMode,
     editMode,
@@ -507,7 +508,7 @@ export function BuildingUI({
                   <select
                     value={selectedTileGroupId || ''}
                     onChange={(e) =>
-                      useBuildingStore.setState({ selectedTileGroupId: e.target.value })
+                      buildingStore.setState({ selectedTileGroupId: e.target.value })
                     }
                     className="building-ui-select"
                   >
@@ -678,7 +679,7 @@ export function BuildingUI({
                             }
                           }
 
-                          useBuildingStore.setState({ selectedTileGroupId: newId });
+                          buildingStore.setState({ selectedTileGroupId: newId });
                           setCustomName('');
                         }
                       }}
@@ -1358,7 +1359,7 @@ export function BuildingUI({
                         moveWallToGroup(selectedWallId, nextGroupId);
                         return;
                       }
-                      useBuildingStore.setState({ selectedWallGroupId: nextGroupId });
+                      buildingStore.setState({ selectedWallGroupId: nextGroupId });
                     }}
                     className="building-ui-select"
                   >
@@ -1487,7 +1488,7 @@ export function BuildingUI({
                             }
                           }
 
-                          useBuildingStore.setState({ selectedWallGroupId: newId });
+                          buildingStore.setState({ selectedWallGroupId: newId });
                           setCustomName('');
                         }
                       }}

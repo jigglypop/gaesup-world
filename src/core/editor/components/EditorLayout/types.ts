@@ -12,7 +12,8 @@ import type { EditorSaveStatus } from '../../saveState';
 import type { EditorShellValidation } from '../../shell';
 import type { EditorShortcutBinding } from '../../shortcuts';
 import type { EditorCommandPaletteItem } from '../CommandPalette';
-import type { SceneObjectPatch } from '../panels/InspectorPanel';
+import type { SceneComponentDataUpdate, SceneObjectPatch } from '../panels/InspectorPanel';
+import type { InspectorPrefabActions } from '../panels/PrefabInstanceView/types';
 import type { ProjectAssetItem, ProjectPrefabRecord } from '../panels/ProjectAssetsPanel';
 
 export interface EditorLayoutProps {
@@ -36,6 +37,8 @@ export interface EditorLayoutProps {
   onUpdateSceneObject?: (objectId: SceneObjectId, patch: SceneObjectPatch) => void;
   onAddSceneComponent?: (objectId: SceneObjectId, component: CreateSceneComponentInput) => void;
   onRemoveSceneComponent?: (objectId: SceneObjectId, componentId: string) => void;
+  onUpdateSceneComponent?: SceneComponentDataUpdate;
+  scenePrefab?: InspectorPrefabActions;
   projectScenes?: SceneDocument[];
   projectPrefabs?: ProjectPrefabRecord[];
   selectedProjectItemId?: string;

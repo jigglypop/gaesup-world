@@ -1,343 +1,77 @@
-# Gaesup World
+# gaesup-world
 
-[![Version](https://img.shields.io/npm/v/gaesup-world?style=flat-square&logo=npm&logoColor=white&labelColor=000000&color=blue)](https://www.npmjs.com/package/gaesup-world)
-[![Downloads](https://img.shields.io/npm/dt/gaesup-world.svg?style=flat-square&logo=npm&logoColor=white&labelColor=000000&color=blue)](https://www.npmjs.com/package/gaesup-world)
+Build a playable 3D room in your browser. Use scene data in React and exchange layouts with Unity.
 
-![Gaesup World 메인 이미지](https://signightbackend.s3.ap-northeast-2.amazonaws.com/images/gemini/image/1776774136799_88c802b2359c.jpg)
+[Live mini-home](https://jigglypop.github.io/gaesup-world/) · [한국어](README.ko.md)
 
-`Gaesup World`는 `React Three Fiber`, `Three.js`, `Rapier`, `Zustand` 기반으로 만든 웹 3D 월드/게임 라이브러리입니다. 캐릭터 이동, 카메라, 상호작용, 건설, 애니메이션, 네트워크, 인벤토리, 퀘스트, 날씨, 타운 시스템처럼 월드 게임에 필요한 기능을 도메인 단위로 제공합니다.
+This repository contains a TypeScript world library and a Cyworld-inspired mini-home: a 3D room, walking avatar, furniture, profile, diary and guestbook. It saves in your browser. Shared links contain a snapshot; they are not a multiplayer service.
 
-이 저장소는 두 가지 역할을 함께 가집니다.
+This release is `1.0.32`. Check the npm registry for publication status.
 
-- `src/`: 실제 배포되는 라이브러리 코드
-- `examples/`: 라이브러리를 사용하는 데모 앱
+## Run the mini-home
 
-## 현재 상태
-
-- 패키지명: `gaesup-world`
-- 문서 기준 import 엔트리: `gaesup-world`
-- 라이브러리 ESM 빌드: 확인 완료
-- 데모 Vite 빌드: 확인 완료
-- Jest 테스트: 통과
-- TypeScript declaration build: 통과
-
-즉, 런타임, 번들, 타입 선언 빌드 기준으로는 사용 가능한 상태입니다.
-
-## 설치
-
-앱에서 사용할 때는 `gaesup-world`와 3D 런타임 peer dependency를 함께 설치합니다. React, Three.js, React Three Fiber는 앱 쪽에서 직접 버전을 관리하는 것이 안전합니다.
-
-```bash
-npm install gaesup-world three three-stdlib react react-dom @react-three/fiber @react-three/drei @react-three/rapier @react-three/postprocessing
-```
-
-또는
-
-```bash
-yarn add gaesup-world three three-stdlib react react-dom @react-three/fiber @react-three/drei @react-three/rapier @react-three/postprocessing
-```
-
-또는
-
-```bash
-pnpm add gaesup-world three three-stdlib react react-dom @react-three/fiber @react-three/drei @react-three/rapier @react-three/postprocessing
-```
-
-## 빠른 시작
-
-가장 기본적인 사용 예시는 아래와 같습니다.
-
-```tsx
-import { Canvas } from '@react-three/fiber';
-import { Physics } from '@react-three/rapier';
-import { GaesupController, GaesupWorld } from 'gaesup-world';
-
-const CHARACTER_URL = 'https://your-cdn.example.com/character.glb';
-
-export default function App() {
-  return (
-    <GaesupWorld
-      urls={{ characterUrl: CHARACTER_URL }}
-      mode={{ type: 'character', controller: 'keyboard', control: 'thirdPerson' }}
-    >
-      <Canvas shadows camera={{ position: [0, 6, 10], fov: 50 }}>
-        <Physics>
-          <GaesupController />
-        </Physics>
-      </Canvas>
-    </GaesupWorld>
-  );
-}
-```
-
-### Scene JSON authoring 경계
-
-`SceneJsonObject`는 `undefined`가 없는 canonical JSON 타입입니다. 표준 scene component 입력은 `SceneJsonAuthoringObject`를 사용하므로 `exactOptionalPropertyTypes` 설정과 관계없이 optional field를 작성할 수 있지만, 입력 객체 자체를 `SceneJsonObject`로 대입하지는 않습니다. `createSceneComponent` 또는 표준 component factory를 통과시키면 입력과 alias되지 않는 canonical owned copy를 받습니다. 반환 데이터의 기존 mutable API는 유지되며, 직접 변경한 데이터는 load/save 전에 다시 검증됩니다. `loadSceneRuntime`도 입력 document/object identity 대신 owned materialization을 사용하고, `serializeSceneDocument`는 validation issue가 하나라도 있으면 `TypeError`를 던집니다.
-
-## 핵심 개념
-
-### 런타임과 플러그인
-
-`createGaesupRuntime`은 카메라, 모션, 저장, NPC, 경제, 날씨 같은 도메인 플러그인을 한곳에 묶는 런타임 팩토리입니다. 앱이 필요한 도메인만 골라 붙일 수 있고, 각 플러그인은 서비스, 시스템, 저장 도메인, UI 확장을 등록합니다.
-
-```ts
-import {
-  createGaesupRuntime,
-  createBuildingPlugin,
-  createCameraPlugin,
-  createInventoryPlugin,
-} from 'gaesup-world';
-
-const runtime = createGaesupRuntime({
-  plugins: [
-    createCameraPlugin(),
-    createBuildingPlugin(),
-    createInventoryPlugin(),
-  ],
-});
-
-await runtime.setup();
-```
-
-### 월드 설정
-
-`GaesupWorld`는 월드 관련 설정을 store에 주입하는 루트 컴포넌트입니다.
-
-- `urls`: 캐릭터/차량/비행기 모델 URL
-- `mode`: 플레이어 타입, 입력 방식, 카메라 제어 방식
-- `cameraOption`: 카메라 세부 옵션
-
-내부적으로는 `WorldContainer` 또는 `WorldConfigProvider` 역할을 감싼 공개 API입니다.
-
-### 플레이어 제어
-
-`GaesupController`는 캐릭터/엔티티 조작을 담당하는 기본 컨트롤러입니다.
-
-- 키보드 이동
-- 클릭 이동
-- 상호작용 시스템 연결
-- 이동/상태 브리지 연결
-
-### 도메인 기반 구조
-
-주요 기능은 도메인 단위로 분리되어 있습니다.
-
-- `animation`
-- `camera`
-- `motions`
-- `interactions`
-- `world`
-- `building`
-- `networks`
-- `time`
-- `save`
-- `inventory`
-- `items`
-- `quests`
-- `weather`
-- `town`
-- `audio`
-- `npc`
-- `blueprints`
-- `admin`
-
-### 저장 시스템
-
-새 기능은 `SaveSystem` 중심으로 저장 도메인을 등록하는 흐름을 권장합니다. 같은 key를 중복 등록하면 에러가 나도록 보호되어 있어, 여러 런타임이나 플러그인이 같은 저장 슬롯을 조용히 덮어쓰는 일을 피할 수 있습니다.
-
-```ts
-import { SaveSystem } from 'gaesup-world';
-
-const unregister = saveSystem.register({
-  key: 'inventory',
-  serialize: () => ({ items: [] }),
-  hydrate: (data) => {
-    // restore your store here
-  },
-});
-
-unregister();
-```
-
-`SaveLoadManager`는 legacy world save와 파일 import/export helper로 남아 있습니다. `compress: true` 저장은 gzip 지원 브라우저에서는 gzip payload를 사용하고, 저장 목록에서도 timestamp와 metadata를 읽을 수 있습니다.
-
-## 자주 쓰는 공개 API
-
-대표적으로 아래 항목들을 루트 엔트리에서 바로 import 할 수 있습니다.
-
-```tsx
-import {
-  GaesupWorld,
-  GaesupController,
-  WorldContainer,
-  WorldConfigProvider,
-  BuildingUI,
-  InventoryUI,
-  QuestLogUI,
-  DialogBox,
-  WeatherEffect,
-  useInventoryStore,
-  useQuestStore,
-  useWeatherStore,
-  useGameTime,
-  getItemRegistry,
-  getNPCScheduler,
-} from 'gaesup-world';
-```
-
-블루프린트 런타임 관련 API도 루트 엔트리에서 바로 사용할 수 있습니다.
-
-```tsx
-import {
-  BlueprintSpawner,
-  blueprintRegistry,
-  BlueprintFactory,
-} from 'gaesup-world';
-```
-
-관리자 UI와 블루프린트 편집 UI는 별도 subpath를 사용합니다.
-
-```tsx
-import { GaesupAdmin, useAuthStore } from 'gaesup-world/admin';
-import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
-```
-
-## Admin 사용법
-
-관리자 UI는 `gaesup-world/admin` 엔트리에서 import 합니다.
-
-```tsx
-import { GaesupAdmin } from 'gaesup-world/admin';
-```
-
-기본적으로 `GaesupAdmin`은 로그인 게이트가 켜져 있습니다. 즉, `requireLogin` 기본값은 `true`입니다.
-
-```tsx
-import { GaesupAdmin } from 'gaesup-world/admin';
-
-export default function AdminPage() {
-  return (
-    <GaesupAdmin>
-      <div>Protected Admin Area</div>
-    </GaesupAdmin>
-  );
-}
-```
-
-로그인 보호 없이 감싸고 싶다면 명시적으로 꺼야 합니다.
-
-```tsx
-<GaesupAdmin requireLogin={false}>
-  <div>Public Admin Preview</div>
-</GaesupAdmin>
-```
-
-## 개발 환경 실행
-
-이 저장소 자체를 로컬에서 실행할 때는 `pnpm` 기준으로 작업하는 것이 가장 자연스럽습니다. Node 패키지 매니저가 섞이면 lockfile과 prepare 단계가 헷갈릴 수 있으니, 처음부터 `corepack pnpm ...` 형태로 맞추는 것을 권장합니다.
-
-```bash
+```sh
 corepack pnpm install
-corepack pnpm dev
+corepack pnpm dev --host 127.0.0.1 --port 5174
 ```
 
-주요 명령:
+Open http://127.0.0.1:5174/. The separate rendering showcase is at `/engine`. No model URL, AI key or Unity installation is needed. The UI is currently Korean; the English guide maps its buttons to their actions.
 
-```bash
-corepack pnpm dev
-corepack pnpm build
-corepack pnpm lint
-corepack pnpm test -- --runInBand
-corepack pnpm exec publint
+1. Choose **미니룸 꾸미기** (Edit room), add furniture and drag it.
+2. Edit your profile and theme. Undo/redo covers room and notes together.
+3. Changes autosave after 1.2 seconds. **미니홈피 저장** saves immediately.
+4. Download a JSON backup or recover the previous valid save.
+5. Share the profile and room snapshot, or export the visible room as GLB.
+
+## Use the library
+
+A matching React 19 peer set:
+
+```sh
+npm install gaesup-world react@19 react-dom@19 three@0.185 three-stdlib @react-three/fiber@9 @react-three/drei@10 @react-three/rapier@2 @react-three/postprocessing@3
 ```
 
-참고:
+React 18/Fiber 8 are also declared peers, but that combination needs separate consumer validation.
 
-- `npm pack --dry-run`은 `prepare`를 실행하므로 `dist/`가 재생성됩니다.
-- 배포 전에는 `corepack pnpm build`, `corepack pnpm lint`, `corepack pnpm test -- --runInBand`, `corepack pnpm exec publint`를 함께 확인하는 것이 좋습니다.
+```ts
+import { createSceneDocument, createSceneDocumentController } from 'gaesup-world';
 
-## 데모 앱
+const controller = createSceneDocumentController(createSceneDocument({
+  id: 'my-room',
+  objects: [{ id: 'chair', name: 'Chair' }],
+}));
+controller.dispatch({
+  type: 'scene-object.update',
+  objectId: 'chair',
+  patch: { transform: { position: [2, 0, 0] } },
+});
+const savedScene = JSON.stringify(controller.getSnapshot());
+```
 
-`examples/`에는 라이브러리를 실제로 사용하는 데모 라우트가 들어 있습니다.
+Scene data is serializable. React, Three.js and physics objects belong to runtime projections. Edits use the document controller. Editor UI is available through `gaesup-world/editor`; a complete general-purpose Studio is still under development.
 
-- `/`: 쇼케이스 데모
-- `/world`: 기본 월드/건설 에디터 데모
-- `/edit`: 편집 데모
-- `/blueprints`: 블루프린트 에디터
-- `/network`: 멀티플레이어 데모
-- `/admin`: 관리자 래핑 데모
+## Unity
 
-최근 정리로 인해 `examples`는 가능하면 내부 소스 경로 대신 루트 public API를 사용하도록 맞춰져 있습니다.
+The preview adds `exportUnityScene` and `importUnityScene`: local transforms, hierarchy, IDs and component metadata, in meters, with quaternion and Z-axis conversion. Included Unity Editor scripts read/write this JSON. GLB exports geometry and materials for compatible importers. Neither path transfers arbitrary scripts or imports native `.unity` files.
 
-## 패키지 엔트리
+## Verify and deploy
 
-현재 공개 export는 아래 subpath를 기준으로 관리합니다.
+```sh
+corepack pnpm run verify:full
+corepack pnpm run test:minihome:browser
+corepack pnpm run build:demo
+```
 
-- `gaesup-world`: 메인 런타임, 월드, 도메인 API
-- `gaesup-world/admin`: 관리자 래퍼 UI
-- `gaesup-world/blueprints`: 블루프린트 런타임 API
-- `gaesup-world/blueprints/editor`: 블루프린트 편집 UI
-- `gaesup-world/runtime`: 런타임 중심 API
-- `gaesup-world/editor`: 에디터 API
-- `gaesup-world/assets`: 에셋 API
-- `gaesup-world/network`: 네트워크 API
-- `gaesup-world/plugins`: 플러그인 API
-- `gaesup-world/server-contracts`: 서버/클라이언트 command contract
-- `gaesup-world/postprocessing`: 렌더링 후처리 API
-- `gaesup-world/style.css`: 라이브러리 기본 스타일
+The browser probe expects the dev server on 5174 and local Chrome; WebGPU and WebGL2 fallback are separate checks. `test:demo` checks build structure, not rendering.
 
-`package.json`의 export map은 ESM/CJS와 `.d.ts`/`.d.cts` 타입 선언을 함께 제공합니다.
+`npm run deploy` builds `demo-dist` and publishes it to GitHub Pages. Override `GAESUP_BASE_URL` for another base path. `version.json` records version, commit, dirty state and build time. Pages deep links use `404.html`; an unknown route may render while retaining HTTP 404.
 
-## 검증 상태
+For npm, validate, authenticate with `npm login`, pack the reviewed build and run `npm publish <tarball>` without a custom tag.
 
-최근 확인 기준:
+## Current limits
 
-- `npm run build:types`: 성공
-- `npm run lint`: 성공
-- `npm test -- --runInBand`: 성공
-- `npm run build`: 성공
-- `npx publint`: 성공
+- No account login, cross-device save, live visits or collaborative editing in the mini-home.
+- Shared links omit diary/guestbook entries; anyone holding the link can read its profile and room.
+- World matrices preserve shear. `getWorldTransform` throws for shear or singular bases; use `getWorldMatrix` when TRS cannot represent the result.
+- Unity compilation and real Editor round-trip require a Unity installation. TypeScript tests alone do not prove them.
 
-## 문서 안내
-
-프로젝트 개요:
-
-- [프로젝트 개요](./docs/GAESUP_WORLD_OVERVIEW.md)
-
-도메인 문서:
-
-- [블루프린트](./docs/domain/BLUEPRINT.md)
-- [카메라](./docs/domain/CAMERA.md)
-- [모션](./docs/domain/MOTIONS.md)
-
-가이드 문서:
-
-- [API 가이드](./docs/guide/API_GUIDE.md)
-- [성능 가이드](./docs/guide/PERFORMANCE_GUIDE.md)
-- [테스트 가이드](./docs/guide/TEST_GUIDE.md)
-
-API 문서:
-
-- [블루프린트 API](./docs/api/BLUEPRINT_API.md)
-- [빌딩 API](./docs/api/BUILDING_API.md)
-- [렌더링 API](./docs/api/RENDERING_API.md)
-- [성능 API](./docs/api/PERFORMANCE_API.md)
-- [WASM API](./docs/api/WASM_API.md)
-
-설정 문서:
-
-- [블루프린트 설정](./docs/config/BLUEPRINT_CONFIG.md)
-- [빌딩 설정](./docs/config/BUILDING_CONFIG.md)
-- [카메라 설정](./docs/config/CAMERA_CONFIG.md)
-- [물리 설정](./docs/config/PHYSICS_CONFIG.md)
-
-계획 문서:
-
-- [Universal Web Game Library 계획](./docs/plan/UNIVERSAL_WEB_GAME_LIBRARY.md)
-- [테스트 가이드](./docs/guide/TEST_GUIDE.md)
-
-## 패키지 정보
-
-- npm: https://www.npmjs.com/package/gaesup-world
-- 저장소: https://github.com/jigglypop/gaesup-world.git
-- 라이선스: MIT

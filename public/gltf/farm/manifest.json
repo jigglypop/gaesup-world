@@ -1,0 +1,369 @@
+{
+  "version": 1,
+  "author": "Kenney",
+  "license": "CC0-1.0",
+  "source": "https://kenney.nl/assets/nature-kit",
+  "archive": "https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip",
+  "archiveSha256": "fa7974a0d342bfe63c38664ba9f8ec1a4aab8ea25f099bdc56870e33588c4d9d",
+  "url": "gltf/farm/farm-library.glb",
+  "sha256": "4e500e9e3291e43a2fab4861733ab820ccc6c8cbafce1af0e5793c53cb2c172b",
+  "bytes": 154292,
+  "units": "meters",
+  "up": "+Y",
+  "pivot": "ground-center",
+  "assets": [
+    {
+      "id": "pumpkin",
+      "sourceFile": "crop_pumpkin.glb",
+      "sourceSha256": "5b4878c5996033629419c26ac32153ce8ac06bbbdac98e4fa8a5cbab98f78077",
+      "bounds": {
+        "min": [
+          -0.2206350564956665,
+          0,
+          -0.22597205638885498
+        ],
+        "max": [
+          0.2206350564956665,
+          0.33382999897003174,
+          0.22597205638885498
+        ]
+      }
+    },
+    {
+      "id": "carrot",
+      "sourceFile": "crop_carrot.glb",
+      "sourceSha256": "2a3641c609dd837a4feebb4f5c95d4cd43c3046e800acd416f4f6a3b923ba9d8",
+      "bounds": {
+        "min": [
+          -0.17157098650932312,
+          3.4527941518616966e-18,
+          -0.17157098650932312
+        ],
+        "max": [
+          0.17157098650932312,
+          0.6194037199020386,
+          0.17157098650932312
+        ]
+      }
+    },
+    {
+      "id": "melon",
+      "sourceFile": "crop_melon.glb",
+      "sourceSha256": "4296c5fc07c4d0707ab11b9d97d2978132f4bf525a00ccd20e463fdcf04a5e5f",
+      "bounds": {
+        "min": [
+          -0.20879998803138733,
+          0,
+          -0.1808260977268219
+        ],
+        "max": [
+          0.20879998803138733,
+          0.3479999899864197,
+          0.1808260977268219
+        ]
+      }
+    },
+    {
+      "id": "turnip",
+      "sourceFile": "crop_turnip.glb",
+      "sourceSha256": "5e121c6042742497ed02081a7c62fc80aec2191f04e22a57d81d02130689f71d",
+      "bounds": {
+        "min": [
+          -0.17157098650932312,
+          -3.205930680073898e-31,
+          -0.17157098650932312
+        ],
+        "max": [
+          0.17157098650932312,
+          0.6606690287590027,
+          0.17157098650932312
+        ]
+      }
+    },
+    {
+      "id": "corn",
+      "sourceFile": "crops_cornStageD.glb",
+      "sourceSha256": "d90d9cbba85e99526b254adee638495f914480831ab41d00807378c004c112c3",
+      "bounds": {
+        "min": [
+          -0.2207858,
+          0,
+          -0.22078580601031625
+        ],
+        "max": [
+          0.2207858,
+          1.25,
+          0.22078580601031628
+        ]
+      }
+    },
+    {
+      "id": "wheat",
+      "sourceFile": "crops_wheatStageB.glb",
+      "sourceSha256": "589db4d6fe0bd7616c1f1c2f10a335704b2dad5d24638dc08a5b2e5334c68852",
+      "bounds": {
+        "min": [
+          -0.2698039412498474,
+          0,
+          -0.22334957122802734
+        ],
+        "max": [
+          0.2698039412498474,
+          0.5349356532096863,
+          0.22334957122802734
+        ]
+      }
+    },
+    {
+      "id": "sprout",
+      "sourceFile": "crops_leafsStageB.glb",
+      "sourceSha256": "aea4fe9a7943e7b2b7df99dc4fa00b85e34d00ea9b8e1b144504cef25d77b98c",
+      "bounds": {
+        "min": [
+          -0.19468927383422852,
+          -1.743049876022766e-18,
+          -0.19468927383422852
+        ],
+        "max": [
+          0.19468927383422852,
+          0.6770747303962708,
+          0.19468927383422852
+        ]
+      }
+    },
+    {
+      "id": "soil-row",
+      "sourceFile": "crops_dirtDoubleRow.glb",
+      "sourceSha256": "b5c330d81a4efe0944caf5f1d1dd0c0d50227c93f2a4a57ec2425d2c9b7a2d84",
+      "bounds": {
+        "min": [
+          -0.5,
+          0,
+          -0.4689999967813492
+        ],
+        "max": [
+          0.5,
+          0.05000000074505806,
+          0.4689999967813492
+        ]
+      }
+    },
+    {
+      "id": "tree-oak",
+      "sourceFile": "tree_oak.glb",
+      "sourceSha256": "d7fd8773674928c50c11b66d12c636d49bdcc15a8b1c7fbb98e6f63a3439a3f3",
+      "bounds": {
+        "min": [
+          -0.32027700543403625,
+          1.602965340036949e-31,
+          -0.36982399225234985
+        ],
+        "max": [
+          0.32027700543403625,
+          1.2262399196624756,
+          0.36982399225234985
+        ]
+      }
+    },
+    {
+      "id": "tree-fat",
+      "sourceFile": "tree_fat.glb",
+      "sourceSha256": "84b262c5dda3a91ac6c95f9d8b23a0ebbb1951d678c0e1375d3e32623cc43ee2",
+      "bounds": {
+        "min": [
+          -0.3775000274181366,
+          0,
+          -0.32692450284957886
+        ],
+        "max": [
+          0.3775000274181366,
+          1.1503874063491821,
+          0.32692450284957886
+        ]
+      }
+    },
+    {
+      "id": "tree-default",
+      "sourceFile": "tree_default.glb",
+      "sourceSha256": "562d29638c902de3c7bee465d3a53bb77117efbc392ae04ed894faf6b5dc691d",
+      "bounds": {
+        "min": [
+          -0.3775000274181366,
+          0,
+          -0.32692450284957886
+        ],
+        "max": [
+          0.3775000274181366,
+          1.7078874111175537,
+          0.32692450284957886
+        ]
+      }
+    },
+    {
+      "id": "log-stack",
+      "sourceFile": "log_stack.glb",
+      "sourceSha256": "90eaae4a01ba1f25c2f0c6d83087e4a7a8fac684f2452615245333968d118d68",
+      "bounds": {
+        "min": [
+          -0.21235857158899307,
+          0,
+          -0.35499998927116394
+        ],
+        "max": [
+          0.21235857158899307,
+          0.34641020894050456,
+          0.35499998927116394
+        ]
+      }
+    },
+    {
+      "id": "sign",
+      "sourceFile": "sign.glb",
+      "sourceSha256": "c658c21672ecd63c5d3e53f06f875d68e6509edb1ab7e3b75374df7c61e7dd0c",
+      "bounds": {
+        "min": [
+          -0.15000000596046448,
+          0,
+          -0.03499999828636646
+        ],
+        "max": [
+          0.15000000596046448,
+          0.40877050161361694,
+          0.03499999828636646
+        ]
+      }
+    },
+    {
+      "id": "pot",
+      "sourceFile": "pot_large.glb",
+      "sourceSha256": "57e60214bc6ab1dc3764c9ffe80091ff45f2bfd49fbc313c1b68dcaab1537aef",
+      "bounds": {
+        "min": [
+          -0.28179821372032166,
+          -3.2560232551145567e-32,
+          -0.24404442310333252
+        ],
+        "max": [
+          0.28179821372032166,
+          0.20000000298023224,
+          0.24404442310333252
+        ]
+      }
+    },
+    {
+      "id": "bush",
+      "sourceFile": "plant_bushDetailed.glb",
+      "sourceSha256": "2e0487020d68ccf664435db9d829c78ae00e6d2785ee3ec10b9f89cc70a10406",
+      "bounds": {
+        "min": [
+          -0.30127185583114624,
+          0,
+          -0.30127185583114624
+        ],
+        "max": [
+          0.30127185583114624,
+          0.3604109287261963,
+          0.30127185583114624
+        ]
+      }
+    },
+    {
+      "id": "flower-yellow",
+      "sourceFile": "flower_yellowA.glb",
+      "sourceSha256": "8a3b08cd2ca411c21f9c581d5bda651d78b13c50cba45ad8fa0389398ead6d1d",
+      "bounds": {
+        "min": [
+          -0.07954875938594341,
+          0,
+          -0.09052953124046326
+        ],
+        "max": [
+          0.07954875938594341,
+          0.19249999523162842,
+          0.09052953124046326
+        ]
+      }
+    },
+    {
+      "id": "flower-red",
+      "sourceFile": "flower_redA.glb",
+      "sourceSha256": "171930b7789ddbf735af3745576b5393750beb9133b9ff4a444bb6bb2986c020",
+      "bounds": {
+        "min": [
+          -0.07954875938594341,
+          0,
+          -0.09052953124046326
+        ],
+        "max": [
+          0.07954875938594341,
+          0.29249998927116394,
+          0.09052953124046326
+        ]
+      }
+    },
+    {
+      "id": "flower-purple",
+      "sourceFile": "flower_purpleA.glb",
+      "sourceSha256": "f6fc34c96a03420a74fe36d4c2d0ec88f15204fcad99cd1416c3c4ecb22e48c4",
+      "bounds": {
+        "min": [
+          -0.07954875938594341,
+          0,
+          -0.09052953124046326
+        ],
+        "max": [
+          0.07954875938594341,
+          0.24249999225139618,
+          0.09052953124046326
+        ]
+      }
+    },
+    {
+      "id": "stump",
+      "sourceFile": "stump_round.glb",
+      "sourceSha256": "e9b0f385f0ef98493ef716a055aa51e0b99efb8445279be7bb8bd83329a4c4af",
+      "bounds": {
+        "min": [
+          -0.1606476753950119,
+          0,
+          -0.18549999594688416
+        ],
+        "max": [
+          0.1606476753950119,
+          0.20649999380111694,
+          0.18549999594688416
+        ]
+      }
+    },
+    {
+      "id": "grass-tuft",
+      "sourceFile": "grass_leafs.glb",
+      "sourceSha256": "8bc4c0b17c2e64c34e1acbf7c4a2fd8c04cfcd7155328e61767887b2ced112c7",
+      "bounds": {
+        "min": [
+          -0.11724299937486649,
+          -6.661120036767021e-20,
+          -0.1286541260778904
+        ],
+        "max": [
+          0.11724299937486649,
+          0.14249999821186082,
+          0.1286541260778904
+        ]
+      }
+    }
+  ],
+  "validation": {
+    "numErrors": 0,
+    "numWarnings": 0,
+    "numInfos": 0,
+    "numHints": 0,
+    "messages": [],
+    "truncated": false
+  },
+  "adaptations": [
+    "KHR_materials_unlit removed so assets receive scene lighting",
+    "Material colors remapped to a muted farm palette",
+    "Pivots moved to ground center"
+  ]
+}

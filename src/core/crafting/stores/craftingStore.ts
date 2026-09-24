@@ -1,8 +1,12 @@
 import { create } from 'zustand';
 
-import { useWalletStore } from '../../economy/stores/walletStore';
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
+
+import { useWalletStore, type WalletStore } from '../../economy/stores/walletStore';
+import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
 import { getRecipeRegistry } from '../registry/RecipeRegistry';
 import type { CraftingSerialized, RecipeId } from '../types';
@@ -21,7 +25,8 @@ type State = {
   prepareHydrate: (data: CraftingSerialized | null | undefined) => () => void;
 };
 
-export const useCraftingStore = create<State>((set, get) => ({
+export function createCraftingStore(inventoryStore: InventoryStore, walletStore: WalletStore) {
+  return create<State>((set, get) => ({
   unlocked: new Set<RecipeId>(),
 
   unlock: (id) => {
@@ -45,7 +50,7 @@ export const useCraftingStore = create<State>((set, get) => ({
     const def = getRecipeRegistry().get(id);
     if (!def) return { ok: false, reason: 'unknown recipe' };
     if (!get().isUnlocked(id)) return { ok: false, reason: 'locked' };
-    const inv = useInventoryStore.getState();
+    const inv = inventoryStore.getState();
     const required = new Map<string, number>();
     for (const ing of def.ingredients) {
       required.set(ing.itemId, (required.get(ing.itemId) ?? 0) + ing.count);
@@ -66,7 +71,7 @@ export const useCraftingStore = create<State>((set, get) => ({
       else if (slot.itemId === def.output.itemId) capacity += Math.max(0, maxStack - remaining);
     }
     if ([...required.values()].some((count) => count > 0)) return { ok: false, reason: 'missing ingredients' };
-    if (def.requireBells && useWalletStore.getState().bells < def.requireBells) {
+    if (def.requireBells && walletStore.getState().bells < def.requireBells) {
       return { ok: false, reason: 'insufficient bells' };
     }
     if (capacity < def.output.count) return { ok: false, reason: 'inventory full' };
@@ -77,13 +82,13 @@ export const useCraftingStore = create<State>((set, get) => ({
     const check = get().canCraft(id);
     if (!check.ok) return check;
     const def = getRecipeRegistry().require(id);
-    const inv = useInventoryStore.getState();
+    const inv = inventoryStore.getState();
     for (const ing of def.ingredients) {
       const removed = inv.removeById(ing.itemId, ing.count);
       if (removed < ing.count) return { ok: false, reason: 'remove failed' };
     }
     if (def.requireBells) {
-      if (!useWalletStore.getState().spend(def.requireBells)) return { ok: false, reason: 'spend failed' };
+      if (!walletStore.getState().spend(def.requireBells)) return { ok: false, reason: 'spend failed' };
     }
     const left = inv.add(def.output.itemId, def.output.count);
     if (left > 0) {
@@ -109,3 +114,10 @@ export const useCraftingStore = create<State>((set, get) => ({
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+}
+
+export type CraftingStore = ReturnType<typeof createCraftingStore>;
+export const CRAFTING_STORE_SERVICE = runtimeStoreServiceKey<CraftingStore>('crafting');
+export const { useStore: useCraftingStore, useStoreApi: useCraftingStoreApi } = createScopedStoreHook(
+  createCraftingStore(useInventoryStore, useWalletStore), () => useGaesupRuntime()?.craftingStore,
+);

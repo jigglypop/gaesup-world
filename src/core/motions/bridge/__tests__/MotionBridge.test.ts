@@ -2,8 +2,10 @@ import 'reflect-metadata';
 import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
+import type { SystemContext } from '@core/boilerplate';
 import type { GameStatesType } from '@core/world/components/Rideable/types';
 
+import type { MotionUpdateArgs } from '../../core/system/MotionSystem';
 import type { ActiveStateType } from '../../core/types';
 import { MotionBridge } from '../MotionBridge';
 
@@ -83,14 +85,15 @@ describe('MotionBridge reset ownership', () => {
     expect(entity).toBeDefined();
     if (!entity) throw new Error('Expected registered motion entity');
 
-    entity.system.update({
+    const updateContext: SystemContext & MotionUpdateArgs = {
       deltaTime: 0.016,
       totalTime: 0.016,
       frameCount: 1,
       rigidBody,
       activeState: createActiveState(),
       gameStates: createGameStates(),
-    });
+    };
+    entity.system.update(updateContext);
     entity.system.setGrounded(true, createActiveState(), createGameStates());
 
     const beforeReset = bridge.snapshot(ENTITY_ID);

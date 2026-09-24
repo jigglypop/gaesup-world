@@ -1,5 +1,7 @@
 import 'reflect-metadata';
-import './core/initializeBridges';
+import { initializeBridges } from './core/initializeBridges';
+
+initializeBridges();
 
 export * from './core/editor';
 export * from './core';
@@ -26,6 +28,9 @@ export {
   NPCInstance,
   compileNPCBrainBlueprint,
   configureReinforcementAdapter,
+  createReinforcementAdapter,
+  attachReinforcementAdapter,
+  createNPCBrainAdapterRegistry,
   createNPCPlugin,
   createNPCObservation,
   getReinforcementAdapterConfig,
@@ -42,12 +47,17 @@ export type {
   NPCBrainBlueprint,
   NPCBrainConfig,
   NPCBrainDecision,
-  NPCInstance as NPCInstanceData,
+  NPCBrainAdapter,
+  NPCBrainAdapterContext,
+  NPCBrainAdapterRegistry,
   NPCObservation,
   NPCPluginOptions,
   NPCSerializedState,
   ReinforcementAdapterConfig,
+  ReinforcementAdapter,
+  ReinforcementAdapterOptions,
 } from './core/npc';
+export type { NPCInstance as NPCInstanceData } from './core/npc/types';
 export {
   GaesupWorld,
   GaesupController,
@@ -151,6 +161,10 @@ export {
   GaeSupProps,
   GaesupWorldContent,
   useGaesupStore,
+  createGaesupStore,
+  useGaesupStoreApi,
+  GaesupStoreProvider,
+  RUNTIME_GAESUP_STORE_SERVICE_ID,
   // NPC
   NPCSystem,
   useNPCStore,
@@ -214,6 +228,8 @@ export {
   createStateDelta,
   resolveRuntimeInputBackend,
   useInteractablesStore,
+  useInteractablesStoreApi,
+  createInteractablesStore,
   useCurrentInteraction,
   useInputBackend,
   useInteractionKey,

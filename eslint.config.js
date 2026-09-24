@@ -6,6 +6,16 @@ import pluginReactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+// Raw useFrame owners outside the scheduler; check:quality caps their count (rawUseFrame).
+const RAW_USE_FRAME_OWNERS = [
+  'src/core/runtime/frame/react/**',
+  'src/core/motions/entities/refs/RigidPartRef.tsx',
+  'src/core/rendering/GpuBatchBridge.tsx',
+  'src/core/rendering/postprocess/WorldPostProcessing.tsx',
+  'src/core/rendering/sky/CascadedSun.tsx',
+  'src/core/world/components/WorldPhysics/index.tsx',
+];
+
 export default tseslint.config(
   {
     ignores: [
@@ -15,9 +25,7 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/coverage/**',
       '**/.tmp/**',
-      '**/__tests__/**',
-      '**/*.test.*',
-      '**/*.spec.*',
+      '.artifacts/**',
     ],
   },
   ...tseslint.configs.recommended,
@@ -45,6 +53,7 @@ export default tseslint.config(
           ignore: [
             // react-three-fiber props
             'args',
+            'matrixAutoUpdate',
             'attach',
             'blending',
             'castShadow',
@@ -61,6 +70,7 @@ export default tseslint.config(
             'gradientMap',
             'groundColor',
             'index',
+            'instanceCount',
             'intensity',
             'map',
             'alphaMap',
@@ -99,6 +109,8 @@ export default tseslint.config(
             'windStrength',
             'attributes-position',
             'attributes-uv',
+            'attributes-normal',
+            'lights',
           ],
         },
       ],
@@ -137,6 +149,24 @@ export default tseslint.config(
     },
   },
   {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: RAW_USE_FRAME_OWNERS,
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@react-three/fiber',
+              importNames: ['useFrame'],
+              message: 'Use useEngineFrame or useSharedFrame from runtime/frame instead of raw useFrame.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['src/core/**/core/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
@@ -164,6 +194,18 @@ export default tseslint.config(
     files: ['scripts/**/*.cjs'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
+    files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}', 'test/**/*.{ts,tsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
+    },
+    rules: {
+      // Tests drive core modules through React/R3F harnesses.
+      'no-restricted-imports': 'off',
     },
   },
 );

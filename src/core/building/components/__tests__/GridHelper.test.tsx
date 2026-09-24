@@ -1,8 +1,11 @@
 import React from 'react';
-import { render } from '@testing-library/react';
+
 import { Canvas } from '@react-three/fiber';
-import GridHelper from '../GridHelper';
+import { render } from '@testing-library/react';
+
 import { TILE_CONSTANTS } from '../../types/constants';
+import { GridHelper } from '../GridHelper';
+import type { GridHelperProps } from '../GridHelper/types';
 
 // TestWrapper for React Three Fiber Canvas
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -47,24 +50,24 @@ describe('GridHelper 컴포넌트 테스트', () => {
       expect(container.firstChild).toBeInTheDocument();
     });
 
-    test('colorCenterLine prop이 적용되어야 함', () => {
+    test('color1 prop이 적용되어야 함', () => {
       const testColor = '#ff0000';
       
       const { container } = render(
         <TestWrapper>
-          <GridHelper colorCenterLine={testColor} />
+          <GridHelper color1={testColor} />
         </TestWrapper>
       );
 
       expect(container.firstChild).toBeInTheDocument();
     });
 
-    test('colorGrid prop이 적용되어야 함', () => {
+    test('color2 prop이 적용되어야 함', () => {
       const testColor = '#00ff00';
       
       const { container } = render(
         <TestWrapper>
-          <GridHelper colorGrid={testColor} />
+          <GridHelper color2={testColor} />
         </TestWrapper>
       );
 
@@ -77,8 +80,8 @@ describe('GridHelper 컴포넌트 테스트', () => {
       const props = {
         size: 100,
         divisions: 50,
-        colorCenterLine: '#ff0000',
-        colorGrid: '#0000ff'
+        color1: '#ff0000',
+        color2: '#0000ff'
       };
       
       const { container } = render(
@@ -103,7 +106,7 @@ describe('GridHelper 컴포넌트 테스트', () => {
     test('색상만 변경해도 렌더링되어야 함', () => {
       const { container } = render(
         <TestWrapper>
-          <GridHelper colorCenterLine="#ffffff" colorGrid="#000000" />
+          <GridHelper color1="#ffffff" color2="#000000" />
         </TestWrapper>
       );
 
@@ -157,7 +160,7 @@ describe('GridHelper 컴포넌트 테스트', () => {
     test('hex 색상이 적용되어야 함', () => {
       const { container } = render(
         <TestWrapper>
-          <GridHelper colorCenterLine="#ff5733" colorGrid="#33c4ff" />
+          <GridHelper color1="#ff5733" color2="#33c4ff" />
         </TestWrapper>
       );
 
@@ -167,7 +170,7 @@ describe('GridHelper 컴포넌트 테스트', () => {
     test('짧은 hex 색상도 처리되어야 함', () => {
       const { container } = render(
         <TestWrapper>
-          <GridHelper colorCenterLine="#f53" colorGrid="#3cf" />
+          <GridHelper color1="#f53" color2="#3cf" />
         </TestWrapper>
       );
 
@@ -177,7 +180,7 @@ describe('GridHelper 컴포넌트 테스트', () => {
     test('named 색상도 처리되어야 함', () => {
       const { container } = render(
         <TestWrapper>
-          <GridHelper colorCenterLine="red" colorGrid="blue" />
+          <GridHelper color1="red" color2="blue" />
         </TestWrapper>
       );
 
@@ -187,7 +190,7 @@ describe('GridHelper 컴포넌트 테스트', () => {
     test('rgb 색상도 처리되어야 함', () => {
       const { container } = render(
         <TestWrapper>
-          <GridHelper colorCenterLine="rgb(255, 0, 0)" colorGrid="rgb(0, 0, 255)" />
+          <GridHelper color1="rgb(255, 0, 0)" color2="rgb(0, 0, 255)" />
         </TestWrapper>
       );
 
@@ -198,8 +201,8 @@ describe('GridHelper 컴포넌트 테스트', () => {
       const { container } = render(
         <TestWrapper>
           <GridHelper 
-            colorCenterLine="rgba(255, 0, 0, 0.5)" 
-            colorGrid="rgba(0, 0, 255, 0.3)" 
+            color1="rgba(255, 0, 0, 0.5)" 
+            color2="rgba(0, 0, 255, 0.3)" 
           />
         </TestWrapper>
       );
@@ -266,7 +269,7 @@ describe('GridHelper 컴포넌트 테스트', () => {
     test('색상 변경 시 리렌더링되어야 함', () => {
       const { container, rerender } = render(
         <TestWrapper>
-          <GridHelper colorCenterLine="#ff0000" colorGrid="#00ff00" />
+          <GridHelper color1="#ff0000" color2="#00ff00" />
         </TestWrapper>
       );
 
@@ -274,7 +277,7 @@ describe('GridHelper 컴포넌트 테스트', () => {
 
       rerender(
         <TestWrapper>
-          <GridHelper colorCenterLine="#0000ff" colorGrid="#ffff00" />
+          <GridHelper color1="#0000ff" color2="#ffff00" />
         </TestWrapper>
       );
 
@@ -284,7 +287,7 @@ describe('GridHelper 컴포넌트 테스트', () => {
     test('모든 props 변경 시 리렌더링되어야 함', () => {
       const { container, rerender } = render(
         <TestWrapper>
-          <GridHelper size={10} divisions={5} colorCenterLine="#ff0000" colorGrid="#00ff00" />
+          <GridHelper size={10} divisions={5} color1="#ff0000" color2="#00ff00" />
         </TestWrapper>
       );
 
@@ -292,7 +295,7 @@ describe('GridHelper 컴포넌트 테스트', () => {
 
       rerender(
         <TestWrapper>
-          <GridHelper size={20} divisions={10} colorCenterLine="#0000ff" colorGrid="#ffff00" />
+          <GridHelper size={20} divisions={10} color1="#0000ff" color2="#ffff00" />
         </TestWrapper>
       );
 
@@ -302,14 +305,11 @@ describe('GridHelper 컴포넌트 테스트', () => {
 
   describe('에지 케이스', () => {
     test('undefined props가 기본값으로 처리되어야 함', () => {
+      // @ts-expect-error -- exactOptionalPropertyTypes가 없는 소비자는 명시적 undefined를 넘길 수 있음
+      const undefinedProps: GridHelperProps = { size: undefined, divisions: undefined, color1: undefined, color2: undefined };
       const { container } = render(
         <TestWrapper>
-          <GridHelper 
-            size={undefined} 
-            divisions={undefined} 
-            colorCenterLine={undefined} 
-            colorGrid={undefined} 
-          />
+          <GridHelper {...undefinedProps} />
         </TestWrapper>
       );
 
@@ -317,14 +317,11 @@ describe('GridHelper 컴포넌트 테스트', () => {
     });
 
     test('null props가 처리되어야 함', () => {
+      // @ts-expect-error -- 런타임 null props 처리 검증
+      const nullProps: GridHelperProps = { size: null, divisions: null, color1: null, color2: null };
       const { container } = render(
         <TestWrapper>
-          <GridHelper 
-            size={null as any} 
-            divisions={null as any} 
-            colorCenterLine={null as any} 
-            colorGrid={null as any} 
-          />
+          <GridHelper {...nullProps} />
         </TestWrapper>
       );
 
@@ -337,8 +334,8 @@ describe('GridHelper 컴포넌트 테스트', () => {
       const props = {
         size: 25,
         divisions: 10,
-        colorCenterLine: '#ffffff',
-        colorGrid: '#888888'
+        color1: '#ffffff',
+        color2: '#888888'
       };
 
       const { container, rerender } = render(
@@ -414,8 +411,8 @@ describe('GridHelper 컴포넌트 테스트', () => {
         const { container, unmount } = render(
           <TestWrapper>
             <GridHelper 
-              colorCenterLine={colors.center}
-              colorGrid={colors.grid}
+              color1={colors.center}
+              color2={colors.grid}
             />
           </TestWrapper>
         );

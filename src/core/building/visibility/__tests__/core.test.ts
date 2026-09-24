@@ -1,15 +1,28 @@
+import * as THREE from 'three';
+
+import { buildBuildingRenderSnapshot, syncVisibilityIndex } from '../../render/core';
+import type { BuildingBlockConfig, PlacedObject, TileGroupConfig, WallGroupConfig } from '../../types';
 import {
   buildTileGroupRecord,
   buildBlockRecord,
   buildWallGroupRecord,
-  buildVisibilityIndex,
   collectCandidateIds,
   collectOccluderCandidates,
+  createVisibilityIndex,
   createVisibilityQueryKey,
   isOccludedByAny,
 } from '../core';
-import type { BuildingBlockConfig, PlacedObject, TileGroupConfig, WallGroupConfig } from '../../types';
-import * as THREE from 'three';
+
+function buildVisibilityIndex(
+  wallGroups: WallGroupConfig[],
+  tileGroups: TileGroupConfig[],
+  objects: PlacedObject[],
+  blocks: BuildingBlockConfig[] = [],
+) {
+  const index = createVisibilityIndex();
+  syncVisibilityIndex(index, buildBuildingRenderSnapshot({ wallGroups, tileGroups, objects, blocks, version: 1 }));
+  return index;
+}
 
 describe('building visibility core', () => {
   it('builds tile group bounds from tile extents', () => {
@@ -93,8 +106,8 @@ describe('building visibility core', () => {
     ];
     const objects: PlacedObject[] = [];
 
-    const index = buildVisibilityIndex(wallGroups, tileGroups, objects, 20);
-    const ids = collectCandidateIds(index.tileBuckets, 0, 0, 80, 20);
+    const index = buildVisibilityIndex(wallGroups, tileGroups, objects);
+    const ids = collectCandidateIds(index.tile.buckets, 0, 0, 80);
 
     expect(ids.has('near')).toBe(true);
     expect(ids.has('far')).toBe(false);
@@ -132,10 +145,10 @@ describe('building visibility core', () => {
         ],
       },
     ];
-    const index = buildVisibilityIndex(wallGroups, tileGroups, [], 20);
+    const index = buildVisibilityIndex(wallGroups, tileGroups, []);
 
-    const wallIds = collectCandidateIds(index.wallBuckets, 0, 0, 40, 20);
-    const tileIds = collectCandidateIds(index.tileBuckets, 0, 0, 40, 20);
+    const wallIds = collectCandidateIds(index.wall.buckets, 0, 0, 40);
+    const tileIds = collectCandidateIds(index.tile.buckets, 0, 0, 40);
 
     expect(wallIds.has('long-wall')).toBe(true);
     expect(tileIds.has('long-floor')).toBe(true);
@@ -145,13 +158,13 @@ describe('building visibility core', () => {
     const index = buildVisibilityIndex([], [], [], [
       { id: 'block-near', position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 3, z: 1 } },
       { id: 'block-far', position: { x: 400, y: 0, z: 400 } },
-    ], 20);
-    const ids = collectCandidateIds(index.blockBuckets, 0, 0, 80, 20);
-    const occluders = collectOccluderCandidates(index, 0, 0, 80, 20);
+    ]);
+    const ids = collectCandidateIds(index.block.buckets, 0, 0, 80);
+    const occluders = collectOccluderCandidates(index, 0, 0, 80);
 
     expect(ids.has('block-near')).toBe(true);
     expect(ids.has('block-far')).toBe(false);
-    expect(index.blockById.has('block-near')).toBe(true);
+    expect(index.block.byId.has('block-near')).toBe(true);
     expect(occluders.some((entry) => entry.key === 'block:block-near')).toBe(true);
   });
 
@@ -178,7 +191,7 @@ describe('building visibility core', () => {
     ];
     const index = buildVisibilityIndex(wallGroups, tileGroups, []);
     const occluders = collectOccluderCandidates(index, 0, 0, 140);
-    const target = index.tileById.get('behind');
+    const target = index.tile.byId.get('behind');
     expect(target).toBeDefined();
 
     const hidden = isOccludedByAny(
@@ -219,7 +232,7 @@ describe('building visibility core', () => {
     ];
     const index = buildVisibilityIndex(wallGroups, tileGroups, []);
     const occluders = collectOccluderCandidates(index, 0, 0, 140);
-    const target = index.tileById.get('side');
+    const target = index.tile.byId.get('side');
     expect(target).toBeDefined();
 
     const hidden = isOccludedByAny(

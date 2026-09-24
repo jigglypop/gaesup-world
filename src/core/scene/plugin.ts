@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useSceneStore } from './stores/sceneStore';
+import { useSceneStore, type SceneStore, SCENE_STORE_SERVICE } from './stores/sceneStore';
 import type { SceneSerialized } from './types';
 
 export interface ScenePluginOptions {
@@ -12,12 +12,12 @@ const DEFAULT_PLUGIN_ID = 'gaesup.scene';
 const DEFAULT_SAVE_EXTENSION_ID = 'scene';
 const DEFAULT_STORE_SERVICE_ID = 'scene.store';
 
-export function serializeSceneState(): SceneSerialized {
-  return useSceneStore.getState().serialize();
+export function serializeSceneState(store: SceneStore = useSceneStore): SceneSerialized {
+  return store.getState().serialize();
 }
 
-export function hydrateSceneState(data: SceneSerialized | null | undefined): void {
-  useSceneStore.getState().hydrate(data);
+export function hydrateSceneState(data: SceneSerialized | null | undefined, store: SceneStore = useSceneStore): void {
+  store.getState().hydrate(data);
 }
 
 export function createScenePlugin(options: ScenePluginOptions = {}) {
@@ -27,11 +27,12 @@ export function createScenePlugin(options: ScenePluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useSceneStore,
+    resolveStore: context => context.services.get(SCENE_STORE_SERVICE) ?? useSceneStore,
     readyEvent: 'scene:ready',
     capabilities: ['scene'],
     serialize: serializeSceneState,
     hydrate: hydrateSceneState,
-    prepareHydrate: (data) => useSceneStore.getState().prepareHydrate(data),
+    prepareHydrate: (data, store) => store.getState().prepareHydrate(data),
   });
 }
 

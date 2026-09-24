@@ -1,0 +1,119 @@
+name: Verify, publish and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: npm install --global corepack
+      - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm run verify:full
+      - run: corepack pnpm run audit:core
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-inventory
+          path: .artifacts/performance/inventory
+          include-hidden-files: true
+
+  release:
+    needs: verify
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      id-token: write
+    outputs:
+      released: ${{ steps.publish.outputs.released }}
+      version: ${{ steps.publish.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: npm install --global corepack npm@11.11.1
+      - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm run build
+      - id: publish
+        run: node scripts/release/run.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN || secrets.NPM_GAESUP_WORLD_1_0_31_TOKEN }}
+      - if: steps.publish.outputs.released == 'true'
+        run: node scripts/release/registry.mjs
+      - if: steps.publish.outputs.released == 'true'
+        run: node scripts/release/consumer.mjs
+      - if: steps.publish.outputs.released == 'true'
+        run: node scripts/release/build-demo.mjs
+      - uses: actions/upload-artifact@v4
+        if: steps.publish.outputs.released == 'true'
+        with:
+          name: release-manifest
+          path: .artifacts/release/manifest.json
+          include-hidden-files: true
+      - uses: actions/upload-pages-artifact@v4
+        if: steps.publish.outputs.released == 'true'
+        with:
+          path: demo-dist
+
+  deploy:
+    needs: release
+    if: needs.release.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - run: npm install --global corepack
+      - run: corepack pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-manifest
+          path: .artifacts/release
+      - id: pages
+        uses: actions/deploy-pages@v4
+      - run: node scripts/release/live.mjs "$SITE_URL"
+        env:
+          SITE_URL: ${{ steps.pages.outputs.page_url }}
+      - run: corepack pnpm exec playwright install --with-deps chromium
+      - run: node scripts/release/browser.mjs "$SITE_URL"
+        env:
+          SITE_URL: ${{ steps.pages.outputs.page_url }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-evidence
+          path: .artifacts/release
+          include-hidden-files: true

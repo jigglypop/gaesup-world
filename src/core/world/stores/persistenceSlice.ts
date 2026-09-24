@@ -34,9 +34,12 @@ export type CameraStoreState = {
   settings: CameraSaveData['settings'];
 };
 
+/** Stores exposing `setState` are replaced immutably; getState-only adapters are mutated in place. */
+type HydratableStoreApi<TState> = StoreApi<TState> & { setState?: (state: Partial<TState>) => void };
+
 export type GaesupStores = {
-  buildingStore?: StoreApi<BuildingStoreState>;
-  npcStore?: StoreApi<NPCStoreState>;
+  buildingStore?: HydratableStoreApi<BuildingStoreState>;
+  npcStore?: HydratableStoreApi<NPCStoreState>;
   cameraStore?: StoreApi<CameraStoreState> & { setState: (state: Partial<CameraStoreState>) => void };
 };
 
@@ -97,7 +100,7 @@ function createWorldData(
 }
 
 function hydrateBuildingStore(
-  buildingStore: StoreApi<BuildingStoreState> | undefined,
+  buildingStore: GaesupStores['buildingStore'],
   buildings: WorldSaveData['buildings'] | undefined,
 ): void {
   if (!buildingStore || !buildings) return;
@@ -105,6 +108,15 @@ function hydrateBuildingStore(
   const state = buildingStore.getState();
   if (typeof state.hydrate === 'function') {
     state.hydrate(buildings);
+    return;
+  }
+  if (buildingStore.setState) {
+    buildingStore.setState({
+      wallGroups: new Map(buildings.wallGroups.map((group) => [group.id, group])),
+      tileGroups: new Map(buildings.tileGroups.map((group) => [group.id, group])),
+      meshes: new Map(buildings.meshes.map((mesh) => [mesh.id, mesh])),
+      blocks: [...(buildings.blocks ?? [])],
+    });
     return;
   }
 
@@ -129,10 +141,14 @@ function hydrateBuildingStore(
 }
 
 function hydrateNpcStore(
-  npcStore: StoreApi<NPCStoreState> | undefined,
+  npcStore: GaesupStores['npcStore'],
   npcs: NPCSaveData[] | undefined,
 ): void {
   if (!npcStore || !npcs) return;
+  if (npcStore.setState) {
+    npcStore.setState({ instances: new Map(npcs.map((npc) => [npc.id, npc])) });
+    return;
+  }
 
   const state = npcStore.getState();
   state.instances.clear();

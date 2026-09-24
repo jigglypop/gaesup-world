@@ -1,5 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react';
 
+import { useGaesupRuntime } from '../../runtime/context';
 import { GameStatesType } from '../../world/components/Rideable/types';
 import { EntityStateManager } from '../core/system/EntityStateManager';
 import { ActiveStateType } from '../core/types';
@@ -14,10 +15,6 @@ export interface UseStateSystemResult {
 }
 
 let globalStateManager: EntityStateManager | null = null;
-const listeners = new Set<() => void>();
-let revision = 0;
-const getRevision = () => revision;
-
 export function getGlobalStateManager(): EntityStateManager {
     if (!globalStateManager) {
         globalStateManager = new EntityStateManager();
@@ -25,41 +22,47 @@ export function getGlobalStateManager(): EntityStateManager {
     return globalStateManager;
 }
 
-const subscribe = (callback: () => void) => {
-    listeners.add(callback);
-    return () => {
-        listeners.delete(callback);
-    };
-};
+type StateChannel = { subscribe: (listener: () => void) => () => void; getRevision: () => number; notify: () => void };
+const channels = new WeakMap<EntityStateManager, StateChannel>();
+function getChannel(manager: EntityStateManager): StateChannel {
+  let channel = channels.get(manager);
+  if (!channel) {
+    const listeners = new Set<() => void>(); let revision = 0;
+    channel = { subscribe: listener => { listeners.add(listener); return () => { listeners.delete(listener); }; },
+      getRevision: () => revision, notify: () => { revision++; listeners.forEach(listener => listener()); } };
+    channels.set(manager, channel);
+  }
+  return channel;
+}
 
-const notifyListeners = () => {
-    revision += 1;
-    listeners.forEach(listener => listener());
-};
+export function useScopedStateManager(): EntityStateManager {
+    return useGaesupRuntime()?.stateManager ?? getGlobalStateManager();
+}
 
 export function useStateSystem(): UseStateSystemResult {
-    const stateManager = getGlobalStateManager();
-    useSyncExternalStore(subscribe, getRevision, getRevision);
+    const stateManager = useScopedStateManager();
+    const channel = getChannel(stateManager);
+    useSyncExternalStore(channel.subscribe, channel.getRevision, channel.getRevision);
 
     const updateActiveState = useCallback((updates: Partial<ActiveStateType>) => {
         stateManager.updateActiveState(updates);
-        notifyListeners();
-    }, [stateManager]);
+        channel.notify();
+    }, [stateManager, channel]);
 
     const updateGameStates = useCallback((updates: Partial<GameStatesType>) => {
         stateManager.updateGameStates(updates);
-        notifyListeners();
-    }, [stateManager]);
+        channel.notify();
+    }, [stateManager, channel]);
 
     const resetActiveState = useCallback(() => {
         stateManager.resetActiveState();
-        notifyListeners();
-    }, [stateManager]);
+        channel.notify();
+    }, [stateManager, channel]);
 
     const resetGameStates = useCallback(() => {
         stateManager.resetGameStates();
-        notifyListeners();
-    }, [stateManager]);
+        channel.notify();
+    }, [stateManager, channel]);
 
     return {
         activeState: stateManager.getActiveState(),

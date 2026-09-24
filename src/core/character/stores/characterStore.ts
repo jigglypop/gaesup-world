@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import {
   DEFAULT_APPEARANCE,
   FACE_STYLE_LABEL,
@@ -103,7 +106,8 @@ const applyToProfile = (
     : { characters };
 };
 
-export const useCharacterStore = create<CharacterState>((set, get) => {
+export function createCharacterStore() {
+return create<CharacterState>((set, get) => {
   const initial = createProfile();
   return {
     activeCharacterId: DEFAULT_CHARACTER_ID,
@@ -241,3 +245,10 @@ export const useCharacterStore = create<CharacterState>((set, get) => {
     hydrate: (data) => get().prepareHydrate(data)(),
   };
 });
+}
+
+export type CharacterStore = ReturnType<typeof createCharacterStore>;
+export const CHARACTER_STORE_SERVICE = runtimeStoreServiceKey<CharacterStore>('character');
+export const { useStore: useCharacterStore, useStoreApi: useCharacterStoreApi } = createScopedStoreHook(
+  createCharacterStore(), () => useGaesupRuntime()?.characterStore,
+);

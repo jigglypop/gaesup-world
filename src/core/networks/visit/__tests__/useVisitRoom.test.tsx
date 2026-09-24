@@ -1,10 +1,11 @@
 import { StrictMode } from 'react';
+
 import { act, renderHook } from '@testing-library/react';
 
+import { isAutoSaveSuspended } from '../../../save/core/autoSaveSuspension';
 import { createLocalVisitChannel, createWebSocketVisitChannel } from '../channel';
 import { serializeVisit } from '../serializer';
 import type { VisitChannel, VisitChannelEvent } from '../types';
-import { isAutoSaveSuspended } from '../../../save/core/autoSaveSuspension';
 import { useVisitRoom } from '../useVisitRoom';
 
 describe('visit room session lifetime', () => {
@@ -53,7 +54,7 @@ describe('visit room session lifetime', () => {
     expect(() => result.current.publishNow()).toThrow(failure);
     expect(result.current.lastPublished).toBe(previous);
     act(() => { result.current.publishNow(); });
-    expect(result.current.lastPublished?.domains.building).toBe('second');
+    expect(result.current.lastPublished?.domains['building']).toBe('second');
     expect(send).toHaveBeenCalledTimes(3);
     unmount();
     channel.close();
@@ -87,7 +88,7 @@ describe('visit room session lifetime', () => {
     value = 'recovered';
     act(() => { result.current.publishNow(); });
     expect(publish).toHaveBeenCalledTimes(2);
-    expect(result.current.lastPublished?.domains.building).toBe('recovered');
+    expect(result.current.lastPublished?.domains['building']).toBe('recovered');
     unsubscribe();
     unmount();
     channel.close();

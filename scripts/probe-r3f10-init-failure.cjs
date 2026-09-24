@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
-const path = require('node:path');
 const { createRequire } = require('node:module');
+const path = require('node:path');
 
 if (!process.argv[2]) throw Error('Usage: node scripts/probe-r3f10-init-failure.cjs <isolated-fixture-directory>');
 const fixtureRequire = createRequire(path.join(path.resolve(process.argv[2]), 'package.json'));

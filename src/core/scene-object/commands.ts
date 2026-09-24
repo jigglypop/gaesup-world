@@ -20,9 +20,13 @@ import type {
 } from './types';
 
 const MISSING_PROPERTY = Symbol('missing-scene-command-property');
+// Only snapshots returned by this module are trusted; callers cannot brand mutable input.
+const validatedSnapshots = new WeakSet<SceneDocument>();
 
 type SceneCommandMutation = {
   candidate: unknown;
+  /** Owned, validated input with only locally validated, non-structural changes. */
+  validatedDocument?: SceneDocument;
   createEvent: (document: SceneDocument) => SceneDocumentEvent;
 };
 
@@ -39,30 +43,44 @@ export function applySceneDocumentCommand(
   document: SceneDocument,
   command: SceneDocumentCommand,
 ): SceneDocumentCommandResult {
-  try {
-    assertCanonicalSceneDocument(document, 'Current scene document');
-  } catch (error) {
-    return createRejectedResult(document, [
-      {
-        code: 'invalid-document-shape',
-        message: error instanceof Error ? error.message : 'Current scene document is invalid.',
-      },
-    ]);
+  let current = document;
+  if (!validatedSnapshots.has(document)) {
+    try {
+      assertCanonicalSceneDocument(document, 'Current scene document');
+    } catch (error) {
+      return createRejectedResult(document, [
+        {
+          code: 'invalid-document-shape',
+          message: error instanceof Error ? error.message : 'Current scene document is invalid.',
+        },
+      ]);
+    }
+    const parsedCurrent = parseSceneDocument(document);
+    if (!parsedCurrent.ok || !parsedCurrent.document) {
+      return createRejectedResult(document, parsedCurrent.issues);
+    }
+    current = parsedCurrent.document;
   }
-  const parsedCurrent = parseSceneDocument(document);
-  if (!parsedCurrent.ok || !parsedCurrent.document) {
-    return createRejectedResult(document, parsedCurrent.issues);
-  }
+  const result = applyToCanonicalDocument(current, command);
+  return result.accepted
+    ? result
+    : Object.freeze({ accepted: false, document, issues: result.issues });
+}
+
+function applyToCanonicalDocument(
+  document: SceneDocument,
+  command: SceneDocumentCommand,
+): SceneDocumentCommandResult {
   if (isRecordCommand(command, 'scene-object.component.update')) {
-    return applySceneComponentUpdate(parsedCurrent.document, command);
+    return applySceneComponentUpdate(document, command);
   }
   if (isRecordCommand(command, 'scene-document.batch')) {
-    return applySceneDocumentBatch(parsedCurrent.document, command, applySceneDocumentCommand);
+    return applySceneDocumentBatch(document, command, applyToCanonicalDocument);
   }
 
   let mutation: SceneCommandMutation;
   try {
-    mutation = createMutation(parsedCurrent.document, command);
+    mutation = createMutation(document, command);
   } catch (error) {
     const issue =
       error instanceof SceneCommandIssueError
@@ -74,15 +92,21 @@ export function applySceneDocumentCommand(
     return createRejectedResult(document, [issue]);
   }
 
-  const parsedCandidate = parseSceneDocument(mutation.candidate);
-  if (!parsedCandidate.ok || !parsedCandidate.document) {
-    return createRejectedResult(document, parsedCandidate.issues);
+  let nextDocument = mutation.validatedDocument;
+  if (!nextDocument) {
+    const parsedCandidate = parseSceneDocument(mutation.candidate);
+    if (!parsedCandidate.ok || !parsedCandidate.document) {
+      return createRejectedResult(document, parsedCandidate.issues);
+    }
+    nextDocument = parsedCandidate.document;
   }
 
-  return createAcceptedResult(
-    parsedCandidate.document,
-    mutation.createEvent(parsedCandidate.document),
+  const result = createAcceptedResult(
+    nextDocument,
+    mutation.createEvent(nextDocument),
   );
+  validatedSnapshots.add(result.document);
+  return result;
 }
 
 function isRecordCommand<TType extends SceneDocumentCommand['type']>(
@@ -133,11 +157,15 @@ function createMutation(
         readRequiredProperty(command, 'patch', 'Scene object patch'),
       );
       const nextObject = applyCommandPatch(object, patch);
+      const candidate: SceneDocument = {
+        ...document,
+        objects: document.objects.map((entry) => (entry.id === objectId ? nextObject : entry)),
+      };
       return {
-        candidate: withObjects(
-          document,
-          document.objects.map((entry) => (entry.id === objectId ? nextObject : entry)),
-        ),
+        candidate,
+        // ID, components and hierarchy are unchanged. normalizeCommandPatch owns and
+        // validates all edited values. Unchanged objects can retain snapshot identity.
+        ...(!('parentId' in patch) ? { validatedDocument: candidate } : {}),
         createEvent: (nextDocument) => ({
           type: 'scene-object.updated',
           documentId: nextDocument.id,
@@ -263,20 +291,20 @@ function findRequiredObject(document: SceneDocument, objectId: SceneObjectId): S
 }
 
 function collectDescendantIds(document: SceneDocument, objectId: SceneObjectId): SceneObjectId[] {
+  const children = new Map<SceneObjectId, SceneObjectId[]>();
+  for (const object of document.objects) {
+    if (object.parentId === undefined) continue;
+    const siblings = children.get(object.parentId);
+    if (siblings) siblings.push(object.id);
+    else children.set(object.parentId, [object.id]);
+  }
   const deleted = new Set<SceneObjectId>([objectId]);
-  let changed = true;
-
-  while (changed) {
-    changed = false;
-    for (const object of document.objects) {
-      if (
-        object.parentId !== undefined &&
-        deleted.has(object.parentId) &&
-        !deleted.has(object.id)
-      ) {
-        deleted.add(object.id);
-        changed = true;
-      }
+  const pending = [objectId];
+  while (pending.length) {
+    for (const child of children.get(pending.pop()!) ?? []) {
+      if (deleted.has(child)) continue;
+      deleted.add(child);
+      pending.push(child);
     }
   }
 

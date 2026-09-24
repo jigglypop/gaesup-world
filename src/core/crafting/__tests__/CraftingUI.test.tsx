@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import { useWalletStore } from '../../economy/stores/walletStore';
+import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import { useToastStore } from '../../ui/components/Toast/toastStore';
 import { CraftingUI } from '../components/CraftingUI';
 import { getRecipeRegistry } from '../registry/RecipeRegistry';

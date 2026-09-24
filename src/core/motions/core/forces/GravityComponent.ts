@@ -1,11 +1,11 @@
 
 import { RapierRigidBody } from '@react-three/rapier';
 
-import { Profile } from '@/core/boilerplate/decorators';
 import type { RefObject } from '@core/boilerplate';
 
 import type { PhysicsState } from '../../types';
 import type { PhysicsConfigType } from '../config';
+import { applyGravityScale } from '../system/bodySettings';
 
 export class GravityComponent {
   private config: PhysicsConfigType;
@@ -14,7 +14,6 @@ export class GravityComponent {
     this.config = config;
   }
 
-  @Profile()
   applyGravity(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: PhysicsState
@@ -36,7 +35,6 @@ export class GravityComponent {
     }
   }
 
-  @Profile()
   private applyCharacterGravity(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: PhysicsState
@@ -46,25 +44,23 @@ export class GravityComponent {
     } = physicsState;
     const { jumpGravityScale = 1.5, normalGravityScale = 1.0 } = this.config;
     if (isJumping || isFalling) {
-      rigidBodyRef.current.setGravityScale(jumpGravityScale, false);
+      applyGravityScale(rigidBodyRef.current, jumpGravityScale);
     } else {
-      rigidBodyRef.current.setGravityScale(normalGravityScale, false);
+      applyGravityScale(rigidBodyRef.current, normalGravityScale);
     }
   }
 
-  @Profile()
   private applyAirplaneGravity(
     rigidBodyRef: RefObject<RapierRigidBody>
   ): void {
     const { gravityScale = 0.3 } = this.config;
-    rigidBodyRef.current.setGravityScale(gravityScale, false);
+    applyGravityScale(rigidBodyRef.current, gravityScale);
   }
 
-  @Profile()
   private applyVehicleGravity(
     rigidBodyRef: RefObject<RapierRigidBody>
   ): void {
     const { normalGravityScale = 1.0 } = this.config;
-    rigidBodyRef.current.setGravityScale(normalGravityScale, false);
+    applyGravityScale(rigidBodyRef.current, normalGravityScale);
   }
 }

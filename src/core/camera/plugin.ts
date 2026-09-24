@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 
 import type { GaesupPlugin, PluginContext } from '../plugins';
-import { useGaesupStore } from '../stores/gaesupStore';
+import { useGaesupStore, RUNTIME_GAESUP_STORE_SERVICE_ID, type GaesupStore } from '../stores/gaesupStore';
 import type { CameraSystemConfig } from './bridge/types';
 import { CameraSystem } from './core/CameraSystem';
-import type { CameraOptionType } from './core/types';
+import type { CameraCollisionTargets, CameraOptionType } from './core/types';
 import type { ModeState } from '../stores/slices/mode';
 
 type SerializedVector3 = {
@@ -63,6 +63,7 @@ const DEFAULT_PLUGIN_ID = 'gaesup.camera';
 export const DEFAULT_CAMERA_SYSTEM_EXTENSION_ID = 'camera.system';
 export const DEFAULT_CAMERA_SAVE_EXTENSION_ID = 'camera';
 export const DEFAULT_CAMERA_STORE_SERVICE_ID = 'camera.store';
+const COLLISION_TARGETS: ReadonlySet<unknown> = new Set<CameraCollisionTargets>(['scene', 'colliders']);
 const VECTOR_OPTION_KEYS = new Set([
   'offset',
   'target',
@@ -157,8 +158,8 @@ function deserializeCameraOption(
   return next;
 }
 
-function getCameraSerializedState(): CameraSerializedState {
-  const state = useGaesupStore.getState();
+function getCameraSerializedState(store: GaesupStore = useGaesupStore): CameraSerializedState {
+  const state = store.getState();
   return {
     mode: { ...state.mode },
     cameraOption: serializeValue(state.cameraOption) as CameraSerializedState['cameraOption'],
@@ -174,7 +175,7 @@ function validateNumericOptions(value: CameraSerializedOptionValue): void {
   }
 }
 
-function prepareCameraState(data: CameraSerializedState | null | undefined): () => void {
+function prepareCameraState(data: CameraSerializedState | null | undefined, store: GaesupStore = useGaesupStore): () => void {
   if (data === null || data === undefined) return () => {};
   if (typeof data !== 'object' || Array.isArray(data)
     || (data.mode !== undefined && (!data.mode || typeof data.mode !== 'object' || Array.isArray(data.mode)))
@@ -200,17 +201,20 @@ function prepareCameraState(data: CameraSerializedState | null | undefined): () 
       if (raw[key] !== undefined) validateNumericOptions(raw[key]);
     }
     if (raw['mode'] !== undefined && typeof raw['mode'] !== 'string') throw new TypeError('Invalid camera option mode');
+    if (raw['collisionTargets'] !== undefined && !COLLISION_TARGETS.has(raw['collisionTargets'])) {
+      throw new TypeError('Invalid camera collision targets');
+    }
   }
   const option = raw ? deserializeCameraOption(raw) : undefined;
   return () => {
-    const state = useGaesupStore.getState();
+    const state = store.getState();
     if (mode) state.setMode(mode);
     if (option) state.setCameraOption(option);
   };
 }
 
-function hydrateCameraState(data: CameraSerializedState | null | undefined): void {
-  prepareCameraState(data)();
+function hydrateCameraState(data: CameraSerializedState | null | undefined, store: GaesupStore = useGaesupStore): void {
+  prepareCameraState(data, store)();
 }
 
 export function createCameraPlugin(options: CameraPluginOptions = {}): GaesupPlugin {
@@ -226,21 +230,22 @@ export function createCameraPlugin(options: CameraPluginOptions = {}): GaesupPlu
     runtime: 'client',
     capabilities: ['camera'],
     setup(ctx: PluginContext) {
+      const store = ctx.services.get<GaesupStore>(RUNTIME_GAESUP_STORE_SERVICE_ID) ?? useGaesupStore;
       ctx.systems.register(systemExtensionId, {
         System: CameraSystem,
         create: (config: CameraSystemConfig) => new CameraSystem(config),
       }, pluginId);
       ctx.save.register(saveExtensionId, {
         key: saveExtensionId,
-        serialize: getCameraSerializedState,
-        hydrate: hydrateCameraState,
-        prepareHydrate: prepareCameraState,
+        serialize: () => getCameraSerializedState(store),
+        hydrate: (data: CameraSerializedState | null | undefined) => hydrateCameraState(data, store),
+        prepareHydrate: (data: CameraSerializedState | null | undefined) => prepareCameraState(data, store),
       }, pluginId);
       ctx.services.register(storeServiceId, {
-        useStore: useGaesupStore,
-        getState: getCameraSerializedState,
-        setMode: (update: Partial<ModeState>) => useGaesupStore.getState().setMode(update),
-        setCameraOption: (update: Partial<CameraOptionType>) => useGaesupStore.getState().setCameraOption(update),
+        useStore: store,
+        getState: () => getCameraSerializedState(store),
+        setMode: (update: Partial<ModeState>) => store.getState().setMode(update),
+        setCameraOption: (update: Partial<CameraOptionType>) => store.getState().setCameraOption(update),
       }, pluginId);
       ctx.events.emit('camera:ready', {
         pluginId,

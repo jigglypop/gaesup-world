@@ -17,7 +17,9 @@ export interface WorldSliceState {
 }
 
 export interface WorldSlice extends WorldSliceState {
-  addObject: (object: Omit<WorldObject, 'id'>) => string;
+  addObject: (object: Omit<WorldObject, 'id'> & { id?: string }) => string;
+  activateWorldBridge: () => void;
+  deactivateWorldBridge: () => void;
   removeObject: (objectId: string) => boolean;
   updateObject: (
     objectId: string,

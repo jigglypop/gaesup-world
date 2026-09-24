@@ -2,7 +2,7 @@ import { createWebSocketVisitChannel } from '../channel';
 import { serializeVisit } from '../serializer';
 
 function createHarness() {
-  let receive = (_raw: string): void => {};
+  let receive: (raw: string) => void = () => {};
   const send = jest.fn();
   const unsubscribe = jest.fn();
   const channel = createWebSocketVisitChannel({

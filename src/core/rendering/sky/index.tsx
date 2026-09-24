@@ -1,11 +1,11 @@
 import { useMemo, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { useTimeStore } from '../../time/stores/timeStore';
+import { useEngineFrame } from '../../runtime/frame';
+import { useTimeStoreApi } from '../../time/stores/timeStore';
 import type { Season } from '../../time/types';
-import { useWeatherStore } from '../../weather/stores/weatherStore';
+import { useWeatherStoreApi } from '../../weather/stores/weatherStore';
 import type { WeatherKind } from '../../weather/types';
 
 export type SkyKeyframe = {
@@ -107,6 +107,8 @@ export function DynamicSky({
   keyframes,
   damping = 0.12,
 }: DynamicSkyProps = {}) {
+  const weatherStore = useWeatherStoreApi();
+  const timeStore = useTimeStoreApi();
   const sunRef = useRef<THREE.DirectionalLight>(null);
   const ambientRef = useRef<THREE.AmbientLight>(null);
 
@@ -120,13 +122,13 @@ export function DynamicSky({
   const targetSun = useMemo(() => new THREE.Color(), []);
   const targetAmbient = useMemo(() => new THREE.Color(), []);
 
-  useFrame(() => {
+  useEngineFrame('lateUpdate', () => {
     const sun = sunRef.current;
     const ambient = ambientRef.current;
     if (!sun || !ambient) return;
 
-    const t = useTimeStore.getState().time;
-    const w = useWeatherStore.getState().current;
+    const t = timeStore.getState().time;
+    const w = weatherStore.getState().current;
     const weather = w?.kind ?? 'sunny';
     const intensity01 = THREE.MathUtils.clamp(w?.intensity ?? 0.5, 0, 1);
     const factor = WEATHER_FACTORS[weather] ?? WEATHER_FACTORS.sunny;
@@ -157,7 +159,7 @@ export function DynamicSky({
     sun.position.set(x, y, z);
     sun.target.position.set(0, 0, 0);
     sun.target.updateMatrixWorld();
-  });
+  }, { label: 'rendering:dynamic-sky' });
 
   return (
     <>

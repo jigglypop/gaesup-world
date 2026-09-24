@@ -1,16 +1,17 @@
 import { act, renderHook } from '@testing-library/react';
 
-import { useSpawnFromBlueprint } from '../useSpawnFromBlueprint';
+import type { WorldBridge } from '../../../core/world/bridge/WorldBridge';
 import { WARRIOR_BLUEPRINT } from '../../characters/warrior';
 import { blueprintRegistry } from '../../registry';
-import type { WorldBridge } from '../../../core/world/bridge/WorldBridge';
+import { useSpawnFromBlueprint } from '../useSpawnFromBlueprint';
 
 const mockAddObject = jest.fn<string, Parameters<WorldBridge['addObject']>>(() => 'spawned');
 const mockSetUrls = jest.fn();
 const mockSetMode = jest.fn();
 const mockGetEngine = jest.fn<unknown, [string]>(() => ({}));
 jest.mock('../../../core/boilerplate', () => ({
-  BridgeFactory: { getOrCreate: () => ({ addObject: mockAddObject, getEngine: mockGetEngine }) },
+  ...jest.requireActual<object>('../../../core/boilerplate'),
+  BridgeFactory: { getOrCreateFor: () => ({ addObject: mockAddObject, getEngine: mockGetEngine }) },
 }));
 jest.mock('../../../core/stores/gaesupStore', () => ({
   useGaesupStore: (selector: (state: unknown) => unknown) => selector({ setUrls: mockSetUrls, setMode: mockSetMode }),

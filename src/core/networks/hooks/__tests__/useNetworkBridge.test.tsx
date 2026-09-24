@@ -1,10 +1,10 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useNetworkBridge } from '../useNetworkBridge';
+import * as THREE from 'three';
 
-// useFrame 모킹
-jest.mock('@react-three/fiber', () => ({
-  useFrame: jest.fn()
-}));
+import { BridgeFactory } from '@core/boilerplate';
+
+import type { NetworkCommand } from '../../types';
+import { useNetworkBridge } from '../useNetworkBridge';
 
 // BridgeFactory 모킹
 jest.mock('@core/boilerplate', () => ({
@@ -24,31 +24,22 @@ const mockBridge = {
   snapshot: jest.fn(),
   getNetworkStats: jest.fn(),
   getSystemState: jest.fn(),
-  updateSystem: jest.fn()
+  updateSystem: jest.fn(),
+  acquireUpdates: jest.fn(() => jest.fn()),
+  dispose: jest.fn()
 };
 
-describe('useNetworkBridge', () => {
-  let mockUseFrame: jest.Mock;
-  let mockBridgeFactory: any;
+const mockBridgeFactory = jest.mocked(BridgeFactory);
 
+describe('useNetworkBridge', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
-    // 모킹된 모듈들 가져오기
-    const fiber = require('@react-three/fiber');
-    const boilerplate = require('@core/boilerplate');
-    
-    mockUseFrame = fiber.useFrame as jest.Mock;
-    mockBridgeFactory = boilerplate.BridgeFactory;
     
     mockBridgeFactory.getOrCreate.mockImplementation((domain: string) => {
       return mockBridgeFactory.get(domain) ?? mockBridgeFactory.create(domain);
     });
     mockBridgeFactory.get.mockReturnValue(mockBridge);
     mockBridgeFactory.create.mockReturnValue(mockBridge);
-    mockUseFrame.mockImplementation(() => {
-      // 테스트에서는 콜백을 저장만 하고 호출하지 않음
-    });
     
     mockBridge.snapshot.mockReturnValue({
       nodes: new Map(),
@@ -142,13 +133,10 @@ describe('useNetworkBridge', () => {
         expect(result.current.isReady).toBe(true);
       });
       
-      const command = {
-        type: 'registerNPC' as const,
-        data: {
-          npcId: 'npc-1',
-          position: { x: 0, y: 0, z: 0 },
-          metadata: {}
-        }
+      const command: NetworkCommand = {
+        type: 'registerNPC',
+        npcId: 'npc-1',
+        position: new THREE.Vector3(0, 0, 0)
       };
 
       act(() => {
@@ -164,13 +152,10 @@ describe('useNetworkBridge', () => {
       
       const { result } = renderHook(() => useNetworkBridge());
       
-      const command = {
-        type: 'registerNPC' as const,
-        data: {
-          npcId: 'npc-1',
-          position: { x: 0, y: 0, z: 0 },
-          metadata: {}
-        }
+      const command: NetworkCommand = {
+        type: 'registerNPC',
+        npcId: 'npc-1',
+        position: new THREE.Vector3(0, 0, 0)
       };
 
       act(() => {
@@ -198,11 +183,6 @@ describe('useNetworkBridge', () => {
     });
 
     test('자동 업데이트 테스트', async () => {
-      let frameCallback: any = null;
-      mockUseFrame.mockImplementation((callback) => {
-        frameCallback = callback;
-      });
-      
       const { result } = renderHook(() => 
         useNetworkBridge({ enableAutoUpdate: true })
       );
@@ -212,8 +192,7 @@ describe('useNetworkBridge', () => {
         expect(result.current.isReady).toBe(true);
       });
       
-      // useFrame 콜백이 등록되었는지 확인
-      expect(mockUseFrame).toHaveBeenCalled();
+      expect(mockBridge.acquireUpdates).toHaveBeenCalledWith('main', expect.anything());
     });
   });
 
@@ -236,7 +215,7 @@ describe('useNetworkBridge', () => {
       
       // 에러 없이 호출되어야 함
       expect(() => {
-        result.current.executeCommand({ type: 'start', data: {} });
+        result.current.executeCommand({ type: 'startMonitoring', npcId: 'npc-1' });
         result.current.getSnapshot();
         result.current.getNetworkStats();
         result.current.getSystemState();
@@ -244,4 +223,4 @@ describe('useNetworkBridge', () => {
       }).not.toThrow();
     });
   });
-}); 
+});

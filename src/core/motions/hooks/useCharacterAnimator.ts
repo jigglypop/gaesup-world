@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
+import { FRAME_SCHEDULER_PRIORITY, useEngineFrame } from '@core/runtime/frame';
 
 import type { UseCharacterAnimatorOptions } from './types';
-import { getGlobalStateManager } from './useStateSystem';
+import { useScopedStateManager } from './useStateSystem';
+import type { AnimationBridge } from '../../animation/bridge/AnimationBridge';
 import {
   CHARACTER_ANIMATOR_PARAMETERS,
   CHARACTER_LOCOMOTION,
@@ -11,9 +12,11 @@ import {
 } from '../../animation/core/animator';
 import type { AnimatorRuntime } from '../../animation/core/animator/AnimatorRuntime';
 import type { AnimatorLease } from '../../animation/core/types';
-import { getGlobalAnimationBridge } from '../../animation/hooks/useAnimationBridge';
+import { useScopedAnimationBridge } from '../../animation/hooks/useAnimationBridge';
 
-export const CHARACTER_ANIMATOR_FRAME_PRIORITY = -1;
+type LeasedAnimator = { bridge: AnimationBridge; lease: AnimatorLease };
+
+export const CHARACTER_ANIMATOR_FRAME_PRIORITY = FRAME_SCHEDULER_PRIORITY;
 const DEFAULT_LOCOMOTION_RESPONSE = 12;
 
 function setFloatIfDeclared(animator: AnimatorRuntime, name: string, value: number): void {
@@ -30,27 +33,27 @@ export function useCharacterAnimator({
   controller = defaultCharacterAnimator,
   locomotionResponse = DEFAULT_LOCOMOTION_RESPONSE,
 }: UseCharacterAnimatorOptions) {
-  const leaseRef = useRef<AnimatorLease | null>(null);
+  const bridge = useScopedAnimationBridge();
+  const stateManager = useScopedStateManager();
+  const leaseRef = useRef<LeasedAnimator | null>(null);
   const locomotionRef = useRef<number>(CHARACTER_LOCOMOTION.idle);
 
   useEffect(() => {
-    if (!enabled) return undefined;
-    const bridge = getGlobalAnimationBridge();
+    if (!enabled || !bridge) return undefined;
     const lease = bridge.acquireAnimator(type, controller);
-    leaseRef.current = lease;
+    leaseRef.current = lease ? { bridge, lease } : null;
     return () => {
       leaseRef.current = null;
       if (lease) bridge.releaseAnimator(type, lease);
     };
-  }, [enabled, type, controller]);
+  }, [bridge, enabled, type, controller]);
 
-  useFrame((_, delta) => {
-    const lease = leaseRef.current;
-    if (!lease) return;
-    const bridge = getGlobalAnimationBridge();
-    const animator = bridge.getAnimator(type);
+  useEngineFrame('animation', (delta) => {
+    const leased = leaseRef.current;
+    if (!leased) return;
+    const { bridge: leasedBridge, lease } = leased;
+    const animator = leasedBridge.getAnimator(type);
     if (!animator) return;
-    const stateManager = getGlobalStateManager();
     const gameStates = stateManager.getGameStates();
     const velocity = stateManager.getActiveState().velocity;
     const target = gameStates.isMoving
@@ -66,6 +69,6 @@ export function useCharacterAnimator({
     setBoolIfDeclared(animator, CHARACTER_ANIMATOR_PARAMETERS.jumping, gameStates.isJumping);
     setBoolIfDeclared(animator, CHARACTER_ANIMATOR_PARAMETERS.falling, gameStates.isFalling);
     setBoolIfDeclared(animator, CHARACTER_ANIMATOR_PARAMETERS.grounded, gameStates.isOnTheGround);
-    bridge.tickAnimator(type, delta, lease);
-  }, CHARACTER_ANIMATOR_FRAME_PRIORITY);
+    leasedBridge.tickAnimator(type, delta, lease);
+  }, { active: enabled, label: 'motions:character-animator' });
 }

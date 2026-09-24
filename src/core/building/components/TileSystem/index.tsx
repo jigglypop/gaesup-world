@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
-import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { TileSystemProps } from './types';
@@ -8,15 +7,19 @@ import { getDefaultToonMode, getToonGradient } from '../../../rendering/toon';
 import { MinimapSystem } from '../../../ui/core';
 import { WorldProps } from '../../../world/components/WorldProps';
 import { MaterialManager } from '../../core/MaterialManager';
-import type { TileShapeType } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
+import { BuildingColliderBody } from '../BuildingColliders';
+import { createTileColliders, getRampLayout, getStairLayout, getTileShape, rotateXZ } from './layout';
+import { buildWaterPatches } from './waterPatches';
+import type { BuildingColliderBox } from '../BuildingColliders/types';
+import { GrassChunks } from '../mesh/grass/chunks';
 import { SandBatch, type SandEntry } from '../mesh/sand';
 import { SnowfieldBatch, type SnowfieldEntry } from '../mesh/snowfield';
 import Water from '../mesh/water';
-import { TileObject } from '../TileObject';
-import { buildWaterPatches } from './waterPatches';
 
 type TileLike = TileSystemProps['tileGroup']['tiles'][number];
+
+const EMPTY_COLLIDER_BOXES: readonly BuildingColliderBox[] = [];
 
 type TerrainRock = {
   position: [number, number, number];
@@ -27,13 +30,6 @@ type TerrainRock = {
 type TerrainBuild = {
   sideGeometry: THREE.BufferGeometry;
   rocks: TerrainRock[];
-};
-
-type TileColliderData = {
-  key: string;
-  position: [number, number, number];
-  rotation: [number, number, number];
-  args: [number, number, number];
 };
 
 type BoxTileBatch = {
@@ -71,41 +67,8 @@ function hashNoise(...values: number[]): number {
   return fract(Math.sin(seed) * 43758.5453123);
 }
 
-function getTileShape(tile: TileLike): TileShapeType {
-  return tile.shape ?? 'box';
-}
-
 function getTileMaterialId(tile: TileLike, fallbackId: string): string {
   return tile.materialId ?? fallbackId;
-}
-
-function rotateXZ(x: number, z: number, rotation: number): [number, number] {
-  const cos = Math.cos(rotation);
-  const sin = Math.sin(rotation);
-  return [x * cos + z * sin, z * cos - x * sin];
-}
-
-function getStairLayout(tile: TileLike) {
-  const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
-  const stepCount = Math.max(4, Math.min(8, (tile.size || 1) * 4));
-  const totalHeight = Math.max(tile.position.y, TILE_CONSTANTS.HEIGHT_STEP);
-  const stepHeight = totalHeight / stepCount;
-  const stepDepth = tileSize / stepCount;
-  const colliderSlices = Math.max(stepCount * 4, Math.ceil(totalHeight / 0.08));
-  const rotation = tile.rotation ?? 0;
-
-  return { tileSize, stepCount, totalHeight, stepHeight, stepDepth, colliderSlices, rotation };
-}
-
-function getRampLayout(tile: TileLike) {
-  const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
-  const rampSlices = Math.max(12, Math.min(24, Math.ceil(tileSize / 0.25)));
-  const totalHeight = Math.max(tile.position.y, TILE_CONSTANTS.HEIGHT_STEP);
-  const sliceHeight = totalHeight / rampSlices;
-  const sliceDepth = tileSize / rampSlices;
-  const rotation = tile.rotation ?? 0;
-
-  return { tileSize, rampSlices, totalHeight, sliceHeight, sliceDepth, rotation };
 }
 
 function buildTileBounds(tile: TileLike): TileBounds {
@@ -475,6 +438,7 @@ function BoxTileBatchMesh({
     <instancedMesh
       ref={ref}
       args={[geometry, batch.material, Math.max(1, batch.tiles.length)]}
+      name={`building-batch:tile:${batch.materialId}`}
       castShadow
       receiveShadow
       frustumCulled
@@ -488,6 +452,7 @@ export function TileSystem({
   isEditMode = false,
   selectedTileId = null,
   onTileClick,
+  colliders = true,
 }: TileSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
   const localMaterialRef = useRef<THREE.Material | null>(null);
@@ -710,17 +675,8 @@ export function TileSystem({
     [snowfieldTiles],
   );
 
-  const tileObjects = useMemo(
-    () =>
-      tileGroup.tiles.filter(
-        (t) =>
-          t.objectType &&
-          t.objectType !== 'none' &&
-          getTileShape(t) === 'box' &&
-          t.objectType !== 'water' &&
-          t.objectType !== 'sand' &&
-          t.objectType !== 'snowfield',
-      ),
+  const grassTiles = useMemo(
+    () => tileGroup.tiles.filter((t) => t.objectType === 'grass' && getTileShape(t) === 'box'),
     [tileGroup.tiles],
   );
 
@@ -737,104 +693,9 @@ export function TileSystem({
     [waterTiles],
   );
 
-  const colliderData = useMemo(
-    () => {
-      const colliders: TileColliderData[] = [];
-
-      for (const tile of tileGroup.tiles) {
-        const shape = getTileShape(tile);
-        const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
-        const rotation = tile.rotation ?? 0;
-
-        if (shape === 'stairs') {
-          const { tileSize, totalHeight, colliderSlices, rotation } = getStairLayout(tile);
-          const sliceHeight = totalHeight / colliderSlices;
-          const sliceDepth = tileSize / colliderSlices;
-
-          for (let i = 0; i < colliderSlices; i++) {
-            const stepColliderHeight = sliceHeight * (i + 1);
-            const localZ = -tileSize / 2 + sliceDepth * i + sliceDepth / 2;
-            const [offsetX, offsetZ] = rotateXZ(0, localZ, rotation);
-
-            colliders.push({
-              key: `${tile.id}-stair-collider-${i}`,
-              position: [
-                tile.position.x + offsetX,
-                stepColliderHeight / 2,
-                tile.position.z + offsetZ,
-              ],
-              rotation: [0, rotation, 0],
-              args: [tileSize / 2, stepColliderHeight / 2, sliceDepth / 2],
-            });
-          }
-
-          continue;
-        }
-
-        if (shape === 'ramp') {
-          const { tileSize, rampSlices, sliceHeight, sliceDepth, rotation } = getRampLayout(tile);
-
-          for (let i = 0; i < rampSlices; i++) {
-            const sliceColliderHeight = sliceHeight * (i + 1);
-            const localZ = -tileSize / 2 + sliceDepth * i + sliceDepth / 2;
-            const [offsetX, offsetZ] = rotateXZ(0, localZ, rotation);
-
-            colliders.push({
-              key: `${tile.id}-ramp-${i}`,
-              position: [
-                tile.position.x + offsetX,
-                sliceColliderHeight / 2,
-                tile.position.z + offsetZ,
-              ],
-              rotation: [0, rotation, 0],
-              args: [tileSize / 2, sliceColliderHeight / 2, sliceDepth / 2],
-            });
-          }
-
-          continue;
-        }
-
-        if (shape === 'round') {
-          const elevated = tile.position.y > 0.02;
-          const colliderHeight = elevated ? tile.position.y : 0.04;
-          const centerY = elevated ? colliderHeight / 2 : -0.02;
-          const radius = tileSize / 2;
-          const ringDepth = radius * 0.34;
-
-          colliders.push({
-            key: `${tile.id}-core`,
-            position: [tile.position.x, centerY, tile.position.z],
-            rotation: [0, 0, 0],
-            args: [radius * 0.46, colliderHeight / 2, radius * 0.46],
-          });
-
-          for (let i = 0; i < 4; i++) {
-            colliders.push({
-              key: `${tile.id}-ring-${i}`,
-              position: [tile.position.x, centerY, tile.position.z],
-              rotation: [0, (Math.PI / 4) * i, 0],
-              args: [radius * 0.82, colliderHeight / 2, ringDepth],
-            });
-          }
-
-          continue;
-        }
-
-        const elevated = tile.position.y > 0.02;
-        const halfHeight = elevated ? tile.position.y * 0.5 : 0.02;
-        const centerY = elevated ? tile.position.y * 0.5 : -0.02;
-
-        colliders.push({
-          key: tile.id,
-          position: [tile.position.x, centerY, tile.position.z],
-          rotation: [0, rotation, 0],
-          args: [tileSize / 2, halfHeight, tileSize / 2],
-        });
-      }
-
-      return colliders;
-    },
-    [tileGroup.tiles],
+  const colliderBoxes = useMemo(
+    () => (colliders ? createTileColliders(tileGroup.tiles) : EMPTY_COLLIDER_BOXES),
+    [colliders, tileGroup.tiles],
   );
 
   useLayoutEffect(() => {
@@ -850,6 +711,7 @@ export function TileSystem({
         mesh.setMatrixAt(i, dummy.matrix);
       }
       mesh.instanceMatrix.needsUpdate = true;
+      mesh.computeBoundingSphere();
     }
   }, [terrain.rocks, dummy]);
 
@@ -917,18 +779,7 @@ export function TileSystem({
   return (
     <WorldProps type="ground">
       <>
-        {colliderData.length > 0 && (
-          <RigidBody type="fixed" colliders={false}>
-            {colliderData.map((collider) => (
-              <CuboidCollider
-                key={`${tileGroup.id}-collider-${collider.key}`}
-                position={collider.position}
-                rotation={collider.rotation}
-                args={collider.args}
-              />
-            ))}
-          </RigidBody>
-        )}
+        <BuildingColliderBody boxes={colliderBoxes} />
 
         {isEditMode && tileGroup.tiles.map((tile) => {
           const selected = tile.id === selectedTileId;
@@ -1034,9 +885,7 @@ export function TileSystem({
           </group>
         ))}
         
-        {tileObjects.map((tile) => (
-          <TileObject key={`${tile.id}-object`} tile={tile} tiles={waterTiles} />
-        ))}
+        {grassTiles.length > 0 && <GrassChunks tiles={grassTiles} />}
 
         {sandEntries.length > 0 && <SandBatch entries={sandEntries} />}
 

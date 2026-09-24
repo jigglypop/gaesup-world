@@ -19,6 +19,66 @@ function createHierarchyDocument(): SceneDocument {
 }
 
 describe('applySceneDocumentCommand', () => {
+  test('shares untouched snapshot objects while owning edited vectors and tags', () => {
+    const initial = createHierarchyDocument();
+    const first = applySceneDocumentCommand(initial, { type: 'scene-object.update', objectId: 'child', patch: { name: 'First' } });
+    if (!first.accepted) throw new Error('Expected initial edit.');
+    const position: [number, number, number] = [3, 4, 5];
+    const tags = ['edited'];
+    const result = applySceneDocumentCommand(first.document, { type: 'scene-object.update', objectId: 'child', patch: { transform: { position }, tags } });
+    if (!result.accepted) throw new Error('Expected second edit.');
+    expect(result.document.objects[0]).toBe(first.document.objects[0]);
+    expect(result.document.objects[1]).not.toBe(first.document.objects[1]);
+    expect(result.document.objects[1]!.components).toBe(first.document.objects[1]!.components);
+    position[0] = 99; tags.push('caller mutation');
+    expect(result.document.objects[1]!.transform.position).toEqual([3, 4, 5]);
+    expect(result.document.objects[1]!.tags).toEqual(['edited']);
+    expect(first.document.objects[1]!.transform.position).toEqual([0, 0, 0]);
+    expect(Object.isFrozen(result.document.objects[1]!.transform.position)).toBe(true);
+    expect(Object.isFrozen(initial)).toBe(false);
+  });
+
+  test('matches reparsed snapshots through edits, reparenting, rejection and subtree deletion', () => {
+    let current = createHierarchyDocument();
+    for (let i = 0; i < 100; i++) {
+      const commands: SceneDocumentCommand[] = [
+        { type: 'scene-object.update', objectId: 'child', patch: { transform: { position: [i, 0, 1] }, tags: ['a', 'b'] } },
+        { type: 'scene-object.move', objectId: 'grandchild', parentId: i % 2 ? 'root' : 'child' },
+        { type: 'scene-object.update', objectId: 'root', patch: { parentId: 'child' } },
+        { type: 'scene-object.update', objectId: 'other', patch: { layer: i % 2 ? 'visible' : null } },
+      ];
+      for (const command of commands) {
+        const result = applySceneDocumentCommand(current, command);
+        const reference = applySceneDocumentCommand(JSON.parse(JSON.stringify(current)) as SceneDocument, command);
+        expect(result).toEqual(reference);
+        if (result.accepted) current = result.document;
+      }
+    }
+    const deleted = applySceneDocumentCommand(current, { type: 'scene-object.delete', objectId: 'root' });
+    expect(deleted.accepted).toBe(true);
+    expect(deleted.document.objects.map(object => object.id)).toEqual(['other']);
+  });
+
+  test('validates hostile patches even for trusted snapshots', () => {
+    const first = applySceneDocumentCommand(createHierarchyDocument(), { type: 'scene-object.update', objectId: 'root', patch: { name: 'Ready' } });
+    if (!first.accepted) throw new Error('Expected edit.');
+    const getter = jest.fn(() => 'unsafe');
+    const patches = [
+      { transform: { position: [NaN, 0, 0] } },
+      { transform: { scale: [1, -0, 1] } },
+      { parentId: 'missing' },
+      { parentId: 'child' },
+      { tags: ['ok', undefined] },
+      Object.defineProperty({}, 'name', { enumerable: true, get: getter }),
+    ];
+    for (const patch of patches) {
+      const result = applySceneDocumentCommand(first.document, { type: 'scene-object.update', objectId: 'root', patch } as SceneDocumentCommand);
+      expect(result.accepted).toBe(false);
+      expect(result.document).toBe(first.document);
+    }
+    expect(getter).not.toHaveBeenCalled();
+  });
+
   test('returns an owned deep-frozen document and deterministic event for accepted commands', () => {
     const document = createHierarchyDocument();
     const object = createSceneObject({ id: 'crate', name: 'Crate', tags: ['prop'] });

@@ -1,17 +1,23 @@
 import { useMemo, useState } from 'react';
 
 import { AnimatorComponentView } from './AnimatorComponentView';
+import { PrefabInstanceView } from './PrefabInstanceView';
+import type { InspectorPrefabActions } from './PrefabInstanceView/types';
 import { ScriptComponentView } from './ScriptComponentView';
+import { ScriptPicker } from './ScriptPicker';
 import type { EditorPanelBaseProps } from './types';
 import type {
   CreateSceneComponentInput,
   SceneComponent,
   SceneDocument,
+  SceneJsonObject,
   SceneObject,
   SceneObjectId,
   SceneTransform,
 } from '../../../scene-object';
 import { SCENE_COMPONENT_TYPES } from '../../../scene-object/components';
+
+export type SceneComponentDataUpdate = (objectId: SceneObjectId, componentId: string, data: SceneJsonObject) => void;
 
 export type SceneObjectPatch = Partial<Pick<SceneObject, 'name' | 'tags'>> & {
   layer?: string | undefined;
@@ -26,6 +32,8 @@ export type InspectorPanelProps = EditorPanelBaseProps & {
   onUpdateObject?: (objectId: SceneObjectId, patch: SceneObjectPatch) => void;
   onAddComponent?: (objectId: SceneObjectId, component: CreateSceneComponentInput) => void;
   onRemoveComponent?: (objectId: SceneObjectId, componentId: string) => void;
+  onUpdateComponent?: SceneComponentDataUpdate;
+  prefab?: InspectorPrefabActions;
 };
 
 type VectorKey = keyof SceneTransform;
@@ -40,6 +48,8 @@ export function InspectorPanel({
   onUpdateObject,
   onAddComponent,
   onRemoveComponent,
+  onUpdateComponent,
+  prefab,
   className = '',
   style,
   children,
@@ -115,6 +125,8 @@ export function InspectorPanel({
         <ReadOnlyProperty label="상위 객체" value={object.parentId ?? '최상위'} />
       </section>
 
+      {prefab && sceneDocument && <PrefabInstanceView {...prefab} document={sceneDocument} object={object} />}
+
       <section key={object.id} className="prop-group">
         <h4 className="prop-group-title">위치·회전·크기</h4>
         <VectorProperty
@@ -147,6 +159,9 @@ export function InspectorPanel({
               key={component.id}
               component={component}
               onRemove={() => onRemoveComponent?.(object.id, component.id)}
+              {...(onUpdateComponent
+                ? { onChange: (data: SceneJsonObject) => onUpdateComponent(object.id, component.id, data) }
+                : {})}
             />
           ))}
         </div>
@@ -162,6 +177,12 @@ export function InspectorPanel({
             추가
           </button>
         </div>
+        {onAddComponent && (
+          <ScriptPicker
+            onAdd={(scriptId) =>
+              onAddComponent(object.id, { type: SCENE_COMPONENT_TYPES.script, data: { scriptId, props: {} } })}
+          />
+        )}
       </section>
 
       {children}
@@ -241,9 +262,11 @@ function VectorProperty({
 function ComponentRow({
   component,
   onRemove,
+  onChange,
 }: {
   component: SceneComponent;
   onRemove: () => void;
+  onChange?: (data: SceneJsonObject) => void;
 }) {
   return (
     <article className="inspector-component">
@@ -257,7 +280,7 @@ function ComponentRow({
       {component.type === SCENE_COMPONENT_TYPES.animator ? (
         <AnimatorComponentView data={component.data} />
       ) : component.type === SCENE_COMPONENT_TYPES.script ? (
-        <ScriptComponentView data={component.data} />
+        <ScriptComponentView data={component.data} {...(onChange ? { onChange } : {})} />
       ) : (
         <pre>{JSON.stringify(component.data, null, 2)}</pre>
       )}

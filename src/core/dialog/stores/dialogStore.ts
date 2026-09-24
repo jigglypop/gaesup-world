@@ -1,10 +1,13 @@
 import { create } from 'zustand';
 
 import { dialogRuntimeAdapter } from './runtimeAdapter';
-import { useQuestStore } from '../../quests/stores/questStore';
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
+import { useQuestStore, type QuestStore } from '../../quests/stores/questStore';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import { DialogRunner } from '../core/DialogRunner';
 import { getDialogRegistry } from '../registry/DialogRegistry';
-import type { DialogContext, DialogEffect, DialogNode, DialogTreeId } from '../types';
+import type { DialogContext, DialogEffect, DialogNode, DialogTreeId, DialogRuntimeAdapter } from '../types';
 
 type CustomDialogEffect = Extract<DialogEffect, { type: 'custom' }>;
 
@@ -26,7 +29,8 @@ type DialogState = {
   close: () => void;
 };
 
-export const useDialogStore = create<DialogState>((set, get) => ({
+export function createDialogStore(quests: QuestStore, adapter: DialogRuntimeAdapter) {
+  return create<DialogState>((set, get) => ({
   runner: null,
   node: null,
   npcId: undefined,
@@ -36,13 +40,13 @@ export const useDialogStore = create<DialogState>((set, get) => ({
     if (!tree) return false;
     const runner = new DialogRunner({
       tree,
-      adapter: dialogRuntimeAdapter,
+      adapter,
       ...(options?.context ? { context: options.context } : {}),
       ...(options?.onCustomEffect ? { onCustomEffect: options.onCustomEffect } : {}),
       ...(options?.onOpenShop ? { onOpenShop: options.onOpenShop } : {}),
     });
     set({ runner, node: runner.current, npcId: options?.context?.npcId });
-    if (options?.context?.npcId) useQuestStore.getState().notifyTalk(options.context.npcId);
+    if (options?.context?.npcId) quests.getState().notifyTalk(options.context.npcId);
     return true;
   },
 
@@ -64,3 +68,11 @@ export const useDialogStore = create<DialogState>((set, get) => ({
 
   close: () => set({ runner: null, node: null, npcId: undefined }),
 }));
+
+}
+
+export type DialogStore = ReturnType<typeof createDialogStore>;
+export const DIALOG_STORE_SERVICE = runtimeStoreServiceKey<DialogStore>('dialog');
+export const { useStore: useDialogStore, useStoreApi: useDialogStoreApi } = createScopedStoreHook(
+  createDialogStore(useQuestStore, dialogRuntimeAdapter), () => useGaesupRuntime()?.dialogStore,
+);

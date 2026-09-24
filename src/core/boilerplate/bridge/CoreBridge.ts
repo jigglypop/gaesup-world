@@ -1,10 +1,11 @@
 import 'reflect-metadata'
 
+import { isProductionEnv } from '../../utils/env'
 import { logger, type LogValue } from '../../utils/logger'
 import { IDisposable } from '../types'
 import { AbstractBridge } from './AbstractBridge'
 
-const isProduction = process.env.NODE_ENV === 'production'
+const isProduction = isProductionEnv()
 const enableLogs = !isProduction && process.env.VITE_ENABLE_BRIDGE_LOGS !== 'false'
 
 function toBridgeLogValue<ValueType>(value: ValueType | undefined): LogValue {

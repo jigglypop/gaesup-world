@@ -151,16 +151,19 @@ describe('@Service 데코레이터', () => {
       expect(() => {
         @Service({ token: symbolToken })
         class SymbolService {}
+        return SymbolService;
       }).not.toThrow();
       
       expect(() => {
         @Service({ token: stringToken })
         class StringService {}
+        return StringService;
       }).not.toThrow();
       
       expect(() => {
         @Service({ token: Object })
         class ClassService {}
+        return ClassService;
       }).not.toThrow();
     });
 
@@ -189,6 +192,7 @@ describe('@Service 데코레이터', () => {
     });
 
     test('undefined나 null 옵션에 대해 기본값을 사용해야 함', () => {
+      // @ts-expect-error: explicit undefined from untyped callers must fall back to defaults
       @Service({ token: undefined, singleton: undefined })
       class UndefinedOptionsService {}
       
@@ -209,7 +213,7 @@ describe('@Service 데코레이터', () => {
       
       @Service({ token: IEmailService })
       class SMTPEmailService extends IEmailService {
-        sendEmail(to: string, subject: string): void {
+        sendEmail(): void {
           // SMTP 구현
         }
       }

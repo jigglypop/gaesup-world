@@ -23,6 +23,7 @@ import {
   type PlayerProgress,
   type WorldSnapshot,
 } from './snapshot';
+import type { ServiceKey } from '../plugins/serviceKey';
 
 export const DEFAULT_SERVER_COMMAND_AUTHORITY_SERVICE_ID = 'server.commandAuthority';
 
@@ -44,8 +45,8 @@ export type PlatformServerPluginHost = {
   setup: () => Promise<void>;
   dispose: () => Promise<void>;
   handleCommand: (command: GameCommand) => Promise<CommandAuthorityResult>;
-  getService: <TService = unknown>(id: string) => TService | undefined;
-  requireService: <TService = unknown>(id: string) => TService;
+  getService: <TService = unknown>(id: string | ServiceKey<TService>) => TService | undefined;
+  requireService: <TService = unknown>(id: string | ServiceKey<TService>) => TService;
   getSaveBindings: () => Iterable<DomainBinding>;
   createWorldSnapshot: (worldId: string, options?: CreateWorldSnapshotOptions) => WorldSnapshot;
   createPlayerProgress: (playerId: string, options?: CreatePlayerProgressOptions) => PlayerProgress;

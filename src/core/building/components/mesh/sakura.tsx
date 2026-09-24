@@ -1,13 +1,15 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
-import { useWeatherStore } from '@core/weather/stores/weatherStore';
+import { useWeatherStoreApi } from '@core/weather/stores/weatherStore';
 
-import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
+import { useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
 import type { BuildingTreeKind } from '../../types';
+
+const SAKURA_BATCH_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:sakura-batch' };
+const SAKURA_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:sakura' };
 
 type SakuraProps = { size?: number; toon?: boolean };
 
@@ -413,6 +415,7 @@ void main() {
 `;
 
 export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: boolean }) {
+  const weatherStore = useWeatherStoreApi();
   const barkRef = useRef<THREE.InstancedMesh>(null!);
   const darkRef = useRef<THREE.InstancedMesh>(null!);
   const topRef = useRef<THREE.InstancedMesh>(null!);
@@ -586,6 +589,7 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
     for (const [ref, count] of [[barkRef, bi], [darkRef, di], [topRef, ti], [shellRef, si], [coreRef, ci]] as const) {
       ref.current.count = count as number;
       ref.current.instanceMatrix.needsUpdate = true;
+      ref.current.computeBoundingSphere();
       if (hasCustomColor && ref.current.instanceColor) {
         ref.current.instanceColor.needsUpdate = true;
       }
@@ -597,7 +601,7 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
     fallingGeo.dispose(); fallingMat.dispose();
   }, [canopyGeo, groundGeo, fallingGeo, fallingMat]);
 
-  useFrame((state) => {
+  useSharedFrame(SAKURA_BATCH_FRAME, (_, elapsedSeconds, three) => {
     const points = fallingRef.current;
     if (!points) return;
     const parent = points.parent;
@@ -606,7 +610,7 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
     if (m?.uniforms) {
       const uTime = m.uniforms['uTime'];
       const uScale = m.uniforms['uScale'];
-      const w = useWeatherStore.getState().current;
+      const w = weatherStore.getState().current;
       const intensity = w?.intensity ?? 0;
       const base =
         w?.kind === 'storm' ? 2.4 :
@@ -615,8 +619,8 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
         w?.kind === 'cloudy'? 1.1 :
                               0.9;
       const uWind = m.uniforms['uWind'];
-      if (uTime) uTime.value = getFrameElapsedSeconds(state);
-      if (uScale) uScale.value = state.gl.domElement.height * 0.5;
+      if (uTime) uTime.value = elapsedSeconds;
+      if (uScale) uScale.value = three.gl.domElement.height * 0.5;
       if (uWind) uWind.value = base + intensity * 0.7;
     }
   });
@@ -747,16 +751,15 @@ export default function Sakura({ size = 4, toon }: SakuraProps) {
 
   useEffect(() => () => { canopyGeo.dispose(); groundGeo.dispose(); fallingGeo.dispose(); fallingMat.dispose(); }, [canopyGeo, groundGeo, fallingGeo, fallingMat]);
 
-  useFrame((state) => {
+  useSharedFrame(SAKURA_FRAME, (_, elapsed, three) => {
     const parent = fallingRef.current?.parent;
     if (parent && !parent.visible) return;
-    const elapsed = getFrameElapsedSeconds(state);
     const m = fallingRef.current?.material as THREE.ShaderMaterial | undefined;
     if (m?.uniforms) {
       const uTime = m.uniforms['uTime'];
       const uScale = m.uniforms['uScale'];
       if (uTime) uTime.value = elapsed;
-      if (uScale) uScale.value = state.gl.domElement.height * 0.5;
+      if (uScale) uScale.value = three.gl.domElement.height * 0.5;
     }
     if (crownRef.current) {
       crownRef.current.rotation.z = Math.sin(elapsed * 0.42 + scale) * 0.028;

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import { NetworkSystem } from '../core/NetworkSystem';
 import type { NetworkConfig, NetworkMessage } from '../types';
 

@@ -5,6 +5,7 @@ import {
   type EditorLayoutProps,
   type PanelConfig,
 } from './types';
+import { WorldInputSurface } from '../../../input/WorldInputSurface';
 import '../../styles/theme.css';
 import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../../runtime';
 import { useEditorAutosave } from '../../hooks/useEditorAutosave';
@@ -96,6 +97,8 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
   onUpdateSceneObject,
   onAddSceneComponent,
   onRemoveSceneComponent,
+  onUpdateSceneComponent,
+  scenePrefab,
   projectScenes,
   projectPrefabs,
   selectedProjectItemId,
@@ -173,6 +176,8 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
       ...(onUpdateSceneObject ? { onUpdateObject: onUpdateSceneObject } : {}),
       ...(onAddSceneComponent ? { onAddComponent: onAddSceneComponent } : {}),
       ...(onRemoveSceneComponent ? { onRemoveComponent: onRemoveSceneComponent } : {}),
+      ...(onUpdateSceneComponent ? { onUpdateComponent: onUpdateSceneComponent } : {}),
+      ...(scenePrefab ? { prefab: scenePrefab } : {}),
     };
     const projectAssetsProps = {
       ...(projectScenes ? { scenes: projectScenes } : {}),
@@ -269,7 +274,9 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
     onHoverSceneObject,
     onRemoveSceneComponent,
     onSelectSceneObject,
+    onUpdateSceneComponent,
     onUpdateSceneObject,
+    scenePrefab,
     panelDefaults,
     panelOrder,
     panels,
@@ -367,7 +374,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
   const sidebarPresetStyle = typeof sidebarPreset === 'string' ? undefined : sidebarPreset.style;
 
   return (
-    <div className="editor-root">
+    <WorldInputSurface className="editor-root">
       <aside
         className={`editor-sidebar ${sidebarPresetClassName} ${isPanelOpen ? 'editor-sidebar--open' : 'editor-sidebar--collapsed'}`}
         style={sidebarPresetStyle}
@@ -559,6 +566,6 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
       />
 
       {children}
-    </div>
+    </WorldInputSurface>
   );
 };

@@ -2,7 +2,7 @@ import { RefObject } from 'react';
 
 import { RapierRigidBody } from '@react-three/rapier';
 
-import { useGaesupStore } from '@stores/gaesupStore';
+import { useGaesupStore, useGaesupStoreApi } from '@stores/gaesupStore';
 
 import { useStateSystem } from './useStateSystem';
 import type { InteractionCommand, InteractionState } from '../../interactions/bridge';
@@ -33,9 +33,10 @@ type UsePhysicsResult = {
  * - 엔티티 모션: useMotion
  */
 export function usePhysics(): UsePhysicsResult {
+  const storeApi = useGaesupStoreApi();
     const { activeState } = useStateSystem();
     const inputBackend = useInputBackend();
-    const worldContext = useGaesupStore.getState();
+    const worldContext = storeApi.getState();
     const fallbackInteraction = worldContext.interaction;
     const interaction: InteractionState = {
         ...fallbackInteraction,

@@ -1,7 +1,6 @@
 import mitt from 'mitt';
 
 import { CameraEventValue, CameraSystemEvents, CameraSystemConfig, ICameraSystemMonitor, CameraSystemEmitter, CameraSystemState } from './types';
-import { Profile, HandleError } from '../../boilerplate/decorators';
 
 export function cloneCameraSystemConfig(config: CameraSystemConfig): CameraSystemConfig {
   return {
@@ -27,7 +26,6 @@ export abstract class BaseCameraSystem implements ICameraSystemMonitor {
     this.config = cloneCameraSystemConfig(initialConfig);
   }
 
-  @HandleError()
   public updateConfig(newConfig: Partial<CameraSystemConfig>): void {
     const oldConfig = { ...this.config };
     this.config = cloneCameraSystemConfig({ ...this.config, ...newConfig });
@@ -66,7 +64,6 @@ export abstract class BaseCameraSystem implements ICameraSystemMonitor {
     };
   }
 
-  @Profile()
   protected trackFrameMetrics(deltaTime: number): void {
     this.metrics.frameCount++;
     this.metrics.totalFrameTime += deltaTime;
@@ -77,7 +74,6 @@ export abstract class BaseCameraSystem implements ICameraSystemMonitor {
     this.emitter.emit('error', { message, details });
   }
 
-  @HandleError()
   public destroy(): void {
     this.emitter.all.clear();
   }

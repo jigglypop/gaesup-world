@@ -2,8 +2,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
-const THREE = require('three');
+
 const { chromium } = require('@playwright/test');
+const THREE = require('three');
 
 (async () => {
   const source = fs.readFileSync(path.join(__dirname, '../src/core/building/components/BuildingGpuCullingDriver/index.tsx'), 'utf8');

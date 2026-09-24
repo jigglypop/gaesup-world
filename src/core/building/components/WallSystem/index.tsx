@@ -1,13 +1,15 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import type { ThreeEvent } from '@react-three/fiber';
-import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
+import { createWallColliders } from './colliders';
 import { WallSystemProps } from './types';
 import { MaterialManager } from '../../core/MaterialManager';
 import { MeshConfig, WallConfig, WallGroupConfig, type BuildingWallKind } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
+import { BuildingColliderBody } from '../BuildingColliders';
+import type { BuildingColliderBox } from '../BuildingColliders/types';
 
 type WallBatch = {
   key: string;
@@ -15,6 +17,7 @@ type WallBatch = {
   materials: THREE.Material[];
 };
 
+const EMPTY_COLLIDER_BOXES: readonly BuildingColliderBox[] = [];
 const DEFAULT_WALL_MESH: MeshConfig = { id: 'default', color: '#000000' };
 const DEFAULT_GLASS_MESH: MeshConfig = {
   id: 'default-window-glass',
@@ -264,6 +267,7 @@ function WallBatchMesh({
 
   return (
     <instancedMesh
+      name={`building-batch:wall:${batch.key}`}
       ref={instancedRef}
       args={[geometry, batch.materials, capacity]}
       castShadow
@@ -280,6 +284,7 @@ export function WallSystem({
   isEditMode = false,
   selectedWallId = null,
   onWallClick,
+  colliders = true,
 }: WallSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
   const width = TILE_CONSTANTS.WALL_SIZES.WIDTH;
@@ -309,38 +314,14 @@ export function WallSystem({
     };
   }, [geometry]);
 
-  const colliderData = useMemo(() => {
-    if (isEditMode) return [];
-    const halfW = width / 2;
-    return wallGroup.walls.map((wall) => {
-      const sinY = Math.sin(wall.rotation.y);
-      const cosY = Math.cos(wall.rotation.y);
-      return {
-        id: wall.id,
-        position: [
-          wall.position.x + sinY * halfW,
-          wall.position.y + height / 2,
-          wall.position.z + cosY * halfW,
-        ] as [number, number, number],
-        rotation: [0, wall.rotation.y, 0] as [number, number, number],
-      };
-    });
-  }, [wallGroup.walls, width, height, isEditMode]);
+  const colliderBoxes = useMemo(
+    () => (colliders && !isEditMode ? createWallColliders(wallGroup.walls) : EMPTY_COLLIDER_BOXES),
+    [colliders, isEditMode, wallGroup.walls],
+  );
 
   return (
     <>
-      {!isEditMode && colliderData.length > 0 && (
-        <RigidBody type="fixed" colliders={false}>
-          {colliderData.map((c) => (
-            <CuboidCollider
-              key={c.id}
-              position={c.position}
-              rotation={c.rotation}
-              args={[width / 2, height / 2, depth / 2]}
-            />
-          ))}
-        </RigidBody>
-      )}
+      <BuildingColliderBody boxes={colliderBoxes} />
 
       {isEditMode && wallGroup.walls.map((wall) => {
         const selected = wall.id === selectedWallId;

@@ -110,18 +110,6 @@ const LOCAL_UPWARD_EDGE_BASELINE: DependencyEdge[] = [
     specifier: '@stores/types',
     target: 'src/core/stores/types.ts',
   },
-  {
-    from: 'src/core/npc/core/blueprint.ts',
-    kind: 'import',
-    specifier: '../../quests/stores/questStore',
-    target: 'src/core/quests/stores/questStore.ts',
-  },
-  {
-    from: 'src/core/npc/core/blueprint.ts',
-    kind: 'import',
-    specifier: '../../relations/stores/friendshipStore',
-    target: 'src/core/relations/stores/friendshipStore.ts',
-  },
 ];
 
 const LAYER_ONE_RAPIER_EDGE_BASELINE: DependencyEdge[] = [
@@ -277,7 +265,7 @@ function collectModuleReferences(sourceFile: ts.SourceFile): ModuleReference[] {
       });
     } else if (
       ts.isCallExpression(node) &&
-      node.arguments.length > 0 &&
+      node.arguments[0] !== undefined &&
       ts.isStringLiteralLike(node.arguments[0])
     ) {
       if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
@@ -399,6 +387,46 @@ function collectArchitectureDebt(): {
   return { localUpwardEdges, layerOneForbiddenExternalEdges, layerOneRapierEdges };
 }
 
+const TYPE_ONLY_REFERENCE_KINDS: ReadonlySet<ModuleReferenceKind> = new Set([
+  'export-type',
+  'import-equals-type',
+  'import-type',
+  'import-type-expression',
+]);
+
+function isPublicEntryFile(file: string): boolean {
+  const repositoryPath = toRepositoryPath(file);
+  return /^src\/[^/]+\.tsx?$/.test(repositoryPath) && !repositoryPath.endsWith('.d.ts');
+}
+
+/** Runtime imports of a package entry from inside the library pull the whole entry into other subpaths' chunks. */
+function collectPublicEntryImports(): DependencyEdge[] {
+  const parsedConfig = loadTsConfig();
+  const resolutionCache = ts.createModuleResolutionCache(
+    ROOT,
+    (fileName) => (ts.sys.useCaseSensitiveFileNames ? fileName : fileName.toLowerCase()),
+    parsedConfig.options,
+  );
+  const edges: DependencyEdge[] = [];
+  for (const file of collectSourceFiles(SRC_ROOT)) {
+    if (isPublicEntryFile(file)) continue;
+    const sourceFile = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
+    for (const reference of collectModuleReferences(sourceFile)) {
+      if (TYPE_ONLY_REFERENCE_KINDS.has(reference.kind)) continue;
+      const resolved = ts.resolveModuleName(reference.specifier, file, parsedConfig.options, ts.sys, resolutionCache)
+        .resolvedModule;
+      if (!resolved || !isPublicEntryFile(resolved.resolvedFileName)) continue;
+      edges.push({
+        from: toRepositoryPath(file),
+        kind: reference.kind,
+        specifier: reference.specifier,
+        target: normalizeResolvedTarget(resolved.resolvedFileName),
+      });
+    }
+  }
+  return edges.sort(compareEdges);
+}
+
 function edgeKey(edge: DependencyEdge): string {
   return JSON.stringify([edge.from, edge.kind, edge.specifier, edge.target]);
 }
@@ -503,7 +531,7 @@ describe('architecture dependency boundaries', () => {
   test('keeps the exact local Layer 1 and Layer 2 upward-edge baseline', () => {
     const { localUpwardEdges } = collectArchitectureDebt();
 
-    expect(LOCAL_UPWARD_EDGE_BASELINE).toHaveLength(14);
+    expect(LOCAL_UPWARD_EDGE_BASELINE).toHaveLength(12);
     expect(getBaselineDiff(localUpwardEdges, LOCAL_UPWARD_EDGE_BASELINE)).toEqual({
       additions: [],
       stale: [],
@@ -524,5 +552,9 @@ describe('architecture dependency boundaries', () => {
     const { layerOneForbiddenExternalEdges } = collectArchitectureDebt();
 
     expect(layerOneForbiddenExternalEdges).toEqual([]);
+  });
+
+  test('library modules never import a package entry at runtime', () => {
+    expect(collectPublicEntryImports()).toEqual([]);
   });
 });

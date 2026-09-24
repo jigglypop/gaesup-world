@@ -5,6 +5,7 @@ export default {
     '^gaesup-world$': '<rootDir>/src/index.ts',
     '^gaesup-world/admin$': '<rootDir>/src/admin-entry.ts',
     '^gaesup-world/assets$': '<rootDir>/src/assets.ts',
+    '^gaesup-world/avatar$': '<rootDir>/src/avatar.ts',
     '^gaesup-world/blueprints$': '<rootDir>/src/blueprints/index.ts',
     '^gaesup-world/blueprints/editor$': '<rootDir>/src/blueprints/editor.ts',
     '^gaesup-world/building$': '<rootDir>/src/building.ts',
@@ -22,16 +23,15 @@ export default {
     '^@core/(.*)$': '<rootDir>/src/core/$1',
     '^@hooks/(.*)$': '<rootDir>/src/core/hooks/$1',
     '^@stores/(.*)$': '<rootDir>/src/core/stores/$1',
-    '^@components/(.*)$': '<rootDir>/src/core/components/$1',
     '^@constants/(.*)$': '<rootDir>/src/core/constants/$1',
     '^@utils/(.*)$': '<rootDir>/src/core/utils/$1',
     '^@types/(.*)$': '<rootDir>/src/core/types/$1',
     '^@motions/(.*)$': '<rootDir>/src/core/motions/$1',
-    '^@debug/(.*)$': '<rootDir>/src/core/debug/$1',
     '\\.(glsl|vert|frag|wasm|glb)$': '<rootDir>/test/mocks/assetModule.ts',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   transform: {
+    '^.+\\.m?js$': ['ts-jest', { tsconfig: { allowJs: true, checkJs: false, module: 'CommonJS' }, diagnostics: false }],
     '^.+\\.(ts|tsx)$': [
       'ts-jest',
       {
@@ -42,9 +42,9 @@ export default {
     ],
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand|mitt)/)',
+    'node_modules/(?!(\\.pnpm|three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand|mitt)/)',
   ],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/scripts/assets/', '/scripts/minihome-room-service.test.mjs$'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',

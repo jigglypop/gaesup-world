@@ -1,5 +1,3 @@
-import { useQuestStore } from '../../quests/stores/questStore';
-import { useFriendshipStore } from '../../relations/stores/friendshipStore';
 import type {
   AgentBehaviorBlueprint,
   NPCAction,
@@ -17,6 +15,25 @@ import type {
 } from '../types';
 
 const MAX_BLUEPRINT_STEPS = 32;
+/** Read-only condition sources. Structural so quest and friendship stores satisfy it without Layer 1 importing them. */
+export type NPCBrainConditionStores = {
+  questStore: { getState(): { statusOf(questId: string): string } };
+  friendshipStore: { getState(): { scoreOf(npcId: string): number } };
+};
+const EMPTY_CONDITION_STORES: NPCBrainConditionStores = {
+  questStore: { getState: () => ({ statusOf: () => '' }) },
+  friendshipStore: { getState: () => ({ scoreOf: () => 0 }) },
+};
+let defaultConditionStores = EMPTY_CONDITION_STORES;
+
+/** Fallback for calls without explicit stores; the npc store layer registers the legacy global stores. */
+export function setDefaultNPCBrainConditionStores(stores: NPCBrainConditionStores): () => void {
+  const previous = defaultConditionStores;
+  defaultConditionStores = stores;
+  return () => {
+    if (defaultConditionStores === stores) defaultConditionStores = previous;
+  };
+}
 const blueprints = new Map<string, NPCBrainBlueprint>();
 
 export function registerNPCBrainBlueprint(blueprint: NPCBrainBlueprint): () => void {
@@ -148,7 +165,7 @@ export function applyAgentBehaviorBlueprint(
   );
 }
 
-function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NPCObservation): boolean {
+function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NPCObservation, stores: NPCBrainConditionStores): boolean {
   switch (condition.type) {
     case 'always':
       return true;
@@ -157,10 +174,10 @@ function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NP
     case 'perceivedAny':
       return observation.perceived.length > 0;
     case 'questStatus':
-      return useQuestStore.getState().statusOf(condition.questId) === condition.status;
+      return stores.questStore.getState().statusOf(condition.questId) === condition.status;
     case 'friendshipAtLeast': {
       const npcId = condition.npcId ?? observation.instanceId;
-      return useFriendshipStore.getState().scoreOf(npcId) >= condition.score;
+      return stores.friendshipStore.getState().scoreOf(npcId) >= condition.score;
     }
     case 'memoryEquals':
       return observation.memory?.[condition.key] === condition.value;
@@ -222,6 +239,7 @@ function findNextEdge(
 export function compileNPCBrainBlueprint(
   blueprint: NPCBrainBlueprint,
   observation: NPCObservation,
+  stores: NPCBrainConditionStores = defaultConditionStores,
 ): NPCAction[] {
   const nodes = new Map(blueprint.nodes.map((node) => [node.id, node]));
   const actions: NPCAction[] = [];
@@ -232,7 +250,7 @@ export function compileNPCBrainBlueprint(
     steps += 1;
 
     if (current.type === 'condition') {
-      const branch = resolveCondition(current.condition, observation) ? 'true' : 'false';
+      const branch = resolveCondition(current.condition, observation, stores) ? 'true' : 'false';
       current = nodes.get(findNextEdge(blueprint.edges, current.id, branch)?.target ?? '');
       continue;
     }

@@ -3,8 +3,21 @@ import { StateCreator } from 'zustand';
 
 import { InteractionSliceState, InteractionActions } from './types';
 import { InteractionBridge } from '../bridge/InteractionBridge';
-import { InteractionState, AutomationState, InteractionConfig, AutomationConfig, InteractionMetrics, AutomationMetrics, BridgeState } from '../bridge/types';
-import { getDefaultInteractionInputBackend } from '../core/adapter';
+import {
+  InteractionState,
+  AutomationState,
+  InteractionConfig,
+  AutomationConfig,
+  InteractionMetrics,
+  AutomationMetrics,
+  BridgeState,
+} from '../bridge/types';
+import {
+  getDefaultInteractionInputBackend,
+  type InputBackend,
+  type InputBackendSnapshot,
+} from '../core/adapter';
+import type { AutomationSystem } from '../core/AutomationSystem';
 import { getDefaultAutomationSystem, subscribeDefaultAutomation } from '../core/defaultAutomation';
 
 const createDefaultInteractionState = (): InteractionState => ({
@@ -19,7 +32,7 @@ const createDefaultInteractionState = (): InteractionState => ({
     keyR: false,
     keyF: false,
     keyE: false,
-    escape: false
+    escape: false,
   },
   mouse: {
     target: new THREE.Vector3(),
@@ -29,7 +42,7 @@ const createDefaultInteractionState = (): InteractionState => ({
     isLookAround: false,
     buttons: { left: false, right: false, middle: false },
     wheel: 0,
-    position: new THREE.Vector2()
+    position: new THREE.Vector2(),
   },
   gamepad: {
     connected: false,
@@ -37,18 +50,18 @@ const createDefaultInteractionState = (): InteractionState => ({
     rightStick: new THREE.Vector2(),
     triggers: { left: 0, right: 0 },
     buttons: {},
-    vibration: { weak: 0, strong: 0 }
+    vibration: { weak: 0, strong: 0 },
   },
   touch: {
     touches: [],
     gestures: {
       pinch: 1,
       rotation: 0,
-      pan: new THREE.Vector2()
-    }
+      pan: new THREE.Vector2(),
+    },
   },
   lastUpdate: 0,
-  isActive: true
+  isActive: true,
 });
 
 const createDefaultAutomationState = (): AutomationState => ({
@@ -59,28 +72,28 @@ const createDefaultAutomationState = (): AutomationState => ({
     isRunning: false,
     isPaused: false,
     loop: false,
-    maxRetries: 3
+    maxRetries: 3,
   },
   currentAction: null,
   executionStats: {
     totalExecuted: 0,
     successRate: 100,
     averageTime: 0,
-    errors: []
+    errors: [],
   },
   settings: {
     throttle: 100,
     autoStart: false,
     trackProgress: true,
-    showVisualCues: true
-  }
+    showVisualCues: true,
+  },
 });
 
 const createDefaultBridgeState = (): BridgeState => ({
   isActive: true,
   lastCommand: null,
   commandHistory: [],
-  syncStatus: 'idle'
+  syncStatus: 'idle',
 });
 
 const createDefaultInteractionConfig = (): InteractionConfig => ({
@@ -88,7 +101,7 @@ const createDefaultInteractionConfig = (): InteractionConfig => ({
   deadzone: { gamepad: 0.1, touch: 0.05 },
   smoothing: { mouse: 0.1, gamepad: 0.2 },
   invertY: false,
-  enableVibration: true
+  enableVibration: true,
 });
 
 const createDefaultAutomationConfig = (): AutomationConfig => ({
@@ -101,8 +114,8 @@ const createDefaultAutomationConfig = (): AutomationConfig => ({
     showPath: true,
     showTargets: true,
     lineColor: '#00ff00',
-    targetColor: '#ff0000'
-  }
+    targetColor: '#ff0000',
+  },
 });
 
 const createDefaultInteractionMetrics = (): InteractionMetrics => ({
@@ -111,7 +124,7 @@ const createDefaultInteractionMetrics = (): InteractionMetrics => ({
   frameTime: 0,
   eventCount: 0,
   activeInputs: [],
-  performanceScore: 100
+  performanceScore: 100,
 });
 
 const createDefaultAutomationMetrics = (): AutomationMetrics => ({
@@ -119,35 +132,14 @@ const createDefaultAutomationMetrics = (): AutomationMetrics => ({
   executionTime: 0,
   performance: 100,
   memoryUsage: 0,
-  errorRate: 0
+  errorRate: 0,
 });
 
 type Slice = InteractionSliceState & InteractionActions;
 
-type SliceSetter = (fn: (state: Slice) => Partial<Slice>) => void;
-
-let activeSliceSet: SliceSetter | null = null;
 let systemListenersBound = false;
 
-const publishAutomationState = (): void => {
-  const set = activeSliceSet;
-  if (!set) return;
-  const system = getDefaultAutomationSystem();
-  const state = system.getState();
-  set((current) => ({
-    automation: {
-      ...state,
-      queue: { ...state.queue, actions: [...state.queue.actions] },
-      settings: { ...state.settings },
-      executionStats: { ...state.executionStats, errors: [...state.executionStats.errors] },
-    },
-    config: { ...current.config, automation: system.getConfig() },
-    metrics: { ...current.metrics, automation: { ...system.getMetrics() } },
-  }));
-};
-
-const ensureSystemListeners = (set: SliceSetter): void => {
-  activeSliceSet = set;
+const ensureSystemListeners = (set: (fn: (state: Slice) => Partial<Slice>) => void): void => {
   if (systemListenersBound) return;
   systemListenersBound = true;
   let receivedInitialSnapshot = false;
@@ -156,7 +148,8 @@ const ensureSystemListeners = (set: SliceSetter): void => {
       receivedInitialSnapshot = true;
       return;
     }
-    activeSliceSet?.((state) => ({
+
+    set((state) => ({
       interaction: {
         ...state.interaction,
         keyboard,
@@ -166,116 +159,164 @@ const ensureSystemListeners = (set: SliceSetter): void => {
       },
     }));
   });
-  subscribeDefaultAutomation(publishAutomationState);
 };
 
-export const createInteractionSlice: StateCreator<Slice, [], [], Slice> = (set) => {
-  ensureSystemListeners(set as SliceSetter);
-  return ({
-  interaction: createDefaultInteractionState(),
-  automation: createDefaultAutomationState(),
-  bridge: createDefaultBridgeState(),
-  config: {
-    interaction: createDefaultInteractionConfig(),
-    automation: createDefaultAutomationConfig()
-  },
-  metrics: {
-    interaction: createDefaultInteractionMetrics(),
-    automation: createDefaultAutomationMetrics()
-  },
+export interface InteractionSliceServices {
+  inputBackend: InputBackend;
+  getAutomationSystem: () => AutomationSystem;
+  subscribeInput: (listener: (snapshot: InputBackendSnapshot) => void) => void;
+  subscribeAutomation: (listener: () => void) => void;
+}
 
-  dispatchInput: (updates) => {
-    getDefaultInteractionInputBackend().updateMouse(updates);
-  },
-
-  addAutomationAction: (action) => InteractionBridge.getGlobal().getAutomationSystem().addAction(action),
-  removeAutomationAction: (id) => { getDefaultAutomationSystem().removeAction(id); },
-  startAutomation: () => { void InteractionBridge.getGlobal().getAutomationSystem().start(); },
-  pauseAutomation: () => getDefaultAutomationSystem().pause(),
-  resumeAutomation: () => getDefaultAutomationSystem().resume(),
-  stopAutomation: () => getDefaultAutomationSystem().stop(),
-  clearAutomationQueue: () => getDefaultAutomationSystem().clearQueue(),
-  updateAutomationSettings: (settings) => getDefaultAutomationSystem().updateSettings(settings),
-
-  updateInteractionConfig: (config) =>
-    set((state) => ({
-      config: {
-        ...state.config,
-        interaction: { ...state.config.interaction, ...config }
-      }
-    })),
-
-  updateAutomationConfig: (config) => getDefaultAutomationSystem().updateConfig(config),
-
-  updateInteractionMetrics: (metrics) =>
-    set((state) => ({
-      metrics: {
-        ...state.metrics,
-        interaction: { ...state.metrics.interaction, ...metrics }
-      }
-    })),
-
-  updateAutomationMetrics: (metrics) =>
-    set((state) => ({
-      metrics: {
-        ...state.metrics,
-        automation: { ...state.metrics.automation, ...metrics }
-      }
-    })),
-
-  setBridgeStatus: (status) =>
-    set((state) => ({
-      bridge: { ...state.bridge, syncStatus: status }
-    })),
-
-  addCommandToHistory: (command) =>
-    set((state) => ({
-      bridge: {
-        ...state.bridge,
-        lastCommand: command,
-        commandHistory: [...state.bridge.commandHistory, command].slice(-100)
-      }
-    })),
-
-  resetInteractions: () => {
-    getDefaultAutomationSystem().reset();
-    set(() => ({
+export function createInteractionSliceWithServices(
+  services?: InteractionSliceServices,
+): StateCreator<Slice, [], [], Slice> {
+  return (set) => {
+    const input = () => services?.inputBackend ?? getDefaultInteractionInputBackend();
+    const automation = () => services?.getAutomationSystem() ?? getDefaultAutomationSystem();
+    const movementAutomation = () =>
+      services?.getAutomationSystem() ?? InteractionBridge.getGlobal().getAutomationSystem();
+    if (services) {
+      services.subscribeInput(({ keyboard, mouse, gamepad, touch }) =>
+        set((state) => ({
+          interaction: {
+            ...state.interaction,
+            keyboard,
+            mouse,
+            gamepad: gamepad ?? state.interaction.gamepad,
+            touch: touch ?? state.interaction.touch,
+          },
+        })),
+      );
+    } else {
+      ensureSystemListeners(set as (fn: (state: Slice) => Partial<Slice>) => void);
+    }
+    (services?.subscribeAutomation ?? subscribeDefaultAutomation)(() => {
+      const system = automation();
+      const state = system.getState();
+      set((current) => ({
+        automation: {
+          ...state,
+          queue: { ...state.queue, actions: [...state.queue.actions] },
+          settings: { ...state.settings },
+          executionStats: { ...state.executionStats, errors: [...state.executionStats.errors] },
+        },
+        config: { ...current.config, automation: system.getConfig() },
+        metrics: { ...current.metrics, automation: { ...system.getMetrics() } },
+      }));
+    });
+    return {
       interaction: createDefaultInteractionState(),
       automation: createDefaultAutomationState(),
       bridge: createDefaultBridgeState(),
       config: {
         interaction: createDefaultInteractionConfig(),
-        automation: createDefaultAutomationConfig()
+        automation: createDefaultAutomationConfig(),
       },
       metrics: {
         interaction: createDefaultInteractionMetrics(),
-        automation: createDefaultAutomationMetrics()
-      }
-    }));
-  },
+        automation: createDefaultAutomationMetrics(),
+      },
 
-  updateMouse: (updates) => {
-    getDefaultInteractionInputBackend().updateMouse(updates);
-  },
+      dispatchInput: (updates) => {
+        input().updateMouse(updates);
+      },
 
-  updateKeyboard: (updates) => {
-    getDefaultInteractionInputBackend().updateKeyboard(updates);
-  },
+      addAutomationAction: (action) => movementAutomation().addAction(action),
+      removeAutomationAction: (id) => {
+        automation().removeAction(id);
+      },
+      startAutomation: () => {
+        void movementAutomation().start();
+      },
+      pauseAutomation: () => automation().pause(),
+      resumeAutomation: () => automation().resume(),
+      stopAutomation: () => automation().stop(),
+      clearAutomationQueue: () => automation().clearQueue(),
+      updateAutomationSettings: (settings) => automation().updateSettings(settings),
 
-  updateGamepad: (updates) => {
-    getDefaultInteractionInputBackend().updateGamepad?.(updates);
-  },
+      updateInteractionConfig: (config) =>
+        set((state) => ({
+          config: {
+            ...state.config,
+            interaction: { ...state.config.interaction, ...config },
+          },
+        })),
 
-  updateTouch: (updates) => {
-    getDefaultInteractionInputBackend().updateTouch?.(updates);
-  },
+      updateAutomationConfig: (config) => automation().updateConfig(config),
 
-  setInteractionActive: (active) =>
-    set((state) => ({
-      interaction: {
-        ...state.interaction,
-        isActive: active
-      }
-    }))
-});
-};
+      updateInteractionMetrics: (metrics) =>
+        set((state) => ({
+          metrics: {
+            ...state.metrics,
+            interaction: { ...state.metrics.interaction, ...metrics },
+          },
+        })),
+
+      updateAutomationMetrics: (metrics) =>
+        set((state) => ({
+          metrics: {
+            ...state.metrics,
+            automation: { ...state.metrics.automation, ...metrics },
+          },
+        })),
+
+      setBridgeStatus: (status) =>
+        set((state) => ({
+          bridge: { ...state.bridge, syncStatus: status },
+        })),
+
+      addCommandToHistory: (command) =>
+        set((state) => ({
+          bridge: {
+            ...state.bridge,
+            lastCommand: command,
+            commandHistory: [...state.bridge.commandHistory, command].slice(-100),
+          },
+        })),
+
+      resetInteractions: () => {
+        automation().reset();
+        set(() => ({
+          interaction: createDefaultInteractionState(),
+          automation: createDefaultAutomationState(),
+          bridge: createDefaultBridgeState(),
+          config: {
+            interaction: createDefaultInteractionConfig(),
+            automation: createDefaultAutomationConfig(),
+          },
+          metrics: {
+            interaction: createDefaultInteractionMetrics(),
+            automation: createDefaultAutomationMetrics(),
+          },
+        }));
+      },
+
+      updateMouse: (updates) => {
+        input().updateMouse(updates);
+      },
+
+      updateKeyboard: (updates) => {
+        input().updateKeyboard(updates);
+      },
+
+      updateGamepad: (updates) => {
+        input().updateGamepad?.(updates);
+      },
+
+      updateTouch: (updates) => {
+        input().updateTouch?.(updates);
+      },
+
+      setInteractionActive: (active) =>
+        set((state) => ({
+          interaction: {
+            ...state.interaction,
+            isActive: active,
+          },
+        })),
+    };
+  };
+}
+
+export const createInteractionSlice = createInteractionSliceWithServices();

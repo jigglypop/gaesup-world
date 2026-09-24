@@ -1,8 +1,16 @@
 import { enableMapSet } from 'immer';
-import { create } from 'zustand';
+import { create, useStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
-import { registerNPCBrainBlueprint, unregisterNPCBrainBlueprint } from '../core/blueprint';
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
+import { useQuestStore } from '../../quests/stores/questStore';
+import { useFriendshipStore } from '../../relations/stores/friendshipStore';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import {
+  registerNPCBrainBlueprint,
+  setDefaultNPCBrainConditionStores,
+  unregisterNPCBrainBlueprint,
+} from '../core/blueprint';
 import { 
   NPCSystemState, 
   NPCTemplate, 
@@ -165,6 +173,7 @@ interface NPCStore extends NPCSystemState {
   updateInstancePerception: (instanceId: string, perception: Partial<NPCPerceptionConfig>) => void;
   updateInstanceBehavior: (instanceId: string, behavior: Partial<NPCBehaviorConfig>) => void;
   setInstanceObservation: (instanceId: string, observation: NPCObservation) => void;
+  setInstanceObservations: (observations: ReadonlyArray<readonly [string, NPCObservation]>) => void;
   setInstanceDecision: (instanceId: string, decision: NPCBrainDecision) => void;
   executeInstanceAction: (instanceId: string, action: NPCAction) => void;
   executeInstanceActions: (instanceId: string, actions: NPCAction[]) => void;
@@ -216,7 +225,9 @@ function repairDefaultNPCAssetUrls(state: NPCStore): void {
   });
 }
 
-export const useNPCStore = create<NPCStore>()(
+function buildNPCStore(legacyBlueprintRegistry = false, invalidateBrainRequests: (id?: string) => void = () => {}) {
+
+  return create<NPCStore>()(
   immer((set, get) => ({
     initialized: false,
     templates: new Map(),
@@ -306,8 +317,10 @@ export const useNPCStore = create<NPCStore>()(
       };
       state.brainBlueprints.set(wanderBlueprint.id, wanderBlueprint);
       state.brainBlueprints.set(greetBlueprint.id, greetBlueprint);
-      registerNPCBrainBlueprint(wanderBlueprint);
-      registerNPCBrainBlueprint(greetBlueprint);
+      if (legacyBlueprintRegistry) {
+        registerNPCBrainBlueprint(wanderBlueprint);
+        registerNPCBrainBlueprint(greetBlueprint);
+      }
       
       // Default clothing categories
       state.clothingCategories.set('basic', {
@@ -512,17 +525,20 @@ export const useNPCStore = create<NPCStore>()(
     }),
 
     addInstance: (instance) => set((state) => {
+      invalidateBrainRequests(instance.id);
       state.instances.set(instance.id, instance);
     }),
 
     updateInstance: (id, updates) => set((state) => {
       const instance = state.instances.get(id);
       if (instance) {
+        if (updates.brain !== undefined || updates.templateId !== undefined) invalidateBrainRequests(id);
         state.instances.set(id, { ...instance, ...updates });
       }
     }),
 
     removeInstance: (id) => set((state) => {
+      invalidateBrainRequests(id);
       state.instances.delete(id);
     }),
 
@@ -588,7 +604,7 @@ export const useNPCStore = create<NPCStore>()(
 
     addBrainBlueprint: (blueprint) => set((state) => {
       state.brainBlueprints.set(blueprint.id, blueprint);
-      registerNPCBrainBlueprint(blueprint);
+      if (legacyBlueprintRegistry) registerNPCBrainBlueprint(blueprint);
     }),
 
     updateBrainBlueprint: (id, updates) => set((state) => {
@@ -596,12 +612,12 @@ export const useNPCStore = create<NPCStore>()(
       if (!blueprint) return;
       const nextBlueprint = { ...blueprint, ...updates };
       state.brainBlueprints.set(id, nextBlueprint);
-      registerNPCBrainBlueprint(nextBlueprint);
+      if (legacyBlueprintRegistry) registerNPCBrainBlueprint(nextBlueprint);
     }),
 
     removeBrainBlueprint: (id) => set((state) => {
       state.brainBlueprints.delete(id);
-      unregisterNPCBrainBlueprint(id);
+      if (legacyBlueprintRegistry) unregisterNPCBrainBlueprint(id);
     }),
 
     setSelectedTemplate: (id) => set((state) => {
@@ -741,6 +757,7 @@ export const useNPCStore = create<NPCStore>()(
     updateInstanceBrain: (instanceId, brain) => set((state) => {
       const instance = state.instances.get(instanceId);
       if (!instance) return;
+      invalidateBrainRequests(instanceId);
       state.instances.set(instanceId, {
         ...instance,
         brain: { ...(instance.brain ?? DEFAULT_NPC_BRAIN), ...brain },
@@ -775,13 +792,12 @@ export const useNPCStore = create<NPCStore>()(
       state.instances.set(instanceId, nextInstance);
     }),
 
-    setInstanceObservation: (instanceId, observation) => set((state) => {
-      const instance = state.instances.get(instanceId);
-      if (!instance) return;
-      state.instances.set(instanceId, {
-        ...instance,
-        lastObservation: observation,
-      });
+    setInstanceObservation: (instanceId, observation) => get().setInstanceObservations([[instanceId, observation]]),
+    setInstanceObservations: (observations) => set((state) => {
+      for (const [instanceId, observation] of observations) {
+        const instance = state.instances.get(instanceId);
+        if (instance) state.instances.set(instanceId, { ...instance, lastObservation: observation });
+      }
     }),
 
     setInstanceDecision: (instanceId, decision) => set((state) => {
@@ -971,3 +987,34 @@ export const useNPCStore = create<NPCStore>()(
     }),
   }))
 );
+
+}
+
+export function createNPCStore(options: { onInvalidateBrain?: (id?: string) => void } = {}) {
+  const store = buildNPCStore(false, options.onInvalidateBrain);
+  if (options.onInvalidateBrain) {
+    const externalSetState = store.setState;
+    // Bulk writes (including snapshot hydration) invalidate requests before observers see new data.
+    // Store actions retain their captured Immer setter and invalidate only the affected NPC.
+    store.setState = ((...args: Parameters<typeof externalSetState>) => {
+      options.onInvalidateBrain!();
+      Reflect.apply(externalSetState, store, args);
+    }) as typeof externalSetState;
+  }
+  return store;
+}
+export type NPCStoreApi = ReturnType<typeof createNPCStore>;
+export const NPC_STORE_SERVICE = runtimeStoreServiceKey<NPCStoreApi>('npc');
+const legacyStore = buildNPCStore(true);
+// Legacy global brain conditions pair with the legacy global NPC store; runtimes pass their own stores.
+setDefaultNPCBrainConditionStores({ questStore: useQuestStore, friendshipStore: useFriendshipStore });
+export function useNPCStoreApi(): NPCStoreApi {
+  return useGaesupRuntime()?.npcStore ?? useNPCStore;
+}
+function useScopedStore(): NPCStore;
+function useScopedStore<T>(selector: (state: NPCStore) => T): T;
+function useScopedStore(selector: (state: NPCStore) => unknown = state => state) {
+  return useStore(useNPCStoreApi(), selector);
+}
+/** React uses the nearest runtime; static methods retain the legacy default. */
+export const useNPCStore = Object.assign(useScopedStore, legacyStore);

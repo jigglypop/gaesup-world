@@ -3,12 +3,12 @@ import { StrictMode, type ReactElement, type ReactNode } from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
+
 import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 
 import { disposeToonGradients, setDefaultToonMode } from '../../../../rendering/toon';
-import { PhysicsEntity } from '../PhysicsEntity';
 import { PartsGroupRef } from '../PartsGroupRef';
-import RiderRef from '../RiderRef';
+import { PhysicsEntity } from '../PhysicsEntity';
 
 type MockGltf = {
   animations: THREE.AnimationClip[];
@@ -60,6 +60,7 @@ jest.mock('@react-three/rapier', () => {
     CapsuleCollider: () => null,
     RigidBody: ({ children }: { children?: ReactNode }) => children ?? null,
     euler: () => new three.Euler(),
+    useRapier: () => ({ world: {} }),
   };
 });
 
@@ -126,17 +127,13 @@ function getProjectedClone(source: THREE.Object3D): THREE.Object3D {
 
 function getRenderedMaterial(renderer: ReactTestRenderer): THREE.Material {
   const meshes = renderer.root.findAllByType('mesh');
-  const material = meshes.at(-1)?.props.material as THREE.Material | THREE.Material[] | undefined;
+  const material = meshes.at(-1)?.props['material'] as THREE.Material | THREE.Material[] | undefined;
   if (!material || Array.isArray(material)) throw new Error('Expected one rendered material.');
   return material;
 }
 
 function physicsEntity(url: string): ReactElement {
   return <PhysicsEntity url={url} isActive={false} isNotColliding componentType="character" />;
-}
-
-function rider(url: string): ReactElement {
-  return <RiderRef url={url} />;
 }
 
 function verifyLifecycle(buildSubject: (url: string) => ReactElement): void {
@@ -248,13 +245,8 @@ describe('GLTF clone toon ownership', () => {
     }
   });
 
-  test('RiderRef owns committed StrictMode generations across URL switch and unmount', () => {
-    verifyLifecycle(rider);
-  });
-
   test.each([
     ['PhysicsEntity', physicsEntity],
-    ['RiderRef', rider],
   ])('leaves %s clone materials untouched when default toon mode is disabled', (_name, build) => {
     setDefaultToonMode(false);
     const url = '/plain.glb';

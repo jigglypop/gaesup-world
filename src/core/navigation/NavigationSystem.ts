@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 
+import { PathOpenSet } from './PathOpenSet';
 import { GaesupCoreWasmExports, loadCoreWasm } from '../wasm/loader';
 
 export interface NavigationConfig {
@@ -93,14 +94,19 @@ export class NavigationSystem {
   private outPathPtr = 0;
   private readonly outCapacity = 512;
 
-  private constructor(config: Partial<NavigationConfig> = {}) {
+  constructor(config: Partial<NavigationConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     const { cellSize, worldMinX, worldMinZ, worldMaxX, worldMaxZ } = this.config;
+    if (![cellSize, worldMinX, worldMinZ, worldMaxX, worldMaxZ, this.config.maxStepHeight].every(Number.isFinite)
+      || cellSize <= 0 || worldMaxX <= worldMinX || worldMaxZ <= worldMinZ || this.config.maxStepHeight < 0) {
+      throw new RangeError('Invalid navigation grid configuration');
+    }
 
     this.gridWidth = Math.ceil((worldMaxX - worldMinX) / cellSize);
     this.gridHeight = Math.ceil((worldMaxZ - worldMinZ) / cellSize);
 
     const total = this.gridWidth * this.gridHeight;
+    if (!Number.isSafeInteger(total) || total <= 0) throw new RangeError('Navigation grid capacity exceeded');
     this.grid = new Uint8Array(total).fill(1);
     this.costGrid = new Uint8Array(total).fill(1);
     this.heightGrid = new Float32Array(total);
@@ -534,22 +540,11 @@ export class NavigationSystem {
     const closed = new Uint8Array(total);
     gScore[startIdx] = 0;
 
-    const open: { f: number; idx: number }[] = [
-      { f: this.octileH(sx, sz, gx, gz), idx: startIdx },
-    ];
+    const open = new PathOpenSet();
+    open.push({ f: this.octileH(sx, sz, gx, gz), idx: startIdx });
 
-    while (open.length > 0) {
-      let minPos = 0;
-      for (let i = 1; i < open.length; i++) {
-        const candidate = open[i];
-        const currentMin = open[minPos];
-        if (candidate && currentMin && candidate.f < currentMin.f) minPos = i;
-      }
-      const current = open[minPos];
-      const last = open[open.length - 1];
-      if (!current || !last) break;
-      open[minPos] = last;
-      open.pop();
+    while (open.size > 0) {
+      const current = open.pop()!;
 
       const ci = current.idx;
       if (ci === goalIdx) break;

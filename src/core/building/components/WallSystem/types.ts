@@ -8,4 +8,5 @@ export type WallSystemProps = {
   selectedWallId?: string | null;
   onWallClick?: (wallId: string) => void;
   onWallDelete?: (wallId: string) => void;
+  colliders?: boolean;
 } 

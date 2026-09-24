@@ -1,4 +1,5 @@
-import type { InputAdapter } from '../../interactions/core';
+import type { InputAdapter } from '../../input/core';
+import { logger } from '../../utils/logger';
 
 const heldKeys = new WeakMap<InputAdapter, Map<string, number>>();
 
@@ -32,7 +33,16 @@ export function createKeyboardOwnership(backend: InputAdapter) {
     set,
     isHeld: (key: string) => counts.has(key),
     release: () => {
-      for (const [source, key] of sources) set(source, key, false);
+      const released = new Set<string>();
+      for (const key of sources.values()) {
+        const count = counts.get(key) ?? 0;
+        if (count <= 1) { counts.delete(key); released.add(key); } else counts.set(key, count - 1);
+      }
+      sources.clear();
+      for (const key of released) if (!counts.has(key)) {
+        try { backend.updateKeyboard({ [key]: false }); }
+        catch (error) { logger.error('Keyboard ownership release failed', error instanceof Error ? error : String(error)); }
+      }
     },
   };
 }

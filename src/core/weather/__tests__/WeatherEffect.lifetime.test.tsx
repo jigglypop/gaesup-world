@@ -1,6 +1,7 @@
 import ReactThreeTestRenderer, { act } from '@react-three/test-renderer';
 import { Points, type BufferGeometry, type PointsMaterial } from 'three';
 
+import { FrameSchedulerHost } from '../../runtime/frame';
 import { WeatherEffect } from '../components/WeatherEffect';
 import { useWeatherStore } from '../stores/weatherStore';
 
@@ -8,7 +9,7 @@ afterEach(() => useWeatherStore.setState({ current: null, history: [] }));
 
 test('weather intensity changes retain particles and a forced kind ignores unrelated weather', async () => {
   useWeatherStore.getState().setWeather('rain', 0.2);
-  const renderer = await ReactThreeTestRenderer.create(<WeatherEffect count={8} />);
+  const renderer = await ReactThreeTestRenderer.create(<><FrameSchedulerHost /><WeatherEffect count={8} /></>);
   const points = renderer.scene.find((node) => node.instance instanceof Points).instance as Points<BufferGeometry, PointsMaterial>;
   const geometry = points.geometry;
   const material = points.material;
@@ -18,7 +19,7 @@ test('weather intensity changes retain particles and a forced kind ignores unrel
   expect(points.geometry).toBe(geometry);
   expect(points.material).toBe(material);
   expect(position.getY(0)).toBe(5);
-  await renderer.update(<WeatherEffect kind="rain" count={8} />);
+  await renderer.update(<><FrameSchedulerHost /><WeatherEffect kind="rain" count={8} /></>);
   await act(async () => { useWeatherStore.getState().setWeather('snow'); });
   expect(points.geometry).toBe(geometry);
   expect(points.material).toBe(material);

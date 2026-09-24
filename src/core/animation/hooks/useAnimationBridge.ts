@@ -3,7 +3,8 @@ import { useRef, useCallback, useEffect } from 'react';
 import * as THREE from 'three';
 
 import { BridgeFactory } from '../../boilerplate';
-import { useGaesupStore } from '../../stores/gaesupStore';
+import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../runtime/context';
+import { useGaesupStore, useGaesupStoreApi } from '../../stores/gaesupStore';
 import { AnimationBridge } from '../bridge/AnimationBridge';
 import { AnimationCommand } from '../bridge/types';
 import { AnimationType } from '../core/types';
@@ -12,28 +13,37 @@ import type { EntityAnimationStates } from '../core/types';
 let fallbackAnimationBridge: AnimationBridge | null = null;
 
 export function getGlobalAnimationBridge(): AnimationBridge {
-  const bridge = BridgeFactory.getOrCreate<AnimationBridge>('animation');
+  const bridge = BridgeFactory.getOrCreateFor(AnimationBridge);
   if (bridge) return bridge;
 
   fallbackAnimationBridge ??= new AnimationBridge();
   return fallbackAnimationBridge;
 }
 
+export function useScopedAnimationBridge(): AnimationBridge | null {
+  const runtime = useGaesupRuntime();
+  useGaesupRuntimeRevision();
+  if (!runtime) return getGlobalAnimationBridge();
+  return runtime.isActive() ? runtime.animationBridge : null;
+}
+
 export function useAnimationBridge() {
+  const storeApi = useGaesupStoreApi();
   const bridgeRef = useRef<AnimationBridge | null>(null);
   const mode = useGaesupStore((state) => state.mode);
   const animationState = useGaesupStore((state) => state.animationState);
   const setAnimation = useGaesupStore((state) => state.setAnimation);
-  const bridge = getGlobalAnimationBridge();
+  const bridge = useScopedAnimationBridge();
   bridgeRef.current = bridge;
 
   useEffect(() => {
     bridgeRef.current = bridge;
+    if (!bridge) return;
     const unsubscribe = bridge.subscribe((snapshot, type) => {
       if (!snapshot) return;
       const engineType = type as keyof EntityAnimationStates;
       const currentStoreAnimation =
-        useGaesupStore.getState().animationState?.[engineType]?.current;
+        storeApi.getState().animationState?.[engineType]?.current;
       if (snapshot.currentAnimation !== currentStoreAnimation) {
         setAnimation(engineType, snapshot.currentAnimation);
       }
@@ -42,7 +52,7 @@ export function useAnimationBridge() {
     return () => {
       unsubscribe();
     };
-  }, [setAnimation, bridge]);
+  }, [setAnimation, bridge, storeApi]);
 
   const executeCommand = useCallback(
     (type: AnimationType, command: AnimationCommand) => {
@@ -90,4 +100,4 @@ export function useAnimationBridge() {
     currentType,
     currentAnimation: animationState?.[currentType]?.current || 'idle',
   };
-} 
+}

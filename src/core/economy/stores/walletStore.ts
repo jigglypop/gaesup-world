@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import type { WalletSerialized } from '../types';
 
 type WalletState = {
@@ -17,7 +20,8 @@ type WalletState = {
 
 const INITIAL_BELLS = 1000;
 
-export const useWalletStore = create<WalletState>((set, get) => ({
+export function createWalletStore() {
+  return create<WalletState>((set, get) => ({
   bells: INITIAL_BELLS,
   lifetimeEarned: 0,
   lifetimeSpent: 0,
@@ -73,3 +77,11 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+
+}
+
+export type WalletStore = ReturnType<typeof createWalletStore>;
+export const WALLET_STORE_SERVICE = runtimeStoreServiceKey<WalletStore>('wallet');
+export const { useStore: useWalletStore, useStoreApi: useWalletStoreApi } = createScopedStoreHook(
+  createWalletStore(), () => useGaesupRuntime()?.walletStore,
+);

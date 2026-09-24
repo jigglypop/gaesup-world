@@ -2,6 +2,9 @@ import { create } from 'zustand';
 
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import type { ItemId } from '../../items/types';
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import {
   DAILY_FRIENDSHIP_CAP,
   FRIENDSHIP_LEVELS,
@@ -51,7 +54,8 @@ function giftValue(itemId: ItemId): number {
   return 4;
 }
 
-export const useFriendshipStore = create<State>((set, get) => ({
+export function createFriendshipStore() {
+  return create<State>((set, get) => ({
   entries: {},
 
   ensure: (npcId) => {
@@ -136,3 +140,11 @@ export const useFriendshipStore = create<State>((set, get) => ({
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+
+}
+
+export type FriendshipStore = ReturnType<typeof createFriendshipStore>;
+export const RELATIONS_STORE_SERVICE = runtimeStoreServiceKey<FriendshipStore>('relations');
+export const { useStore: useFriendshipStore, useStoreApi: useFriendshipStoreApi } = createScopedStoreHook(
+  createFriendshipStore(), () => useGaesupRuntime()?.friendshipStore,
+);

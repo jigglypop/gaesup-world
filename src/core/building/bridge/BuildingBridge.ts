@@ -1,4 +1,4 @@
-import { Profile, HandleError } from '@/core/boilerplate/decorators';
+import { reportError } from '@/core/utils/reportError';
 
 import { Position3D, Rotation3D, WallConfig, TileConfig, MeshConfig } from '../types';
 
@@ -30,33 +30,36 @@ type LegacyMesh = {
   transparent?: boolean;
 };
 
+/** Legacy converters return undefined for malformed input instead of throwing; the failure is still reported. */
+function convertLegacy<T>(label: string, convert: () => T): T {
+  try {
+    return convert();
+  } catch (error) {
+    reportError(error, { source: 'building-bridge', label });
+    return undefined as T;
+  }
+}
+
+/** @deprecated Legacy array-format adapters with no internal callers; scheduled for removal in 2.0 (PRD 24). */
 export class BuildingBridge {
-  @HandleError()
-  @Profile()
   static convertLegacyPosition(position: LegacyPosition): Position3D {
-    return { x: position[0], y: position[1], z: position[2] };
+    return convertLegacy('convertLegacyPosition', () => ({ x: position[0], y: position[1], z: position[2] }));
   }
 
-  @HandleError()
-  @Profile()
   static convertLegacyRotation(rotation: LegacyRotation): Rotation3D {
-    return { x: rotation[0], y: rotation[1], z: rotation[2] };
+    return convertLegacy('convertLegacyRotation', () => ({ x: rotation[0], y: rotation[1], z: rotation[2] }));
   }
 
-  @HandleError()
   static convertToLegacyPosition(position: Position3D): LegacyPosition {
-    return [position.x, position.y, position.z];
+    return convertLegacy('convertToLegacyPosition', () => [position.x, position.y, position.z]);
   }
 
-  @HandleError()
   static convertToLegacyRotation(rotation: Rotation3D): LegacyRotation {
-    return [rotation.x, rotation.y, rotation.z];
+    return convertLegacy('convertToLegacyRotation', () => [rotation.x, rotation.y, rotation.z]);
   }
 
-  @HandleError()
-  @Profile()
   static convertLegacyWall(legacyWall: LegacyWall): WallConfig {
-    return {
+    return convertLegacy('convertLegacyWall', () => ({
       id: legacyWall.id || `wall-${Date.now()}`,
       position: this.convertLegacyPosition(legacyWall.position),
       rotation: this.convertLegacyRotation(legacyWall.rotation),
@@ -64,38 +67,36 @@ export class BuildingBridge {
       width: 4,
       height: 4,
       depth: 0.5,
-    };
+    }));
   }
 
-  @HandleError()
-  @Profile()
   static convertLegacyTile(legacyTile: LegacyTile): TileConfig {
-    return {
+    return convertLegacy('convertLegacyTile', () => ({
       id: legacyTile.id || `tile-${Date.now()}`,
       position: this.convertLegacyPosition(legacyTile.position),
       tileGroupId: legacyTile.tile_parent_id || 'default',
       size: 4,
-    };
+    }));
   }
 
-  @HandleError()
-  @Profile()
   static convertLegacyMesh(legacyMesh: LegacyMesh): MeshConfig {
-    const mesh: MeshConfig = {
-      id: legacyMesh.id || `mesh-${Date.now()}`,
-      color: legacyMesh.color || '#ffffff',
-      material: legacyMesh.material === 'GLASS' ? 'GLASS' : 'STANDARD',
-      roughness: legacyMesh.roughness || 0.5,
-      metalness: legacyMesh.metalness || 0,
-      opacity: legacyMesh.opacity || 1,
-      transparent: legacyMesh.transparent || false,
-    };
-    if (legacyMesh.map_texture_url) {
-      mesh.mapTextureUrl = legacyMesh.map_texture_url;
-    }
-    if (legacyMesh.normal_texture_url) {
-      mesh.normalTextureUrl = legacyMesh.normal_texture_url;
-    }
-    return mesh;
+    return convertLegacy('convertLegacyMesh', () => {
+      const mesh: MeshConfig = {
+        id: legacyMesh.id || `mesh-${Date.now()}`,
+        color: legacyMesh.color || '#ffffff',
+        material: legacyMesh.material === 'GLASS' ? 'GLASS' : 'STANDARD',
+        roughness: legacyMesh.roughness ?? 0.5,
+        metalness: legacyMesh.metalness ?? 0,
+        opacity: legacyMesh.opacity ?? 1,
+        transparent: legacyMesh.transparent ?? false,
+      };
+      if (legacyMesh.map_texture_url) {
+        mesh.mapTextureUrl = legacyMesh.map_texture_url;
+      }
+      if (legacyMesh.normal_texture_url) {
+        mesh.normalTextureUrl = legacyMesh.normal_texture_url;
+      }
+      return mesh;
+    });
   }
-} 
+}

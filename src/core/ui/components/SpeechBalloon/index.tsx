@@ -1,9 +1,10 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 
-import { useThree, useFrame } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { SpeechBalloonProps } from './types';
+import { useEngineFrame } from '../../../runtime/frame';
 import { useSpeechBalloonPosition } from '../../hooks/useSpeechBalloonPosition';
 import { useUIConfigStore } from '../../stores/UIConfigStore';
 import './styles.css';
@@ -294,7 +295,7 @@ export function SpeechBalloon({
   }, [textureData, config.scaleMultiplier]);
 
     // Delta 기반 안정적인 스케일링 (미세진동 완전 제거)
-  useFrame(() => {
+  useEngineFrame('effects', () => {
     if (!spriteRef.current || !textureData || !visible) return;
     
     lodAccumRef.current++;
@@ -320,7 +321,7 @@ export function SpeechBalloon({
     } catch (error) {
       console.warn('Error in sprite scaling:', error);
     }
-  });
+  }, { label: 'ui:speech-balloon-scale', active: visible && textureData !== null });
 
   useEffect(() => {
     return () => {

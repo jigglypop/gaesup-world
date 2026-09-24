@@ -1,123 +1,10 @@
 import { NetworkMessage } from '../../types';
-import { MessageProcessResult } from '../types';
+import { MessageQueue } from '../MessageQueue';
 
-// MessageQueue 클래스 모의 구현
-class MessageQueue {
-  private queues: Map<string, NetworkMessage[]> = new Map();
-  private maxSize: number;
-  private batchSize: number;
-  private enableBatching: boolean;
-
-  constructor(maxSize: number = 1000, batchSize: number = 10, enableBatching: boolean = true) {
-    this.maxSize = maxSize;
-    this.batchSize = batchSize;
-    this.enableBatching = enableBatching;
-  }
-
-  // 메시지를 우선순위별 큐에 추가
-  enqueue(message: NetworkMessage): boolean {
-    const priorityKey = message.priority;
-    
-    if (!this.queues.has(priorityKey)) {
-      this.queues.set(priorityKey, []);
-    }
-
-    const queue = this.queues.get(priorityKey)!;
-    
-    if (queue.length >= this.maxSize) {
-      return false; // 큐가 가득 참
-    }
-
-    queue.push(message);
-    return true;
-  }
-
-  // 우선순위에 따라 메시지 처리
-  dequeue(): NetworkMessage | null {
-    const priorities: Array<NetworkMessage['priority']> = ['critical', 'high', 'normal', 'low'];
-    
-    for (const priority of priorities) {
-      const queue = this.queues.get(priority);
-      if (queue && queue.length > 0) {
-        return queue.shift()!;
-      }
-    }
-    
-    return null;
-  }
-
-  // 배치 처리용 여러 메시지 가져오기
-  dequeueBatch(): NetworkMessage[] {
-    if (!this.enableBatching) {
-      const message = this.dequeue();
-      return message ? [message] : [];
-    }
-
-    const batch: NetworkMessage[] = [];
-    const priorities: Array<NetworkMessage['priority']> = ['critical', 'high', 'normal', 'low'];
-    
-    for (const priority of priorities) {
-      const queue = this.queues.get(priority);
-      if (queue && queue.length > 0) {
-        const count = Math.min(this.batchSize - batch.length, queue.length);
-        batch.push(...queue.splice(0, count));
-        
-        if (batch.length >= this.batchSize) {
-          break;
-        }
-      }
-    }
-    
-    return batch;
-  }
-
-  // 특정 우선순위 큐 크기
-  getQueueSize(priority: NetworkMessage['priority']): number {
-    const queue = this.queues.get(priority);
-    return queue ? queue.length : 0;
-  }
-
-  // 전체 큐 크기
-  getTotalSize(): number {
-    let total = 0;
-    for (const queue of this.queues.values()) {
-      total += queue.length;
-    }
-    return total;
-  }
-
-  // 큐 비우기
-  clear(): void {
-    this.queues.clear();
-  }
-
-  // 특정 메시지 찾기
-  findMessage(messageId: string): NetworkMessage | null {
-    for (const queue of this.queues.values()) {
-      const message = queue.find(msg => msg.id === messageId);
-      if (message) {
-        return message;
-      }
-    }
-    return null;
-  }
-
-  // 특정 메시지 제거
-  removeMessage(messageId: string): boolean {
-    for (const queue of this.queues.values()) {
-      const index = queue.findIndex(msg => msg.id === messageId);
-      if (index !== -1) {
-        queue.splice(index, 1);
-        return true;
-      }
-    }
-    return false;
-  }
-}
 
 describe('MessageQueue', () => {
   let messageQueue: MessageQueue;
-  
+
   beforeEach(() => {
     messageQueue = new MessageQueue(1000, 10, true);
   });
@@ -155,7 +42,7 @@ describe('MessageQueue', () => {
 
     test('큐 크기 제한', () => {
       const smallQueue = new MessageQueue(2, 10, true);
-      
+
       const message1: NetworkMessage = {
         id: 'msg1',
         from: 'node1',
@@ -191,9 +78,13 @@ describe('MessageQueue', () => {
 
       expect(smallQueue.enqueue(message1)).toBe(true);
       expect(smallQueue.enqueue(message2)).toBe(true);
-      expect(smallQueue.enqueue(message3)).toBe(false); // 큐가 가득 참
-      
-      expect(smallQueue.getTotalSize()).toBe(2);
+      // Production policy retains the newest message at equal priority.
+      expect(smallQueue.enqueue(message3)).toBe(true);
+      expect(smallQueue.findMessage(message1.id)).toBeNull();
+      expect(smallQueue.dequeue()?.id).toBe(message2.id);
+      expect(smallQueue.dequeue()?.id).toBe(message3.id);
+
+      expect(smallQueue.getTotalSize()).toBe(0);
     });
   });
 
@@ -301,7 +192,7 @@ describe('MessageQueue', () => {
   describe('배치 처리', () => {
     test('배치 크기만큼 메시지 가져오기', () => {
       const batchQueue = new MessageQueue(1000, 3, true);
-      
+
       // 5개 메시지 추가
       for (let i = 1; i <= 5; i++) {
         const message: NetworkMessage = {
@@ -334,7 +225,7 @@ describe('MessageQueue', () => {
 
     test('배치 비활성화 시 단일 메시지 처리', () => {
       const nonBatchQueue = new MessageQueue(1000, 10, false);
-      
+
       const message: NetworkMessage = {
         id: 'msg1',
         from: 'node1',
@@ -347,15 +238,15 @@ describe('MessageQueue', () => {
       };
 
       nonBatchQueue.enqueue(message);
-      
+
       const batch = nonBatchQueue.dequeueBatch();
       expect(batch).toHaveLength(1);
-      expect(batch[0].id).toBe('msg1');
+      expect(batch[0]?.id).toBe('msg1');
     });
 
     test('우선순위별 배치 처리', () => {
       const batchQueue = new MessageQueue(1000, 5, true);
-      
+
       // 다양한 우선순위 메시지 추가
       const messages = [
         { id: 'critical1', priority: 'critical' as const },
@@ -401,10 +292,10 @@ describe('MessageQueue', () => {
       };
 
       messageQueue.enqueue(message);
-      
+
       const found = messageQueue.findMessage('findme');
       expect(found).toEqual(message);
-      
+
       const notFound = messageQueue.findMessage('nonexistent');
       expect(notFound).toBeNull();
     });
@@ -476,9 +367,9 @@ describe('MessageQueue', () => {
       }
 
       expect(messageQueue.getTotalSize()).toBe(10);
-      
+
       messageQueue.clear();
-      
+
       expect(messageQueue.getTotalSize()).toBe(0);
       expect(messageQueue.getQueueSize('high')).toBe(0);
       expect(messageQueue.getQueueSize('normal')).toBe(0);
@@ -490,7 +381,7 @@ describe('MessageQueue', () => {
     test('우선순위별 큐 크기 확인', () => {
       // 다양한 우선순위 메시지 추가
       const priorities: Array<NetworkMessage['priority']> = ['critical', 'high', 'normal', 'low'];
-      
+
       priorities.forEach((priority, index) => {
         for (let i = 0; i < index + 1; i++) {
           const message: NetworkMessage = {
@@ -516,7 +407,7 @@ describe('MessageQueue', () => {
 
     test('존재하지 않는 우선순위 큐 크기', () => {
       expect(messageQueue.getQueueSize('normal')).toBe(0);
-      
+
       const message: NetworkMessage = {
         id: 'msg1',
         from: 'node1',
@@ -527,11 +418,11 @@ describe('MessageQueue', () => {
         timestamp: Date.now(),
         reliability: 'reliable'
       };
-      
+
       messageQueue.enqueue(message);
-      
+
       expect(messageQueue.getQueueSize('high')).toBe(1);
       expect(messageQueue.getQueueSize('normal')).toBe(0); // 여전히 0
     });
   });
-}); 
+});

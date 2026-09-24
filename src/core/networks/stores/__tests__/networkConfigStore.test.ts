@@ -1,5 +1,5 @@
-import { useNetworkConfigStore } from '../networkConfigStore';
 import { NetworkConfig } from '../../types';
+import { useNetworkConfigStore } from '../networkConfigStore';
 
 describe('NetworkConfigStore', () => {
   beforeEach(() => {

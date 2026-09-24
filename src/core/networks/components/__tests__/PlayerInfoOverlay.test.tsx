@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { fireEvent, render, screen } from '@testing-library/react';
 
 import type { MultiplayerState } from '../../types';
@@ -70,13 +68,12 @@ describe('PlayerInfoOverlay', () => {
     expect(onSendChat).not.toHaveBeenCalled();
 
     fireEvent.change(input, { target: { value: '  hello world  ' } });
-    const [sendButton, disconnectButton] = screen.getAllByRole('button');
-    fireEvent.click(sendButton);
+    fireEvent.click(screen.getByRole('button', { name: '전송' }));
 
     expect(onSendChat).toHaveBeenCalledWith('hello world');
     expect(input).toHaveValue('');
 
-    fireEvent.click(disconnectButton);
+    fireEvent.click(screen.getByRole('button', { name: '연결 끊기' }));
     expect(onDisconnect).toHaveBeenCalledTimes(1);
 
     rerender(

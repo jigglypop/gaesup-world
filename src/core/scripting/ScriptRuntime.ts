@@ -100,7 +100,6 @@ export class ScriptRuntime {
     Array.from(this.instances.values()).forEach((instance) => this.destroyInstance(instance));
     this.instances.clear();
     this.handles.clear();
-    this.listeners.clear();
     this.rebuildLists();
     this.document = null;
     this.time.delta = 0;
@@ -167,6 +166,15 @@ export class ScriptRuntime {
         : instance.hooks.onCollisionExit;
       if (hook) this.runHook(instance, kind, () => hook(otherId));
     });
+  }
+
+  on(name: string, listener: ScriptEventListener): () => void {
+    const set = this.listeners.get(name) ?? new Set<ScriptEventListener>();
+    set.add(listener);
+    this.listeners.set(name, set);
+    return () => {
+      set.delete(listener);
+    };
   }
 
   emit(name: string, payload: ScriptEventPayload = {}): void {
@@ -392,12 +400,7 @@ export class ScriptRuntime {
       findOne: (query) => this.find(query)[0],
       emit: (name, payload) => this.emit(name, payload),
       on: (name, listener) => {
-        const set = this.listeners.get(name) ?? new Set<ScriptEventListener>();
-        set.add(listener);
-        this.listeners.set(name, set);
-        const unsubscribe = () => {
-          set.delete(listener);
-        };
+        const unsubscribe = this.on(name, listener);
         instance.subscriptions.push(unsubscribe);
         return unsubscribe;
       },

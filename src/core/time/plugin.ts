@@ -1,5 +1,6 @@
-import { createStoreDomainPlugin } from '../plugins';
-import { useTimeStore } from './stores/timeStore';
+import { createStoreDomainPlugin, type GaesupPlugin } from '../plugins';
+import { RUNTIME_TIME_STORE_SERVICE_ID } from './core/timeClock';
+import { useTimeStore, type TimeStore } from './stores/timeStore';
 import type { TimeSerialized } from './types';
 
 export type TimePluginOptions = {
@@ -12,15 +13,15 @@ const DEFAULT_PLUGIN_ID = 'gaesup.time';
 const DEFAULT_SAVE_EXTENSION_ID = 'time';
 const DEFAULT_STORE_SERVICE_ID = 'time.store';
 
-export function serializeTimeState(): TimeSerialized {
-  return useTimeStore.getState().serialize();
+export function serializeTimeState(store: TimeStore = useTimeStore): TimeSerialized {
+  return store.getState().serialize();
 }
 
-export function hydrateTimeState(data: TimeSerialized | null | undefined): void {
-  useTimeStore.getState().hydrate(data);
+export function hydrateTimeState(data: TimeSerialized | null | undefined, store: TimeStore = useTimeStore): void {
+  store.getState().hydrate(data);
 }
 
-export function createTimePlugin(options: TimePluginOptions = {}) {
+export function createTimePlugin(options: TimePluginOptions = {}): GaesupPlugin {
   return createStoreDomainPlugin({
     id: options.id ?? DEFAULT_PLUGIN_ID,
     name: 'GaeSup Time',
@@ -29,9 +30,10 @@ export function createTimePlugin(options: TimePluginOptions = {}) {
     store: useTimeStore,
     readyEvent: 'time:ready',
     capabilities: ['time'],
+    resolveStore: (ctx) => ctx.services.get<TimeStore>(RUNTIME_TIME_STORE_SERVICE_ID) ?? useTimeStore,
     serialize: serializeTimeState,
     hydrate: hydrateTimeState,
-    prepareHydrate: (data) => useTimeStore.getState().prepareHydrate(data),
+    prepareHydrate: (data, store) => store.getState().prepareHydrate(data),
   });
 }
 

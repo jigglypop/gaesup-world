@@ -3,9 +3,7 @@ import { useEffect, useMemo } from 'react';
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
-import { BridgeFactory } from '@core/boilerplate';
-
-import { MotionBridge } from '../bridge/MotionBridge';
+import { useWorldMotionBridge } from './useWorldMotionBridge';
 import { MotionConfig } from '../bridge/types';
 import { MotionType } from '../core/system/types';
 import { ManagedMotionEntity } from '../entities/ManagedMotionEntity';
@@ -39,10 +37,7 @@ export function useMotion(
   options: UseMotionOptions
 ): UseMotionReturn {
   const { motionType, rigidBodyRef, position, autoStart = true } = options;
-  const bridge = useMemo(
-    () => (BridgeFactory.getOrCreate('motion') as MotionBridge | null),
-    [],
-  );
+  const bridge = useWorldMotionBridge();
   const entity = useMemo(
     () => (bridge ? new ManagedMotionEntity(id, motionType, bridge) : null),
     [bridge, id, motionType],
@@ -114,4 +109,4 @@ export function useMotion(
     position: snapshot?.position ?? null,
     velocity: snapshot?.velocity ?? null
   };
-} 
+}

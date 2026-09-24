@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import {
@@ -13,6 +12,7 @@ import {
   useGaesupRuntime,
   useGaesupRuntimeRevision,
 } from '../../../runtime';
+import { useEngineFrame } from '../../../runtime/frame';
 
 export type TeleportDropEffectProps = {
   enabled?: boolean;
@@ -101,7 +101,7 @@ function TeleportEffectView({
   const doneRef = useRef(false);
   const beamHeight = Math.max(1.2, effect.dropHeight);
 
-  useFrame(() => {
+  useEngineFrame('lateUpdate', () => {
     if (doneRef.current) return;
 
     const progress = THREE.MathUtils.clamp(
@@ -140,7 +140,7 @@ function TeleportEffectView({
       doneRef.current = true;
       onDone(effect.id);
     }
-  });
+  }, { label: 'effects:teleport-drop' });
 
   return (
     <group position={effect.position}>

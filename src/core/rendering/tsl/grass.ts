@@ -90,5 +90,5 @@ export async function createGrassWindCompute(
 export function isWebGPURenderer(renderer: object | null | undefined): boolean {
   if (!renderer) return false;
   const name = (renderer as { constructor?: { name?: string } })?.constructor?.name ?? '';
-  return name === 'WebGPURenderer';
+  return (renderer as { isWebGPURenderer?: boolean }).isWebGPURenderer === true || name === 'WebGPURenderer';
 }

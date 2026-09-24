@@ -1,16 +1,16 @@
 import { useEffect } from 'react';
 
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
-import { useQuestStore } from '../stores/questStore';
+import { useInventoryStoreApi } from '../../inventory/stores/inventoryStore';
+import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../runtime/runtimeContext';
+import { useQuestStoreApi } from '../stores/questStore';
+import { acquireQuestObjectiveTracker } from '../stores/tracker';
 
 export function useQuestObjectiveTracker(enabled: boolean = true): void {
+  const runtime = useGaesupRuntime(); const revision = useGaesupRuntimeRevision();
+  const inventoryStore = useInventoryStoreApi();
+  const questStore = useQuestStoreApi();
   useEffect(() => {
-    if (!enabled) return;
-    const off = useInventoryStore.subscribe((state, prev) => {
-      if (state.slots === prev.slots) return;
-      const active = useQuestStore.getState().active();
-      for (const p of active) useQuestStore.getState().recheck(p.questId);
-    });
-    return off;
-  }, [enabled]);
+    if (!enabled || (runtime && !runtime.isActive())) return;
+    return acquireQuestObjectiveTracker(inventoryStore, questStore, { active: () => !runtime || (runtime.isActive() && !runtime.save.isRestoring()) });
+  }, [enabled, inventoryStore, questStore, runtime, revision]);
 }

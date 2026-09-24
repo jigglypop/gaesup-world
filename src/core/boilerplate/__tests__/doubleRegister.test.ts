@@ -1,7 +1,4 @@
 import { AbstractBridge } from '../bridge/AbstractBridge';
-import { ManagedEntity } from '../entity/ManagedEntity';
-import { useBaseLifecycle } from '../hooks/useBaseLifecycle';
-import { renderHook } from '@testing-library/react';
 import { IDisposable } from '../types';
 
 type Engine = { value: number } & IDisposable;
@@ -20,24 +17,6 @@ class IdentityBridge extends AbstractBridge<Engine, Snapshot, Command> {
 }
 
 describe('이중 register 회귀 방지', () => {
-  test('ManagedEntity.initialize 후 useBaseLifecycle을 추가로 호출해도 동일 엔진 인스턴스가 dispose되지 않는다', () => {
-    const bridge = new IdentityBridge();
-    const engine: Engine = { value: 7, dispose: jest.fn() };
-    const id = 'entity-1';
-
-    const entity = new ManagedEntity<Engine, Snapshot, Command>(id, engine);
-    (entity as unknown as { bridge: AbstractBridge<Engine, Snapshot, Command> }).bridge = bridge;
-    entity.initialize();
-
-    renderHook(() => useBaseLifecycle(bridge, id, engine));
-
-    expect(engine.dispose).not.toHaveBeenCalled();
-    expect(bridge.getEngine(id)).toBe(engine);
-
-    entity.dispose();
-    bridge.dispose();
-  });
-
   test('AbstractBridge.register는 동일 id에 동일 엔진 인스턴스가 다시 들어와도 dispose하지 않는다', () => {
     const bridge = new IdentityBridge();
     const engine: Engine = { value: 1, dispose: jest.fn() };

@@ -1,7 +1,9 @@
 import { enableMapSet, produce } from 'immer';
-import { create } from 'zustand';
+import { create, useStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import {
   blockToPlacementEntry,
   createBuildingPlacementEngine,
@@ -16,7 +18,6 @@ import {
   unindexId,
   wallTransformToEdge,
 } from '../model';
-import type { TileMeta, WallMeta } from '../model';
 import {
   BuildingSystemState,
   MeshConfig,
@@ -43,12 +44,25 @@ import {
   type BuildingWeatherEffect,
   type BuildingWorldSurface,
 } from '../types';
+import { createDefaultTileCategories, createDefaultWallCategories } from './defaultCategories';
 import { applyBuildingHydration, hydrateBuildingState, serializeBuildingState } from './persistence';
+import { BuildingSpatialIndex } from './spatialIndex';
 import { TILE_CONSTANTS } from '../types/constants';
 
 enableMapSet();
 
 const CUSTOM_TILE_CATEGORY_ID = 'custom-tiles';
+const DEFAULT_GRASS_DENSITY = 90;
+
+function defaultTileObjectConfig(
+  objectType: TileObjectType | undefined,
+  terrainColor: string,
+  terrainAccentColor: string,
+): TileConfig['objectConfig'] {
+  if (objectType === 'grass') return { grassDensity: DEFAULT_GRASS_DENSITY, terrainColor, terrainAccentColor };
+  if (objectType === 'sand' || objectType === 'snowfield') return { terrainColor, terrainAccentColor };
+  return undefined;
+}
 
 function ensureTileCategory(
   state: BuildingStore,
@@ -103,12 +117,7 @@ interface BuildingStore extends BuildingSystemState {
   initializeDefaults: () => void;
 
   // Internal spatial indexes for fast placement checks.
-  tileIndex: Map<number, Set<string>>;
-  tileCells: Map<string, number[]>;
-  tileMeta: Map<string, TileMeta>;
-  wallIndex: Map<number, Set<string>>;
-  wallCells: Map<string, number[]>;
-  wallMeta: Map<string, WallMeta>;
+  spatialIndex: BuildingSpatialIndex;
 
   hoverPosition: Position3D | null;
   setHoverPosition: (position: Position3D | null) => void;
@@ -286,15 +295,12 @@ interface BuildingStore extends BuildingSystemState {
   prepareHydrate: (data: Partial<BuildingSerializedState> | null | undefined) => () => void;
 }
 
-export const useBuildingStore = create<BuildingStore>()(
+export function createBuildingStore() {
+
+  return create<BuildingStore>()(
   immer((set, get) => ({
     initialized: false,
-    tileIndex: new Map(),
-    tileCells: new Map(),
-    tileMeta: new Map(),
-    wallIndex: new Map(),
-    wallCells: new Map(),
-    wallMeta: new Map(),
+    spatialIndex: new BuildingSpatialIndex(),
     meshes: new Map(),
     wallGroups: new Map(),
     tileGroups: new Map(),
@@ -413,49 +419,8 @@ export const useBuildingStore = create<BuildingStore>()(
           metalness: 0.0,
         });
 
-        // 기본 벽 카테고리 생성
-        state.wallCategories.set('interior-walls', {
-          id: 'interior-walls',
-          name: '실내 벽',
-          description: '실내 공간에 사용하는 벽',
-          wallGroupIds: ['plaster-walls', 'painted-walls'],
-        });
-
-        state.wallCategories.set('exterior-walls', {
-          id: 'exterior-walls',
-          name: '외벽',
-          description: '건물 외부에 사용하는 벽',
-          wallGroupIds: ['brick-walls', 'concrete-walls'],
-        });
-
-        state.wallCategories.set('special-walls', {
-          id: 'special-walls',
-          name: '특수 벽',
-          description: '유리와 특수 재질의 벽',
-          wallGroupIds: ['glass-walls'],
-        });
-
-        // 기본 타일 카테고리 생성
-        state.tileCategories.set('wood-floors', {
-          id: 'wood-floors',
-          name: '나무 바닥',
-          description: '여러 종류의 나무 바닥',
-          tileGroupIds: ['oak-floor', 'pine-floor'],
-        });
-
-        state.tileCategories.set('stone-floors', {
-          id: 'stone-floors',
-          name: '돌 바닥',
-          description: '대리석과 석재 바닥',
-          tileGroupIds: ['marble-floor', 'granite-floor'],
-        });
-
-        state.tileCategories.set('natural-floors', {
-          id: 'natural-floors',
-          name: '자연 바닥',
-          description: '모래와 눈 지형 바닥',
-          tileGroupIds: ['sand-floor', 'snow-floor'],
-        });
+        for (const [id, category] of createDefaultWallCategories()) state.wallCategories.set(id, category);
+        for (const [id, category] of createDefaultTileCategories()) state.tileCategories.set(id, category);
 
         // 기본 그룹 생성
         state.wallGroups.set('brick-walls', {
@@ -658,15 +623,15 @@ export const useBuildingStore = create<BuildingStore>()(
           };
           group.tiles.push(tileWithCell);
           const hs = tileHalfSize(tile.size || 1);
-          state.tileMeta.set(tileWithCell.id, {
+          state.spatialIndex.tileMeta.set(tileWithCell.id, {
             x: tileWithCell.position.x,
             z: tileWithCell.position.z,
             y: tileWithCell.position.y,
             halfSize: hs,
           });
           indexAabb(
-            state.tileIndex,
-            state.tileCells,
+            state.spatialIndex.tileIndex,
+            state.spatialIndex.tileCells,
             tileWithCell.id,
             tileWithCell.position.x - hs,
             tileWithCell.position.x + hs,
@@ -803,8 +768,8 @@ export const useBuildingStore = create<BuildingStore>()(
         const group = state.wallGroups.get(id);
         if (group) {
           for (const wall of group.walls) {
-            unindexId(state.wallIndex, state.wallCells, wall.id);
-            state.wallMeta.delete(wall.id);
+            unindexId(state.spatialIndex.wallIndex, state.spatialIndex.wallCells, wall.id);
+            state.spatialIndex.wallMeta.delete(wall.id);
           }
         }
         state.wallGroups.delete(id);
@@ -826,14 +791,14 @@ export const useBuildingStore = create<BuildingStore>()(
           group.walls.push(wallWithEdge);
 
           const tol = 0.5;
-          state.wallMeta.set(wallWithEdge.id, {
+          state.spatialIndex.wallMeta.set(wallWithEdge.id, {
             x: wallWithEdge.position.x,
             z: wallWithEdge.position.z,
             rotY: wallWithEdge.rotation.y,
           });
           indexAabb(
-            state.wallIndex,
-            state.wallCells,
+            state.spatialIndex.wallIndex,
+            state.spatialIndex.wallCells,
             wallWithEdge.id,
             wallWithEdge.position.x - tol,
             wallWithEdge.position.x + tol,
@@ -855,8 +820,8 @@ export const useBuildingStore = create<BuildingStore>()(
               const shouldReindex =
                 updates.position !== undefined || updates.rotation !== undefined;
               if (shouldReindex) {
-                unindexId(state.wallIndex, state.wallCells, wallId);
-                state.wallMeta.delete(wallId);
+                unindexId(state.spatialIndex.wallIndex, state.spatialIndex.wallCells, wallId);
+                state.spatialIndex.wallMeta.delete(wallId);
               }
               Object.assign(wall, updates);
               if (updates.position !== undefined || updates.rotation !== undefined) {
@@ -865,14 +830,14 @@ export const useBuildingStore = create<BuildingStore>()(
 
               if (shouldReindex) {
                 const tol = 0.5;
-                state.wallMeta.set(wall.id, {
+                state.spatialIndex.wallMeta.set(wall.id, {
                   x: wall.position.x,
                   z: wall.position.z,
                   rotY: wall.rotation.y,
                 });
                 indexAabb(
-                  state.wallIndex,
-                  state.wallCells,
+                  state.spatialIndex.wallIndex,
+                  state.spatialIndex.wallCells,
                   wall.id,
                   wall.position.x - tol,
                   wall.position.x + tol,
@@ -921,8 +886,8 @@ export const useBuildingStore = create<BuildingStore>()(
       set((state) => {
         const group = state.wallGroups.get(groupId);
         if (group) {
-          unindexId(state.wallIndex, state.wallCells, wallId);
-          state.wallMeta.delete(wallId);
+          unindexId(state.spatialIndex.wallIndex, state.spatialIndex.wallCells, wallId);
+          state.spatialIndex.wallMeta.delete(wallId);
           group.walls = group.walls.filter((w) => w.id !== wallId);
           if (state.selectedWallId === wallId) state.selectedWallId = null;
         }
@@ -946,8 +911,8 @@ export const useBuildingStore = create<BuildingStore>()(
         const group = state.tileGroups.get(id);
         if (group) {
           for (const tile of group.tiles) {
-            unindexId(state.tileIndex, state.tileCells, tile.id);
-            state.tileMeta.delete(tile.id);
+            unindexId(state.spatialIndex.tileIndex, state.spatialIndex.tileCells, tile.id);
+            state.spatialIndex.tileMeta.delete(tile.id);
           }
         }
         state.tileGroups.delete(id);
@@ -957,20 +922,9 @@ export const useBuildingStore = create<BuildingStore>()(
       set((state) => {
         const group = state.tileGroups.get(groupId);
         if (group) {
-          const objectConfig: TileConfig['objectConfig'] =
-            state.selectedTileObjectType === 'grass'
-              ? {
-                  grassDensity: 90,
-                  terrainColor: state.currentTerrainColor,
-                  terrainAccentColor: state.currentTerrainAccentColor,
-                }
-              : state.selectedTileObjectType === 'sand' ||
-                  state.selectedTileObjectType === 'snowfield'
-                ? {
-                    terrainColor: state.currentTerrainColor,
-                    terrainAccentColor: state.currentTerrainAccentColor,
-                  }
-                : undefined;
+          const objectType = tile.objectType ?? state.selectedTileObjectType;
+          const objectConfig = tile.objectConfig
+            ?? defaultTileObjectConfig(objectType, state.currentTerrainColor, state.currentTerrainAccentColor);
           const cell = tile.cell ?? tilePositionToCell(tile.position);
           const materialId = tile.materialId ?? state.currentTileMaterialId;
           const tileWithObject: TileConfig = {
@@ -978,22 +932,22 @@ export const useBuildingStore = create<BuildingStore>()(
             cell,
             footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1),
             ...(materialId ? { materialId } : {}),
-            objectType: state.selectedTileObjectType,
+            objectType,
             ...(objectConfig ? { objectConfig } : {}),
           };
           group.tiles.push(tileWithObject);
 
           const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
           const halfSize = tileHalfSize(tileWithObject.size || 1);
-          state.tileMeta.set(tileWithObject.id, {
+          state.spatialIndex.tileMeta.set(tileWithObject.id, {
             x: tileWithObject.position.x,
             z: tileWithObject.position.z,
             y: tileWithObject.position.y,
             halfSize,
           });
           indexAabb(
-            state.tileIndex,
-            state.tileCells,
+            state.spatialIndex.tileIndex,
+            state.spatialIndex.tileCells,
             tileWithObject.id,
             tileWithObject.position.x - halfSize,
             tileWithObject.position.x + halfSize,
@@ -1014,8 +968,8 @@ export const useBuildingStore = create<BuildingStore>()(
             if (tile) {
               const shouldReindex = updates.position !== undefined || updates.size !== undefined;
               if (shouldReindex) {
-                unindexId(state.tileIndex, state.tileCells, tileId);
-                state.tileMeta.delete(tileId);
+                unindexId(state.spatialIndex.tileIndex, state.spatialIndex.tileCells, tileId);
+                state.spatialIndex.tileMeta.delete(tileId);
               }
               Object.assign(tile, updates);
               if (
@@ -1031,15 +985,15 @@ export const useBuildingStore = create<BuildingStore>()(
               if (shouldReindex) {
                 const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
                 const halfSize = tileHalfSize(tile.size || 1);
-                state.tileMeta.set(tile.id, {
+                state.spatialIndex.tileMeta.set(tile.id, {
                   x: tile.position.x,
                   z: tile.position.z,
                   y: tile.position.y,
                   halfSize,
                 });
                 indexAabb(
-                  state.tileIndex,
-                  state.tileCells,
+                  state.spatialIndex.tileIndex,
+                  state.spatialIndex.tileCells,
                   tile.id,
                   tile.position.x - halfSize,
                   tile.position.x + halfSize,
@@ -1057,8 +1011,8 @@ export const useBuildingStore = create<BuildingStore>()(
       set((state) => {
         const group = state.tileGroups.get(groupId);
         if (group) {
-          unindexId(state.tileIndex, state.tileCells, tileId);
-          state.tileMeta.delete(tileId);
+          unindexId(state.spatialIndex.tileIndex, state.spatialIndex.tileCells, tileId);
+          state.spatialIndex.tileMeta.delete(tileId);
           group.tiles = group.tiles.filter((t) => t.id !== tileId);
           if (state.selectedTileId === tileId) state.selectedTileId = null;
         }
@@ -1384,10 +1338,10 @@ export const useBuildingStore = create<BuildingStore>()(
     },
 
     getSupportHeightAt: (position) => {
-      const { tileIndex, tileMeta, blocks, currentTileMultiplier, editMode } = get();
+      const { spatialIndex, blocks, currentTileMultiplier, editMode } = get();
       return getBuildingSupportHeight(
-        tileIndex,
-        tileMeta,
+        spatialIndex.tileIndex,
+        spatialIndex.tileMeta,
         blocks,
         position,
         currentTileMultiplier,
@@ -1396,8 +1350,8 @@ export const useBuildingStore = create<BuildingStore>()(
     },
 
     checkWallPosition: (position, rotation) => {
-      const { wallIndex, wallMeta } = get();
-      return hasWallCollision(wallIndex, wallMeta, position, rotation);
+      const { spatialIndex } = get();
+      return hasWallCollision(spatialIndex.wallIndex, spatialIndex.wallMeta, position, rotation);
     },
 
     isInEditMode: () => {
@@ -1684,3 +1638,19 @@ export const useBuildingStore = create<BuildingStore>()(
       }),
   })),
 );
+
+}
+
+export type BuildingStoreApi = ReturnType<typeof createBuildingStore>;
+export const BUILDING_STORE_SERVICE = runtimeStoreServiceKey<BuildingStoreApi>('building');
+const legacyStore = createBuildingStore();
+export function useBuildingStoreApi(): BuildingStoreApi {
+  return useGaesupRuntime()?.buildingStore ?? useBuildingStore;
+}
+function useScopedStore(): BuildingStore;
+function useScopedStore<T>(selector: (state: BuildingStore) => T): T;
+function useScopedStore(selector: (state: BuildingStore) => unknown = state => state) {
+  return useStore(useBuildingStoreApi(), selector);
+}
+/** React uses the nearest runtime; static methods retain the legacy default. */
+export const useBuildingStore = Object.assign(useScopedStore, legacyStore);

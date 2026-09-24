@@ -1,7 +1,13 @@
-import { BridgeConstructor, BridgeInstance } from '../types'
+import { BridgeConstructor, BridgeInstance, RuntimeValue } from '../types'
 import { BridgeRegistry } from './BridgeRegistry'
 import { logger } from '../../utils/logger'
 import { DIContainer } from '../di'
+
+/** @DomainBridge classes are DI singletons; drop the cached instance so a disposed bridge is never handed out again. */
+function releaseDomainSingleton(domain: string): void {
+    const BridgeClass = BridgeRegistry.get(domain)
+    if (BridgeClass) DIContainer.getInstance().releaseSingleton(BridgeClass)
+}
 
 export class BridgeFactory {
     private static instances = new Map<string, BridgeInstance>()
@@ -36,6 +42,16 @@ export class BridgeFactory {
     static getOrCreate<T extends BridgeInstance>(domain: string): T | null {
         return BridgeFactory.get<T>(domain) ?? BridgeFactory.create<T>(domain)
     }
+
+    /** Resolves a @DomainBridge class by value so bundlers keep it; re-registers when its import-time registration was dropped. */
+    static getOrCreateFor<T extends BridgeInstance>(bridge: new (...args: RuntimeValue[]) => T): T | null {
+        const domain: unknown = Reflect.getMetadata('domain', bridge)
+        if (typeof domain !== 'string') return null
+        const existing = BridgeFactory.get<T>(domain)
+        if (existing) return existing
+        if (BridgeRegistry.get(domain) !== bridge) BridgeRegistry.register(domain, bridge)
+        return BridgeFactory.create<T>(domain)
+    }
     
     static has(domain: string): boolean {
         return BridgeFactory.instances.has(domain)
@@ -47,6 +63,7 @@ export class BridgeFactory {
             logger.info(`[BridgeFactory] Disposing bridge instance for domain: ${domain}`)
             instance.dispose()
             BridgeFactory.instances.delete(domain)
+            releaseDomainSingleton(domain)
         }
     }
     
@@ -55,6 +72,7 @@ export class BridgeFactory {
         BridgeFactory.instances.forEach((instance, domain) => {
             logger.info(`[BridgeFactory] Disposing: ${domain}`)
             instance.dispose()
+            releaseDomainSingleton(domain)
         })
         BridgeFactory.instances.clear()
     }

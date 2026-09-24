@@ -1,0 +1,11 @@
+{
+  "interfaceDeclarations": 482,
+  "consoleCalls": 26,
+  "anyUsages": 0,
+  "rawUseFrame": 5,
+  "oversizedComponents": 45,
+  "oversizedModules": 15,
+  "handleErrorDecorators": 0,
+  "profileDecorators": 0,
+  "reflectMetadataImports": 11
+}

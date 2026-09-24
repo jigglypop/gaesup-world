@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
+import { FramePhaseSection } from './FramePhaseSection';
 import type { EditorPanelBaseProps } from './types';
 import { useGaesupStore } from '../../../stores/gaesupStore';
 
@@ -54,6 +55,8 @@ const BarMeter: React.FC<{ value: number; max: number; color: string; label: str
 
 export function PerformancePanel({ className = '', style, children }: EditorPanelBaseProps = {}) {
   const performanceData = useGaesupStore(useShallow((state) => state.performance));
+  const retainPerformanceSampling = useGaesupStore((state) => state.retainPerformanceSampling);
+  useEffect(() => retainPerformanceSampling(), [retainPerformanceSampling]);
   const [fps, setFps] = useState({ current: 0, min: Infinity, max: 0, avg: 0, p1Low: 0, history: Array(HISTORY_LEN).fill(0) });
   const [mem, setMem] = useState({ used: 0, limit: 0, history: Array(HISTORY_LEN).fill(0) });
   const [memoryAvailable, setMemoryAvailable] = useState(false);
@@ -206,6 +209,8 @@ export function PerformancePanel({ className = '', style, children }: EditorPane
         <BarMeter value={frameTime} max={33.3} color={getFrameTimeColor(frameTime)} label="목표 시간(16.7ms)" />
         <Sparkline data={frameTimeHistory} color={getFrameTimeColor(frameTime)} max={33.3} warn={16.7} />
       </div>
+
+      <FramePhaseSection />
 
       {/* Draw Calls & GPU */}
       <div className="perf-stat-group">

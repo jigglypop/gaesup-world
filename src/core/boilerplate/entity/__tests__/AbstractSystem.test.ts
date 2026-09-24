@@ -52,7 +52,7 @@ class TestSystem extends AbstractSystem<TestState, TestMetrics> {
     this.metrics.runtimeValue += args.deltaTime;
   }
 
-  protected onReset(): void {
+  protected override onReset(): void {
     this.resetCount++;
   }
 }
@@ -126,24 +126,20 @@ describe('AbstractSystem initialization', () => {
     let metricsCalls = 0;
     const createState = (overrides?: RuntimeRecord): TestState => {
       stateCalls++;
+      const configuredValue = overrides?.['configuredValue'];
       return {
         lastUpdate: 99,
-        configuredValue:
-          typeof overrides?.configuredValue === 'number'
-            ? overrides.configuredValue
-            : 1,
+        configuredValue: typeof configuredValue === 'number' ? configuredValue : 1,
         runtimeValue: 2,
         nested: { value: 3 },
       };
     };
     const createMetrics = (overrides?: RuntimeRecord): TestMetrics => {
       metricsCalls++;
+      const configuredValue = overrides?.['configuredValue'];
       return {
         frameTime: 99,
-        configuredValue:
-          typeof overrides?.configuredValue === 'number'
-            ? overrides.configuredValue
-            : 4,
+        configuredValue: typeof configuredValue === 'number' ? configuredValue : 4,
         runtimeValue: 5,
         nested: { value: 6 },
       };
@@ -226,7 +222,7 @@ describe('AbstractSystem initialization', () => {
     const previousFrameTime = previousMetrics.frameTime;
     shouldFailMetrics = true;
 
-    expect(() => system.reset()).not.toThrow();
+    expect(() => system.reset()).toThrow('metrics initialization failed');
     expect(system.getState()).toBe(previousState);
     expect(system.getMetrics()).toBe(previousMetrics);
     expect(system.getState()).toEqual({

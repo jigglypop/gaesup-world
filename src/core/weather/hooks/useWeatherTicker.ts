@@ -1,26 +1,16 @@
 import { useEffect } from 'react';
 
-import { dayOfTotalMinutes } from '../../time/core/Clock';
-import { useTimeStore } from '../../time/stores/timeStore';
-import { useWeatherStore } from '../stores/weatherStore';
+import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../runtime/runtimeContext';
+import { useTimeStoreApi } from '../../time/stores/timeStore';
+import { acquireWeatherTicker } from '../stores/ticker';
+import { useWeatherStoreApi } from '../stores/weatherStore';
 
 export function useWeatherTicker(enabled: boolean = true): void {
+  const runtime = useGaesupRuntime(); const revision = useGaesupRuntimeRevision();
+  const weatherStore = useWeatherStoreApi();
+  const timeStore = useTimeStoreApi();
   useEffect(() => {
-    if (!enabled) return;
-    const apply = () => {
-      const s = useTimeStore.getState();
-      const day = dayOfTotalMinutes(s.totalMinutes);
-      const cur = useWeatherStore.getState().current;
-      if (!cur || cur.day !== day) {
-        useWeatherStore.getState().rollForDay(day, s.time.season);
-      }
-    };
-    apply();
-    const off = useTimeStore.subscribe((state, prev) => {
-      const dayNow = dayOfTotalMinutes(state.totalMinutes);
-      const dayPrev = dayOfTotalMinutes(prev.totalMinutes);
-      if (dayNow !== dayPrev) apply();
-    });
-    return off;
-  }, [enabled]);
+    if (!enabled || (runtime && !runtime.isActive())) return;
+    return acquireWeatherTicker(timeStore, weatherStore, { active: () => !runtime || (runtime.isActive() && !runtime.save.isRestoring()) });
+  }, [enabled, timeStore, weatherStore, runtime, revision]);
 }

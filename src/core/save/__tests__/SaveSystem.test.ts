@@ -30,9 +30,9 @@ describe('SaveSystem', () => {
     expect(write).toHaveBeenCalledTimes(1);
     release();
     await Promise.all([first, second]);
-    expect((await adapter.read('main'))?.domains.world).toBe(2);
+    expect((await adapter.read('main'))?.domains['world']).toBe(2);
     await sys.save();
-    expect((await adapter.read('main'))?.domains.world).toBe(3);
+    expect((await adapter.read('main'))?.domains['world']).toBe(3);
   });
 
   test.each(['save', 'remove'] as const)('orders a pending %s before the next mutation of the same slot', async (operation) => {
@@ -436,7 +436,7 @@ describe('SaveSystem', () => {
     expect(sys.has('profile')).toBe(false);
   });
 
-  test('reports hydrate failures without blocking other domains', async () => {
+  test('stops at a failed domain and reports rollback failure separately', async () => {
     const adapter = new MemoryAdapter();
     const diagnostics: SaveDiagnostic[] = [];
     await adapter.write('diagnostic-slot', {
@@ -469,13 +469,56 @@ describe('SaveSystem', () => {
     });
 
     await expect(sys.load('diagnostic-slot')).rejects.toThrow('Save hydration failed');
-    expect(healthy).toBe(2);
-    expect(diagnostics).toHaveLength(1);
+    expect(healthy).toBe(0);
+    expect(diagnostics).toHaveLength(2);
     expect(diagnostics[0]).toMatchObject({
       phase: 'hydrate',
       key: 'broken',
       slot: 'diagnostic-slot',
     });
     expect(diagnostics[0]?.error).toBeInstanceOf(Error);
+    expect(diagnostics[1]).toMatchObject({ phase: 'hydrate', operation: 'rollback', key: 'broken' });
+  });
+
+  test('rolls back nested live state and the partially mutated failing domain in reverse order', () => {
+    const sys = new SaveSystem({ adapter: new MemoryAdapter() });
+    const first = { nested: { value: 1 } };
+    let second = 2;
+    const order: string[] = [];
+    const later = jest.fn();
+    sys.register({ key: 'first', serialize: () => first,
+      hydrate: data => { order.push('first'); first.nested.value = (data as typeof first).nested.value; } });
+    sys.register({ key: 'second', serialize: () => second,
+      hydrate: data => { order.push('second'); second = Number(data); if (data === 20) throw new Error('partial apply'); } });
+    sys.register({ key: 'later', serialize: () => 3, hydrate: later });
+    expect(() => sys.hydrateBlob({ version: 1, savedAt: 0,
+      domains: { first: { nested: { value: 10 } }, second: 20, later: 30 } })).toThrow('previous state restored');
+    expect(first.nested.value).toBe(1);
+    expect(second).toBe(2);
+    expect(order).toEqual(['first', 'second', 'second', 'first']);
+    expect(later).not.toHaveBeenCalled();
+    expect(sys.createBlob().domains).toEqual({ first: { nested: { value: 1 } }, second: 2, later: 3 });
+  });
+
+  test('does not apply any domain if a rollback snapshot cannot be captured', () => {
+    const sys = new SaveSystem({ adapter: new MemoryAdapter() });
+    const hydrate = jest.fn();
+    sys.register({ key: 'first', serialize: () => 1, hydrate });
+    sys.register({ key: 'broken', serialize: () => { throw new Error('no snapshot'); }, hydrate });
+    expect(() => sys.hydrateBlob({ version: 1, savedAt: 0, domains: {} })).toThrow('Save serialization failed');
+    expect(hydrate).not.toHaveBeenCalled();
+  });
+
+  test('isolates queued writes and returned blobs from later live mutations', async () => {
+    const adapter = new MemoryAdapter();
+    const sys = new SaveSystem({ adapter });
+    const live = { nested: { value: 1 } };
+    sys.register({ key: 'world', serialize: () => live, hydrate: () => {} });
+    const blob = sys.createBlob();
+    const pending = sys.save();
+    live.nested.value = 2;
+    await pending;
+    expect(blob.domains['world']).toEqual({ nested: { value: 1 } });
+    expect((await adapter.read('main'))?.domains['world']).toEqual({ nested: { value: 1 } });
   });
 });

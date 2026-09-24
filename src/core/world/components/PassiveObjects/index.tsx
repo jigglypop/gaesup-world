@@ -1,8 +1,9 @@
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 
-import { useFrame, type ThreeEvent } from '@react-three/fiber';
+import { useThree, type ThreeEvent } from '@react-three/fiber';
 import { CapsuleCollider, RigidBody } from '@react-three/rapier';
 
+import { useEngineFrame } from '@core/runtime/frame';
 import { useGenericRefs } from '@hooks/useGenericRefs';
 import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
 
@@ -108,14 +109,15 @@ export const PassiveObjects = memo(function PassiveObjects({
 }: PassiveObjectProps) {
   const [visibleIds, setVisibleIds] = useState<Set<string>>(() => new Set());
   const lodAccum = useRef(0);
+  const getThreeState = useThree((state) => state.get);
 
   // Distance-based culling: check every 0.5s.
-  useFrame((state, delta) => {
+  useEngineFrame('effects', (delta) => {
     lodAccum.current += delta;
     if (lodAccum.current < 0.5) return;
     lodAccum.current = 0;
 
-    const cam = state.camera.position;
+    const cam = getThreeState().camera.position;
     const next = new Set<string>();
     for (const obj of objects) {
       const x = obj.position.x;
@@ -129,7 +131,7 @@ export const PassiveObjects = memo(function PassiveObjects({
     if (next.size !== visibleIds.size || [...next].some(id => !visibleIds.has(id))) {
       setVisibleIds(next);
     }
-  });
+  }, { label: 'world:passive-objects-lod' });
 
   const objectElements = useMemo(() => 
     objects

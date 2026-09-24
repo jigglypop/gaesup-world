@@ -1,6 +1,6 @@
 import 'reflect-metadata';
+import { logger } from '../../utils/logger';
 import { BridgeRegistry } from '../bridge/BridgeRegistry';
-import { ServiceTarget } from '../types';
 
 // 테스트용 Mock 클래스들
 class MockBridgeA {
@@ -90,8 +90,10 @@ describe('BridgeRegistry', () => {
 
     test('null 또는 undefined 도메인 조회 시 안전하게 처리되어야 함', () => {
       expect(() => {
-        BridgeRegistry.get(null as any);
-        BridgeRegistry.get(undefined as any);
+        // @ts-expect-error: runtime guard for untyped callers passing null
+        BridgeRegistry.get(null);
+        // @ts-expect-error: runtime guard for untyped callers passing undefined
+        BridgeRegistry.get(undefined);
       }).not.toThrow();
     });
   });
@@ -135,7 +137,7 @@ describe('BridgeRegistry', () => {
   describe('브릿지 덮어쓰기', () => {
     test('같은 도메인에 다른 브릿지를 등록하면 덮어써야 함', () => {
       const domain = 'overwrite-test';
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const warnSpy = jest.spyOn(logger, 'warn').mockImplementation();
       
       // 첫 번째 등록
       BridgeRegistry.register(domain, MockBridgeA);
@@ -146,28 +148,28 @@ describe('BridgeRegistry', () => {
       expect(BridgeRegistry.get(domain)).toBe(MockBridgeB);
       
       // 경고 메시지가 출력되어야 함
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('already registered')
       );
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('Overwriting')
       );
       
-      consoleSpy.mockRestore();
+      warnSpy.mockRestore();
     });
 
     test('동일한 브릿지를 다시 등록해도 경고가 발생해야 함', () => {
       const domain = 'same-bridge-test';
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const warnSpy = jest.spyOn(logger, 'warn').mockImplementation();
       
       BridgeRegistry.register(domain, MockBridgeA);
       BridgeRegistry.register(domain, MockBridgeA);
       
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('already registered')
       );
       
-      consoleSpy.mockRestore();
+      warnSpy.mockRestore();
     });
   });
 
@@ -250,7 +252,7 @@ describe('BridgeRegistry', () => {
 
     test('반복적인 덮어쓰기가 메모리 누수를 일으키지 않아야 함', () => {
       const domain = 'memory-test';
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const warnSpy = jest.spyOn(logger, 'warn').mockImplementation();
       
       // 여러 번 덮어쓰기
       for (let i = 0; i < 100; i++) {
@@ -260,7 +262,7 @@ describe('BridgeRegistry', () => {
       // 마지막 등록된 브릿지가 조회되어야 함
       expect(BridgeRegistry.get(domain)).toBe(MockBridgeB);
       
-      consoleSpy.mockRestore();
+      warnSpy.mockRestore();
     });
   });
 
@@ -325,8 +327,10 @@ describe('BridgeRegistry', () => {
   describe('에지 케이스', () => {
     test('null 또는 undefined 브릿지 등록 시 안전하게 처리되어야 함', () => {
       expect(() => {
-        BridgeRegistry.register('null-test', null as any);
-        BridgeRegistry.register('undefined-test', undefined as any);
+        // @ts-expect-error: runtime guard for untyped callers passing null
+        BridgeRegistry.register('null-test', null);
+        // @ts-expect-error: runtime guard for untyped callers passing undefined
+        BridgeRegistry.register('undefined-test', undefined);
       }).not.toThrow();
       
       expect(BridgeRegistry.get('null-test')).toBe(null);
@@ -337,7 +341,8 @@ describe('BridgeRegistry', () => {
       const domain = 'function-test';
       const functionBridge = function() { return 'test'; };
       
-      BridgeRegistry.register(domain, functionBridge as any);
+      // @ts-expect-error: plain functions are not typed as constructors but must still be stored
+      BridgeRegistry.register(domain, functionBridge);
       expect(BridgeRegistry.get(domain)).toBe(functionBridge);
     });
 

@@ -1,19 +1,35 @@
+import { useThree } from '@react-three/fiber';
 import { act, render } from '@testing-library/react';
-import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { useBuildingRenderStateStore } from '../../render/store';
+import { frameScheduler } from '../../../runtime/frame';
 import { useBuildingGpuCullingStore } from '../../render/cullingStore';
+import { useBuildingRenderStateStore } from '../../render/store';
 import { BuildingGpuCullingDriver } from '../BuildingGpuCullingDriver';
 
-jest.mock('@react-three/fiber', () => ({ useFrame: jest.fn(), useThree: jest.fn() }));
+jest.mock('@react-three/fiber', () => ({ useThree: jest.fn() }));
+
+type FrameState = { camera: THREE.Camera };
+
+let frameState: FrameState = { camera: new THREE.PerspectiveCamera() };
+const getFrameState = () => frameState;
+
+function frame(state: FrameState, delta: number): void {
+  frameState = state;
+  frameScheduler.tick(delta, 0);
+}
+
+afterEach(() => frameScheduler.clear());
+
+type BufferOptions = { label?: string };
+type BindGroupOptions = { entries: Array<{ binding: number; resource: { buffer: object } }> };
 
 function createDevice(writes: Float32Array[] = []) {
   return {
-    createBuffer: jest.fn((_options: { label?: string }) => ({ destroy: jest.fn() })),
+    createBuffer: jest.fn<{ destroy: jest.Mock }, [BufferOptions]>(() => ({ destroy: jest.fn() })),
     createShaderModule: jest.fn(() => ({})),
     createComputePipeline: () => ({ getBindGroupLayout: () => ({}) }),
-    createBindGroup: jest.fn((_options: { entries: Array<{ binding: number; resource: { buffer: object } }> }) => ({})),
+    createBindGroup: jest.fn<object, [BindGroupOptions]>(() => ({})),
     createCommandEncoder: () => ({
       beginComputePass: () => ({ setPipeline() {}, setBindGroup() {}, dispatchWorkgroups() {}, end() {} }),
       copyBufferToBuffer() {}, finish: () => ({}),
@@ -30,7 +46,7 @@ test.each(['write', 'encoder', 'submit'] as const)('GPU %s failure releases reso
   if (stage === 'write') device.queue.writeBuffer = failure;
   if (stage === 'encoder') device.createCommandEncoder = failure;
   if (stage === 'submit') device.queue.submit = failure;
-  jest.mocked(useThree).mockImplementation((selector) => selector!({ gl: { backend: { device } } } as unknown as Parameters<NonNullable<typeof selector>>[0]));
+  jest.mocked(useThree).mockImplementation((selector) => selector!({ gl: { backend: { device } }, get: getFrameState } as unknown as Parameters<NonNullable<typeof selector>>[0]));
   useBuildingRenderStateStore.setState({
     snapshot: { ...previous.snapshot, version: 1, ids: ['sphere'] },
     uploadResources: { ...previous.uploadResources, backend: 'webgpu', spatialBuffer: {} },
@@ -39,7 +55,6 @@ test.each(['write', 'encoder', 'submit'] as const)('GPU %s failure releases reso
   const now = jest.spyOn(performance, 'now').mockReturnValue(1000);
   const view = render(<BuildingGpuCullingDriver />);
   try {
-    const frame = jest.mocked(useFrame).mock.calls.at(-1)![0];
     const state = { camera: new THREE.PerspectiveCamera() } as Parameters<typeof frame>[0];
     expect(() => act(() => frame(state, 0.2))).not.toThrow();
     expect(useBuildingGpuCullingStore.getState().active).toBe(false);
@@ -69,7 +84,7 @@ test('reuses completed stationary culling and recomputes after camera or snapsho
     getMappedRange: () => new Uint32Array([1]).buffer, unmap: jest.fn(),
   };
   device.createBuffer.mockImplementation(({ label }) => label === 'building-cull-readback' ? readBuffer : { destroy: jest.fn() });
-  jest.mocked(useThree).mockImplementation((selector) => selector!({ gl: { backend: { device } } } as unknown as Parameters<NonNullable<typeof selector>>[0]));
+  jest.mocked(useThree).mockImplementation((selector) => selector!({ gl: { backend: { device } }, get: getFrameState } as unknown as Parameters<NonNullable<typeof selector>>[0]));
   useBuildingGpuCullingStore.getState().reset();
   useBuildingRenderStateStore.setState({
     snapshot: { ...previous.snapshot, version: 1, ids: ['sphere'] },
@@ -80,7 +95,6 @@ test('reuses completed stationary culling and recomputes after camera or snapsho
   const view = render(<BuildingGpuCullingDriver />);
   const runFrame = async (time: number) => {
     now.mockReturnValue(time);
-    const frame = jest.mocked(useFrame).mock.calls.at(-1)![0];
     await act(async () => { frame({ camera } as Parameters<typeof frame>[0], 0.2); });
   };
   try {
@@ -123,7 +137,7 @@ test.each(['sync', 'async', 'range'] as const)('cleans up %s readback failures w
     unmap: jest.fn(),
   };
   device.createBuffer.mockImplementation(({ label }) => label === 'building-cull-readback' ? readBuffer : { destroy: jest.fn() });
-  jest.mocked(useThree).mockImplementation((selector) => selector!({ gl: { backend: { device } } } as unknown as Parameters<NonNullable<typeof selector>>[0]));
+  jest.mocked(useThree).mockImplementation((selector) => selector!({ gl: { backend: { device } }, get: getFrameState } as unknown as Parameters<NonNullable<typeof selector>>[0]));
   useBuildingGpuCullingStore.getState().reset();
   useBuildingRenderStateStore.setState({
     snapshot: { ...previous.snapshot, version: 1, ids: ['sphere'] },
@@ -132,7 +146,6 @@ test.each(['sync', 'async', 'range'] as const)('cleans up %s readback failures w
   const now = jest.spyOn(performance, 'now').mockReturnValue(1000);
   const view = render(<BuildingGpuCullingDriver />);
   try {
-    const frame = jest.mocked(useFrame).mock.calls.at(-1)![0];
     const state = { camera: new THREE.PerspectiveCamera() } as Parameters<typeof frame>[0];
     await act(async () => { frame(state, 0.2); });
     expect(useBuildingGpuCullingStore.getState().active).toBe(false);
@@ -168,7 +181,7 @@ test.each(['unmount', 'snapshot', 'buffers'] as const)('late readback rejection 
   device.createBuffer.mockImplementation(({ label }) => label === 'building-cull-readback'
     ? (++readbackAllocations === 1 ? oldReadBuffer : newReadBuffer)
     : { destroy: jest.fn() });
-  jest.mocked(useThree).mockImplementation((selector) => selector!({ gl: { backend: { device } } } as unknown as Parameters<NonNullable<typeof selector>>[0]));
+  jest.mocked(useThree).mockImplementation((selector) => selector!({ gl: { backend: { device } }, get: getFrameState } as unknown as Parameters<NonNullable<typeof selector>>[0]));
   useBuildingGpuCullingStore.getState().reset();
   useBuildingRenderStateStore.setState({
     snapshot: { ...previous.snapshot, version: 1, ids: ['sphere'] },
@@ -178,7 +191,6 @@ test.each(['unmount', 'snapshot', 'buffers'] as const)('late readback rejection 
   const view = render(<BuildingGpuCullingDriver />);
   const camera = new THREE.PerspectiveCamera();
   try {
-    const frame = jest.mocked(useFrame).mock.calls.at(-1)![0];
     await act(async () => { frame({ camera } as Parameters<typeof frame>[0], 0.2); });
     expect(oldReadBuffer.mapAsync).toHaveBeenCalledTimes(1);
     if (change === 'unmount') view.unmount();
@@ -197,7 +209,7 @@ test.each(['unmount', 'snapshot', 'buffers'] as const)('late readback rejection 
     expect(oldReadBuffer.destroy).toHaveBeenCalledTimes(1);
     if (change === 'buffers') {
       now.mockReturnValue(2000);
-      const nextFrame = jest.mocked(useFrame).mock.calls.at(-1)![0];
+      const nextFrame = frame;
       await act(async () => { nextFrame({ camera } as Parameters<typeof nextFrame>[0], 0.2); });
       expect(newReadBuffer.mapAsync).toHaveBeenCalledTimes(1);
       expect(useBuildingGpuCullingStore.getState().version).toBe(2);
@@ -216,7 +228,7 @@ test.each([THREE.WebGLCoordinateSystem, THREE.WebGPUCoordinateSystem])('uploads 
   const previous = useBuildingRenderStateStore.getState();
   const writes: Float32Array[] = [];
   const device = createDevice(writes);
-  jest.mocked(useThree).mockImplementation((selector) => selector!({ gl: { backend: { device } } } as unknown as Parameters<NonNullable<typeof selector>>[0]));
+  jest.mocked(useThree).mockImplementation((selector) => selector!({ gl: { backend: { device } }, get: getFrameState } as unknown as Parameters<NonNullable<typeof selector>>[0]));
   useBuildingRenderStateStore.setState({
     snapshot: { ...previous.snapshot, version: 1, ids: ['sphere'] },
     uploadResources: { ...previous.uploadResources, backend: 'webgpu', spatialBuffer: {}, metaBuffer: null },
@@ -230,7 +242,6 @@ test.each([THREE.WebGLCoordinateSystem, THREE.WebGPUCoordinateSystem])('uploads 
   parent.add(camera);
   const view = render(<BuildingGpuCullingDriver />);
   try {
-    const frame = jest.mocked(useFrame).mock.calls.at(-1)![0];
     frame({ camera } as Parameters<typeof frame>[0], 0.2);
     const uniform = writes[0]!;
     expect(device.createBindGroup.mock.calls[0]![0].entries.map((entry) => entry.binding)).toEqual([0, 2, 3]);
@@ -266,7 +277,7 @@ test.each(['unmount', 'snapshot', 'buffers', 'camera'] as const)('handles a pend
   };
   const device = createDevice();
   device.createBuffer.mockImplementation(({ label }) => label === 'building-cull-readback' ? readBuffer : { destroy: jest.fn() });
-  jest.mocked(useThree).mockImplementation((selector) => selector!({ gl: { backend: { device } } } as unknown as Parameters<NonNullable<typeof selector>>[0]));
+  jest.mocked(useThree).mockImplementation((selector) => selector!({ gl: { backend: { device } }, get: getFrameState } as unknown as Parameters<NonNullable<typeof selector>>[0]));
   useBuildingRenderStateStore.setState({
     snapshot: { ...previous.snapshot, version: 1, ids: ['old'] },
     uploadResources: { ...previous.uploadResources, backend: 'webgpu', spatialBuffer: {}, metaBuffer: {} },
@@ -274,7 +285,6 @@ test.each(['unmount', 'snapshot', 'buffers', 'camera'] as const)('handles a pend
   const now = jest.spyOn(performance, 'now').mockReturnValue(1000);
   const view = render(<BuildingGpuCullingDriver />);
   try {
-    const frame = jest.mocked(useFrame).mock.calls.at(-1)![0];
     const camera = new THREE.PerspectiveCamera();
     frame({ camera } as Parameters<typeof frame>[0], 0.2);
     const requestedMatrix = new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse).toArray();
@@ -323,7 +333,7 @@ test.each([2, 3, 4])('releases partial allocations when GPU setup step %i fails 
     return buffer;
   });
   device.createBindGroup.mockImplementation(() => { throw new Error('binding failed'); });
-  jest.mocked(useThree).mockImplementation((selector) => selector!({ gl: { backend: { device } } } as unknown as Parameters<NonNullable<typeof selector>>[0]));
+  jest.mocked(useThree).mockImplementation((selector) => selector!({ gl: { backend: { device } }, get: getFrameState } as unknown as Parameters<NonNullable<typeof selector>>[0]));
   useBuildingRenderStateStore.setState({
     snapshot: { ...previous.snapshot, version: 1, ids: ['sphere'] },
     uploadResources: { ...previous.uploadResources, backend: 'webgpu', spatialBuffer: {}, metaBuffer: {} },
@@ -332,7 +342,6 @@ test.each([2, 3, 4])('releases partial allocations when GPU setup step %i fails 
   const now = jest.spyOn(performance, 'now').mockReturnValue(1000);
   const view = render(<BuildingGpuCullingDriver />);
   try {
-    const frame = jest.mocked(useFrame).mock.calls.at(-1)![0];
     const state = { camera: new THREE.PerspectiveCamera() } as Parameters<typeof frame>[0];
     act(() => frame(state, 0.2));
     expect(useBuildingGpuCullingStore.getState().active).toBe(false);

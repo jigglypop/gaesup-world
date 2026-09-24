@@ -12,6 +12,11 @@ import type { ActiveStateType } from '../../core/types';
 import type { PhysicsCalcProps, PhysicsState } from '../../types';
 import { PhysicsBridge } from '../PhysicsBridge';
 
+let mockGroundContact = false;
+jest.mock('../../core/system/GroundContactProbe', () => ({
+  GroundContactProbe: jest.fn().mockImplementation(() => ({ read: jest.fn(() => mockGroundContact) })),
+}));
+
 const ENTITY_ID = 'physics-mode-transition-entity';
 
 const CONFIG: PhysicsConfigType = {
@@ -129,7 +134,12 @@ function createCalcProp(
     inputRef: {
       current: {
         keyboard: physicsState.keyboard,
-        mouse: physicsState.mouse,
+        mouse: {
+          ...physicsState.mouse,
+          buttons: { left: false, right: false, middle: false },
+          wheel: 0,
+          position: new THREE.Vector2(),
+        },
       },
     },
     setKeyboardInput: jest.fn(),
@@ -337,6 +347,33 @@ describe('PhysicsBridge mode transitions', () => {
       expect(physicsState.activeState.position).toEqual(retainedPosition);
       expect(physicsState.activeState.velocity).toEqual(retainedVelocity);
     } finally {
+      bridge.dispose();
+    }
+  });
+
+  it('drive 단계는 접지를 판정하지 않고 resolve 단계가 강체 상태로 접지와 위치를 갱신한다', () => {
+    const bridge = new PhysicsBridge();
+    const physicsState = createPhysicsState('character');
+    physicsState.keyboard.forward = true;
+    physicsState.gameStates.isOnTheGround = false;
+    physicsState.activeState.position.set(0, 0, 0);
+    const { rigidBody } = createRigidBodyHarness();
+    const calcProp = createCalcProp(rigidBody, new THREE.Group(), physicsState);
+    const args = { deltaTime: 0.016, calcProp, physicsState, stage: 'drive' as const };
+
+    try {
+      bridge.register(ENTITY_ID, CONFIG);
+      bridge.updateEntity(ENTITY_ID, args);
+      expect(physicsState.gameStates.isMoving).toBe(true);
+      expect(physicsState.gameStates.isOnTheGround).toBe(false);
+      expect(physicsState.activeState.position.toArray()).toEqual([0, 0, 0]);
+
+      mockGroundContact = true;
+      bridge.resolveEntity(ENTITY_ID, args);
+      expect(physicsState.gameStates.isOnTheGround).toBe(true);
+      expect(physicsState.activeState.position.toArray()).toEqual([7, 0.5, -2]);
+    } finally {
+      mockGroundContact = false;
       bridge.dispose();
     }
   });

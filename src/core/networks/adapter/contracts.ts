@@ -1,4 +1,5 @@
 import type { PlayerProgress, WorldSnapshot } from '../../platform';
+import { createUniqueId } from '../../utils/id';
 
 export type NetworkAuthorityMessageType =
   | 'game.command'
@@ -127,16 +128,12 @@ export type CreateSnapshotAckOptions = {
   domains?: string[];
 };
 
-function createContractId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
 export function createGameCommand<TPayload = unknown>(
   options: CreateGameCommandOptions<TPayload>,
 ): GameCommand<TPayload> {
   return {
     version: options.version ?? 1,
-    commandId: options.commandId ?? createContractId('cmd'),
+    commandId: options.commandId ?? createUniqueId('cmd'),
     domain: options.domain,
     action: options.action,
     actorId: options.actorId,
@@ -154,7 +151,7 @@ export function createServerEvent<TPayload = unknown>(
 ): ServerEvent<TPayload> {
   return {
     version: options.version ?? 1,
-    eventId: options.eventId ?? createContractId('evt'),
+    eventId: options.eventId ?? createUniqueId('evt'),
     domain: options.domain,
     type: options.type,
     occurredAt: options.occurredAt ?? Date.now(),
@@ -171,7 +168,7 @@ export function createStateDelta<TValue = unknown>(
 ): StateDelta<TValue> {
   return {
     version: options.version ?? 1,
-    deltaId: options.deltaId ?? createContractId('delta'),
+    deltaId: options.deltaId ?? createUniqueId('delta'),
     domain: options.domain,
     path: options.path,
     op: options.op,
@@ -186,7 +183,7 @@ export function createStateDelta<TValue = unknown>(
 export function createSnapshotAck(options: CreateSnapshotAckOptions): SnapshotAck {
   return {
     version: options.version ?? 1,
-    ackId: options.ackId ?? createContractId('ack'),
+    ackId: options.ackId ?? createUniqueId('ack'),
     snapshotId: options.snapshotId,
     kind: options.kind,
     acceptedAt: options.acceptedAt ?? Date.now(),

@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useEventsStore } from './stores/eventsStore';
+import { useEventsStore, type EventsStore, EVENTS_STORE_SERVICE } from './stores/eventsStore';
 import type { EventsSerialized } from './types';
 
 export interface EventsPluginOptions {
@@ -12,12 +12,12 @@ const DEFAULT_PLUGIN_ID = 'gaesup.events';
 const DEFAULT_SAVE_EXTENSION_ID = 'events';
 const DEFAULT_STORE_SERVICE_ID = 'events.store';
 
-export function serializeEventsState(): EventsSerialized {
-  return useEventsStore.getState().serialize();
+export function serializeEventsState(store: EventsStore = useEventsStore): EventsSerialized {
+  return store.getState().serialize();
 }
 
-export function hydrateEventsState(data: EventsSerialized | null | undefined): void {
-  useEventsStore.getState().hydrate(data);
+export function hydrateEventsState(data: EventsSerialized | null | undefined, store: EventsStore = useEventsStore): void {
+  store.getState().hydrate(data);
 }
 
 export function createEventsPlugin(options: EventsPluginOptions = {}) {
@@ -27,11 +27,12 @@ export function createEventsPlugin(options: EventsPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useEventsStore,
+    resolveStore: context => context.services.get(EVENTS_STORE_SERVICE) ?? useEventsStore,
     readyEvent: 'events:ready',
     capabilities: ['events'],
     serialize: serializeEventsState,
     hydrate: hydrateEventsState,
-    prepareHydrate: (data) => useEventsStore.getState().prepareHydrate(data),
+    prepareHydrate: (data, store) => store.getState().prepareHydrate(data),
   });
 }
 

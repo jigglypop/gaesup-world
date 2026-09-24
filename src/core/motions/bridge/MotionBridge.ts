@@ -1,6 +1,11 @@
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
+import {
+  clearGroundContact,
+  readGroundContact,
+  reportGroundContact,
+} from '@/core/motions/core/system/groundContacts';
 import { MotionSystem } from '@/core/motions/core/system/MotionSystem';
 import { MotionType } from '@/core/motions/core/system/types';
 import { GameStatesType } from '@/core/world/components/Rideable/types';
@@ -72,7 +77,6 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
       system,
       rigidBody,
       type,
-      grounded: null,
       dispose: () => system.dispose()
     };
   }
@@ -87,7 +91,7 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
         }
         break;
       case 'jump': {
-        this.syncEntity(entity);
+        this.syncEntity(entity, entityId);
         const jumpSpeed = this.getOrCreateSnapshot(entityId, entity.type).config.jumpForce;
         const jumpForce = system.calculateJump({ jumpSpeed }, this.commandGameStates);
         if (jumpForce.length() > 0) {
@@ -101,6 +105,7 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
         break;
       case 'reset':
         system.reset();
+        reportGroundContact(entityId, false);
         rigidBody.setTranslation({ x: 0, y: 0, z: 0 }, true);
         rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
         break;
@@ -131,7 +136,7 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
     this.tempQuaternion.set(r.x, r.y, r.z, r.w);
     snapshot.rotation.setFromQuaternion(this.tempQuaternion);
 
-    system.syncFromBody(snapshot.position, snapshot.velocity, this.resolveGrounded(entity, v.y));
+    system.syncFromBody(snapshot.position, snapshot.velocity, this.resolveGrounded(entityId, v.y));
     const state = system.getState();
     snapshot.isGrounded = state.isGrounded;
     snapshot.isMoving = state.isMoving;
@@ -149,20 +154,19 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
   }
 
   reportGrounded(entityId: string, grounded: boolean): void {
-    const entity = this.getEngine(entityId);
-    if (entity) entity.grounded = grounded;
+    reportGroundContact(entityId, grounded);
   }
 
-  private resolveGrounded(entity: MotionEntity, verticalVelocity: number): boolean {
-    return entity.grounded ?? Math.abs(verticalVelocity) < GROUNDED_VERTICAL_SPEED;
+  private resolveGrounded(entityId: string, verticalVelocity: number): boolean {
+    return readGroundContact(entityId) ?? Math.abs(verticalVelocity) < GROUNDED_VERTICAL_SPEED;
   }
 
-  private syncEntity(entity: MotionEntity): void {
+  private syncEntity(entity: MotionEntity, entityId: string): void {
     const t = entity.rigidBody.translation();
     const v = entity.rigidBody.linvel();
     this.syncPosition.set(t.x, t.y, t.z);
     this.syncVelocity.set(v.x, v.y, v.z);
-    entity.system.syncFromBody(this.syncPosition, this.syncVelocity, this.resolveGrounded(entity, v.y));
+    entity.system.syncFromBody(this.syncPosition, this.syncVelocity, this.resolveGrounded(entityId, v.y));
   }
 
   setPlayerEntity(entityId: string | null): void {
@@ -178,6 +182,7 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
 
   override unregister(id: string): void {
     super.unregister(id);
+    clearGroundContact(id);
     if (this.playerEntityId === id) this.playerEntityId = null;
   }
 

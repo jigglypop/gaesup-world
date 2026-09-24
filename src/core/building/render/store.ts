@@ -1,4 +1,5 @@
-import { create } from 'zustand';
+import { create, useStore } from 'zustand';
+
 
 import { createEmptyRenderSnapshot, type BuildingRenderSnapshot } from './core';
 import { createEmptyBuildingIndirectDrawMirror, type BuildingIndirectDrawMirror } from './draw';
@@ -8,6 +9,7 @@ import {
   destroyBuildingGpuUploadResources,
   type BuildingGpuUploadResources,
 } from './upload';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
 
 type BuildingGpuUploadResourcesUpdate =
   | BuildingGpuUploadResources
@@ -26,11 +28,12 @@ type BuildingRenderState = {
   reset: () => void;
 };
 
-const EMPTY = createEmptyRenderSnapshot();
-const EMPTY_GPU = createEmptyGpuMirror();
-const EMPTY_DRAW = createEmptyBuildingIndirectDrawMirror();
 
-export const useBuildingRenderStateStore = create<BuildingRenderState>((set) => {
+export function createBuildingRenderStore() {
+  const EMPTY = createEmptyRenderSnapshot();
+  const EMPTY_GPU = createEmptyGpuMirror();
+  const EMPTY_DRAW = createEmptyBuildingIndirectDrawMirror();
+  return create<BuildingRenderState>((set) => {
   let isApplyingUploadResourcesUpdate = false;
 
   const assertUploadResourcesUpdateIsNotReentrant = () => {
@@ -90,3 +93,18 @@ export const useBuildingRenderStateStore = create<BuildingRenderState>((set) => 
     },
   };
 });
+
+}
+
+export type BuildingRenderStore = ReturnType<typeof createBuildingRenderStore>;
+const legacyStore = createBuildingRenderStore();
+export function useBuildingRenderStateStoreApi(): BuildingRenderStore {
+  return useGaesupRuntime()?.buildingRenderStore ?? useBuildingRenderStateStore;
+}
+function useScopedStore(): BuildingRenderState;
+function useScopedStore<T>(selector: (state: BuildingRenderState) => T): T;
+function useScopedStore(selector: (state: BuildingRenderState) => unknown = state => state) {
+  return useStore(useBuildingRenderStateStoreApi(), selector);
+}
+/** React uses the nearest runtime; static methods retain the legacy default. */
+export const useBuildingRenderStateStore = Object.assign(useScopedStore, legacyStore);

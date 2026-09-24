@@ -39,20 +39,27 @@ export function createEditorShortcutRegistry(
   options: EditorShortcutMatchOptions = {},
 ): EditorShortcutRegistry {
   const entries = new Map<string, EditorShortcutBinding>();
+  const owners = new Map<string, symbol>();
   bindings.forEach((binding) => entries.set(binding.id, binding));
 
   return {
     register(binding) {
+      const owner = Symbol(binding.id); owners.set(binding.id, owner);
       entries.set(binding.id, binding);
-      return () => entries.delete(binding.id);
+      return () => {
+        if (owners.get(binding.id) !== owner) return;
+        owners.delete(binding.id); entries.delete(binding.id);
+      };
     },
     unregister(id) {
+      owners.delete(id);
       entries.delete(id);
     },
     list() {
       return Array.from(entries.values());
     },
     handleKeyDown(event) {
+      if (event.defaultPrevented || event.isComposing) return false;
       if (isEditableShortcutTarget(event.target)) return false;
 
       const binding = Array.from(entries.values()).find((candidate) => (
@@ -75,7 +82,7 @@ export function matchesEditorShortcut(
   options: EditorShortcutMatchOptions = {},
 ): boolean {
   const keyMatches = normalizeShortcutKey(event.key) === normalizeShortcutKey(binding.key);
-  const codeMatches = binding.code ? event.code === binding.code : true;
+  const codeMatches = Boolean(binding.code && event.code === binding.code);
   if (!keyMatches && !codeMatches) return false;
 
   const platform = resolveShortcutPlatform(options.platform);
@@ -108,8 +115,7 @@ export function formatEditorShortcut(
 
 export function isEditableShortcutTarget(target: EventTarget | null): boolean {
   if (!target || !(target instanceof HTMLElement)) return false;
-  const tagName = target.tagName.toLowerCase();
-  return tagName === 'input' || tagName === 'textarea' || tagName === 'select' || target.isContentEditable;
+  return target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])') !== null;
 }
 
 function normalizeShortcutKey(key: string): string {

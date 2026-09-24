@@ -1,21 +1,20 @@
-import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef } from 'react';
 
 import { Environment } from '@react-three/drei';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Physics, euler, RigidBody, type RapierRigidBody } from '@react-three/rapier';
+import { Canvas } from '@react-three/fiber';
+import { euler, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import { Grid } from '@/core/rendering/legacyDrei';
+import { useEngineFrame } from '@core/runtime/frame';
 
-import { RemotePlayer } from './RemotePlayer';
-import {
-  GaesupController,
-  GaesupWorld,
-  GaesupWorldContent,
-  Clicker,
-  GroundClicker
-} from '../../../index';
+import { RemotePlayers } from './RemotePlayers';
+import { Clicker } from '../../interactions/components/Clicker';
+import { ControllerWrapper as GaesupController } from '../../interactions/components/ControllerWrapper';
+import { GroundClicker } from '../../interactions/components/GroundClicker';
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
+import { GaesupWorldContent, WorldContainer as GaesupWorld } from '../../world/components/WorldContainer';
+import { WorldPhysics } from '../../world/components/WorldPhysics';
 import { PlayerState, MultiplayerConfig } from '../types';
 
 declare global {
@@ -50,7 +49,7 @@ function LocalPositionTracker({
   const lastRef = useRef({ x: 0, y: 0, z: 0 });
   const frameRef = useRef(0);
 
-  useFrame(() => {
+  useEngineFrame('postPhysics', () => {
     frameRef.current++;
     if (frameRef.current % POSITION_SAMPLE_INTERVAL_FRAMES !== 0) return;
     const body = playerRef.current;
@@ -65,7 +64,7 @@ function LocalPositionTracker({
     last.y = p.y;
     last.z = p.z;
     onChange(p.x, p.y, p.z);
-  });
+  }, { label: 'network:local-position' });
 
   return null;
 }
@@ -88,33 +87,14 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
     window.CHARACTER_URL = characterUrl;
   }, [characterUrl]);
 
-  const [localPosition, setLocalPosition] = useState<[number, number, number]>([0, 0, 0]);
   const localSpeechPos = useMemo(() => new THREE.Vector3(), []);
 
   const handleLocalPositionChange = useMemo(
     () => (x: number, y: number, z: number) => {
       localSpeechPos.set(x, y, z);
-      setLocalPosition([x, y, z]);
     },
     [localSpeechPos],
   );
-
-  const visiblePlayers = useMemo(() => {
-    const range = proximityRange;
-    if (!range || range <= 0) return players;
-    const [lx, ly, lz] = localPosition;
-    const next = new Map<string, PlayerState>();
-    players.forEach((state, id) => {
-      const [x, y, z] = state.position;
-      const dx = x - lx;
-      const dy = y - ly;
-      const dz = z - lz;
-      if (dx * dx + dy * dy + dz * dz <= range * range) {
-        next.set(id, state);
-      }
-    });
-    return next;
-  }, [players, proximityRange, localPosition]);
 
   return (
     <GaesupWorld
@@ -148,7 +128,7 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
 
         <Suspense fallback={null}>
           <GaesupWorldContent>
-            <Physics>
+            <WorldPhysics>
               <LocalPositionTracker
                 playerRef={playerRef}
                 onChange={handleLocalPositionChange}
@@ -173,19 +153,15 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
               ) : null}
 
               {/* 원격 플레이어들 */}
-              {Array.from(visiblePlayers.entries()).map(([playerId, state]) => (
-                <RemotePlayer
-                  key={playerId}
-                  playerId={playerId}
-                  state={state}
-                  characterUrl={characterUrl}
-                  config={config}
-                  {...(() => {
-                    const speechText = speechByPlayerId?.get(playerId);
-                    return speechText ? { speechText } : {};
-                  })()}
-                />
-              ))}
+              <RemotePlayers
+                players={players}
+                characterUrl={characterUrl}
+                config={config}
+                playerRef={playerRef}
+                {...(proximityRange !== undefined ? { proximityRange } : {})}
+                {...(speechByPlayerId ? { speechByPlayerId } : {})}
+              />
+
 
               {/* 그리드 */}
               <Grid
@@ -210,7 +186,7 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
 
               <Clicker />
               <GroundClicker />
-            </Physics>
+            </WorldPhysics>
           </GaesupWorldContent>
         </Suspense>
       </Canvas>

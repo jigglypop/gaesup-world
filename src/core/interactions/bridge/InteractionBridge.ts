@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
-import { HandleError, LogSnapshot, Profile } from '@/core/boilerplate/decorators';
+import { LogSnapshot } from '@/core/boilerplate/decorators';
 import { logger } from '@/core/utils/logger';
+import { reportError } from '@/core/utils/reportError';
 
 import type {
   AutomationAction,
@@ -177,8 +178,6 @@ export class InteractionBridge {
     );
   }
 
-  @HandleError()
-  @Profile()
   executeCommand(command: Omit<BridgeCommand, 'timestamp'>): void {
     // 명령어 검증
     if (!command || typeof command !== 'object') {
@@ -191,39 +190,43 @@ export class InteractionBridge {
       return;
     }
 
-    const fullCommand: BridgeCommand = {
-      ...command,
-      timestamp: Date.now()
-    };
+    // Command boundary (G2): a failing handler is reported instead of throwing into UI callers.
+    try {
+      const fullCommand: BridgeCommand = {
+        ...command,
+        timestamp: Date.now()
+      };
 
-    this.state.lastCommand = fullCommand;
-    this.state.commandHistory.push(fullCommand);
-    
-    if (this.state.commandHistory.length > this.MAX_COMMAND_HISTORY) {
-      this.state.commandHistory.splice(
-        0,
-        this.state.commandHistory.length - this.MAX_COMMAND_HISTORY,
-      );
-    }
-    
-    this.emitEvent({
-      type: fullCommand.type,
-      event: 'commandExecuted',
-      data: fullCommand,
-      timestamp: Date.now()
-    });
+      this.state.lastCommand = fullCommand;
+      this.state.commandHistory.push(fullCommand);
 
-    switch (command.type) {
-      case 'input':
-        this.handleInputCommand(fullCommand);
-        break;
-      case 'automation':
-        this.handleAutomationCommand(fullCommand);
-        break;
+      if (this.state.commandHistory.length > this.MAX_COMMAND_HISTORY) {
+        this.state.commandHistory.splice(
+          0,
+          this.state.commandHistory.length - this.MAX_COMMAND_HISTORY,
+        );
+      }
+
+      this.emitEvent({
+        type: fullCommand.type,
+        event: 'commandExecuted',
+        data: fullCommand,
+        timestamp: Date.now()
+      });
+
+      switch (command.type) {
+        case 'input':
+          this.handleInputCommand(fullCommand);
+          break;
+        case 'automation':
+          this.handleAutomationCommand(fullCommand);
+          break;
+      }
+    } catch (error) {
+      reportError(error, { source: 'command:interaction', label: `${command.type}.${command.action}` });
     }
   }
 
-  @HandleError()
   private handleInputCommand(command: BridgeCommand): void {
     const { action, data } = command;
     
@@ -275,7 +278,6 @@ export class InteractionBridge {
     }
   }
 
-  @HandleError()
   private handleAutomationCommand(command: BridgeCommand): void {
     const { action, data } = command;
     
@@ -371,7 +373,6 @@ export class InteractionBridge {
     }
   }
 
-  @Profile()
   private notifyListeners(): void {
     const keyboard = this.inputBackend.getKeyboard();
     const mouse = this.inputBackend.getMouse();
@@ -438,7 +439,6 @@ export class InteractionBridge {
     entity.onClick?.();
   }
 
-  @HandleError()
   private emitEvent(event: BridgeEvent): void {
     // If no one is subscribed to bridge events, avoid queueing/scheduling work.
     if (this.eventSubscribers.size === 0) return;
@@ -465,7 +465,6 @@ export class InteractionBridge {
     }
   }
 
-  @HandleError()
   private setupVisibilityListener(): void {
     if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') return;
     const onVisibilityChange = () => {
@@ -513,7 +512,6 @@ export class InteractionBridge {
     }, this.SYNC_DELAY_MS);
   }
 
-  @Profile()
   private processEventQueue(): void {
     const batchSize = 10;
     const processed = this.eventQueue.splice(0, batchSize);
@@ -532,7 +530,6 @@ export class InteractionBridge {
     }
   }
 
-  @Profile()
   private updateMetrics(): void {
     const interactionMetrics = this.interactionSystem.getMetrics();
     const automationMetrics = this.automationSystem.getMetrics();
@@ -556,7 +553,6 @@ export class InteractionBridge {
     return this.automationSystem;
   }
 
-  @HandleError()
   reset(): void {
     this.interactionSystem.reset();
     this.automationSystem.reset();
@@ -566,7 +562,6 @@ export class InteractionBridge {
     this.notifyListeners();
   }
 
-  @HandleError()
   dispose(): void {
     this.cancelSync();
     this.visibilityCleanup?.();

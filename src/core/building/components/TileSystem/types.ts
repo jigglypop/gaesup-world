@@ -7,4 +7,5 @@ export type TileSystemProps = {
   selectedTileId?: string | null;
   onTileClick?: (tileId: string) => void;
   onTileDelete?: (tileId: string) => void;
+  colliders?: boolean;
 } 

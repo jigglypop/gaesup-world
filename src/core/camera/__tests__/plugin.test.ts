@@ -5,6 +5,7 @@ import { createGaesupRuntime } from '../../runtime';
 import { SaveSystem } from '../../save';
 import type { SaveAdapter, SaveBlob } from '../../save';
 import { useGaesupStore } from '../../stores/gaesupStore';
+import type { CameraSystemConfig } from '../bridge/types';
 import { CameraSystem } from '../core/CameraSystem';
 import {
   createCameraPlugin,
@@ -33,10 +34,13 @@ class MemoryAdapter implements SaveAdapter {
   }
 }
 
-const baseConfig = {
+const baseConfig: CameraSystemConfig = {
   mode: 'thirdPerson',
   distance: { x: 0, y: 8, z: 12 },
   enableCollision: false,
+  smoothing: { position: 0.1, rotation: 0.1, fov: 0.1 },
+  fov: 75,
+  zoom: 1,
 };
 
 describe('camera plugin', () => {

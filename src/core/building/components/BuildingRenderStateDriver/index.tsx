@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react';
 
-import { buildBuildingRenderSnapshot } from '../../render/core';
+import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../../runtime/runtimeContext';
+import { createBuildingRenderSnapshotBuilder } from '../../render/core';
 import { useBuildingRenderStateStore } from '../../render/store';
 import { useBuildingStore } from '../../stores/buildingStore';
 
 export function BuildingRenderStateDriver() {
+  const runtime = useGaesupRuntime();
+  const runtimeRevision = useGaesupRuntimeRevision();
   const wallGroups = useBuildingStore((s) => s.wallGroups);
   const tileGroups = useBuildingStore((s) => s.tileGroups);
   const blocks = useBuildingStore((s) => s.blocks);
@@ -12,22 +15,20 @@ export function BuildingRenderStateDriver() {
   const setSnapshot = useBuildingRenderStateStore((s) => s.setSnapshot);
   const reset = useBuildingRenderStateStore((s) => s.reset);
   const versionRef = useRef(1);
+  const buildSnapshot = useMemo(createBuildingRenderSnapshotBuilder, []);
 
   const snapshot = useMemo(
-    () =>
-      buildBuildingRenderSnapshot({
-        wallGroups: Array.from(wallGroups.values()),
-        tileGroups: Array.from(tileGroups.values()),
-        blocks: blocks ?? [],
-        objects,
-        version: versionRef.current++,
-      }),
-    [wallGroups, tileGroups, blocks, objects],
+    () => buildSnapshot(
+      { wallGroups: wallGroups.values(), tileGroups: tileGroups.values(), blocks: blocks ?? [], objects },
+      versionRef.current++,
+    ),
+    [buildSnapshot, wallGroups, tileGroups, blocks, objects],
   );
 
   useEffect(() => {
+    if (runtime && !runtime.isActive()) return;
     setSnapshot(snapshot);
-  }, [snapshot, setSnapshot]);
+  }, [snapshot, setSnapshot, runtime, runtimeRevision]);
 
   useEffect(() => reset, [reset]);
 

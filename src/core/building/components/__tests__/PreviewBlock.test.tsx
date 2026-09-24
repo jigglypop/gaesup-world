@@ -1,4 +1,3 @@
-import React from 'react';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 
 import { useBuildingStore } from '../../stores/buildingStore';
@@ -44,7 +43,7 @@ describe('PreviewBlock 컴포넌트 테스트', () => {
     });
     const renderer = await ReactThreeTestRenderer.create(<PreviewBlock />);
     const group = renderer.scene.findByProps({ name: 'preview-block' });
-    expect(group.props.position).toEqual([2, 1.5, 6]);
+    expect(group.props['position']).toEqual([2, 1.5, 6]);
     expect(checkBlockPosition).toHaveBeenCalledWith({
       position: { x: 0, y: 1, z: 4 },
       size: { x: 2, y: 1, z: 2 },

@@ -1,8 +1,8 @@
 import { Vector3 } from 'three';
 
-import { InteractionBridge } from '../InteractionBridge';
-import { InteractionSystem } from '../../core/InteractionSystem';
 import { AutomationSystem } from '../../core/AutomationSystem';
+import { InteractionSystem } from '../../core/InteractionSystem';
+import { InteractionBridge } from '../InteractionBridge';
 
 test('disposing one bridge preserves the input system borrowed by another', () => {
   const system = new InteractionSystem();

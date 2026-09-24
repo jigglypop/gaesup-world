@@ -1,23 +1,26 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useFrame, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 
-import { weightFromDistance } from '@core/utils/sfe';
+import { useEngineFrame } from '@core/runtime/frame';
 
 import { BuildingNavigationObstacleDriver } from '../../../building/components/BuildingNavigationObstacleDriver';
-import { useBuildingStore } from '../../../building/stores/buildingStore';
-import { applyNPCNavigationRoute, NavigationSystem } from '../../../navigation';
-import { useNPCStore } from '../../stores/npcStore';
+import { useBuildingStore, useBuildingStoreApi } from '../../../building/stores/buildingStore';
+import { applyNPCNavigationRoute, useNavigationSystem } from '../../../navigation';
+import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../../runtime/runtimeContext';
+import { useNPCSimulation } from '../../hooks/useNPCSimulation';
+import { useNPCStore, useNPCStoreApi } from '../../stores/npcStore';
 import { NPCInstance } from '../NPCInstance';
+import { isNPCInLodRange } from './lod';
 import './styles.css';
 
-const NPC_LOD_NEAR = 30;
-const NPC_LOD_FAR = 120;
-const NPC_LOD_STRENGTH = 4;
-
 export function NPCSystem() {
-  const { gl } = useThree();
+  const simulation = useNPCSimulation();
+  const gl = useThree((state) => state.gl);
+  const getThreeState = useThree((state) => state.get);
   const instances = useNPCStore((state) => state.instances);
+  const npcStore = useNPCStoreApi();
+  const buildingStore = useBuildingStoreApi();
   const selectedInstanceId = useNPCStore((state) => state.selectedInstanceId);
   const selectedTemplateId = useNPCStore((state) => state.selectedTemplateId);
   const createInstanceFromTemplate = useNPCStore(
@@ -27,15 +30,19 @@ export function NPCSystem() {
   const updateInstanceBehavior = useNPCStore((state) => state.updateInstanceBehavior);
   const setSelectedInstance = useNPCStore((state) => state.setSelectedInstance);
   const editMode = useBuildingStore(state => state.editMode);
-  const hoverPosition = useBuildingStore(state => state.hoverPosition);
   const isNPCMode = editMode === 'npc';
-  const navigationRef = useRef(NavigationSystem.getInstance());
+  const navigation = useNavigationSystem();
+  const runtime = useGaesupRuntime();
+  const runtimeRevision = useGaesupRuntimeRevision();
   const navigationReadyRef = useRef(false);
   const [navigationReady, setNavigationReady] = useState(false);
 
   useEffect(() => {
     let active = true;
-    void navigationRef.current.init().then((ready) => {
+    navigationReadyRef.current = false;
+    setNavigationReady(false);
+    if (runtime && !runtime.isActive()) return;
+    void navigation.init().then((ready) => {
       if (!active) return;
       navigationReadyRef.current = ready;
       setNavigationReady(ready);
@@ -43,41 +50,47 @@ export function NPCSystem() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [navigation, runtime, runtimeRevision]);
 
-  // Distance-based LOD: hide NPCs beyond LOD_FAR.
+  const selectInstance = useCallback((id: string) => {
+    if (isNPCMode) setSelectedInstance(id);
+  }, [isNPCMode, setSelectedInstance]);
+
+  // Distance-based LOD streams far NPCs out. Hysteresis keeps boundary walkers from remounting every check.
   const [visibleIds, setVisibleIds] = useState<Set<string>>(() => new Set());
   const lodAccum = useRef(0);
 
-  useFrame((state, delta) => {
+  useEngineFrame('effects', (delta) => {
     lodAccum.current += delta;
     if (lodAccum.current < 0.5) return; // Check every 0.5s.
     lodAccum.current = 0;
 
-    const cam = state.camera.position;
+    const cam = getThreeState().camera.position;
     const next = new Set<string>();
     instances.forEach((inst) => {
-      const [x, y, z] = inst.position;
+      const [x, y, z] = simulation.getPose(inst.id)?.position ?? inst.position;
       const dx = x - cam.x, dy = y - cam.y, dz = z - cam.z;
       const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      const w = weightFromDistance(dist, NPC_LOD_NEAR, NPC_LOD_FAR, NPC_LOD_STRENGTH);
-      if (w > 0.01) next.add(inst.id);
+      if (isNPCInLodRange(dist, visibleIds.has(inst.id))) next.add(inst.id);
     });
 
     // Only update state if the set actually changed.
     if (next.size !== visibleIds.size || [...next].some(id => !visibleIds.has(id))) {
       setVisibleIds(next);
     }
-  });
+  }, { label: 'npc:lod' });
 
   useEffect(() => {
-    if (!isNPCMode || !hoverPosition) return;
+    if (!isNPCMode) return;
+    // Hover and instances are read at click time so pointer moves and NPC ticks do not re-render or re-bind.
     const handleClick = (event: MouseEvent) => {
       const target = event.target;
       if (!(target instanceof HTMLCanvasElement)) return;
       if (event.defaultPrevented) return;
+      const hoverPosition = buildingStore.getState().hoverPosition;
+      if (!hoverPosition) return;
       if (selectedInstanceId && !event.shiftKey) {
-        const selectedInstance = instances.get(selectedInstanceId);
+        const selectedInstance = npcStore.getState().instances.get(selectedInstanceId);
         const moveTarget: [number, number, number] = [
           hoverPosition.x,
           hoverPosition.y,
@@ -86,8 +99,8 @@ export function NPCSystem() {
         updateInstanceBehavior(selectedInstanceId, { mode: 'idle' });
         if (selectedInstance && navigationReadyRef.current) {
           const route = applyNPCNavigationRoute(
-            navigationRef.current,
-            { id: selectedInstance.id, position: selectedInstance.position },
+            navigation,
+            { id: selectedInstance.id, position: simulation.getPose(selectedInstance.id)?.position ?? selectedInstance.position },
             moveTarget,
             setNavigation,
           );
@@ -110,8 +123,8 @@ export function NPCSystem() {
     isNPCMode,
     selectedTemplateId,
     selectedInstanceId,
-    hoverPosition,
-    instances,
+    buildingStore,
+    npcStore,
     gl,
     createInstanceFromTemplate,
     setNavigation,
@@ -121,7 +134,7 @@ export function NPCSystem() {
   return (
     <group name="npc-system">
       <BuildingNavigationObstacleDriver
-        navigation={navigationRef.current}
+        navigation={navigation}
         enabled={navigationReady}
       />
       {Array.from(instances.values()).map((instance) => {
@@ -132,11 +145,7 @@ export function NPCSystem() {
             key={instance.id}
             instance={instance}
             isEditMode={isNPCMode}
-            onClick={() => {
-              if (isNPCMode) {
-                setSelectedInstance(instance.id);
-              }
-            }}
+            onSelect={selectInstance}
           />
         );
       })}

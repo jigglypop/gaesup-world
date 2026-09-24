@@ -1,5 +1,5 @@
 import { createStoreDomainPlugin } from '../plugins';
-import { useFriendshipStore } from './stores/friendshipStore';
+import { useFriendshipStore, type FriendshipStore, RELATIONS_STORE_SERVICE } from './stores/friendshipStore';
 import type { RelationsSerialized } from './types';
 
 export interface RelationsPluginOptions {
@@ -12,12 +12,12 @@ const DEFAULT_PLUGIN_ID = 'gaesup.relations';
 const DEFAULT_SAVE_EXTENSION_ID = 'relations';
 const DEFAULT_STORE_SERVICE_ID = 'relations.store';
 
-export function serializeRelationsState(): RelationsSerialized {
-  return useFriendshipStore.getState().serialize();
+export function serializeRelationsState(store: FriendshipStore = useFriendshipStore): RelationsSerialized {
+  return store.getState().serialize();
 }
 
-export function hydrateRelationsState(data: RelationsSerialized | null | undefined): void {
-  useFriendshipStore.getState().hydrate(data);
+export function hydrateRelationsState(data: RelationsSerialized | null | undefined, store: FriendshipStore = useFriendshipStore): void {
+  store.getState().hydrate(data);
 }
 
 export function createRelationsPlugin(options: RelationsPluginOptions = {}) {
@@ -27,11 +27,12 @@ export function createRelationsPlugin(options: RelationsPluginOptions = {}) {
     saveExtensionId: options.saveExtensionId ?? DEFAULT_SAVE_EXTENSION_ID,
     storeServiceId: options.storeServiceId ?? DEFAULT_STORE_SERVICE_ID,
     store: useFriendshipStore,
+    resolveStore: ctx => ctx.services.get(RELATIONS_STORE_SERVICE) ?? useFriendshipStore,
     readyEvent: 'relations:ready',
     capabilities: ['relations'],
     serialize: serializeRelationsState,
     hydrate: hydrateRelationsState,
-    prepareHydrate: (data) => useFriendshipStore.getState().prepareHydrate(data),
+    prepareHydrate: (data, store) => store.getState().prepareHydrate(data),
   });
 }
 

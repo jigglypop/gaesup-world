@@ -1,12 +1,15 @@
 import * as THREE from 'three';
 
-import { Profile, HandleError, MonitorMemory } from '@/core/boilerplate/decorators';
+import { MonitorMemory } from '@/core/boilerplate/decorators';
 import { getDefaultToonMode, getToonGradient } from '@/core/rendering/toon';
 
 import { MeshConfig } from '../types';
 
+type MaterialEntry = { material: THREE.Material; config: MeshConfig; key: string };
+
 export class MaterialManager {
   private materials: Map<string, THREE.Material> = new Map();
+  private materialsById = new Map<string, Set<MaterialEntry>>();
   private textures: Map<string, THREE.Texture> = new Map();
   private textureLoader: THREE.TextureLoader;
 
@@ -14,8 +17,6 @@ export class MaterialManager {
     this.textureLoader = new THREE.TextureLoader();
   }
 
-  @HandleError()
-  @Profile()
   getMaterial(meshConfig: MeshConfig): THREE.Material {
     const key = this.createMaterialKey(meshConfig);
     const cached = this.materials.get(key);
@@ -23,12 +24,16 @@ export class MaterialManager {
 
     const material = this.createMaterial(meshConfig);
     this.materials.set(key, material);
+    let entries = this.materialsById.get(meshConfig.id);
+    if (!entries) this.materialsById.set(meshConfig.id, entries = new Set());
+    entries.add({ material, key, config: { ...meshConfig, materialParams: { ...meshConfig.materialParams } } });
     return material;
   }
 
-  private createMaterialKey(meshConfig: MeshConfig): string {
+  private createMaterialKey(meshConfig: MeshConfig, toon = getDefaultToonMode()): string {
     return [
       meshConfig.id,
+      toon,
       meshConfig.assetId ?? '',
       meshConfig.color ?? meshConfig.materialParams?.color ?? '',
       meshConfig.material ?? '',
@@ -42,8 +47,6 @@ export class MaterialManager {
     ].join('|');
   }
 
-  @HandleError()
-  @Profile()
   private createMaterial(meshConfig: MeshConfig): THREE.Material {
     const color = meshConfig.color ?? meshConfig.materialParams?.color ?? '#ffffff';
     const roughness = meshConfig.roughness ?? meshConfig.materialParams?.roughness ?? 0.5;
@@ -97,7 +100,6 @@ export class MaterialManager {
     return new THREE.MeshStandardMaterial(baseOptions);
   }
 
-  @HandleError()
   @MonitorMemory(20) // 텍스처는 메모리를 많이 사용할 수 있음
   private loadTexture(url: string): THREE.Texture {
     const cached = this.textures.get(url);
@@ -111,29 +113,53 @@ export class MaterialManager {
     return texture;
   }
 
-  @HandleError()
-  @Profile()
   updateMaterial(meshId: string, updates: Partial<MeshConfig>): void {
-    const material = this.materials.get(meshId);
-    if (!material) return;
-    if (material instanceof THREE.MeshStandardMaterial) {
-      if (updates.color) material.color.set(updates.color);
-      if (updates.roughness !== undefined) material.roughness = updates.roughness;
-      if (updates.metalness !== undefined) material.metalness = updates.metalness;
-      if (updates.opacity !== undefined) material.opacity = updates.opacity;
-      material.needsUpdate = true;
-    } else if (material instanceof THREE.MeshToonMaterial) {
-      if (updates.color) material.color.set(updates.color);
-      if (updates.opacity !== undefined) material.opacity = updates.opacity;
-      material.needsUpdate = true;
+    const entries = this.materialsById.get(meshId);
+    if (!entries) return;
+    const values = {
+      color: updates.color ?? updates.materialParams?.color,
+      roughness: updates.roughness ?? updates.materialParams?.roughness,
+      metalness: updates.metalness ?? updates.materialParams?.metalness,
+      opacity: updates.opacity ?? updates.materialParams?.opacity,
+      transparent: updates.transparent ?? updates.materialParams?.transparent,
+      mapTextureUrl: updates.mapTextureUrl ?? updates.textureUrl ?? updates.materialParams?.mapTextureUrl,
+      normalTextureUrl: updates.normalTextureUrl ?? updates.materialParams?.normalTextureUrl,
+    };
+    for (const entry of entries) {
+      const { material } = entry;
+      if (!(material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshToonMaterial)) continue;
+      if (values.color !== undefined) material.color.set(values.color);
+      if (material instanceof THREE.MeshStandardMaterial) {
+        if (values.roughness !== undefined) material.roughness = values.roughness;
+        if (values.metalness !== undefined) material.metalness = values.metalness;
+      }
+      if (values.opacity !== undefined) material.opacity = values.opacity;
+      if (values.transparent !== undefined && material.transparent !== values.transparent) {
+        material.transparent = values.transparent;
+        material.needsUpdate = true;
+      }
+      const mapUrl = values.mapTextureUrl;
+      if (mapUrl !== undefined) {
+        const map = this.loadTexture(mapUrl);
+        if (material.map !== map) { material.map = map; material.needsUpdate = true; }
+      }
+      if (values.normalTextureUrl !== undefined) {
+        const map = this.loadTexture(values.normalTextureUrl);
+        if (material.normalMap !== map) { material.normalMap = map; material.needsUpdate = true; }
+      }
+      // Never leave a mutated material cached under its previous configuration.
+      if (this.materials.get(entry.key) === material) this.materials.delete(entry.key);
+      entry.config = { ...entry.config, ...Object.fromEntries(Object.entries(values).filter(([, value]) => value !== undefined)) };
+      entry.key = this.createMaterialKey(entry.config, material instanceof THREE.MeshToonMaterial);
+      this.materials.set(entry.key, material);
     }
   }
 
-  @HandleError()
   dispose(): void {
-    this.materials.forEach(material => material.dispose());
+    for (const entries of this.materialsById.values()) for (const { material } of entries) material.dispose();
+    this.materialsById.clear();
     this.materials.clear();
     this.textures.forEach(texture => texture.dispose());
     this.textures.clear();
   }
-} 
+}

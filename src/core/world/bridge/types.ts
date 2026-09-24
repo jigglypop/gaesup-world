@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { WorldObject, InteractionEvent } from '../core/WorldSystem';
 
 export type WorldCommand = 
+  | { type: 'clearEvents' }
   | AddObjectCommand
   | RemoveObjectCommand
   | UpdateObjectCommand
@@ -74,4 +75,4 @@ export interface WorldBridgeMetrics {
   objectsByType: Record<string, number>;
   totalEvents: number;
   lastInteractionTime: number;
-} 
+}

@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 
+
 import { describeObjectiveProgress, describeReward } from './helpers';
 import type { QuestLogUIProps, QuestRowProps, QuestSectionProps } from './types';
+import { useWorldInputScope } from '../../../input/useWorldInputScope';
+import { WorldInputSurface } from '../../../input/WorldInputSurface';
+import { useInventoryStore, useInventoryStoreApi } from '../../../inventory/stores/inventoryStore';
 import { canHandleOverlayShortcut } from '../../../ui/overlayKeyboard';
 import {
   OVERLAY_ACCENT_COLOR,
@@ -21,7 +25,9 @@ const PANEL_WIDTH = 560;
 const SINGLE_STEP = 1;
 
 export function QuestLogUI({ toggleKey = 'j' }: QuestLogUIProps) {
+  const inputScope = useWorldInputScope();
   const [open, setOpen] = useState(false);
+  useInventoryStore((s) => open ? s.slots : null);
   const state = useQuestStore((s) => s.state);
   const complete = useQuestStore((s) => s.complete);
   const isObjectiveComplete = useQuestStore((s) => s.isObjectiveComplete);
@@ -33,9 +39,9 @@ export function QuestLogUI({ toggleKey = 'j' }: QuestLogUIProps) {
       if (event.key.toLowerCase() === toggleKey.toLowerCase()) setOpen((value) => !value);
       if (event.key === 'Escape') setOpen(false);
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [toggleKey]);
+    const offKey = inputScope.listen('keydown', onKey);
+    return () => offKey();
+  }, [inputScope, toggleKey]);
 
   if (!open) return null;
 
@@ -43,7 +49,7 @@ export function QuestLogUI({ toggleKey = 'j' }: QuestLogUIProps) {
   const completed = Object.values(state).filter((progress) => progress.status === 'completed');
 
   return (
-    <div style={OVERLAY_BACKDROP_STYLE} onClick={() => setOpen(false)}>
+    <WorldInputSurface style={OVERLAY_BACKDROP_STYLE} onClick={() => setOpen(false)}>
       <div
         data-world-overlay="quests"
         onClick={(event) => event.stopPropagation()}
@@ -105,7 +111,7 @@ export function QuestLogUI({ toggleKey = 'j' }: QuestLogUIProps) {
           )}
         </div>
       </div>
-    </div>
+    </WorldInputSurface>
   );
 }
 
@@ -123,6 +129,7 @@ function Empty({ children }: { children: React.ReactNode }) {
 }
 
 function QuestRow({ progress, renderObjective, onComplete, muted }: QuestRowProps) {
+  const inventoryStore = useInventoryStoreApi();
   const def = getQuestRegistry().get(progress.questId);
   if (!def) return null;
 
@@ -147,7 +154,7 @@ function QuestRow({ progress, renderObjective, onComplete, muted }: QuestRowProp
       <ul style={{ margin: 0, padding: '0 0 0 16px' }}>
         {def.objectives.map((objective) => {
           const done = renderObjective(objective);
-          const { label, count, needed } = describeObjectiveProgress(objective, progress);
+          const { label, count, needed } = describeObjectiveProgress(objective, progress, inventoryStore);
           return (
             <li
               key={objective.id}

@@ -1,17 +1,44 @@
-import { createAnimationSlice } from '../slices';
-import { AnimationSlice } from '../types';
-import { AnimationType, EntityAnimationStates } from '../../core/types';
 import * as THREE from 'three';
 
+import { AnimationType } from '../../core/types';
+import { createAnimationSlice } from '../slices';
+import { AnimationSlice } from '../types';
+
+type SliceCreatorArgs = Parameters<typeof createAnimationSlice>;
+type SetState = SliceCreatorArgs[0];
+type GetState = SliceCreatorArgs[1];
+type SliceState = ReturnType<GetState>;
+
+const createPreviousState = (): SliceState => ({
+  animationState: {
+    character: { current: 'idle', default: 'idle', store: {} },
+    vehicle: { current: 'idle', default: 'idle', store: {} },
+    airplane: { current: 'idle', default: 'idle', store: {} },
+  },
+});
+
 describe('createAnimationSlice', () => {
-  let set: jest.Mock;
-  let get: jest.Mock;
+  let set: jest.MockedFunction<SetState>;
+  let get: jest.MockedFunction<GetState>;
   let slice: Omit<AnimationSlice, 'getAnimation' | 'getCurrentAnimation'>;
+
+  const applyFirstUpdate = (previousState: SliceState): SliceState => {
+    const updater = set.mock.calls[0]?.[0];
+    if (typeof updater !== 'function') {
+      throw new Error('Expected set to be called with an updater function');
+    }
+    return updater(previousState);
+  };
 
   beforeEach(() => {
     set = jest.fn();
     get = jest.fn();
-    slice = createAnimationSlice(set, get);
+    slice = createAnimationSlice(set, get, {
+      setState: set,
+      getState: get,
+      getInitialState: get,
+      subscribe: jest.fn(),
+    });
   });
 
   it('should have initial state', () => {
@@ -22,20 +49,11 @@ describe('createAnimationSlice', () => {
   it('setAnimation should call set with the new animation', () => {
     const type: AnimationType = 'character';
     const newAnimation = 'walk';
-    
+
     slice.setAnimation(type, newAnimation);
 
     // The first argument to `set` is a function that receives the current state
-    const updater = set.mock.calls[0][0];
-    const previousState = {
-      animationState: {
-        character: { current: 'idle', default: 'idle', store: {} },
-        vehicle: { current: 'idle', default: 'idle', store: {} },
-        airplane: { current: 'idle', default: 'idle', store: {} },
-      }
-    };
-    
-    const newState = updater(previousState);
+    const newState = applyFirstUpdate(createPreviousState());
 
     expect(set).toHaveBeenCalledTimes(1);
     expect(newState.animationState.character.current).toBe(newAnimation);
@@ -43,8 +61,10 @@ describe('createAnimationSlice', () => {
 
   it('resetAnimations should call set to restore initial state', () => {
     slice.resetAnimations();
-    const updater = set.mock.calls[0][0];
-    const newState = updater({}); // Previous state doesn't matter for reset
+    const previousState = createPreviousState();
+    previousState.animationState.character.current = 'run';
+    previousState.animationState.vehicle.current = 'drive';
+    const newState = applyFirstUpdate(previousState);
 
     expect(set).toHaveBeenCalledTimes(1);
     expect(newState.animationState.character.current).toBe('idle');
@@ -57,19 +77,10 @@ describe('createAnimationSlice', () => {
     const mockAction = {} as THREE.AnimationAction;
 
     slice.setAnimationAction(type, animationName, mockAction);
-    
-    const updater = set.mock.calls[0][0];
-    const previousState = {
-      animationState: {
-        character: { current: 'idle', default: 'idle', store: {} },
-        vehicle: { current: 'idle', default: 'idle', store: {} },
-        airplane: { current: 'idle', default: 'idle', store: {} },
-      }
-    };
-    
-    const newState = updater(previousState);
+
+    const newState = applyFirstUpdate(createPreviousState());
 
     expect(set).toHaveBeenCalledTimes(1);
     expect(newState.animationState.vehicle.store[animationName]).toBe(mockAction);
   });
-}); 
+});

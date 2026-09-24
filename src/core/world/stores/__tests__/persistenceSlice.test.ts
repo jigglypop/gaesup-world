@@ -1,17 +1,18 @@
-import { create } from 'zustand';
+import { enableMapSet } from 'immer';
 import * as THREE from 'three';
+import { create } from 'zustand';
+import { immer } from 'zustand/middleware/immer';
 
+import { createCameraPlugin } from '../../../camera';
+import { createGaesupRuntime } from '../../../runtime';
+import { SaveSystem } from '../../../save';
+import type { SaveAdapter, SaveBlob } from '../../../save';
+import type { SaveData, SaveLoadResult, SaveMetadata, WorldSaveData } from '../../persistence/types';
 import {
   createPersistenceSliceWithOptions,
   type GaesupStores,
   type PersistenceState,
 } from '../persistenceSlice';
-import { createCameraPlugin } from '../../../camera';
-import { createGaesupRuntime } from '../../../runtime';
-import { SaveSystem } from '../../../save';
-import type { SaveAdapter, SaveBlob } from '../../../save';
-import { useGaesupStore } from '../../../stores/gaesupStore';
-import type { SaveData, SaveLoadOptions, SaveLoadResult, SaveMetadata, WorldSaveData } from '../../persistence/types';
 
 class MemorySaveLoadManager {
   savedWorld: WorldSaveData | null = null;
@@ -23,7 +24,6 @@ class MemorySaveLoadManager {
   async save(
     worldData: WorldSaveData,
     metadata?: Partial<SaveMetadata>,
-    _options: SaveLoadOptions = {},
   ): Promise<SaveLoadResult> {
     this.savedWorld = worldData;
     const data = {
@@ -43,18 +43,13 @@ class MemorySaveLoadManager {
     return { success: true, data };
   }
 
-  async load(_saveId: string, _options: SaveLoadOptions = {}): Promise<SaveLoadResult> {
+  async load(): Promise<SaveLoadResult> {
     return this.loaded
       ? { success: true, data: this.loaded }
       : { success: false, error: 'missing' };
   }
 
-  async saveToFile(
-    worldData: WorldSaveData,
-    _filename: string,
-    _metadata?: Partial<SaveMetadata>,
-    _options: SaveLoadOptions = {},
-  ): Promise<SaveLoadResult> {
+  async saveToFile(worldData: WorldSaveData): Promise<SaveLoadResult> {
     this.savedFileWorld = worldData;
     return {
       success: true,
@@ -66,7 +61,7 @@ class MemorySaveLoadManager {
     };
   }
 
-  async loadFromFile(_file: File, _options: SaveLoadOptions = {}): Promise<SaveLoadResult> {
+  async loadFromFile(): Promise<SaveLoadResult> {
     return this.loaded
       ? { success: true, data: this.loaded }
       : { success: false, error: 'missing' };
@@ -102,7 +97,7 @@ class MemorySaveAdapter implements SaveAdapter {
   }
 }
 
-function createStores(): GaesupStores {
+function createStores() {
   const buildingState = {
     wallGroups: new Map([
       ['wall-group', {
@@ -160,7 +155,7 @@ function createStores(): GaesupStores {
       getState: () => cameraState,
       setState: (state) => Object.assign(cameraState, state),
     },
-  };
+  } satisfies GaesupStores;
 }
 
 function createStore(stores: GaesupStores, manager = new MemorySaveLoadManager()) {
@@ -225,6 +220,25 @@ describe('persistenceSlice', () => {
       mode: 'topDown',
       settings: { zoom: 1.2 },
     });
+  });
+
+  it('replaces frozen zustand NPC instances through setState and notifies subscribers', async () => {
+    enableMapSet();
+    const stores = createStores();
+    const npc = stores.npcStore!.getState().instances.get('npc')!;
+    const manager = new MemorySaveLoadManager();
+    await createStore(stores, manager).store.getState().saveWorld('world', 'World');
+
+    const npcStore = create<{ instances: Map<string, typeof npc> }>()(immer(() => ({ instances: new Map<string, typeof npc>() })));
+    npcStore.setState((state) => { state.instances.set('stale', { ...npc, id: 'stale' }); });
+    const listener = jest.fn();
+    npcStore.subscribe(listener);
+    const frozenStores = { ...stores, npcStore } as unknown as GaesupStores;
+
+    await expect(createStore(frozenStores, manager).store.getState().loadWorld('world_123')).resolves.not.toBeNull();
+
+    expect([...npcStore.getState().instances.keys()]).toEqual(['npc']);
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 
   it('does not read window globals when stores are not injected', async () => {
@@ -346,8 +360,8 @@ describe('persistenceSlice', () => {
       saveSystem,
       plugins: [createCameraPlugin()],
     });
-    const originalMode = useGaesupStore.getState().mode;
-    const originalCameraOption = useGaesupStore.getState().cameraOption;
+    const originalMode = runtime.store.getState().mode;
+    const originalCameraOption = runtime.store.getState().cameraOption;
     const now = jest.spyOn(Date, 'now').mockReturnValue(987);
     const store = create<PersistenceState>()(
       createPersistenceSliceWithOptions({ saveSystem }),
@@ -355,8 +369,8 @@ describe('persistenceSlice', () => {
 
     try {
       await runtime.setup();
-      useGaesupStore.getState().setMode({ type: 'character', control: 'thirdPerson' });
-      useGaesupStore.getState().setCameraOption({
+      runtime.store.getState().setMode({ type: 'character', control: 'thirdPerson' });
+      runtime.store.getState().setCameraOption({
         zoom: 1.75,
         position: new THREE.Vector3(4, 5, 6),
         target: new THREE.Vector3(1, 2, 3),
@@ -364,8 +378,8 @@ describe('persistenceSlice', () => {
 
       await store.getState().saveWorld('camera-world', 'Camera World');
 
-      useGaesupStore.getState().setMode({ type: 'vehicle', control: 'isometric' });
-      useGaesupStore.getState().setCameraOption({
+      runtime.store.getState().setMode({ type: 'vehicle', control: 'isometric' });
+      runtime.store.getState().setCameraOption({
         zoom: 3,
         position: new THREE.Vector3(9, 9, 9),
         target: new THREE.Vector3(0, 0, 0),
@@ -382,14 +396,14 @@ describe('persistenceSlice', () => {
           target: { x: 1, y: 2, z: 3 },
         }),
       }));
-      expect(useGaesupStore.getState().cameraOption).toEqual(expect.objectContaining({
+      expect(runtime.store.getState().cameraOption).toEqual(expect.objectContaining({
         zoom: 1.75,
         position: expect.objectContaining({ x: 4, y: 5, z: 6 }),
         target: expect.objectContaining({ x: 1, y: 2, z: 3 }),
       }));
     } finally {
-      useGaesupStore.getState().setMode(originalMode);
-      useGaesupStore.getState().setCameraOption(originalCameraOption);
+      runtime.store.getState().setMode(originalMode);
+      runtime.store.getState().setCameraOption(originalCameraOption);
       await runtime.dispose();
       now.mockRestore();
     }

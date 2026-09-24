@@ -3,11 +3,14 @@ import { Suspense, useEffect, useLayoutEffect, ReactNode, useMemo } from 'react'
 import { Camera } from '@/core/camera';
 import type { CameraOptionType } from '@/core/camera';
 import { CAMERA_DEFAULTS } from '@/core/camera/core/constants';
-import { PerformanceCollector } from '@/core/editor/components/panels/PerformanceCollector';
+import { PerformanceCollector } from '@/core/perf/PerformanceCollector';
+import { WorldPostProcessing, type WorldPostProcessingProps } from '@/core/rendering/postprocess/WorldPostProcessing';
+import { ShadowDepthMaterials } from '@/core/rendering/shadow/ShadowDepthMaterials';
 import { GaesupRuntimeProvider } from '@/core/runtime';
 import { FrameSchedulerHost } from '@/core/runtime/frame/react/FrameSchedulerHost';
 import type { UrlsState } from '@/core/stores/slices/urls/types';
-import { useGaesupStore } from '@stores/gaesupStore';
+import { isProductionEnv } from '@/core/utils/env';
+import { useGaesupStore, useGaesupStoreApi } from '@stores/gaesupStore';
 
 import { WorldContainerProps } from './types';
 export type { WorldAssetUrls, WorldCameraOption, WorldContainerProps } from './types';
@@ -35,6 +38,11 @@ function WorldContent({ children, showGrid, showAxes }: {
  * Prefer this name for new code; `WorldContainer` remains as a backward-compatible alias.
  */
 export function WorldConfigProvider(props: WorldContainerProps) {
+  return <GaesupRuntimeProvider runtime={props.runtime} revision={props.runtimeRevision}><WorldConfiguration {...props} /></GaesupRuntimeProvider>;
+}
+
+function WorldConfiguration(props: WorldContainerProps) {
+  const store = useGaesupStoreApi();
   const setMode = useGaesupStore((state) => state.setMode);
   const setUrls = useGaesupStore((state) => state.setUrls);
   const replaceCameraOption = useGaesupStore((state) => state.replaceCameraOption);
@@ -121,7 +129,7 @@ export function WorldConfigProvider(props: WorldContainerProps) {
       setMode({ control: props.cameraOption.type });
     }
     if (cameraOptionUpdates) {
-      const cameraOption = useGaesupStore.getState().cameraOption;
+      const cameraOption = store.getState().cameraOption;
       const nextOption: CameraOptionType = {
         ...cameraOption,
         ...cameraOptionUpdates,
@@ -131,17 +139,9 @@ export function WorldConfigProvider(props: WorldContainerProps) {
       delete nextOption.focusTarget;
       replaceCameraOption(nextOption);
     }
-  }, [cameraOptionUpdates, props.cameraOption, props.mode, replaceCameraOption, setMode]);
+  }, [cameraOptionUpdates, props.cameraOption, props.mode, props.runtimeRevision, replaceCameraOption, setMode, store]);
 
-  if (!props.runtime) {
-    return props.children;
-  }
-
-  return (
-    <GaesupRuntimeProvider runtime={props.runtime} revision={props.runtimeRevision ?? 0}>
-      {props.children}
-    </GaesupRuntimeProvider>
-  );
+  return props.children;
 }
 
 /**
@@ -149,20 +149,29 @@ export function WorldConfigProvider(props: WorldContainerProps) {
  */
 export const WorldContainer = WorldConfigProvider;
 
-export function GaesupWorldContent({ children, showGrid, showAxes }: { 
-  children?: ReactNode; 
-  showGrid?: boolean; 
-  showAxes?: boolean; 
+export function GaesupWorldContent({ children, showGrid, showAxes, postProcessing, performance }: {
+  children?: ReactNode;
+  showGrid?: boolean;
+  showAxes?: boolean;
+  /** Owns the canvas render loop. Use instead of mounting a second effect composer. */
+  postProcessing?: boolean | WorldPostProcessingProps;
+  /** Samples renderer stats into the store. Defaults to on outside production; `retainPerformanceSampling` also turns it on. */
+  performance?: boolean;
 }) {
+  const sampled = useGaesupStore((state) => state.performanceSamplers > 0);
   return (
-    <Suspense fallback={null}>
-      <FrameSchedulerHost />
-      <Camera/>
-      <PerformanceCollector />
-      <WorldContent showGrid={showGrid ?? false} showAxes={showAxes ?? false}>
-        {children}
-      </WorldContent>
-    </Suspense>
+    <>
+      <FrameSchedulerHost metrics={!isProductionEnv()} />
+      <Suspense fallback={null}>
+        <Camera/>
+        {((performance ?? !isProductionEnv()) || sampled) && <PerformanceCollector />}
+        <ShadowDepthMaterials />
+        {postProcessing && <WorldPostProcessing {...(typeof postProcessing === 'object' ? postProcessing : {})} />}
+        <WorldContent showGrid={showGrid ?? false} showAxes={showAxes ?? false}>
+          {children}
+        </WorldContent>
+      </Suspense>
+    </>
   );
 }
 

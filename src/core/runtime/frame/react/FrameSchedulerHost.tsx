@@ -1,20 +1,59 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 
 import { useFrame } from '@react-three/fiber';
 
-import { frameScheduler } from '../FrameScheduler';
+import { getFrameTimeMs } from '../../../boilerplate/hooks/frameTime';
+import { frameScheduler, POST_PHYSICS_PHASE_INDEX, type FrameScheduler } from '../FrameScheduler';
+import { FRAME_PHASES } from '../types';
+import { useCanvasFrameScheduler } from './canvasScheduler';
+import { warnIfDuplicateHost } from './hostWarnings';
+import { FRAME_PRE_PHYSICS_PRIORITY, FRAME_SCHEDULER_PRIORITY } from './priorities';
 import type { FrameSchedulerHostProps } from './types';
 
-export const FRAME_SCHEDULER_PRIORITY = -1;
+export { FRAME_PRE_PHYSICS_PRIORITY, FRAME_SCHEDULER_PRIORITY, PHYSICS_STEP_PRIORITY } from './priorities';
 
-export function FrameSchedulerHost({ scheduler = frameScheduler, metrics = false }: FrameSchedulerHostProps) {
+function tickOwnedPhases(
+  token: object,
+  scheduler: FrameScheduler,
+  start: number,
+  end: number,
+  delta: number,
+  elapsedMs: number,
+): void {
+  const ownsGlobal = scheduler !== frameScheduler && frameScheduler.isTickOwner(token);
+  const ownsCanvas = scheduler.isTickOwner(token);
+  for (let p = start; p < end; p++) {
+    if (ownsGlobal) frameScheduler.tickPhase(p, delta, elapsedMs);
+    if (ownsCanvas) scheduler.tickPhase(p, delta, elapsedMs);
+  }
+}
+
+export function FrameSchedulerHost({ scheduler: schedulerProp, metrics = false }: FrameSchedulerHostProps) {
+  const canvasScheduler = useCanvasFrameScheduler();
+  const scheduler = schedulerProp ?? canvasScheduler;
+  const [token] = useState(() => ({}));
+
+  useLayoutEffect(() => {
+    const detach = scheduler.attachHost(token);
+    const detachGlobal = scheduler === frameScheduler ? undefined : frameScheduler.attachHost(token);
+    warnIfDuplicateHost(scheduler);
+    return () => {
+      detachGlobal?.();
+      detach();
+    };
+  }, [scheduler, token]);
+
   useEffect(() => {
     scheduler.setMetricsEnabled(metrics);
     return () => scheduler.setMetricsEnabled(false);
   }, [metrics, scheduler]);
 
-  useFrame((_, delta) => {
-    scheduler.tick(delta, performance.now());
+  useFrame((state, delta) => {
+    tickOwnedPhases(token, scheduler, 0, POST_PHYSICS_PHASE_INDEX, delta, getFrameTimeMs(state));
+  }, FRAME_PRE_PHYSICS_PRIORITY);
+
+  useFrame((state, delta) => {
+    tickOwnedPhases(token, scheduler, POST_PHYSICS_PHASE_INDEX, FRAME_PHASES.length, delta, getFrameTimeMs(state));
   }, FRAME_SCHEDULER_PRIORITY);
 
   return null;

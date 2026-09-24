@@ -1,5 +1,6 @@
-import { act, fireEvent, render } from '@testing-library/react';
 import { StrictMode } from 'react';
+
+import { act, fireEvent, render } from '@testing-library/react';
 import { Euler, Vector3 } from 'three';
 
 import { MiniMap } from '..';
@@ -138,12 +139,17 @@ test('keeps canvases independent and shared markers alive when another map unmou
   );
   const view = render(maps(true));
   try {
-    const [first, second] = view.getAllByLabelText('주변 지도') as HTMLCanvasElement[];
+    const [first, second] = view.getAllByLabelText('주변 지도');
+    if (!(first instanceof HTMLCanvasElement) || !(second instanceof HTMLCanvasElement)) {
+      throw new Error('expected two minimap canvases');
+    }
+    const [firstZoomIn] = view.getAllByLabelText('지도 확대');
+    if (!firstZoomIn) throw new Error('expected a zoom-in control for the first minimap');
     const firstClear = jest.spyOn(first.getContext('2d')!, 'clearRect');
     const secondClear = jest.spyOn(second.getContext('2d')!, 'clearRect');
     firstClear.mockClear();
     secondClear.mockClear();
-    fireEvent.click(view.getAllByLabelText('지도 확대')[0]);
+    fireEvent.click(firstZoomIn);
     expect(firstClear).toHaveBeenCalled();
     expect(secondClear).not.toHaveBeenCalled();
     const secondText = jest.spyOn(second.getContext('2d')!, 'fillText');

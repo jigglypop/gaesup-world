@@ -1,6 +1,6 @@
 import type { GaesupPlugin, PluginContext } from '../plugins';
-import { useShopStore } from './stores/shopStore';
-import { useWalletStore } from './stores/walletStore';
+import { useShopStore, type ShopStore, SHOP_STORE_SERVICE } from './stores/shopStore';
+import { useWalletStore, type WalletStore, WALLET_STORE_SERVICE } from './stores/walletStore';
 import type { ShopSerialized, WalletSerialized } from './types';
 
 export interface EconomyPluginOptions {
@@ -17,20 +17,20 @@ const DEFAULT_SHOP_SAVE_EXTENSION_ID = 'shop';
 const DEFAULT_WALLET_STORE_SERVICE_ID = 'wallet.store';
 const DEFAULT_SHOP_STORE_SERVICE_ID = 'shop.store';
 
-export function serializeWalletState(): WalletSerialized {
-  return useWalletStore.getState().serialize();
+export function serializeWalletState(store: WalletStore = useWalletStore): WalletSerialized {
+  return store.getState().serialize();
 }
 
-export function hydrateWalletState(data: WalletSerialized | null | undefined): void {
-  useWalletStore.getState().hydrate(data);
+export function hydrateWalletState(data: WalletSerialized | null | undefined, store: WalletStore = useWalletStore): void {
+  store.getState().hydrate(data);
 }
 
-export function serializeShopState(): ShopSerialized {
-  return useShopStore.getState().serialize();
+export function serializeShopState(store: ShopStore = useShopStore): ShopSerialized {
+  return store.getState().serialize();
 }
 
-export function hydrateShopState(data: ShopSerialized | null | undefined): void {
-  useShopStore.getState().hydrate(data);
+export function hydrateShopState(data: ShopSerialized | null | undefined, store: ShopStore = useShopStore): void {
+  store.getState().hydrate(data);
 }
 
 export function createEconomyPlugin(options: EconomyPluginOptions = {}): GaesupPlugin {
@@ -47,27 +47,29 @@ export function createEconomyPlugin(options: EconomyPluginOptions = {}): GaesupP
     runtime: 'client',
     capabilities: ['economy', 'wallet', 'shop'],
     setup(ctx: PluginContext) {
+      const shop = ctx.services.get(SHOP_STORE_SERVICE) ?? useShopStore;
+      const wallet = ctx.services.get(WALLET_STORE_SERVICE) ?? useWalletStore;
       ctx.save.register(walletSaveExtensionId, {
         key: walletSaveExtensionId,
-        serialize: serializeWalletState,
-        hydrate: hydrateWalletState,
-        prepareHydrate: (data: WalletSerialized | null | undefined) => useWalletStore.getState().prepareHydrate(data),
+        serialize: () => serializeWalletState(wallet),
+        hydrate: (data: WalletSerialized | null | undefined) => hydrateWalletState(data, wallet),
+        prepareHydrate: (data: WalletSerialized | null | undefined) => wallet.getState().prepareHydrate(data),
       }, pluginId);
       ctx.save.register(shopSaveExtensionId, {
         key: shopSaveExtensionId,
-        serialize: serializeShopState,
-        hydrate: hydrateShopState,
-        prepareHydrate: (data: ShopSerialized | null | undefined) => useShopStore.getState().prepareHydrate(data),
+        serialize: () => serializeShopState(shop),
+        hydrate: (data: ShopSerialized | null | undefined) => hydrateShopState(data, shop),
+        prepareHydrate: (data: ShopSerialized | null | undefined) => shop.getState().prepareHydrate(data),
       }, pluginId);
       ctx.services.register(walletStoreServiceId, {
-        useStore: useWalletStore,
-        getState: useWalletStore.getState,
-        setState: useWalletStore.setState,
+        useStore: wallet,
+        getState: wallet.getState,
+        setState: wallet.setState,
       }, pluginId);
       ctx.services.register(shopStoreServiceId, {
-        useStore: useShopStore,
-        getState: useShopStore.getState,
-        setState: useShopStore.setState,
+        useStore: shop,
+        getState: shop.getState,
+        setState: shop.setState,
       }, pluginId);
       ctx.events.emit('economy:ready', {
         pluginId,

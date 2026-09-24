@@ -1,6 +1,8 @@
 import * as THREE from 'three';
-import { WorldSystem, WorldObject, RideableObject, InteractionEvent } from '../WorldSystem';
+
 import { SystemContext } from '@core/boilerplate/entity/BaseSystem';
+
+import { WorldSystem, WorldObject, RideableObject, InteractionEvent } from '../WorldSystem';
 
 // Mock SpatialGrid
 jest.mock('../SpatialGrid', () => ({
@@ -12,6 +14,10 @@ jest.mock('../SpatialGrid', () => ({
     clear: jest.fn(),
   }))
 }));
+
+function mockedGetNearby(system: WorldSystem) {
+  return jest.mocked(system['spatial'].getNearby);
+}
 
 describe('WorldSystem', () => {
   let worldSystem: WorldSystem;
@@ -171,8 +177,7 @@ describe('WorldSystem', () => {
       worldSystem.addObject(object);
       
       // Mock spatial grid to return the object ID
-      const mockSpatial = (worldSystem as any).spatial;
-      mockSpatial.getNearby.mockReturnValue(['test-1']);
+      mockedGetNearby(worldSystem).mockReturnValue(['test-1']);
 
       const center = new THREE.Vector3(0, 0, 0);
       const objects = worldSystem.getObjectsInRadius(center, 10);
@@ -207,8 +212,7 @@ describe('WorldSystem', () => {
       worldSystem.addObject(object2);
 
       // Mock spatial grid to return both object IDs
-      const mockSpatial = (worldSystem as any).spatial;
-      mockSpatial.getNearby.mockReturnValue(['test-1', 'test-2']);
+      mockedGetNearby(worldSystem).mockReturnValue(['test-1', 'test-2']);
 
       const collisions = worldSystem.checkCollisions('test-1');
       expect(collisions).toHaveLength(1);
@@ -256,7 +260,7 @@ describe('WorldSystem', () => {
         worldSystem.processInteraction(event);
       }
 
-      const events = (worldSystem as any).interactionEvents;
+      const events = worldSystem['interactionEvents'];
       expect(events.length).toBe(500);
     });
 
@@ -297,8 +301,7 @@ describe('WorldSystem', () => {
       worldSystem.addObject(object);
 
       // Mock spatial grid
-      const mockSpatial = (worldSystem as any).spatial;
-      mockSpatial.getNearby.mockReturnValue(['test-1']);
+      mockedGetNearby(worldSystem).mockReturnValue(['test-1']);
 
       const origin = new THREE.Vector3(-5, 0, 0);
       const direction = new THREE.Vector3(1, 0, 0);
@@ -315,8 +318,7 @@ describe('WorldSystem', () => {
       const direction = new THREE.Vector3(1, 0, 0);
       
       // Mock spatial grid to return no objects
-      const mockSpatial = (worldSystem as any).spatial;
-      mockSpatial.getNearby.mockReturnValue([]);
+      mockedGetNearby(worldSystem).mockReturnValue([]);
 
       const result = worldSystem.raycast(origin, direction, 10);
       expect(result).toBeNull();
@@ -421,8 +423,7 @@ describe('WorldSystem', () => {
     });
 
     test('should handle spatial grid errors', () => {
-      const mockSpatial = (worldSystem as any).spatial;
-      mockSpatial.getNearby.mockImplementation(() => {
+      mockedGetNearby(worldSystem).mockImplementation(() => {
         throw new Error('Spatial grid error');
       });
 

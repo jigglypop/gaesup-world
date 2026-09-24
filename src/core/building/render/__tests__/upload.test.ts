@@ -10,8 +10,8 @@ import {
 } from '../upload';
 
 type MockBuffer = GpuBufferLike & {
-  label?: string;
-  size?: number;
+  label: string | undefined;
+  size: number;
   destroyed: boolean;
 };
 
@@ -45,6 +45,112 @@ function createMockDevice() {
 }
 
 describe('building gpu upload bridge', () => {
+  it.each(['allocation', 'write'] as const)(
+    'keeps prior resources and releases new buffers after %s failure',
+    (failure) => {
+      const first = createMockDevice();
+      const replacement = createMockDevice();
+      const snapshot = buildBuildingRenderSnapshot({
+        wallGroups: [],
+        tileGroups: [],
+        objects: [{ id: 'o1', type: 'fire', position: { x: 1, y: 2, z: 3 } }],
+        version: 1,
+      });
+      const mirror = buildBuildingGpuMirror(snapshot, null);
+      const prior = syncBuildingGpuBuffers(
+        first.device,
+        createEmptyBuildingGpuUploadResources(),
+        mirror,
+      );
+      const create = replacement.device.createBuffer;
+      replacement.device.createBuffer = (descriptor) => {
+        if (failure === 'allocation' && descriptor.label === 'building-meta')
+          throw new Error('allocation failed');
+        return create(descriptor);
+      };
+      if (failure === 'write')
+        replacement.device.queue.writeBuffer = () => {
+          throw new Error('write failed');
+        };
+      expect(() => syncBuildingGpuBuffers(replacement.device, prior, mirror)).toThrow(
+        `${failure} failed`,
+      );
+      expect(first.created.every((buffer) => !buffer.destroyed)).toBe(true);
+      expect(replacement.created.length).toBeGreaterThan(0);
+      expect(replacement.created.every((buffer) => buffer.destroyed)).toBe(true);
+      expect(prior.device).toBe(first.device);
+    },
+  );
+
+  it('preserves old indirect arguments when replacement upload fails', () => {
+    const first = createMockDevice();
+    const next = createMockDevice();
+    const mirror = buildBuildingIndirectDrawMirror(1, new Uint32Array(12), null);
+    const prior = syncBuildingIndirectArgsBuffer(
+      first.device,
+      createEmptyBuildingGpuUploadResources(),
+      mirror,
+    );
+    next.device.queue.writeBuffer = () => {
+      throw new Error('write failed');
+    };
+    expect(() => syncBuildingIndirectArgsBuffer(next.device, prior, mirror)).toThrow(
+      'write failed',
+    );
+    expect(first.created.every((buffer) => !buffer.destroyed)).toBe(true);
+    expect(next.created.every((buffer) => buffer.destroyed)).toBe(true);
+  });
+  it('skips repeat versions and fully populates replacement-device buffers even with no dirty ranges', () => {
+    const first = createMockDevice();
+    const next = createMockDevice();
+    const snapshot = buildBuildingRenderSnapshot({
+      wallGroups: [],
+      tileGroups: [],
+      objects: [{ id: 'o1', type: 'fire', position: { x: 1, y: 2, z: 3 } }],
+      version: 1,
+    });
+    const mirror = buildBuildingGpuMirror(snapshot, null);
+    const resources = syncBuildingGpuBuffers(
+      first.device,
+      createEmptyBuildingGpuUploadResources(),
+      mirror,
+    );
+    first.writes.length = 0;
+    expect(syncBuildingGpuBuffers(first.device, resources, mirror)).toBe(resources);
+    expect(first.writes).toHaveLength(0);
+    const clean = buildBuildingGpuMirror({ ...snapshot, version: 2 }, mirror);
+    expect(clean.spatialDirty).toHaveLength(0);
+    const replacement = syncBuildingGpuBuffers(next.device, resources, clean);
+    expect(first.created.every((buffer) => buffer.destroyed)).toBe(true);
+    expect(next.writes.map((write) => write.bytes)).toEqual([
+      clean.spatial.byteLength,
+      clean.meta.byteLength,
+    ]);
+    expect(replacement.device).toBe(next.device);
+    expect(next.writes.every((write) => next.created.includes(write.buffer))).toBe(true);
+  });
+
+  it('repopulates indirect args on device change and independently skips repeat uploads', () => {
+    const first = createMockDevice();
+    const next = createMockDevice();
+    const counts = new Uint32Array(12);
+    counts[0] = 5;
+    const mirror = buildBuildingIndirectDrawMirror(1, counts, null);
+    const resources = syncBuildingIndirectArgsBuffer(
+      first.device,
+      createEmptyBuildingGpuUploadResources(),
+      mirror,
+    );
+    first.writes.length = 0;
+    expect(syncBuildingIndirectArgsBuffer(first.device, resources, mirror)).toBe(resources);
+    expect(first.writes).toHaveLength(0);
+    const clean = buildBuildingIndirectDrawMirror(2, counts, mirror);
+    expect(clean.dirtyRanges).toHaveLength(0);
+    syncBuildingIndirectArgsBuffer(next.device, resources, clean);
+    expect(first.created.every((buffer) => buffer.destroyed)).toBe(true);
+    expect(next.writes).toHaveLength(1);
+    expect(next.writes[0]?.bytes).toBe(clean.args.byteLength);
+  });
   it('creates buffers and uploads full dirty slices on first sync', () => {
     const { device, created, writes } = createMockDevice();
     const snapshot = buildBuildingRenderSnapshot({
@@ -62,7 +168,11 @@ describe('building gpu upload bridge', () => {
     });
     const mirror = buildBuildingGpuMirror(snapshot, null);
 
-    const resources = syncBuildingGpuBuffers(device, createEmptyBuildingGpuUploadResources(), mirror);
+    const resources = syncBuildingGpuBuffers(
+      device,
+      createEmptyBuildingGpuUploadResources(),
+      mirror,
+    );
 
     expect(resources.backend).toBe('webgpu');
     expect(resources.uploadedVersion).toBe(1);
@@ -86,7 +196,11 @@ describe('building gpu upload bridge', () => {
       version: 1,
     });
     const firstMirror = buildBuildingGpuMirror(firstSnapshot, null);
-    const firstResources = syncBuildingGpuBuffers(device, createEmptyBuildingGpuUploadResources(), firstMirror);
+    const firstResources = syncBuildingGpuBuffers(
+      device,
+      createEmptyBuildingGpuUploadResources(),
+      firstMirror,
+    );
 
     writes.length = 0;
 
@@ -119,7 +233,11 @@ describe('building gpu upload bridge', () => {
       version: 1,
     });
     const firstMirror = buildBuildingGpuMirror(firstSnapshot, null);
-    const firstResources = syncBuildingGpuBuffers(device, createEmptyBuildingGpuUploadResources(), firstMirror);
+    const firstResources = syncBuildingGpuBuffers(
+      device,
+      createEmptyBuildingGpuUploadResources(),
+      firstMirror,
+    );
 
     const secondSnapshot = buildBuildingRenderSnapshot({
       wallGroups: [],

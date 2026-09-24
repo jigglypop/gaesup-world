@@ -1,11 +1,12 @@
 import { parseSceneDocument } from './serialization';
+import { multiplySceneMatrices, sceneMatrixToTransform, sceneTransformToMatrix } from './transforms';
+import type { SceneMatrix } from './transforms';
 import type {
   SceneDocument,
   SceneObject,
   SceneObjectId,
   SceneTransform,
   SceneValidationIssue,
-  SceneVector3,
 } from './types';
 
 export interface SceneRuntime {
@@ -16,6 +17,7 @@ export interface SceneRuntime {
   getObject: (id: SceneObjectId) => SceneObject | undefined;
   getChildren: (id?: SceneObjectId) => SceneObject[];
   getWorldTransform: (id: SceneObjectId) => SceneTransform | undefined;
+  getWorldMatrix: (id: SceneObjectId) => SceneMatrix | undefined;
 }
 
 const ROOT_PARENT = Symbol('scene-root-parent');
@@ -47,6 +49,25 @@ export function loadSceneRuntime(document: SceneDocument): LoadSceneRuntimeResul
     children.set(parentKey, list);
   }
 
+  // The runtime is an immutable snapshot and parsing rejects parent cycles, so every world matrix is computed
+  // once, top-down from the nearest cached ancestor, and shared by later calls.
+  const worldMatrices = new Map<SceneObjectId, SceneMatrix>();
+  const worldMatrixOf = (object: SceneObject): SceneMatrix => {
+    const chain: SceneObject[] = [];
+    let matrix: SceneMatrix | undefined;
+    for (let current: SceneObject | undefined = object; current; current = current.parentId ? objects.get(current.parentId) : undefined) {
+      matrix = worldMatrices.get(current.id);
+      if (matrix) break;
+      chain.push(current);
+    }
+    for (let index = chain.length - 1; index >= 0; index--) {
+      const local = sceneTransformToMatrix(chain[index]!.transform);
+      matrix = Object.freeze(matrix ? multiplySceneMatrices(matrix, local) : local);
+      worldMatrices.set(chain[index]!.id, matrix);
+    }
+    return matrix!;
+  };
+
   const runtime: SceneRuntime = {
     document: ownedDocument,
     objects,
@@ -57,7 +78,12 @@ export function loadSceneRuntime(document: SceneDocument): LoadSceneRuntimeResul
     getWorldTransform: (id) => {
       const object = objects.get(id);
       if (!object) return undefined;
-      return computeWorldTransform(object, objects);
+      if (!object.parentId) return object.transform;
+      return sceneMatrixToTransform(worldMatrixOf(object));
+    },
+    getWorldMatrix: (id) => {
+      const object = objects.get(id);
+      return object ? worldMatrixOf(object) : undefined;
     },
   };
 
@@ -84,27 +110,5 @@ export function composeSceneTransforms(
   parent: SceneTransform,
   child: SceneTransform,
 ): SceneTransform {
-  return {
-    position: addVector3(parent.position, child.position),
-    rotation: addVector3(parent.rotation, child.rotation),
-    scale: multiplyVector3(parent.scale, child.scale),
-  };
-}
-
-function computeWorldTransform(
-  object: SceneObject,
-  objects: ReadonlyMap<SceneObjectId, SceneObject>,
-): SceneTransform {
-  if (!object.parentId) return object.transform;
-  const parent = objects.get(object.parentId);
-  if (!parent) return object.transform;
-  return composeSceneTransforms(computeWorldTransform(parent, objects), object.transform);
-}
-
-function addVector3(left: SceneVector3, right: SceneVector3): SceneVector3 {
-  return [left[0] + right[0], left[1] + right[1], left[2] + right[2]];
-}
-
-function multiplyVector3(left: SceneVector3, right: SceneVector3): SceneVector3 {
-  return [left[0] * right[0], left[1] * right[1], left[2] * right[2]];
+  return sceneMatrixToTransform(multiplySceneMatrices(sceneTransformToMatrix(parent), sceneTransformToMatrix(child)));
 }

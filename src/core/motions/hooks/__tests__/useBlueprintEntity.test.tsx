@@ -1,17 +1,20 @@
 import { StrictMode, type RefObject } from 'react';
-import { renderHook } from '@testing-library/react';
+
 import type { RapierRigidBody } from '@react-three/rapier';
+import { renderHook } from '@testing-library/react';
 
-import { useBlueprintEntity } from '../useBlueprintEntity';
 import { WARRIOR_BLUEPRINT } from '../../../../blueprints/characters/warrior';
-import { CharacterMovementComponent } from '../../../../blueprints/core/components/CharacterMovementComponent';
 import { BlueprintEntity } from '../../../../blueprints/core/BlueprintEntity';
+import { CharacterMovementComponent } from '../../../../blueprints/core/components/CharacterMovementComponent';
 import type { BlueprintDefinition } from '../../../../blueprints/core/types';
+import { frameScheduler } from '../../../runtime/frame';
 import { logger } from '../../../utils/logger';
+import { useBlueprintEntity } from '../useBlueprintEntity';
 
-jest.mock('@react-three/fiber', () => ({ useFrame: jest.fn() }));
-
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => {
+  jest.restoreAllMocks();
+  frameScheduler.clear();
+});
 
 function bodyRef(): RefObject<RapierRigidBody> {
   return { current: { setEnabledRotations: jest.fn() } } as unknown as RefObject<RapierRigidBody>;
@@ -42,10 +45,12 @@ test('replacement, disabling and StrictMode release each owned entity once', () 
   view.rerender({ blueprint: definition, enabled: true });
   expect(view.result.current.entity?.getBlueprint()).toBe(definition);
   expect(dispose.mock.contexts.filter((entity) => entity === first)).toHaveLength(1);
+  expect(frameScheduler.count('prePhysics')).toBe(1);
   view.rerender({ blueprint: definition, enabled: false });
   expect(view.result.current.entity).toBeNull();
   expect(view.result.current.getComponent('CharacterMovement')).toBeUndefined();
   expect(dispose).toHaveBeenCalledTimes(3);
+  expect(frameScheduler.count('prePhysics')).toBe(0);
   view.unmount();
   expect(dispose).toHaveBeenCalledTimes(3);
 });

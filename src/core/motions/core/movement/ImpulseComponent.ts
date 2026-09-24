@@ -1,7 +1,6 @@
 
 import { RapierRigidBody } from '@react-three/rapier';
 
-import { Profile } from '@/core/boilerplate/decorators';
 import {
   createInteractionInputAdapter,
   type InputAdapter,
@@ -20,20 +19,19 @@ export class ImpulseComponent {
   private config: PhysicsConfigType;
   private scratchImpulse = { x: 0, y: 0, z: 0 };
   private scratchLinvel = { x: 0, y: 0, z: 0 };
-  private navigation = NavigationSystem.getInstance();
   private wasMouseActive = false;
 
   constructor(
     config: PhysicsConfigType,
     stateManager?: EntityStateManager,
     inputBackend: InputAdapter = createInteractionInputAdapter(),
+    private readonly navigation: NavigationSystem = NavigationSystem.getInstance(),
   ) {
     this.stateManager = stateManager ?? new EntityStateManager();
     this.inputBackend = inputBackend;
     this.config = config;
   }
 
-  @Profile()
   applyImpulse(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: PhysicsState,
@@ -56,7 +54,6 @@ export class ImpulseComponent {
     }
   }
 
-  @Profile()
   private applyCharacterImpulse(
     rigidBodyRef: RefObject<RapierRigidBody>,
     physicsState: PhysicsState,
@@ -73,6 +70,7 @@ export class ImpulseComponent {
       this.scratchLinvel.y = jumpSpeed;
       this.scratchLinvel.z = currentVel.z;
       rigidBodyRef.current.setLinvel(this.scratchLinvel, true);
+      this.stateManager.getActiveState().isGround = false;
       this.stateManager.updateGameStates({
         isOnTheGround: false,
       });
@@ -81,7 +79,7 @@ export class ImpulseComponent {
     const mouseStopped = this.wasMouseActive && !mouseActive;
     this.wasMouseActive = mouseActive;
     const keyboard = physicsState.keyboard;
-    if (mouseStopped && !(keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward)) {
+    if (mouseStopped && !(keyboard.forward || keyboard.backward || keyboard.leftward || keyboard.rightward || (physicsState.gamepad?.connected && physicsState.gamepad.leftStick.lengthSq() > 0))) {
       this.scratchLinvel.x = 0;
       this.scratchLinvel.y = rigidBodyRef.current.linvel().y;
       this.scratchLinvel.z = 0;

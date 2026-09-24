@@ -1,8 +1,8 @@
-import { BlueprintFactory } from '../BlueprintFactory';
 import { ComponentRegistry } from '../../core/ComponentRegistry';
 import { CharacterMovementComponent } from '../../core/components/CharacterMovementComponent';
 import { registerDefaultComponents } from '../../core/registerComponents';
 import type { ComponentFactory } from '../../core/types';
+import { BlueprintFactory } from '../BlueprintFactory';
 
 test('behavior properties cannot replace the registered component identity', () => {
   const registry = ComponentRegistry.getInstance();

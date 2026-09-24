@@ -2,13 +2,14 @@ import { ThreeEvent } from '@react-three/fiber';
 
 import { useClicker } from '../../../hooks/useClicker';
 import type { ClickerMoveOptions } from '../../../hooks/useClicker/types';
-import { useGaesupStore } from '../../../stores/gaesupStore';
+import { useGaesupStoreApi } from '../../../stores/gaesupStore';
 
 export type GroundClickerProps = {
   clickerOptions?: ClickerMoveOptions;
 };
 
 export function GroundClicker({ clickerOptions }: GroundClickerProps) {
+  const storeApi = useGaesupStoreApi();
   const { onClick } = useClicker(clickerOptions);
   
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
@@ -24,7 +25,7 @@ export function GroundClicker({ clickerOptions }: GroundClickerProps) {
     }
     event.stopPropagation();
 
-    const { cameraOption, setCameraOption } = useGaesupStore.getState();
+    const { cameraOption, setCameraOption } = storeApi.getState();
     if (cameraOption?.focus) {
       setCameraOption({ focus: false });
       return;

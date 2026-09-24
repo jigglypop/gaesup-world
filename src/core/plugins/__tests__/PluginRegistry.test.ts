@@ -10,7 +10,7 @@ import {
   PluginManifestValidationError,
   PluginVersionMismatchError,
 } from '../index';
-import type { GaesupPlugin } from '../index';
+import type { ExtensionRegistry, GaesupPlugin } from '../index';
 
 const plugin = (
   id: string,
@@ -236,6 +236,24 @@ describe('PluginRegistry', () => {
     expect(registry.context.components.has('hud')).toBe(false);
   });
 
+  it('attempts every disposal in reverse order and cleans extensions after failures', async () => {
+    const registry = createPluginRegistry();
+    const calls: string[] = [];
+    const failure = new Error('failed cleanup');
+    for (const id of ['first', 'broken', 'last']) registry.register(plugin(id, ctx => {
+      ctx.services.register(`${id}.service`, {}, id);
+    }, { dispose: () => { calls.push(id); if (id === 'broken') throw failure; } }));
+    await registry.setupAll();
+    await expect(registry.disposeAll()).rejects.toBe(failure);
+    expect(calls).toEqual(['last', 'broken', 'first']);
+    expect(registry.context.services.list()).toEqual([]);
+    expect(registry.status('broken')).toBe('failed');
+    expect(registry.get('broken')?.error).toBe(failure);
+    expect(registry.status('first')).toBe('disposed');
+    await registry.disposeAll();
+    expect(calls).toHaveLength(3);
+  });
+
   it('shares one event bus across plugins', async () => {
     const payloads: string[] = [];
     const registry = createPluginRegistry();
@@ -287,7 +305,7 @@ describe('PluginRegistry', () => {
 
 describe('InMemoryExtensionRegistry', () => {
   it('stores, requires, removes, and clears extensions', () => {
-    const registry = new InMemoryExtensionRegistry<number>();
+    const registry: ExtensionRegistry<number> = new InMemoryExtensionRegistry<number>();
     registry.register('one', 1);
     registry.register('two', 2, 'math');
     registry.register('three', 3, 'math');
@@ -311,7 +329,7 @@ describe('InMemoryExtensionRegistry', () => {
   });
 
   it('rejects duplicates and missing required extensions', () => {
-    const registry = new InMemoryExtensionRegistry<number>();
+    const registry: ExtensionRegistry<number> = new InMemoryExtensionRegistry<number>();
     registry.register('one', 1);
 
     expect(() => registry.register('one', 2)).toThrow(DuplicateExtensionError);

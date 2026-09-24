@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
+import { useWorldInputScope } from '../../../input/useWorldInputScope';
+import { WorldInputSurface } from '../../../input/WorldInputSurface';
 import { getItemRegistry } from '../../../items/registry/ItemRegistry';
 import { canHandleOverlayShortcut } from '../../../ui/overlayKeyboard';
 import {
@@ -25,6 +27,7 @@ const UNREAD_COLOR = '#cf9aff';
 const SINGLE_ITEM = 1;
 
 export function MailboxUI({ toggleKey = 'm' }: MailboxUIProps) {
+  const inputScope = useWorldInputScope();
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const messages = useMailStore((s) => s.messages);
@@ -38,16 +41,16 @@ export function MailboxUI({ toggleKey = 'm' }: MailboxUIProps) {
       if (e.key.toLowerCase() === toggleKey.toLowerCase()) setOpen((v) => !v);
       if (e.key === 'Escape') setOpen(false);
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [toggleKey]);
+    const offKey = inputScope.listen('keydown', onKey);
+    return () => offKey();
+  }, [inputScope, toggleKey]);
 
   if (!open) return null;
   const sorted = messages.slice().sort((a, b) => b.sentDay - a.sentDay);
   const selected = selectedId ? (sorted.find((m) => m.id === selectedId) ?? null) : null;
 
   return (
-    <div style={OVERLAY_BACKDROP_STYLE} onClick={() => setOpen(false)}>
+    <WorldInputSurface style={OVERLAY_BACKDROP_STYLE} onClick={() => setOpen(false)}>
       <div
         className="mailbox-panel"
         role="region"
@@ -141,7 +144,7 @@ export function MailboxUI({ toggleKey = 'm' }: MailboxUIProps) {
           </div>
         </div>
       </div>
-    </div>
+    </WorldInputSurface>
   );
 }
 

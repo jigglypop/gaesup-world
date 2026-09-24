@@ -20,6 +20,7 @@ export {
   createShooterKitSamplePlugin,
 } from './samples';
 export { createStoreDomainPlugin } from './storeDomainPlugin';
+export { defineService, runtimeStoreServiceKey, type ServiceKey } from './serviceKey';
 export { defineGaesupPlugin } from './template';
 export {
   PluginValidationAssertionError,

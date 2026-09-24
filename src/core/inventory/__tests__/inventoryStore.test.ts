@@ -1,10 +1,10 @@
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import type { ItemDef } from '../../items/types';
-import { useInventoryStore } from '../stores/inventoryStore';
-import type { InventorySerialized } from '../types';
-import { createInventoryPlugin } from '../plugin';
 import { createGaesupRuntime } from '../../runtime';
 import { SaveSystem } from '../../save';
+import { createInventoryPlugin } from '../plugin';
+import { useInventoryStore } from '../stores/inventoryStore';
+import type { InventorySerialized } from '../types';
 
 const TEST_ITEMS: ItemDef[] = [
   { id: 'apple', name: 'apple', icon: 'apple', category: 'food', stackable: true, maxStack: 99 },

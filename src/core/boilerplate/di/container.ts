@@ -103,7 +103,8 @@ export class DIContainer {
       }
     })
 
-    const instance = new ClassConstructor(...params)
+    // Parameter types come from reflection metadata and are only known at runtime.
+    const instance = new (ClassConstructor as new (...args: unknown[]) => T)(...params)
     this.autowireProperties(instance as object)
     return instance
   }
@@ -143,6 +144,11 @@ export class DIContainer {
             logger.warn(`DIContainer: Failed to inject property '${prop}' with token '${String(token)}' on '${constructor.name}'.`, errorMessage)
         }
     }
+  }
+
+  /** Drops a cached singleton so the next resolve builds a new instance; the registration stays. */
+  releaseSingleton<T>(token: Token<T>): void {
+    this.singletons.delete(token as Token<object>)
   }
 
   clear(): void {

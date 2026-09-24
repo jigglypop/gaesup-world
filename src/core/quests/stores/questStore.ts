@@ -1,11 +1,15 @@
 import { create } from 'zustand';
 
-import { useWalletStore } from '../../economy/stores/walletStore';
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
+
+import { useWalletStore, type WalletStore } from '../../economy/stores/walletStore';
+import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
-import { useFriendshipStore } from '../../relations/stores/friendshipStore';
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
+import { useFriendshipStore, type FriendshipStore } from '../../relations/stores/friendshipStore';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { createScopedStoreHook } from '../../stores/scopedStore';
 import { dayOfTotalMinutes } from '../../time/core/Clock';
-import { useTimeStore } from '../../time/stores/timeStore';
+import { useTimeStore, type TimeStore } from '../../time/stores/timeStore';
 import { notify } from '../../ui/components/Toast/toastStore';
 import { getObjectiveCount } from '../core/objectiveProgress';
 import { getQuestRegistry } from '../registry/QuestRegistry';
@@ -46,13 +50,15 @@ type State = {
   prepareHydrate: (data: QuestSerialized | null | undefined) => () => void;
 };
 
+export type QuestStoreDependencies = { inventory: InventoryStore; wallet: WalletStore; friendship: FriendshipStore; time: TimeStore };
+
 function objectiveTarget(obj: QuestObjective): number {
   if (obj.type === 'collect' || obj.type === 'deliver') return obj.count;
   return 1;
 }
 
-function canReceiveRewards(rewards: QuestReward[]): boolean {
-  const slots = useInventoryStore.getState().slots;
+function canReceiveRewards(rewards: QuestReward[], dependencies: QuestStoreDependencies): boolean {
+  const slots = dependencies.inventory.getState().slots;
   let empty = slots.filter((slot) => slot === null).length;
   const counts = new Map<string, number>();
   for (const reward of rewards) {
@@ -73,16 +79,16 @@ function canReceiveRewards(rewards: QuestReward[]): boolean {
   return true;
 }
 
-function applyReward(reward: QuestReward) {
+function applyReward(reward: QuestReward, dependencies: QuestStoreDependencies) {
   if (reward.type === 'item') {
-    const left = useInventoryStore.getState().add(reward.itemId, reward.count ?? 1);
+    const left = dependencies.inventory.getState().add(reward.itemId, reward.count ?? 1);
     if (left > 0) notify('warn', '인벤토리가 부족합니다');
   } else if (reward.type === 'bells') {
-    useWalletStore.getState().add(reward.amount);
+    dependencies.wallet.getState().add(reward.amount);
     notify('reward', `+${reward.amount} B`);
   } else if (reward.type === 'friendship') {
-    const day = dayOfTotalMinutes(useTimeStore.getState().totalMinutes);
-    useFriendshipStore.getState().add(reward.npcId, reward.amount, day);
+    const day = dayOfTotalMinutes(dependencies.time.getState().totalMinutes);
+    dependencies.friendship.getState().add(reward.npcId, reward.amount, day);
   }
 }
 
@@ -111,9 +117,11 @@ function advanceObjectives(state: State['state'], matches: (objective: QuestObje
   return next;
 }
 
-const PENDING_COMPLETIONS = new Set<string>();
 
-export const useQuestStore = create<State>((set, get) => ({
+
+export function createQuestStore(dependencies: QuestStoreDependencies) {
+  const PENDING_COMPLETIONS = new Set<string>();
+  return create<State>((set, get) => ({
   state: {},
 
   start: (id) => {
@@ -148,11 +156,11 @@ export const useQuestStore = create<State>((set, get) => ({
       const cur = get().state[id];
       if (!cur || cur.status !== 'active') return false;
       if (!get().isAllObjectivesComplete(id)) return false;
-      if (!canReceiveRewards(def.rewards)) {
+      if (!canReceiveRewards(def.rewards, dependencies)) {
         notify('warn', '보상을 받을 가방 공간이 부족해요. 공간을 비운 뒤 다시 완료해 주세요.');
         return false;
       }
-      for (const r of def.rewards) applyReward(r);
+      for (const r of def.rewards) applyReward(r, dependencies);
       set({ state: { ...get().state, [id]: { ...cur, status: 'completed', completedAt: Date.now() } } });
       notify('success', `퀘스트 완료: ${def.name}`);
       return true;
@@ -178,12 +186,12 @@ export const useQuestStore = create<State>((set, get) => ({
       if (!def) continue;
       for (const o of def.objectives) {
         if (o.type === 'deliver' && o.npcId === npcId && o.itemId === itemId) {
-          const have = useInventoryStore.getState().countOf(itemId);
+          const have = dependencies.inventory.getState().countOf(itemId);
           if (have <= 0) continue;
           const current = next[qid] ?? prog;
           const taken = Math.min(have, o.count - (current.progress[o.id] ?? 0), remaining);
           if (taken <= 0) continue;
-          const removed = useInventoryStore.getState().removeById(itemId, taken);
+          const removed = dependencies.inventory.getState().removeById(itemId, taken);
           remaining -= removed;
           next[qid] = {
             ...current,
@@ -216,7 +224,7 @@ export const useQuestStore = create<State>((set, get) => ({
     let next = prog;
     for (const o of def.objectives) {
       if (o.type === 'collect') {
-        const count = getObjectiveCount(def, prog, o, useInventoryStore.getState().countOf(o.itemId));
+        const count = getObjectiveCount(def, prog, o, dependencies.inventory.getState().countOf(o.itemId));
         if (count !== (next.progress[o.id] ?? 0)) {
           next = { ...next, progress: { ...next.progress, [o.id]: count } };
         }
@@ -232,7 +240,7 @@ export const useQuestStore = create<State>((set, get) => ({
 
   isObjectiveComplete: (def, p, obj) => {
     const cur = getObjectiveCount(def, p, obj, obj.type === 'collect'
-      ? useInventoryStore.getState().countOf(obj.itemId) : 0);
+      ? dependencies.inventory.getState().countOf(obj.itemId) : 0);
     return cur >= objectiveTarget(obj);
   },
 
@@ -274,3 +282,11 @@ export const useQuestStore = create<State>((set, get) => ({
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+
+}
+
+export type QuestStore = ReturnType<typeof createQuestStore>;
+export const QUESTS_STORE_SERVICE = runtimeStoreServiceKey<QuestStore>('quests');
+export const { useStore: useQuestStore, useStoreApi: useQuestStoreApi } = createScopedStoreHook(
+  createQuestStore({ inventory: useInventoryStore, wallet: useWalletStore, friendship: useFriendshipStore, time: useTimeStore }), () => useGaesupRuntime()?.questStore,
+);

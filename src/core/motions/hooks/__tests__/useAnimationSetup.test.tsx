@@ -4,16 +4,16 @@ import { renderHook } from '@testing-library/react';
 import { AnimationClip, AnimationMixer, Object3D, type AnimationAction } from 'three';
 
 import { AnimationBridge } from '../../../animation/bridge/AnimationBridge';
-import { getGlobalAnimationBridge } from '../../../animation/hooks/useAnimationBridge';
+import { useScopedAnimationBridge } from '../../../animation/hooks/useAnimationBridge';
 import { useAnimationSetup } from '../setup/useAnimationSetup';
 
-jest.mock('../../../animation/hooks/useAnimationBridge', () => ({ getGlobalAnimationBridge: jest.fn() }));
+jest.mock('../../../animation/hooks/useAnimationBridge', () => ({ useScopedAnimationBridge: jest.fn() }));
 
 const wrapper = ({ children }: { children: ReactNode }) => <StrictMode>{children}</StrictMode>;
 
 test('StrictMode owner cleanup preserves a newer registration', () => {
   const bridge = new AnimationBridge();
-  jest.mocked(getGlobalAnimationBridge).mockReturnValue(bridge);
+  jest.mocked(useScopedAnimationBridge).mockReturnValue(bridge);
   const mixer = new AnimationMixer(new Object3D());
   const old = mixer.clipAction(new AnimationClip('old', 1, []));
   const replacement = mixer.clipAction(new AnimationClip('replacement', 1, []));
@@ -37,7 +37,7 @@ test('StrictMode owner cleanup preserves a newer registration', () => {
 
 test('cleanup captures lazy actions before their source becomes unavailable', () => {
   const bridge = new AnimationBridge();
-  jest.mocked(getGlobalAnimationBridge).mockReturnValue(bridge);
+  jest.mocked(useScopedAnimationBridge).mockReturnValue(bridge);
   const mixer = new AnimationMixer(new Object3D());
   const action = mixer.clipAction(new AnimationClip('walk', 1, []));
   let loaded: AnimationAction | null = action;

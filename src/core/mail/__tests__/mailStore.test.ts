@@ -1,6 +1,6 @@
+import { useWalletStore } from '../../economy/stores/walletStore';
 import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
-import { useWalletStore } from '../../economy/stores/walletStore';
 import { useMailStore } from '../stores/mailStore';
 import type { MailSerialized } from '../types';
 

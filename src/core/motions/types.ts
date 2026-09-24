@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
 
 import type { RootState } from '@react-three/fiber';
-import type { RapierRigidBody } from '@react-three/rapier';
+import type { RapierContext, RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 import type { AutomationState, InteractionState } from '@core/interactions/bridge/types';
@@ -14,7 +14,7 @@ import type { GameStatesType } from '../world/components/Rideable/types';
 
 
 
-export type PhysicsInputState = Pick<InteractionState, 'keyboard' | 'mouse'>;
+export type PhysicsInputState = Pick<InteractionState, 'keyboard' | 'mouse'> & { gamepad?: InteractionState['gamepad'] | undefined };
 export type PhysicsDispatchPayload = object | string | number | boolean | null | undefined;
 export type PhysicsDispatchAction = {
   type: string;
@@ -24,6 +24,9 @@ export type PhysicsDispatchAction = {
 
 export interface PhysicsCalcProps {
   rigidBodyRef: RefObject<RapierRigidBody>;
+  /** Owning Rapier world, required for contact-based ground support. */
+  physicsWorld?: RapierContext['world'];
+  groundContactFilter?: PhysicsEntityProps['groundContactFilter'];
   innerGroupRef?: RefObject<THREE.Group>;
   state: RootState;
   delta: number;
@@ -42,9 +45,10 @@ export interface PhysicsCalcProps {
 
 export type PhysicsCalculationProps =
   Required<Pick<PhysicsEntityProps, 'rigidBodyRef'>> &
-  Pick<PhysicsEntityProps, 'innerGroupRef' | 'outerGroupRef' | 'colliderRef' | 'groundRay' | 'colliderSize'>;
+  Pick<PhysicsEntityProps, 'innerGroupRef' | 'outerGroupRef' | 'colliderRef' | 'groundRay' | 'colliderSize' | 'groundContactFilter'>;
 
 export interface PhysicsState {
+  gamepad?: InteractionState['gamepad'] | undefined;
   activeState: ActiveStateType;
   gameStates: GameStatesType;
   keyboard: {

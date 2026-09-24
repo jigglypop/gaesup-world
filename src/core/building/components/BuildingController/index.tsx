@@ -2,15 +2,12 @@ import { useEffect, useRef } from 'react';
 
 import { useThree } from '@react-three/fiber';
 
+import { useWorldInputScope } from '../../../input/useWorldInputScope';
 import { NPCSystem } from '../../../npc/components/NPCSystem';
+import { supportsGpuInstanceBatches } from '../../../rendering/GpuBatchBridge';
 import { useBuildingEditor } from '../../hooks/useBuildingEditor';
-import { useBuildingStore } from '../../stores/buildingStore';
+import { useBuildingStore, useBuildingStoreApi } from '../../stores/buildingStore';
 import { BUILDING_TILE_GROUP_DRAG_TYPE, BUILDING_TILE_PRESET_DRAG_TYPE } from '../../types';
-import { BuildingGpuCullingDriver } from '../BuildingGpuCullingDriver';
-import { BuildingGpuMirrorDriver } from '../BuildingGpuMirrorDriver';
-import { BuildingGpuUploadDriver } from '../BuildingGpuUploadDriver';
-import { BuildingIndirectArgsUploadDriver } from '../BuildingIndirectArgsUploadDriver';
-import { BuildingIndirectDrawDriver } from '../BuildingIndirectDrawDriver';
 import { BuildingRenderStateDriver } from '../BuildingRenderStateDriver';
 import { BuildingSystem } from '../BuildingSystem';
 import type { BuildingSystemProps } from '../BuildingSystem/types';
@@ -20,7 +17,10 @@ const DRAG_THRESHOLD_SQ = 9;
 const PLACE_COOLDOWN_MS = 150;
 
 export function BuildingController({ showGrid }: Pick<BuildingSystemProps, 'showGrid'> = {}) {
+  const inputScope = useWorldInputScope();
+  const buildingStore = useBuildingStoreApi();
   const { gl } = useThree();
+  const gpuResident = supportsGpuInstanceBatches(gl);
   const {
     updateMousePosition,
     placeWall,
@@ -77,17 +77,17 @@ export function BuildingController({ showGrid }: Pick<BuildingSystemProps, 'show
       // the auto-detected support height. Only meaningful in tile mode.
       if (editMode === 'tile' || editMode === 'block') {
         if (e.code === 'KeyQ' || e.key === 'q' || e.key === 'Q') {
-          const cur = useBuildingStore.getState().currentTileHeight;
+          const cur = buildingStore.getState().currentTileHeight;
           setTileHeight(cur - 1);
         } else if (e.code === 'KeyE' || e.key === 'e' || e.key === 'E') {
-          const cur = useBuildingStore.getState().currentTileHeight;
+          const cur = buildingStore.getState().currentTileHeight;
           setTileHeight(cur + 1);
         }
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [editMode, setTileRotation, setWallRotation, setObjectRotation, setTileHeight]);
+    const offKeyDown = inputScope.listen('keydown', handleKeyDown);
+    return () => offKeyDown();
+  }, [inputScope, buildingStore, editMode, setTileRotation, setWallRotation, setObjectRotation, setTileHeight]);
 
   useEffect(() => {
     const canvas = gl.domElement;
@@ -111,7 +111,7 @@ export function BuildingController({ showGrid }: Pick<BuildingSystemProps, 'show
       if (now - lastPlaceRef.current < PLACE_COOLDOWN_MS) return;
       lastPlaceRef.current = now;
 
-      const mode = useBuildingStore.getState().editMode;
+      const mode = buildingStore.getState().editMode;
       if (mode === 'npc') return;
       if (mode === 'wall') placeWall();
       else if (mode === 'tile') placeTile();
@@ -130,8 +130,8 @@ export function BuildingController({ showGrid }: Pick<BuildingSystemProps, 'show
       if (!isTileDrag(e)) return;
       e.preventDefault();
       e.dataTransfer!.dropEffect = 'copy';
-      if (useBuildingStore.getState().editMode !== 'tile') {
-        useBuildingStore.getState().setEditMode('tile');
+      if (buildingStore.getState().editMode !== 'tile') {
+        buildingStore.getState().setEditMode('tile');
       }
       updateMousePosition(e);
     };
@@ -141,12 +141,12 @@ export function BuildingController({ showGrid }: Pick<BuildingSystemProps, 'show
       const groupId = e.dataTransfer?.getData(BUILDING_TILE_GROUP_DRAG_TYPE);
       if (!presetId && !groupId) return;
       e.preventDefault();
-      const store = useBuildingStore.getState();
+      const store = buildingStore.getState();
       if (store.editMode !== 'tile') store.setEditMode('tile');
       if (presetId) {
         store.applyTilePreset(presetId);
       } else if (groupId && store.tileGroups.has(groupId)) {
-        useBuildingStore.setState((state) => {
+        buildingStore.setState((state) => {
           state.selectedTileGroupId = groupId;
           state.currentTileMaterialId = null;
         });
@@ -175,18 +175,14 @@ export function BuildingController({ showGrid }: Pick<BuildingSystemProps, 'show
       canvas.removeEventListener('dragleave', handleDragLeave);
       setHoverPosition(null);
     };
-  }, [gl, updateMousePosition, placeWall, placeTile, placeBlock, placeObject, setHoverPosition]);
+  }, [buildingStore, gl, updateMousePosition, placeWall, placeTile, placeBlock, placeObject, setHoverPosition]);
 
   return (
     <>
       <BuildingRenderStateDriver />
-      <BuildingGpuMirrorDriver />
-      <BuildingGpuUploadDriver />
-      <BuildingGpuCullingDriver />
-      <BuildingIndirectDrawDriver />
-      <BuildingIndirectArgsUploadDriver />
-      <BuildingVisibilityDriver />
+      {!gpuResident && <BuildingVisibilityDriver />}
       <BuildingSystem
+        gpuResident={gpuResident}
         showGrid={showGrid}
         onWallClick={handleWallClick}
         onTileClick={handleTileClick}

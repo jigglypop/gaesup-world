@@ -15,6 +15,12 @@ type GrassWasmExports = {
   ) => void;
 };
 
+function valueAt(values: Float32Array, index: number): number {
+  const value = values[index];
+  if (value === undefined) throw new Error(`index ${index} is outside a ${values.length}-element buffer`);
+  return value;
+}
+
 describe('gaesup_grass_attr.wasm', () => {
   test('instantiates and generates valid orientation data', async () => {
     const wasmPath = path.resolve(process.cwd(), 'public', 'wasm', 'gaesup_grass_attr.wasm');
@@ -56,10 +62,10 @@ describe('gaesup_grass_attr.wasm', () => {
 
       for (let i = 0; i < instances; i++) {
         const j = i * 4;
-        const x = orientations[j];
-        const y = orientations[j + 1];
-        const z = orientations[j + 2];
-        const w = orientations[j + 3];
+        const x = valueAt(orientations, j);
+        const y = valueAt(orientations, j + 1);
+        const z = valueAt(orientations, j + 2);
+        const w = valueAt(orientations, j + 3);
 
         // No NaNs.
         expect(Number.isFinite(x)).toBe(true);
@@ -77,8 +83,8 @@ describe('gaesup_grass_attr.wasm', () => {
         expect(stretches[i]).toBeLessThanOrEqual(1.0);
 
         // sin^2 + cos^2 ~= 1
-        const s = halfSin[i];
-        const c = halfCos[i];
+        const s = valueAt(halfSin, i);
+        const c = valueAt(halfCos, i);
         const sc = s * s + c * c;
         expect(sc).toBeGreaterThan(0.999);
         expect(sc).toBeLessThan(1.001);
