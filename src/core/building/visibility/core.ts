@@ -4,6 +4,8 @@ import { TILE_CONSTANTS } from '../types/constants';
 
 export const VISIBILITY_CELL_SIZE = 18;
 export const VISIBILITY_MAX_DISTANCE = 140;
+/** Resident entities stay mounted until they are this much farther than the entry distance. */
+export const VISIBILITY_RESIDENCY_MARGIN = 20;
 export const VISIBILITY_UPDATE_INTERVAL = 0.12;
 export const VISIBILITY_DIRECTION_BUCKETS = 8;
 export const OCCLUDER_MIN_RADIUS = 3.2;
@@ -227,6 +229,31 @@ export function collectCandidateIds(
     VISIBILITY_CELL_SIZE,
   );
   for (const id of buckets.unbounded) ids.add(id);
+  return ids;
+}
+
+/**
+ * Entities within draw distance of the viewer. Membership has hysteresis so orbiting or small moves never
+ * remount a group; off-screen culling is left to the renderer's per-object frustum test.
+ */
+export function collectResidentIds(
+  layer: VisibilityLayer,
+  x: number,
+  y: number,
+  z: number,
+  previous: ReadonlySet<string>,
+): Set<string> {
+  const far = VISIBILITY_MAX_DISTANCE + VISIBILITY_RESIDENCY_MARGIN;
+  const ids = new Set<string>();
+  for (const id of collectCandidateIds(layer.buckets, x, z, far)) {
+    const record = layer.byId.get(id);
+    if (!record) continue;
+    const limit = (previous.has(id) ? far : VISIBILITY_MAX_DISTANCE) + record.radius;
+    const dx = record.centerX - x;
+    const dy = record.centerY - y;
+    const dz = record.centerZ - z;
+    if (dx * dx + dy * dy + dz * dz <= limit * limit) ids.add(id);
+  }
   return ids;
 }
 

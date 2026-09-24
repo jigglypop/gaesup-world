@@ -8,11 +8,6 @@ import { supportsGpuInstanceBatches } from '../../../rendering/GpuBatchBridge';
 import { useBuildingEditor } from '../../hooks/useBuildingEditor';
 import { useBuildingStore, useBuildingStoreApi } from '../../stores/buildingStore';
 import { BUILDING_TILE_GROUP_DRAG_TYPE, BUILDING_TILE_PRESET_DRAG_TYPE } from '../../types';
-import { BuildingGpuCullingDriver } from '../BuildingGpuCullingDriver';
-import { BuildingGpuMirrorDriver } from '../BuildingGpuMirrorDriver';
-import { BuildingGpuUploadDriver } from '../BuildingGpuUploadDriver';
-import { BuildingIndirectArgsUploadDriver } from '../BuildingIndirectArgsUploadDriver';
-import { BuildingIndirectDrawDriver } from '../BuildingIndirectDrawDriver';
 import { BuildingRenderStateDriver } from '../BuildingRenderStateDriver';
 import { BuildingSystem } from '../BuildingSystem';
 import type { BuildingSystemProps } from '../BuildingSystem/types';
@@ -185,14 +180,7 @@ export function BuildingController({ showGrid }: Pick<BuildingSystemProps, 'show
   return (
     <>
       <BuildingRenderStateDriver />
-      {!gpuResident && <>
-        <BuildingGpuMirrorDriver />
-        <BuildingGpuUploadDriver />
-        <BuildingGpuCullingDriver />
-        <BuildingIndirectDrawDriver />
-        <BuildingIndirectArgsUploadDriver />
-        <BuildingVisibilityDriver />
-      </>}
+      {!gpuResident && <BuildingVisibilityDriver />}
       <BuildingSystem
         gpuResident={gpuResident}
         showGrid={showGrid}

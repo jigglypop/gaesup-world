@@ -3,7 +3,6 @@ import * as THREE from 'three';
 
 import { frameScheduler } from '../../../runtime/frame';
 import { buildBuildingRenderSnapshot } from '../../render/core';
-import { useBuildingGpuCullingStore } from '../../render/cullingStore';
 import { useBuildingRenderStateStore } from '../../render/store';
 import { useBuildingVisibilityStore } from '../../visibility/store';
 import { BuildingVisibilityDriver } from '../BuildingVisibilityDriver';
@@ -51,97 +50,41 @@ test.each([THREE.WebGLCoordinateSystem, THREE.WebGPUCoordinateSystem])('grass us
   }
 });
 
-test.each([
-  { coordinateSystem: THREE.WebGLCoordinateSystem, near: 10, far: 100, distances: [7, 20], size: 1, visible: '20' },
-  { coordinateSystem: THREE.WebGPUCoordinateSystem, near: 10, far: 100, distances: [7, 20], size: 1, visible: '20' },
-  { coordinateSystem: THREE.WebGLCoordinateSystem, near: 0.1, far: 1000, distances: [145, 170], size: 20, visible: '145' },
-  { coordinateSystem: THREE.WebGPUCoordinateSystem, near: 0.1, far: 1000, distances: [145, 170], size: 20, visible: '145' },
-])('building respects near and distance bounds: $coordinateSystem / $near / $size', ({ coordinateSystem, near, far, distances, size, visible }) => {
-  const previousRender = useBuildingRenderStateStore.getState();
-  const camera = new THREE.PerspectiveCamera(90, 1, near, far);
-  camera.coordinateSystem = coordinateSystem;
-  camera.position.y = 1;
-  camera.updateProjectionMatrix();
-  const tileGroups = distances.map((distance) => ({
-    id: String(distance), name: 'floor', floorMeshId: 'floor',
-    tiles: [{ id: String(distance), tileGroupId: String(distance), position: { x: 0, y: 0, z: -distance }, size }],
-  }));
-  useBuildingRenderStateStore.setState({
-    snapshot: buildBuildingRenderSnapshot({ wallGroups: [], tileGroups, objects: [], version: previousRender.snapshot.version }),
-  });
-  const view = render(<BuildingVisibilityDriver />);
-  try {
-    act(() => frame({ camera }, 0.13));
-    expect([...useBuildingVisibilityStore.getState().visibleTileGroupIds]).toEqual([visible]);
-  } finally {
-    view.unmount();
-    useBuildingRenderStateStore.setState(previousRender);
-  }
-});
+function tileGroup(id: string, z: number) {
+  return { id, name: id, floorMeshId: 'floor', tiles: [{ id, tileGroupId: id, position: { x: 0, y: 0, z }, size: 1 }] };
+}
 
-test('refreshes visibility after projection changes and reuses an unchanged camera result', () => {
+test('mounts groups by draw distance with hysteresis and ignores view direction', () => {
   const previousRender = useBuildingRenderStateStore.getState();
-  const previousCulling = useBuildingGpuCullingStore.getState();
-  const intersects = jest.spyOn(THREE.Frustum.prototype, 'intersectsSphere');
-  const camera = new THREE.PerspectiveCamera(20, 1, 0.1, 100);
-  camera.position.y = 1;
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
   useBuildingRenderStateStore.setState({
     snapshot: buildBuildingRenderSnapshot({
-      wallGroups: [], objects: [], version: previousRender.snapshot.version,
-      tileGroups: [{
-        id: 'floor', name: 'floor', floorMeshId: 'floor',
-        tiles: [{ id: 'tile', tileGroupId: 'floor', position: { x: 5, y: 0, z: -10 }, size: 1 }],
-      }],
+      wallGroups: [], objects: [], version: 1,
+      tileGroups: [tileGroup('near', -100), tileGroup('edge', -145), tileGroup('behind', 50)],
     }),
   });
   const view = render(<BuildingVisibilityDriver />);
-  const tick = () => act(() => {
-    frame({ camera }, 0.13);
-  });
+  const resident = () => useBuildingVisibilityStore.getState().visibleTileGroupIds;
   try {
-    for (let frame = 0; frame < 120; frame++) tick();
-    expect(useBuildingVisibilityStore.getState().visibleTileGroupIds.has('floor')).toBe(false);
-    expect(intersects).toHaveBeenCalledTimes(1);
-    const staleCamera = {
-      viewProjection: new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse).toArray(),
-      position: camera.position.toArray(),
-      coordinateSystem: camera.coordinateSystem,
-      reversedDepth: camera.reversedDepth,
-    };
-    camera.fov = 90;
-    camera.updateProjectionMatrix();
-    tick();
-    const visible = useBuildingVisibilityStore.getState().visibleTileGroupIds;
-    expect(visible.has('floor')).toBe(true);
-    expect(intersects).toHaveBeenCalledTimes(2);
-    for (let frame = 0; frame < 120; frame++) tick();
-    expect(intersects).toHaveBeenCalledTimes(2);
-    expect(useBuildingVisibilityStore.getState().visibleTileGroupIds).toBe(visible);
-    act(() => useBuildingGpuCullingStore.setState({
-      active: true, version: previousRender.snapshot.version, visibleTileGroupIds: new Set(),
-      camera: staleCamera,
-    }));
-    tick();
-    expect(useBuildingVisibilityStore.getState().visibleTileGroupIds.has('floor')).toBe(true);
-    act(() => useBuildingGpuCullingStore.setState({ camera: null }));
-    tick();
-    expect(useBuildingVisibilityStore.getState().visibleTileGroupIds.has('floor')).toBe(true);
-    act(() => useBuildingGpuCullingStore.setState({ camera: {
-      ...staleCamera,
-      viewProjection: new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse).toArray(),
-    } }));
-    tick();
-    expect(useBuildingVisibilityStore.getState().visibleTileGroupIds.has('floor')).toBe(false);
-    act(() => useBuildingGpuCullingStore.setState({ visibleTileGroupIds: new Set(['floor']) }));
-    tick();
-    expect(useBuildingVisibilityStore.getState().visibleTileGroupIds.has('floor')).toBe(true);
-    camera.position.y = 100;
-    tick();
-    expect(useBuildingVisibilityStore.getState().visibleTileGroupIds.has('floor')).toBe(false);
+    act(() => frame({ camera }, 0.13));
+    expect([...resident()].sort()).toEqual(['behind', 'near']);
+
+    const before = resident();
+    camera.rotation.y = Math.PI;
+    act(() => frame({ camera }, 0.13));
+    expect(resident()).toBe(before);
+
+    camera.position.z = -5;
+    act(() => frame({ camera }, 0.13));
+    expect(resident().has('edge')).toBe(true);
+    camera.position.z = 0;
+    act(() => frame({ camera }, 0.13));
+    expect(resident().has('edge')).toBe(true);
+    camera.position.z = 25;
+    act(() => frame({ camera }, 0.13));
+    expect(resident().has('edge')).toBe(false);
   } finally {
     view.unmount();
-    intersects.mockRestore();
     useBuildingRenderStateStore.setState(previousRender);
-    useBuildingGpuCullingStore.setState(previousCulling);
   }
 });

@@ -720,6 +720,7 @@ export function TileSystem({
         mesh.setMatrixAt(i, dummy.matrix);
       }
       mesh.instanceMatrix.needsUpdate = true;
+      mesh.computeBoundingSphere();
     }
   }, [terrain.rocks, dummy]);
 
