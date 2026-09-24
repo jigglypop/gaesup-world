@@ -1,45 +1,23 @@
 import * as THREE from 'three';
 
+import { FixedStepClock } from '../../../simulation/FixedStepClock';
 import { NetworkSystem } from '../../core/NetworkSystem';
-import { NetworkCommand, NetworkConfig } from '../../types';
+import type { NetworkCommand } from '../../types';
 import { NetworkBridge } from '../NetworkBridge';
 
-// NetworkSystem 모킹
-jest.mock('../../core/NetworkSystem', () => {
-  return {
-    NetworkSystem: jest.fn().mockImplementation(() => ({
-      updateConfig: jest.fn(),
-      start: jest.fn(),
-      executeCommand: jest.fn(),
-      createSnapshot: jest.fn().mockReturnValue({
-        nodeCount: 0,
-        connectionCount: 0,
-        activeGroups: 0,
-        messagesPerSecond: 0,
-        averageLatency: 0,
-        lastUpdate: Date.now(),
-      }),
-      getDebugInfo: jest.fn().mockReturnValue({
-        networkStats: {
-          nodeCount: 0,
-          connectionCount: 0,
-          messagesPerSecond: 0,
-          averageLatency: 0,
-          bandwidth: 0,
-          lastUpdate: Date.now(),
-        },
-      }),
-      getState: jest.fn().mockReturnValue({ isRunning: false }),
-      dispose: jest.fn()
-    }))
-  };
-});
-
+// Real NetworkSystem engines on a fixed clock: a mocked engine only proved that calls were forwarded.
 describe('NetworkBridge', () => {
+  let clock: FixedStepClock;
   let bridge: NetworkBridge;
 
+  // The default config updates at 30Hz, so two 60Hz ticks run one network update.
+  const settle = () => clock.stepTicks(2);
+  const register = (id: string, npcId: string, x: number) =>
+    bridge.execute(id, { type: 'registerNPC', npcId, position: new THREE.Vector3(x, 0, 0) });
+
   beforeEach(() => {
-    bridge = new NetworkBridge();
+    clock = new FixedStepClock();
+    bridge = NetworkBridge.forClock(clock);
     bridge.ensureMainEngine();
   });
 
@@ -47,253 +25,77 @@ describe('NetworkBridge', () => {
     bridge.dispose();
   });
 
-  describe('브릿지 초기화', () => {
-    test('기본 시스템 등록', () => {
-      expect(bridge.getEngine('main')).toBeDefined();
-    });
+  test('ensureMainEngine starts one main engine and keeps it', () => {
+    const main = bridge.getEngine('main');
+    bridge.ensureMainEngine();
 
-    test('브릿지 메타데이터 확인', () => {
-      expect(bridge.constructor.name).toBe('NetworkBridge');
-    });
+    expect(bridge.getEngine('main')).toBe(main);
+    expect(bridge.getSystemState('main')?.isRunning).toBe(true);
   });
 
-  describe('엔진 관리', () => {
-    test('엔진 빌드', () => {
-      const config: NetworkConfig = {
-        updateFrequency: 60,
-        maxConnections: 200,
-        messageQueueSize: 2000,
-        maxDistance: 150.0,
-        signalStrength: 2.0,
-        bandwidth: 2000,
-        proximityRange: 25.0,
-        enableBatching: true,
-        batchSize: 20,
-        compressionLevel: 3,
-        connectionPoolSize: 100,
-        enableChatMessages: true,
-        enableActionMessages: true,
-        enableStateMessages: true,
-        enableSystemMessages: true,
-        reliableRetryCount: 3,
-        reliableTimeout: 5000,
-        enableAck: true,
-        maxGroupSize: 20,
-        autoJoinProximity: true,
-        groupMessagePriority: 'normal',
-        enableDebugPanel: false,
-        enableVisualizer: false,
-        showConnectionLines: false,
-        showMessageFlow: false,
-        debugUpdateInterval: 500,
-        logLevel: 'warn',
-        logToConsole: true,
-        logToFile: false,
-        maxLogEntries: 1000,
-        enableEncryption: false,
-        enableRateLimit: true,
-        maxMessagesPerSecond: 100,
-        messageGCInterval: 30000,
-        connectionTimeout: 30000,
-        inactiveNodeCleanup: 60000
-      };
+  test('commands reach the engine and its snapshot after the next update', () => {
+    register('main', 'a', 0);
+    register('main', 'b', 1);
+    bridge.execute('main', { type: 'connect', npcId: 'a', targetId: 'b' });
+    settle();
 
-      bridge.register('test', config);
-      const entity = bridge.getEngine('test');
-      expect(entity).toBeDefined();
-      expect(entity?.system).toBeDefined();
-      expect(entity?.dispose).toBeInstanceOf(Function);
-    });
-
-    test('엔진 등록 해제', () => {
-      bridge.register('temp');
-      expect(bridge.getEngine('temp')).toBeDefined();
-      
-      bridge.unregister('temp');
-      expect(bridge.getEngine('temp')).toBeUndefined();
-    });
+    expect(bridge.snapshot('main')).toMatchObject({ nodeCount: 2, connectionCount: 1 });
+    expect(bridge.getNetworkStats('main')).toMatchObject({ nodeCount: 2, connectionCount: 1 });
   });
 
-  describe('명령 실행', () => {
-    test('NPC 등록 명령', () => {
-      const command: NetworkCommand = {
-        type: 'registerNPC',
-        npcId: 'npc-1',
-        position: new THREE.Vector3(10, 0, 5),
-      };
+  test('engines registered under different ids do not share state', () => {
+    bridge.register('side');
+    register('side', 'x', 0);
+    settle();
 
-      bridge.execute('main', command);
-      
-      const entity = bridge.getEngine('main');
-      expect(entity?.system.executeCommand).toHaveBeenCalledWith(command);
-    });
-
-    test('NPC 연결 명령', () => {
-      const command: NetworkCommand = {
-        type: 'connect',
-        npcId: 'npc-1',
-        targetId: 'npc-2',
-      };
-
-      bridge.execute('main', command);
-      
-      const entity = bridge.getEngine('main');
-      expect(entity?.system.executeCommand).toHaveBeenCalledWith(command);
-    });
-
-    test('메시지 전송 명령', () => {
-      const command: NetworkCommand = {
-        type: 'sendMessage',
-        message: {
-          id: 'msg-1',
-          from: 'npc-1',
-          to: 'npc-2',
-          type: 'chat',
-          payload: { text: 'Hello!' },
-          priority: 'normal',
-          timestamp: Date.now(),
-          reliability: 'unreliable',
-        },
-      };
-
-      bridge.execute('main', command);
-      
-      const entity = bridge.getEngine('main');
-      expect(entity?.system.executeCommand).toHaveBeenCalledWith(command);
-    });
-
-    test('그룹 생성 명령', () => {
-      const now = Date.now();
-      const command: NetworkCommand = {
-        type: 'createGroup',
-        group: {
-          type: 'party',
-          members: new Set<string>(),
-          maxMembers: 10,
-          range: 1000,
-          persistent: false,
-          createdAt: now,
-          lastActivity: now,
-        },
-      };
-
-      bridge.execute('main', command);
-      
-      const entity = bridge.getEngine('main');
-      expect(entity?.system.executeCommand).toHaveBeenCalledWith(command);
-    });
+    expect(bridge.snapshot('side')?.nodeCount).toBe(1);
+    expect(bridge.snapshot('main')?.nodeCount).toBe(0);
   });
 
-  describe('스냅샷 생성', () => {
-    test('시스템 스냅샷 생성', () => {
-      const snapshot = bridge.snapshot('main');
-      
-      expect(snapshot).toBeDefined();
-      expect(typeof snapshot?.nodeCount).toBe('number');
-      expect(typeof snapshot?.connectionCount).toBe('number');
-      expect(typeof snapshot?.activeGroups).toBe('number');
-      expect(typeof snapshot?.messagesPerSecond).toBe('number');
-      expect(typeof snapshot?.averageLatency).toBe('number');
+  test('group and config commands change the engine', () => {
+    const now = Date.now();
+    bridge.execute('main', {
+      type: 'createGroup',
+      group: { type: 'party', members: new Set<string>(), maxMembers: 4, range: 50, persistent: false, createdAt: now, lastActivity: now },
     });
+    bridge.execute('main', { type: 'updateConfig', data: { config: { maxConnections: 7 } } });
+    settle();
 
-    test('존재하지 않는 엔진 스냅샷', () => {
-      const snapshot = bridge.snapshot('nonexistent');
-      expect(snapshot).toBeNull();
-    });
+    expect(bridge.snapshot('main')?.activeGroups).toBe(1);
+    expect(bridge.getEngine('main')?.system.getConfig().maxConnections).toBe(7);
   });
 
-  describe('시스템 업데이트', () => {
-    test('시스템 업데이트 호출', () => {
-      const deltaTime = 0.016; // 60fps
-      
-      expect(() => bridge.updateSystem('main', deltaTime)).not.toThrow();
-    });
-
-    test('존재하지 않는 시스템 업데이트', () => {
-      // 에러 없이 무시되어야 함
-      expect(() => {
-        bridge.updateSystem('nonexistent', 0.016);
-      }).not.toThrow();
-    });
+  test('unknown engines and command types are ignored', () => {
+    expect(bridge.snapshot('missing')).toBeNull();
+    expect(bridge.getNetworkStats('missing')).toBeNull();
+    expect(bridge.getSystemState('missing')).toBeNull();
+    expect(() => bridge.updateSystem('missing', 1 / 60)).not.toThrow();
+    expect(() => bridge.execute('main', { type: 'invalidCommand' } as unknown as NetworkCommand)).not.toThrow();
   });
 
-  describe('유틸리티 메서드', () => {
-    test('네트워크 통계 조회', () => {
-      const stats = bridge.getNetworkStats('main');
-      
-      expect(stats).toBeDefined();
-      expect(typeof stats?.nodeCount).toBe('number');
-      expect(typeof stats?.connectionCount).toBe('number');
+  test('a failing engine build is logged and registers nothing', () => {
+    jest.spyOn(NetworkSystem.prototype, 'start').mockImplementationOnce(() => {
+      throw new Error('start failed');
     });
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    test('시스템 상태 조회', () => {
-      const state = bridge.getSystemState('main');
-      
-      expect(state).toBeDefined();
-      expect(typeof state?.isRunning).toBe('boolean');
-    });
+    bridge.register('broken');
 
-    test('존재하지 않는 시스템 조회', () => {
-      const stats = bridge.getNetworkStats('nonexistent');
-      const state = bridge.getSystemState('nonexistent');
-      
-      expect(stats).toBeNull();
-      expect(state).toBeNull();
-    });
+    expect(bridge.getEngine('broken')).toBeUndefined();
+    expect(consoleError).toHaveBeenCalledWith('[NetworkBridge] Failed to build engine:', expect.any(Error));
   });
 
-  describe('에러 처리', () => {
-    test('잘못된 명령 타입', () => {
-      const invalidCommand = {
-        type: 'invalidCommand',
-        data: {}
-      };
+  test('unregister and dispose stop the engines they remove', () => {
+    bridge.register('temp');
+    const temp = bridge.getEngine('temp')!.system;
+    const main = bridge.getEngine('main')!.system;
 
-      // 에러 없이 무시되어야 함
-      expect(() => {
-        // @ts-expect-error -- unknown command types from untyped callers must be ignored at runtime
-        bridge.execute('main', invalidCommand);
-      }).not.toThrow();
-    });
+    bridge.unregister('temp');
+    expect(bridge.getEngine('temp')).toBeUndefined();
+    expect(temp.getState().isRunning).toBe(false);
 
-    test('엔진 생성 실패 처리', () => {
-      // NetworkSystem 생성자에서 에러 발생하도록 모킹
-      jest.mocked(NetworkSystem).mockImplementationOnce(() => {
-        throw new Error('System creation failed');
-      });
-
-      // 에러 로그가 출력되고 null이 반환되어야 함
-      const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-      
-      bridge.register('error-test');
-      const entity = bridge.getEngine('error-test');
-      
-      expect(consoleError).toHaveBeenCalledWith(
-        '[NetworkBridge] Failed to build engine:',
-        expect.any(Error)
-      );
-      expect(entity).toBeUndefined();
-      consoleError.mockRestore();
-    });
+    bridge.dispose();
+    expect(bridge.getEngine('main')).toBeUndefined();
+    expect(main.getState().isRunning).toBe(false);
   });
-
-  describe('리소스 정리', () => {
-    test('브릿지 dispose', () => {
-      // 추가 엔진 등록
-      bridge.register('test1');
-      bridge.register('test2');
-      
-      // dispose 전 엔진 확인
-      expect(bridge.getEngine('main')).toBeDefined();
-      expect(bridge.getEngine('test1')).toBeDefined();
-      expect(bridge.getEngine('test2')).toBeDefined();
-      
-      bridge.dispose();
-      
-      // dispose 후 모든 엔진이 제거되었는지 확인
-      expect(bridge.getEngine('main')).toBeUndefined();
-      expect(bridge.getEngine('test1')).toBeUndefined();
-      expect(bridge.getEngine('test2')).toBeUndefined();
-    });
-  });
-}); 
+});

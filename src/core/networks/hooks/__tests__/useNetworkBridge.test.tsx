@@ -1,226 +1,90 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
+
+import { act, renderHook, waitFor } from '@testing-library/react';
 import * as THREE from 'three';
 
 import { BridgeFactory } from '@core/boilerplate';
 
-import type { NetworkCommand } from '../../types';
+import { createGaesupRuntime, GaesupRuntimeProvider } from '../../../runtime';
+import type { GaesupRuntime } from '../../../runtime/types';
+import { NetworkBridge } from '../../bridge/NetworkBridge';
 import { useNetworkBridge } from '../useNetworkBridge';
 
-// BridgeFactory 모킹
-jest.mock('@core/boilerplate', () => ({
-  BridgeFactory: {
-    get: jest.fn(),
-    create: jest.fn(),
-    getOrCreate: jest.fn()
-  }
-}));
+// Real NetworkBridge from BridgeFactory or a runtime; the old test replaced both the factory and the bridge.
+function inRuntime(runtime: GaesupRuntime) {
+  return function RuntimeWrapper({ children }: { children: ReactNode }) {
+    return <GaesupRuntimeProvider runtime={runtime}>{children}</GaesupRuntimeProvider>;
+  };
+}
+const leases = (bridge: NetworkBridge | null) => (bridge ? bridge['updates'].size : 0);
 
-// NetworkBridge 모킹
-const mockBridge = {
-  ensureMainEngine: jest.fn(),
-  getEngine: jest.fn(),
-  register: jest.fn(),
-  execute: jest.fn(),
-  snapshot: jest.fn(),
-  getNetworkStats: jest.fn(),
-  getSystemState: jest.fn(),
-  updateSystem: jest.fn(),
-  acquireUpdates: jest.fn(() => jest.fn()),
-  dispose: jest.fn()
-};
-
-const mockBridgeFactory = jest.mocked(BridgeFactory);
+afterEach(() => BridgeFactory.dispose('networks'));
 
 describe('useNetworkBridge', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    
-    mockBridgeFactory.getOrCreate.mockImplementation((domain: string) => {
-      return mockBridgeFactory.get(domain) ?? mockBridgeFactory.create(domain);
-    });
-    mockBridgeFactory.get.mockReturnValue(mockBridge);
-    mockBridgeFactory.create.mockReturnValue(mockBridge);
-    
-    mockBridge.snapshot.mockReturnValue({
-      nodes: new Map(),
-      connections: new Map(),
-      groups: new Map(),
-      messages: [],
-      stats: { totalNodes: 0, totalConnections: 0, totalMessages: 0 },
-      performance: { updateTime: 0, messageProcessingTime: 0, connectionProcessingTime: 0 },
-      timestamp: Date.now()
-    });
-    
-    mockBridge.getNetworkStats.mockReturnValue({
-      totalNodes: 0,
-      totalConnections: 0,
-      totalMessages: 0
-    });
-    
-    mockBridge.getSystemState.mockReturnValue({
-      isRunning: false
-    });
+  test('without a runtime it starts the main engine on the shared networks bridge', async () => {
+    const { result, unmount } = renderHook(() => useNetworkBridge({ enableAutoUpdate: false }));
+    await waitFor(() => expect(result.current.isReady).toBe(true));
+
+    expect(result.current.bridge).toBeInstanceOf(NetworkBridge);
+    expect(result.current.bridge).toBe(BridgeFactory.get('networks'));
+    expect(result.current.getSystemState()?.isRunning).toBe(true);
+    unmount();
   });
 
-  describe('기본 초기화', () => {
-    test('기본 옵션으로 훅 초기화', async () => {
-      const { result } = renderHook(() => useNetworkBridge());
-      
-      // useEffect가 실행될 때까지 대기
-      await waitFor(() => {
-        expect(result.current.isReady).toBe(true);
-      });
-      
-      expect(result.current.bridge).toBe(mockBridge);
-      expect(mockBridgeFactory.get).toHaveBeenCalledWith('networks');
-    });
+  test('commands, stats and config go to the engine of its systemId only', async () => {
+    const config = { maxConnections: 7 };
+    const { result, unmount } = renderHook(() => useNetworkBridge({ systemId: 'guards', config, enableAutoUpdate: false }));
+    await waitFor(() => expect(result.current.isReady).toBe(true));
 
-    test('브릿지가 없을 때 새로 생성', async () => {
-      mockBridgeFactory.get.mockReturnValueOnce(null);
-      
-      const { result } = renderHook(() => useNetworkBridge());
-      
-      // useEffect가 실행될 때까지 대기
-      await waitFor(() => {
-        expect(result.current.isReady).toBe(true);
-      });
-      
-      expect(mockBridgeFactory.get).toHaveBeenCalledWith('networks');
-      expect(mockBridgeFactory.create).toHaveBeenCalledWith('networks');
-      expect(result.current.bridge).toBe(mockBridge);
-    });
+    act(() => result.current.executeCommand({ type: 'registerNPC', npcId: 'guard', position: new THREE.Vector3() }));
 
-    test('사용자 정의 systemId 사용', async () => {
-      const { result } = renderHook(() => 
-        useNetworkBridge({ systemId: 'custom-system' })
-      );
-      
-      // useEffect가 실행될 때까지 대기
-      await waitFor(() => {
-        expect(result.current.isReady).toBe(true);
-      });
-    });
+    const bridge = result.current.bridge!;
+    expect(result.current.getNetworkStats()?.nodeCount).toBe(1);
+    expect(bridge.getEngine('guards')?.system.getConfig().maxConnections).toBe(7);
+    expect(bridge.getEngine('main')).toBeUndefined();
+    unmount();
   });
 
-  describe('설정 적용', () => {
-    test('초기 설정 적용', async () => {
-      const config = {
-        updateFrequency: 60,
-        maxConnections: 200,
-        enableDebugPanel: true
-      };
+  test('updateSystem publishes the engine snapshot to bridge listeners', async () => {
+    const { result, unmount } = renderHook(() => useNetworkBridge({ enableAutoUpdate: false }));
+    await waitFor(() => expect(result.current.isReady).toBe(true));
+    const listener = jest.fn();
+    const unsubscribe = result.current.bridge!.subscribe(listener);
 
-      renderHook(() => useNetworkBridge({ 
-        systemId: 'test',
-        config 
-      }));
+    act(() => result.current.updateSystem(1 / 60));
 
-      await waitFor(() => {
-        expect(mockBridge.execute).toHaveBeenCalledWith('test', {
-          type: 'updateConfig',
-          data: { config }
-        });
-      });
-    });
+    expect(listener).toHaveBeenCalledWith(expect.objectContaining({ nodeCount: 0 }), 'main');
+    unsubscribe();
+    unmount();
   });
 
-  describe('명령 실행', () => {
-    test('executeCommand 호출', async () => {
-      const { result } = renderHook(() => useNetworkBridge());
-      
-      // useEffect가 실행될 때까지 대기
-      await waitFor(() => {
-        expect(result.current.isReady).toBe(true);
-      });
-      
-      const command: NetworkCommand = {
-        type: 'registerNPC',
-        npcId: 'npc-1',
-        position: new THREE.Vector3(0, 0, 0)
-      };
+  test('auto update holds one clock lease while mounted and releases it on unmount', async () => {
+    const { result, unmount } = renderHook(() => useNetworkBridge());
+    await waitFor(() => expect(leases(result.current.bridge)).toBe(1));
+    const bridge = result.current.bridge;
 
-      act(() => {
-        result.current.executeCommand(command);
-      });
-      
-      expect(mockBridge.execute).toHaveBeenCalledWith('main', command);
-    });
-
-    test('브릿지가 준비되지 않았을 때 명령 무시', () => {
-      mockBridgeFactory.get.mockReturnValue(null);
-      mockBridgeFactory.create.mockReturnValue(null);
-      
-      const { result } = renderHook(() => useNetworkBridge());
-      
-      const command: NetworkCommand = {
-        type: 'registerNPC',
-        npcId: 'npc-1',
-        position: new THREE.Vector3(0, 0, 0)
-      };
-
-      act(() => {
-        result.current.executeCommand(command);
-      });
-      
-      expect(mockBridge.execute).not.toHaveBeenCalled();
-    });
+    unmount();
+    expect(leases(bridge)).toBe(0);
   });
 
-  describe('시스템 업데이트', () => {
-    test('updateSystem 호출', async () => {
-      const { result } = renderHook(() => useNetworkBridge());
-      
-      // useEffect가 실행될 때까지 대기
-      await waitFor(() => {
-        expect(result.current.isReady).toBe(true);
-      });
-      
-      act(() => {
-        result.current.updateSystem(0.016);
-      });
-      
-      expect(mockBridge.updateSystem).toHaveBeenCalledWith('main', 0.016);
-    });
+  test('inside an active runtime it uses that world bridge; an inactive runtime yields no bridge', async () => {
+    const runtime = createGaesupRuntime();
+    try {
+      const inactive = renderHook(() => useNetworkBridge(), { wrapper: inRuntime(runtime) });
+      expect(inactive.result.current.isReady).toBe(false);
+      expect(inactive.result.current.bridge).toBeNull();
+      expect(inactive.result.current.getSnapshot()).toBeNull();
+      expect(inactive.result.current.getNetworkStats()).toBeNull();
+      inactive.unmount();
 
-    test('자동 업데이트 테스트', async () => {
-      const { result } = renderHook(() => 
-        useNetworkBridge({ enableAutoUpdate: true })
-      );
-      
-      // useEffect가 실행될 때까지 대기
-      await waitFor(() => {
-        expect(result.current.isReady).toBe(true);
-      });
-      
-      expect(mockBridge.acquireUpdates).toHaveBeenCalledWith('main', expect.anything());
-    });
-  });
-
-  describe('에러 처리', () => {
-    test('브릿지 생성 실패 시 처리', () => {
-      mockBridgeFactory.get.mockReturnValue(null);
-      mockBridgeFactory.create.mockReturnValue(null);
-      
-      const { result } = renderHook(() => useNetworkBridge());
-      
-      expect(result.current.bridge).toBeNull();
-      expect(result.current.isReady).toBe(false);
-    });
-
-    test('브릿지가 없을 때 안전한 호출', () => {
-      mockBridgeFactory.get.mockReturnValue(null);
-      mockBridgeFactory.create.mockReturnValue(null);
-      
-      const { result } = renderHook(() => useNetworkBridge());
-      
-      // 에러 없이 호출되어야 함
-      expect(() => {
-        result.current.executeCommand({ type: 'startMonitoring', npcId: 'npc-1' });
-        result.current.getSnapshot();
-        result.current.getNetworkStats();
-        result.current.getSystemState();
-        result.current.updateSystem(0.016);
-      }).not.toThrow();
-    });
+      await runtime.setup();
+      const active = renderHook(() => useNetworkBridge(), { wrapper: inRuntime(runtime) });
+      await waitFor(() => expect(active.result.current.isReady).toBe(true));
+      expect(active.result.current.bridge).toBe(runtime.networkBridge);
+      expect(BridgeFactory.get('networks')).toBeNull();
+      active.unmount();
+    } finally {
+      await runtime.dispose();
+    }
   });
 });

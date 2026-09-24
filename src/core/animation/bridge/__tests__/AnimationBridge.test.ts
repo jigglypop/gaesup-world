@@ -1,88 +1,58 @@
-import * as THREE from 'three';
+import { AnimationClip, AnimationMixer, Object3D } from 'three';
 
-import { AnimationSystem } from '../../core/AnimationSystem';
-import { AnimationSystem as AnimationSystemType } from '../../core/AnimationSystem';
 import { AnimationBridge } from '../AnimationBridge';
-import type { AnimationCommand, AnimationMetrics } from '../types';
 
-jest.mock('../../core/AnimationSystem');
-
-const MockedAnimationSystem = AnimationSystem as jest.Mock<AnimationSystemType>;
+// Real AnimationSystem engines: a mocked engine only proved that calls were forwarded.
+const mixer = new AnimationMixer(new Object3D());
+const action = (name: string) => mixer.clipAction(new AnimationClip(name, 1, []));
 
 describe('AnimationBridge', () => {
   let bridge: AnimationBridge;
-  let mockEngineInstance: jest.Mocked<AnimationSystemType>;
 
   beforeEach(() => {
-    mockEngineInstance = {
-      dispose: jest.fn(),
-      registerAction: jest.fn(),
-      playAnimation: jest.fn(),
-      stopAnimation: jest.fn(),
-      getState: jest
-        .fn()
-        .mockReturnValue({ currentAnimation: 'idle', isPlaying: false, currentWeight: 1, actions: new Map() }),
-      getMetrics: jest.fn().mockReturnValue({ activeAnimations: 0, totalActions: 0 }),
-      getAnimationList: jest.fn().mockReturnValue([]),
-      subscribe: jest.fn().mockReturnValue(jest.fn()),
-      getAnimator: jest.fn().mockReturnValue(null),
-    } as unknown as jest.Mocked<AnimationSystemType>;
-
-    MockedAnimationSystem.mockImplementation(() => mockEngineInstance);
-
-    jest.clearAllMocks();
-    MockedAnimationSystem.mockClear();
     bridge = new AnimationBridge();
   });
 
-  it('should create an engine for each animation type on construction', () => {
-    expect(MockedAnimationSystem).toHaveBeenCalledTimes(3);
+  afterEach(() => {
+    bridge.dispose();
+    mixer.stopAllAction();
   });
 
-  it('should register animations to the correct engine', () => {
-    const mockAction = {} as THREE.AnimationAction;
-    bridge.registerAnimations('character', { walk: mockAction });
-    expect(mockEngineInstance.registerAction).toHaveBeenCalledWith('walk', mockAction);
+  test('owns one engine per animation type and keeps their actions apart', () => {
+    bridge.registerAnimations('character', { walk: action('walk') });
+    bridge.registerAnimations('vehicle', { drive: action('drive') });
+
+    expect(bridge.snapshot('character')?.availableAnimations).toEqual(['walk']);
+    expect(bridge.snapshot('vehicle')?.availableAnimations).toEqual(['drive']);
+    expect(bridge.snapshot('airplane')?.availableAnimations).toEqual([]);
   });
 
-  it('should execute a "play" command on the correct engine', () => {
-    const command: AnimationCommand = { type: 'play', animation: 'drive' };
-    bridge.execute('vehicle', command);
-    expect(mockEngineInstance.playAnimation).toHaveBeenCalledWith('drive', undefined);
+  test('a play command runs the action for that type only', () => {
+    const drive = action('drive');
+    bridge.registerAnimations('vehicle', { drive });
+    bridge.execute('vehicle', { type: 'play', animation: 'drive', duration: 0 });
+
+    expect(drive.isRunning()).toBe(true);
+    expect(bridge.snapshot('vehicle')).toMatchObject({ currentAnimation: 'drive', isPlaying: true });
+    expect(bridge.snapshot('character')).toMatchObject({ currentAnimation: 'idle', isPlaying: false });
   });
 
-  it('should return a snapshot from an engine', () => {
-    const snapshot = bridge.snapshot('character');
-    expect(mockEngineInstance.getState).toHaveBeenCalled();
-    expect(snapshot?.currentAnimation).toBe('idle');
+  test('listeners get the changed engine type with its snapshot', () => {
+    const updates: Array<[string, string[]]> = [];
+    bridge.subscribe((snapshot, type) => updates.push([type, [...snapshot.availableAnimations]]));
+
+    bridge.registerAnimations('airplane', { fly: action('fly') });
+
+    expect(updates).toEqual([['airplane', ['fly']]]);
   });
 
-  it('should subscribe and notify listeners', () => {
+  test('dispose releases every engine and stops notifying', () => {
     const listener = jest.fn();
     bridge.subscribe(listener);
-
-    // Get the callback passed to the engine's subscribe method
-    const engineCallback = mockEngineInstance.subscribe.mock.calls[0]?.[0];
-    if (!engineCallback) throw new Error('Expected the bridge to subscribe to the engine');
-
-    const mockMetrics: AnimationMetrics = {
-      activeAnimations: 1,
-      totalActions: 1,
-      currentWeight: 1,
-      mixerTime: 0,
-      lastUpdate: 0,
-      blendProgress: 1,
-    };
-
-    // Simulate an update from the engine
-    engineCallback(mockMetrics);
-
-    expect(listener).toHaveBeenCalledTimes(1);
-    expect(listener).toHaveBeenCalledWith(expect.any(Object), 'character');
-  });
-
-  it('should dispose all engines', () => {
     bridge.dispose();
-    expect(mockEngineInstance.dispose).toHaveBeenCalledTimes(3);
+
+    bridge.registerAnimations('character', { walk: action('walk') });
+    expect(['character', 'vehicle', 'airplane'].map((type) => bridge.getEngine(type))).toEqual([undefined, undefined, undefined]);
+    expect(listener).not.toHaveBeenCalled();
   });
 });

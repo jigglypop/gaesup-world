@@ -4,20 +4,15 @@ import { SystemContext } from '@core/boilerplate/entity/BaseSystem';
 
 import { WorldSystem, WorldObject, RideableObject, InteractionEvent } from '../WorldSystem';
 
-// Mock SpatialGrid
-jest.mock('../SpatialGrid', () => ({
-  SpatialGrid: jest.fn().mockImplementation(() => ({
-    add: jest.fn(),
-    remove: jest.fn(),
-    update: jest.fn(),
-    getNearby: jest.fn().mockReturnValue([]),
-    clear: jest.fn(),
-  }))
-}));
-
-function mockedGetNearby(system: WorldSystem) {
-  return jest.mocked(system['spatial'].getNearby);
-}
+// Uses the real SpatialGrid: a mocked grid returned fixed ids and hid index drift and crashes on bad input.
+const at = (id: string, x: number, y = 0, z = 0): WorldObject => ({
+  id,
+  position: new THREE.Vector3(x, y, z),
+  rotation: new THREE.Euler(0, 0, 0),
+  scale: new THREE.Vector3(1, 1, 1),
+  type: 'active',
+});
+const ids = (objects: WorldObject[]) => objects.map((object) => object.id);
 
 describe('WorldSystem', () => {
   let worldSystem: WorldSystem;
@@ -30,7 +25,6 @@ describe('WorldSystem', () => {
       totalTime: 1000,
       frameCount: 60
     };
-    jest.clearAllMocks();
   });
 
   afterEach(() => {
@@ -166,24 +160,28 @@ describe('WorldSystem', () => {
 
   describe('Spatial Queries', () => {
     test('should get objects in radius', () => {
-      const object: WorldObject = {
-        id: 'test-1',
-        position: new THREE.Vector3(1, 2, 3),
-        rotation: new THREE.Euler(0, 0, 0),
-        scale: new THREE.Vector3(1, 1, 1),
-        type: 'active'
-      };
+      const near = at('test-1', 1, 2, 3);
+      worldSystem.addObject(near);
+      worldSystem.addObject(at('far', 20));
 
-      worldSystem.addObject(object);
-      
-      // Mock spatial grid to return the object ID
-      mockedGetNearby(worldSystem).mockReturnValue(['test-1']);
+      const objects = worldSystem.getObjectsInRadius(new THREE.Vector3(0, 0, 0), 10);
 
-      const center = new THREE.Vector3(0, 0, 0);
-      const objects = worldSystem.getObjectsInRadius(center, 10);
-      
-      expect(objects).toHaveLength(1);
-      expect(objects[0]).toEqual(object);
+      expect(objects).toEqual([near]);
+    });
+
+    test('radius queries follow moved and removed objects', () => {
+      worldSystem.addObject(at('mover', 1));
+      worldSystem.addObject(at('stay', 2));
+
+      worldSystem.updateObject('mover', { position: new THREE.Vector3(35, 0, 0) });
+      expect(ids(worldSystem.getObjectsInRadius(new THREE.Vector3(0, 0, 0), 5))).toEqual(['stay']);
+      expect(ids(worldSystem.getObjectsInRadius(new THREE.Vector3(35, 0, 0), 5))).toEqual(['mover']);
+
+      worldSystem.removeObject('mover');
+      expect(worldSystem.getObjectsInRadius(new THREE.Vector3(35, 0, 0), 5)).toEqual([]);
+
+      worldSystem.cleanup();
+      expect(worldSystem.getObjectsInRadius(new THREE.Vector3(0, 0, 0), 50)).toEqual([]);
     });
 
     test('should check collisions', () => {
@@ -210,9 +208,6 @@ describe('WorldSystem', () => {
 
       worldSystem.addObject(object1);
       worldSystem.addObject(object2);
-
-      // Mock spatial grid to return both object IDs
-      mockedGetNearby(worldSystem).mockReturnValue(['test-1', 'test-2']);
 
       const collisions = worldSystem.checkCollisions('test-1');
       expect(collisions).toHaveLength(1);
@@ -300,9 +295,6 @@ describe('WorldSystem', () => {
 
       worldSystem.addObject(object);
 
-      // Mock spatial grid
-      mockedGetNearby(worldSystem).mockReturnValue(['test-1']);
-
       const origin = new THREE.Vector3(-5, 0, 0);
       const direction = new THREE.Vector3(1, 0, 0);
       const result = worldSystem.raycast(origin, direction, 10);
@@ -316,9 +308,7 @@ describe('WorldSystem', () => {
     test('should return null for raycast with no hits', () => {
       const origin = new THREE.Vector3(-5, 0, 0);
       const direction = new THREE.Vector3(1, 0, 0);
-      
-      // Mock spatial grid to return no objects
-      mockedGetNearby(worldSystem).mockReturnValue([]);
+      worldSystem.addObject({ ...at('behind', -20), boundingBox: new THREE.Box3(new THREE.Vector3(-21, -1, -1), new THREE.Vector3(-19, 1, 1)) });
 
       const result = worldSystem.raycast(origin, direction, 10);
       expect(result).toBeNull();
@@ -414,22 +404,17 @@ describe('WorldSystem', () => {
   });
 
   describe('Error Handling', () => {
-    test('should handle errors gracefully', () => {
-      // Test with invalid object data
-      expect(() => {
-        const invalidObject = {} as WorldObject;
-        worldSystem.addObject(invalidObject);
-      }).not.toThrow();
+    test('an object without a position is rejected by the spatial index', () => {
+      // The grid mock let this pass silently; position is required by WorldObject.
+      expect(() => worldSystem.addObject({ id: 'broken' } as WorldObject)).toThrow(TypeError);
     });
 
-    test('should handle spatial grid errors', () => {
-      mockedGetNearby(worldSystem).mockImplementation(() => {
+    test('should surface spatial grid errors', () => {
+      jest.spyOn(worldSystem['spatial'], 'getNearby').mockImplementation(() => {
         throw new Error('Spatial grid error');
       });
 
-      expect(() => {
-        worldSystem.getObjectsInRadius(new THREE.Vector3(), 10);
-      }).toThrow();
+      expect(() => worldSystem.getObjectsInRadius(new THREE.Vector3(), 10)).toThrow('Spatial grid error');
     });
   });
 }); 
