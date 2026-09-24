@@ -7,7 +7,13 @@ import { useEngineFrame } from '../../runtime/frame';
 
 const SHADOW_DEPTH_REFRESH_MS = 500;
 
+/** Only `WebGLShadowMap` reads `customDepthMaterial`; WebGPU and node renderers skip the scene walk entirely. */
 export function ShadowDepthMaterials() {
+  const isWebGL = useThree((state) => (state.gl as { isWebGLRenderer?: boolean }).isWebGLRenderer === true);
+  return isWebGL ? <WebGLShadowDepthMaterials /> : null;
+}
+
+function WebGLShadowDepthMaterials() {
   const scene = useThree((state) => state.scene);
   const cache = useMemo(() => createShadowDepthMaterialCache(), []);
 
