@@ -2,12 +2,32 @@ import { createSceneDocument, createSceneObject, parseSceneDocument } from 'gaes
 import type { SceneObject } from 'gaesup-world';
 
 import { DEFAULT_ROOM_SETTINGS, type RoomSettings } from './roomTypes';
-import { createTerrain, isTerrain, terraceTerrain, terrainHeight } from './terrain';
+import { brushIndices, createTerrain, farmTerrain, isTerrain, paintTiles, terrainHeight, tileIndex } from './terrain';
 import { FURNITURE } from './types';
 import type { FurnitureKind, HomeNote, MinihomeData } from './types';
 
 export const STORAGE_KEY = 'gaesup.minihome.v1';
 export const MAX_FURNITURE = 160;
+const GLOWING = new Set<FurnitureKind>(['lamp', 'neon', 'arcade', 'string-lights', 'lantern']);
+const QUARTER = Math.PI / 2;
+const BED_TILES = 3;
+/** Farm garden: deck and farmhouse at the back, crop beds in four quadrants around cross-shaped dirt paths. */
+const FARM_LAYOUT: ReadonlyArray<readonly [FurnitureKind, number, number, number?]> = [
+  ['sofa', 0, -10.1], ['table', -2.4, -9.2], ['milk-can', 2.6, -8.9], ['lattice-fence', -3.1, -7.5], ['lattice-fence', 3.1, -7.5],
+  ['leafy-tree', -6, -9.6], ['wagon', 7.2, -9.4],
+  ['tomato-bed', -3.5, -5.5], ['tomato-bed', -7.5, -5.5], ['corn-bed', 3.5, -5.5], ['corn-bed', 7.5, -5.5],
+  ['turnip-bed', -3.5, -1.5], ['turnip-bed', -7.5, -1.5], ['carrot-bed', 3.5, -1.5], ['carrot-bed', 7.5, -1.5],
+  ['pumpkin-bed', -3.5, 5.5], ['pumpkin-bed', -7.5, 5.5], ['carrot-bed', 3.5, 5.5], ['carrot-bed', 7.5, 5.5],
+  ['pumpkin-bed', -3.5, 9.5], ['pumpkin-bed', -7.5, 9.5], ['wheat-bed', 3.5, 9.5], ['wheat-bed', 7.5, 9.5],
+  ...[-9, -7, -5, -3, 3, 5, 7, 9].map(x => ['picket-fence', x, -3.5] as const),
+  ...[-7.5, -5.5, 3, 5, 7].map(x => ['picket-fence', x, 0.5] as const), ['garden-sign', -3, 0.5],
+  ...[3, 5, 7, 9].map(x => ['picket-fence', x, 11.5] as const),
+  ...[-9, -7, -5, -3].map(x => ['log-fence', x, 11.5] as const), ...[5.5, 7.5, 9.5].map(z => ['log-fence', -9.5, z, QUARTER] as const),
+  ...[-5.5, 0.5, 3.5, 7.5].map(z => ['string-lights', 0, z] as const),
+  ...[-1.5, 5.5, 9.5].flatMap(z => [['lantern', -1.4, z], ['lantern', 1.4, z]] as const),
+  ['leafy-tree', -10.6, -5.6], ['water-trough', -10.6, -1.5, QUARTER], ['leafy-tree', -10.8, 7], ['log-pile', -10.8, 10.8],
+  ['fruit-tree', 10.7, -5.5], ['fruit-tree', 10.7, 6.5], ['leafy-tree', 10.7, 10.3], ['flower-pot', -1.4, 11.3],
+];
 
 export function furnitureKind(object: SceneObject): FurnitureKind | null {
   const kind = object.components.find((component) => component.type === 'miniroom.furniture')?.data[
@@ -18,17 +38,18 @@ export function furnitureKind(object: SceneObject): FurnitureKind | null {
     : null;
 }
 
-export function makeFurniture(kind: FurnitureKind, x = 0, z = 1, id: string = crypto.randomUUID()) {
+export function makeFurniture(kind: FurnitureKind, x = 0, z = 1, id: string = crypto.randomUUID(), rotationY = 0) {
   return createSceneObject({
     id,
     name: FURNITURE[kind].name,
-    transform: { position: [x, 0, z] },
-    components: [{ id: `${id}-appearance`, type: 'miniroom.furniture', data: { kind, bloom: kind === 'lamp' || kind === 'neon' || kind === 'arcade', emissiveIntensity: 3 } }],
+    transform: { position: [x, 0, z], rotation: [0, rotationY, 0] },
+    components: [{ id: `${id}-appearance`, type: 'miniroom.furniture', data: { kind, bloom: GLOWING.has(kind), emissiveIntensity: 3 } }],
   });
 }
 
 export function createMinihome(): MinihomeData {
-  const terrain = terraceTerrain(createTerrain());
+  const beds = FARM_LAYOUT.filter(([kind]) => kind.endsWith('-bed')).flatMap(([, x, z]) => brushIndices(tileIndex(x, z), BED_TILES));
+  const terrain = paintTiles(farmTerrain(), beds, 'soil'); const counts = new Map<FurnitureKind, number>();
   return {
     version: 1,
     profile: {
@@ -43,30 +64,10 @@ export function createMinihome(): MinihomeData {
     room: createSceneDocument({
       id: 'my-miniroom',
       name: '개숲 타운',
-      objects: [
-        makeFurniture('sofa', -7, -7, 'sofa-1'),
-        makeFurniture('table', -7, -5.4, 'table-1'),
-        makeFurniture('plant', -9.5, -6, 'plant-1'),
-        makeFurniture('shelf', -9, -9, 'shelf-1'),
-        makeFurniture('lamp', -4.5, -8, 'lamp-1'),
-        makeFurniture('cushion', -5, -5, 'cushion-1'),
-        makeFurniture('desk', 5.5, -6, 'desk-1'),
-        makeFurniture('desk', 8, -6, 'desk-2'),
-        makeFurniture('arcade', 7, -9, 'arcade-1'),
-        makeFurniture('plant', 4, -9, 'plant-2'),
-        makeFurniture('neon', 1, -3, 'neon-1'),
-        makeFurniture('fountain', -2, -2, 'fountain-1'),
-        makeFurniture('bench', 2, 2, 'bench-1'),
-        makeFurniture('bench', -3, 2, 'bench-2'),
-        makeFurniture('lamp', 3, -2, 'lamp-2'),
-        makeFurniture('tree', -10, 7, 'tree-1'),
-        makeFurniture('tree', -7, 10, 'tree-2'),
-        makeFurniture('tree', -9, 3, 'tree-3'),
-        makeFurniture('tree', 10, -10, 'tree-4'),
-        makeFurniture('tree', 5, 9, 'tree-5'),
-        makeFurniture('bench', -7, 6, 'bench-snow'),
-        makeFurniture('cushion', 7, 5, 'beach-seat'),
-      ].map(object => {
+      objects: FARM_LAYOUT.map(([kind, x, z, rotationY]) => {
+        const count = (counts.get(kind) ?? 0) + 1; counts.set(kind, count);
+        return makeFurniture(kind, x, z, `${kind}-${count}`, rotationY);
+      }).map(object => {
         const [x, , z] = object.transform.position;
         return { ...object, transform: { ...object.transform, position: [x, terrainHeight(terrain, x, z), z] as [number, number, number] } };
       }),
@@ -106,7 +107,7 @@ export function parseMinihome(raw: string): MinihomeData | null {
     const settings = data['roomSettings'] === undefined ? DEFAULT_ROOM_SETTINGS : data['roomSettings'];
     if (!isRecord(settings) || !['economy', 'balanced', 'high'].includes(String(settings['quality'])) ||
       !['day', 'evening'].includes(String(settings['lighting'])) ||
-      !['isometric', 'front', 'top', 'back', 'left', 'right', 'follow'].includes(String(settings['camera'])) ||
+      !['garden', 'isometric', 'front', 'top', 'back', 'left', 'right', 'follow'].includes(String(settings['camera'])) ||
       settings['avatar'] !== undefined && !['classic', 'coral', 'blue', 'mint'].includes(String(settings['avatar']))) return null;
     if (settings['sound'] !== undefined && !['calm', 'bright'].includes(String(settings['sound']))) return null;
     const volume = settings['volume'] === undefined ? DEFAULT_ROOM_SETTINGS.volume : settings['volume'];

@@ -1,10 +1,11 @@
 import { Color, ConeGeometry, CylinderGeometry, Group, Mesh, MeshStandardMaterial, Scene, SphereGeometry } from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
+import { buildFarmFurniture, type FarmKit, type FarmLibrary } from './roomFarm';
 import type { FurnitureKind } from './types';
 
-/** Shared procedural assets; the scene engine owns their lifetime. */
-export function createRoomAssets(scene: Scene) {
+/** Shared procedural assets and the farm GLB library; the scene engine owns their lifetime. */
+export function createRoomAssets(scene: Scene, farm: FarmLibrary) {
   const box = new RoundedBoxGeometry(1, 1, 1, 1, 0.035);
   const sphere = new SphereGeometry(1, 16, 12);
   const cylinder = new CylinderGeometry(1, 1, 1, 24);
@@ -41,11 +42,13 @@ export function createRoomAssets(scene: Scene) {
   }
   const room = new Group(); room.name = '타운 구조물';
   scene.add(room);
-  // Low walls leave the editable terrain visible from every camera preset.
-  const back = part(room, '#e5d8bf', [8, 1.6, 0.18], [-7, 0.8, -10]);
-  const left = part(room, '#e5d8bf', [0.18, 1.6, 6], [-11, 0.8, -7]);
-  const rug = part(room, '#c4a68d', [7, 0.14, 0.18], [6.5, 0.1, -10]);
-  for (const x of [-9, -5, 4, 9]) part(room, '#c0a37b', [0.12, 0.8, 0.12], [x, 0.4, -10.1]);
+  // A farmhouse facade behind the deck and a tool shed frame the garden without hiding the terrain.
+  const back = part(room, '#e5d8bf', [8.6, 2.6, 0.5], [0, 1.3, -11.5]);
+  const rug = part(room, '#c4a68d', [9.4, 0.22, 1.3], [0, 2.72, -11.35]);
+  for (const x of [-4.2, 4.2]) part(room, '#c0a37b', [0.18, 2.6, 0.18], [x, 1.3, -11.2]);
+  for (const x of [-1.9, 1.9]) { part(room, '#a88a67', [1.2, 1, 0.05], [x, 1.45, -11.23]); part(room, '#cfe3e6', [1, 0.8, 0.05], [x, 1.45, -11.2]); }
+  const shed = part(room, '#e5d8bf', [1.4, 1.5, 1.6], [10.6, 0.75, -2]);
+  part(room, '#c0a37b', [1.7, 0.16, 1.9], [10.6, 1.58, -2]); part(room, '#b08658', [0.05, 1, 0.6], [9.88, 0.5, -2]);
   function furniture(kind: FurnitureKind, glow = 0) {
     const group = new Group(); group.name = kind;
     const lit = (color: string, scale: [number, number, number], position: [number, number, number], shape: 'box' | 'sphere' | 'cylinder' | 'cone' = 'box') => {
@@ -148,9 +151,15 @@ export function createRoomAssets(scene: Scene) {
         part(group, '#34495b', [0.82, 0.1, 0.4], [0, 0.84, 0.5]);
         part(group, '#e4a865', [0.05, 0.15, 0.05], [-0.2, 0.96, 0.52], 'cylinder');
         break;
+      default: {
+        const kit: FarmKit = { lit, library: farm, part: (color, scale, position, shape = 'box', rotation) => {
+          const mesh = part(group, color, scale, position, shape); if (rotation) mesh.rotation.set(...rotation); return mesh;
+        } };
+        buildFarmFurniture(kind, group, kit);
+      }
     }
     // Ordinary furniture can also be authored as a Bloom object.
-    if (glow > 0 && !['lamp', 'neon', 'desk', 'fountain', 'arcade'].includes(kind)) {
+    if (glow > 0 && !['lamp', 'neon', 'desk', 'fountain', 'arcade', 'string-lights', 'lantern'].includes(kind)) {
       group.traverse(object => { if (object instanceof Mesh && object.material instanceof MeshStandardMaterial) object.material = material(`#${object.material.color.getHexString()}`, glow); });
     }
     return group;
@@ -175,8 +184,9 @@ export function createRoomAssets(scene: Scene) {
   }
   material('#a9d6d8').emissive = new Color('#8cc6dc').multiplyScalar(0.16);
 
-  return { room, back, left, rug, avatar, feet, furniture, part, dispose: () => {
+  return { room, back, shed, rug, avatar, feet, furniture, part, dispose: () => {
     for (const geometry of geometries) geometry.dispose();
     for (const value of materials.values()) value.dispose();
+    farm.dispose();
   } };
 }

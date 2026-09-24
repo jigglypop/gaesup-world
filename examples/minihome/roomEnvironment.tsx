@@ -66,7 +66,7 @@ export async function createRoomEnvironment(renderer: Awaited<ReturnType<typeof 
         </group>
         {[...chunks].map(([id, chunk]) => <Grass key={id} width={chunkSize} cells={chunk.cells} ground={false} position={[chunk.x, 0.015, chunk.z]}
           density={density} maxInstances={Math.ceil(density * chunk.cells.length)} lod={{ near: 48, far: 160, strength: 3 }}
-          options={{ bW: 0.14, bH: 0.38, joints: 2 }} bladeTipColor="#a8cc74" bladeBottomColor="#527732" toon />)}
+          options={{ bW: 0.14, bH: 0.24, joints: 2 }} bladeTipColor="#b9cf7e" bladeBottomColor="#6b8a3f" toon />)}
         {weather !== 'clear' && <WeatherEffect kind="snow" area={terrain.size} height={10}
           count={quality === 'economy' ? 600 : weather === 'blizzard' ? 2600 : 1000} wind={weather === 'blizzard' ? 5 : 0.35} />}
       </GrassManagerProvider>);

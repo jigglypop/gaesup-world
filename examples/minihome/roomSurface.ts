@@ -17,6 +17,8 @@ export function createRoomSurface(kind: TileKind) {
     if (kind === 'sand') { const ripple = Math.sin(v * tau * 7 + Math.sin(u * tau) * 0.5); shade = 0.9 + ripple * 0.035 + noise * 0.09; height = ripple * 0.035 + noise * 0.035; }
     if (kind === 'stone') { const edge = Math.min(u, v, 1 - u, 1 - v); const bevel = Math.min(1, edge * 45); shade = (0.88 + broad * 0.1 + noise * 0.06) * (0.68 + bevel * 0.32); height = bevel * 0.17 + noise * 0.025; }
     if (kind === 'wood') { const line = Math.sin((u * 26 + Math.sin(v * tau) * 0.16) * tau); const seam = x % 32 < 2; shade = seam ? 0.48 : 0.82 + line * 0.055 + noise * 0.06; height = seam ? 0 : 0.12 + line * 0.008; }
+    if (kind === 'soil') { const furrow = Math.sin(v * tau * 4 + Math.sin(u * tau) * 0.3); const clod = noise > 0.93 ? 0.12 : 0; shade = 0.74 + furrow * 0.13 + noise * 0.12 + clod; height = furrow * 0.09 + noise * 0.03 + clod * 0.3; }
+    if (kind === 'dirt') { const pebble = noise > 0.975 ? 0.16 : 0; const litter = grain(x * 3 + 17, y * 5 + 3) > 0.992 ? -0.2 : 0; shade = 0.86 + broad * 0.07 + noise * 0.1 + pebble + litter; height = noise * 0.03 + pebble * 0.25; }
     heights[y * size + x] = height;
     const i = (y * size + x) * 4;
     color[i] = Math.min(255, base.r * shade * 255); color[i + 1] = Math.min(255, base.g * shade * 255); color[i + 2] = Math.min(255, base.b * shade * 255); color[i + 3] = 255;

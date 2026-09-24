@@ -9,6 +9,8 @@ export const TILES = {
   water: { name: '바다', color: '#4da7b9', walkable: false },
   stone: { name: '돌길', color: '#acbab5', walkable: true },
   wood: { name: '나무', color: '#bd9472', walkable: true },
+  soil: { name: '밭흙', color: '#8c5b3b', walkable: true },
+  dirt: { name: '흙길', color: '#c9a36f', walkable: true },
 } as const;
 export type TileKind = keyof typeof TILES;
 export type StairDirection = 'north' | 'east' | 'south' | 'west';
@@ -72,6 +74,19 @@ export function createTerrain(): RoomTerrain {
     if (Math.abs(x) < 1 || Math.abs(z) < 1 || Math.abs(x) < 4 && Math.abs(z) < 4) return 'stone';
     return 'grass';
   }) };
+}
+/** Farm-garden town: cross-shaped dirt paths, a raised back deck with steps and a small cove. */
+export function farmTerrain(): RoomTerrain {
+  const tiles: TileKind[] = []; const heights: number[] = []; const stairs: Array<StairDirection | null> = [];
+  for (let index = 0; index < WORLD_SIZE * WORLD_SIZE; index++) {
+    const [x, , z] = tilePosition(index);
+    const deck = Math.abs(x) < 4.5 && z < -7 && z > -11.5;
+    const steps = Math.abs(x) < 1 && z === -6.5;
+    const path = Math.abs(x) < 1.5 && z > -7 || z > 0.5 && z < 3.5 && Math.abs(x) < 11.5;
+    tiles.push(x < -9 && z < -9 ? 'water' : x < -7 && z < -7 ? 'sand' : deck || steps ? 'wood' : path ? 'dirt' : 'grass');
+    heights.push(deck ? 0.5 : 0); stairs.push(steps ? 'north' : null);
+  }
+  return { size: WORLD_SIZE, tiles, heights, stairs };
 }
 export function isTerrain(value: unknown): value is RoomTerrain {
   if (!value || typeof value !== 'object') return false;

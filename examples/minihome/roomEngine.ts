@@ -14,6 +14,7 @@ import { createRoomAvatar } from './roomAvatar';
 import { RoomBatches } from './roomBatches';
 import { createRoomBloom } from './roomBloom';
 import { createRoomEnvironment } from './roomEnvironment';
+import { FARM_LIBRARY_URL, loadFarmLibrary } from './roomFarm';
 import { createRoomFestival } from './roomFestival';
 import { createRoomPath } from './roomPath';
 import { createRoomPeers } from './roomPeers';
@@ -26,7 +27,9 @@ import type { RoomTheme } from './types';
 
 export type RoomView = { editing: boolean; selected: string | null; theme: RoomTheme; zoom: number; terrain?: RoomTerrain; editor?: RoomEditor };
 const QUALITY = { economy: { dpr: 1, shadow: 512 }, balanced: { dpr: 1.5, shadow: 1024 }, high: { dpr: 2, shadow: 2048 } };
-const CAMERA = { isometric: [24, 25, 30], front: [0, 20, 34], top: [0, 40, 0.01], back: [0, 20, -34], left: [-34, 20, 0], right: [34, 20, 0], follow: [10, 12, 14] } as const;
+// garden: the high, slightly south-facing perspective of cozy farm-life games.
+const CAMERA = { garden: [0, 12.5, 14.5], isometric: [24, 25, 30], front: [0, 20, 34], top: [0, 40, 0.01], back: [0, 20, -34], left: [-34, 20, 0], right: [34, 20, 0], follow: [10, 12, 14] } as const;
+const NON_BLOCKING = new Set<unknown>(['cushion', 'string-lights']);
 export type { RoomCamera } from './roomTypes';
 
 export async function mountMiniroom(canvas: HTMLCanvasElement, controller: SceneDocumentController, onSelect: (id: string | null) => void, onReady: (backend: string) => void, ownerSignal: AbortSignal, options: RoomOptions = {}) {
@@ -45,6 +48,8 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     const adapter = gpuInfo ? [gpuInfo.vendor, gpuInfo.architecture].filter(Boolean).join(' / ') : null;
     const backendName = backend?.isWebGPUBackend ? 'WebGPU' : 'WebGL2';
     options.onProgress?.('장면·가구 구성');
+    const farm = await loadFarmLibrary(`${import.meta.env.BASE_URL}${FARM_LIBRARY_URL}`);
+    if (signal.aborted) { farm.dispose(); cleanup(); return null; }
     const scene = new Scene(); scene.background = new Color('#9fcfdf');
     let camera: OrthographicCamera | PerspectiveCamera = new OrthographicCamera(-16, 16, 16, -16, 0.1, 160); camera.position.set(...CAMERA.isometric);
     const bloom = await createRoomBloom(renderer, scene, camera);
@@ -52,14 +57,15 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     const controls = new OrbitControls<OrthographicCamera | PerspectiveCamera>(camera, canvas);
     controls.target.set(0, 0, 0); controls.enablePan = true; controls.enableDamping = true;
     controls.minZoom = 0.5; controls.maxZoom = 4; controls.minDistance = 5; controls.maxDistance = 70; controls.minPolarAngle = 0.02; controls.maxPolarAngle = 1.48;
-    controls.mouseButtons.LEFT = null; controls.mouseButtons.RIGHT = MOUSE.ROTATE; controls.mouseButtons.MIDDLE = MOUSE.PAN;
+    // Left or wheel-button drag orbits freely; a short left click still walks the avatar.
+    controls.mouseButtons.LEFT = MOUSE.ROTATE; controls.mouseButtons.MIDDLE = MOUSE.ROTATE; controls.mouseButtons.RIGHT = MOUSE.PAN;
     controls.touches.ONE = TOUCH.ROTATE; controls.touches.TWO = TOUCH.DOLLY_PAN; controls.update();
     let sun = new DirectionalLight('#ffe5c3', 2.8); sun.position.set(8, 22, 12); sun.castShadow = true;
     const retiredShadows: Array<DirectionalLight['shadow']> = [];
     sun.shadow.normalBias = 0.025; sun.shadow.bias = -0.00015; sun.shadow.autoUpdate = false; sun.shadow.bias = -0.00025; sun.shadow.normalBias = 0.025;
     Object.assign(sun.shadow.camera, { left: -19, right: 19, top: 19, bottom: -19, near: 0.5, far: 65 }); sun.shadow.camera.updateProjectionMatrix();
     const fill = new HemisphereLight('#d7e8f0', '#a48a71', 2.1); scene.add(sun, fill);
-    const assets = createRoomAssets(scene); const { room, back, left, rug, avatar, feet } = assets;
+    const assets = createRoomAssets(scene, farm); const { room, back, shed, rug, avatar, feet } = assets;
     const terrainRenderer = createRoomTerrain(scene); let terrain = createTerrain(); terrainRenderer.update(terrain);
     const pathMarker = createRoomPath(scene); const profiler = createRoomProfiler(renderer.info, () => camera);
     const visitors = createRoomPeers(scene);
@@ -73,7 +79,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     const marker = assets.part(scene, '#e7c16e', [0.67, 0.007, 0.67], [0, 0.09, 0], 'cylinder'); marker.castShadow = false; marker.visible = false;
     let view: RoomView = { editing: false, selected: null, theme: 'peach', zoom: 1 };
     let quality: RoomQuality = 'balanced'; let lighting: RoomLighting = 'day';
-    let settings: RoomSettings = { ...DEFAULT_ROOM_SETTINGS }; let cameraPreset: RoomCamera = 'isometric';
+    let settings: RoomSettings = { ...DEFAULT_ROOM_SETTINGS }; let cameraPreset: RoomCamera = DEFAULT_ROOM_SETTINGS.camera;
     let movement: RoomDiagnostics['movement'] = { state: 'idle', destination: null, waypoints: 0 };
     let disposed = false; let visible = true; let last = 0; let renderedFrames = 0; let loopCallbacks = 0;
     let shadowElapsed = 0;
@@ -102,8 +108,8 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
         if (wall.userData['baseY'] === undefined) wall.userData['baseY'] = wall.position.y;
         wall.position.y = Number(wall.userData['baseY']) + terrainHeight(terrain, wall.position.x, wall.position.z);
       }
-      for (const group of groups.values()) if (group.visible && group.userData['kind'] !== 'cushion') navigation.setBlockedFromBox(new Box3().setFromObject(group));
-      for (const wall of [back, left]) navigation.setBlockedFromBox(new Box3().setFromObject(wall));
+      for (const group of groups.values()) if (group.visible && !NON_BLOCKING.has(group.userData['kind'])) navigation.setBlockedFromBox(new Box3().setFromObject(group));
+      for (const wall of [back, shed]) navigation.setBlockedFromBox(new Box3().setFromObject(wall));
       terrain.tiles.forEach((kind, index) => {
         if (TILES[kind].walkable) return;
         const [x, , z] = tilePosition(index, terrain.size); navigation.setBlockedFromBox(new Box3(new Vector3(x - 0.49, -1, z - 0.49), new Vector3(x + 0.49, 1, z + 0.49)));
@@ -255,7 +261,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     window.addEventListener('blur', () => { pointers.clear(); press = null; finish(false); endStroke(false); }, { signal });
     canvas.addEventListener('keydown', event => {
       if (event.key === 'Escape') { finish(false); endStroke(false); onSelect(null); return; }
-      if (event.key === 'Home') { event.preventDefault(); setCamera('isometric'); return; }
+      if (event.key === 'Home') { event.preventDefault(); setCamera(DEFAULT_ROOM_SETTINGS.camera); return; }
       const step = view.editing ? 0.5 : 1;
       const delta = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step], a: [-step, 0], d: [step, 0], w: [0, -step], s: [0, step] }[event.key];
       if (!delta) return; event.preventDefault(); const object = controller.getSnapshot().objects.find(entry => entry.id === view.selected);
@@ -431,9 +437,9 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
         view = next; terrainRenderer.setGrid(next.editing && (next.editor ?? DEFAULT_EDITOR).grid);
         if (!next.editing) terrainRenderer.cursor(-1, 1);
         const palette = { peach: ['#ead3c6', '#e2a88e'], sage: ['#d5dfcb', '#b1bf97'], lavender: ['#dfd9ea', '#c2b0ce'] }[next.theme];
-        back.material.color.set(palette[0]!); left.material.color.copy(back.material.color); rug.material.color.set(palette[1]!); project();
+        back.material.color.set(palette[0]!); shed.material.color.copy(back.material.color); rug.material.color.set(palette[1]!); project();
       },
-      resetCamera() { setCamera('isometric'); },
+      resetCamera() { setCamera(DEFAULT_ROOM_SETTINGS.camera); },
     };
     project(); setQuality(quality); batches.update(groups); batchesDirty = false;
     options.onProgress?.('이동 경로 준비'); await navigation.init();

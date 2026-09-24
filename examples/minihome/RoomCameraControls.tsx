@@ -8,7 +8,7 @@ export function RoomCameraControls({ engine, settings, onChange, zoom, onZoom }:
       <label>확대 <output>{zoom.toFixed(2)}×</output><input aria-label="카메라 확대" type="range" min={0.5} max={4} step={0.05} value={zoom} onChange={event => onZoom(Number(event.target.value))} /></label>
       <div className="camera-toggles">{([['pan', '화면 이동'], ['rotate', '회전'], ['damping', '부드럽게']] as const).map(([key, label]) => <label key={key}><input type="checkbox" checked={settings[key]} onChange={event => onChange({ [key]: event.target.checked })} />{label}</label>)}</div>
       <div className="camera-buttons">{([['left', '← 왼쪽'], ['up', '↑ 위쪽'], ['down', '↓ 아래쪽'], ['right', '→ 오른쪽'], ['rotateLeft', '↶ 회전'], ['rotateRight', '↷ 회전'], ['tiltUp', '시선 높이기'], ['tiltDown', '시선 낮추기'], ['focus', '내 아바타 중심']] as const).map(([action, label]) => <button key={action} onClick={() => engine?.moveCamera(action)} disabled={!engine || (action.includes('rotate') || action.includes('tilt') ? !settings.rotate : action !== 'focus' && !settings.pan)}>{label}</button>)}</div>
-      <p>오른쪽 드래그: 회전 · 가운데/Shift+오른쪽 드래그: 화면 이동 · 휠: 확대 · 터치 두 손가락: 이동·확대</p>
+      <p>왼쪽·휠 버튼 드래그: 회전 · 오른쪽 드래그: 화면 이동 · 휠: 확대 · 짧은 클릭: 이동 · 터치 두 손가락: 이동·확대</p>
     </fieldset>
     <fieldset><legend>Bloom</legend>
       <label className="editor-checkbox"><input aria-label="Bloom 효과" type="checkbox" checked={settings.bloom} onChange={event => onChange({ bloom: event.target.checked })} />발광 번짐 효과</label>
