@@ -23,6 +23,25 @@ describe('building collider boxes', () => {
     ]);
   });
 
+  test('same-height unit box tiles merge into rectangles per lattice and height', () => {
+    const size = TILE_CONSTANTS.GRID_CELL_SIZE;
+    const floor = Array.from({ length: 20 }, (_, i) => tile({ id: `f${i}`, position: { x: (i % 5) * size, y: 0, z: Math.floor(i / 5) * size } }));
+    expect(createTileColliders(floor)).toEqual([
+      { key: 'f0:x20', position: [2 * size, -0.02, 1.5 * size], rotation: [0, 0, 0], args: [2.5 * size, 0.02, 2 * size] },
+    ]);
+    const lShape = [
+      tile({ id: 'a', position: { x: 0, y: 0, z: 0 } }), tile({ id: 'b', position: { x: size, y: 0, z: 0 } }),
+      tile({ id: 'c', position: { x: 0, y: 0, z: size } }),
+      tile({ id: 'raised', position: { x: 2 * size, y: 1, z: 0 } }),
+      tile({ id: 'offset', position: { x: 1, y: 0, z: 2 * size } }),
+      tile({ id: 'turned', position: { x: 0, y: 0, z: 3 * size }, rotation: Math.PI / 2 }),
+      tile({ id: 'skewed', position: { x: 0, y: 0, z: 5 * size }, rotation: 0.3 }),
+    ];
+    const boxes = createTileColliders(lShape);
+    expect(boxes.map((box) => box.key).sort()).toEqual(['a:x2', 'c', 'offset', 'raised', 'skewed', 'turned']);
+    expect(boxes.find((box) => box.key === 'skewed')?.rotation).toEqual([0, 0.3, 0]);
+  });
+
   test('round tiles produce a core and four rings', () => {
     const boxes = createTileColliders([tile({ id: 'round', shape: 'round' })]);
     expect(boxes.map((box) => box.key)).toEqual(['round-core', 'round-ring-0', 'round-ring-1', 'round-ring-2', 'round-ring-3']);

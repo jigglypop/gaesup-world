@@ -1,6 +1,7 @@
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 
-import { CuboidCollider, RigidBody } from '@react-three/rapier';
+import { useRapier } from '@react-three/rapier';
+import { Euler, Quaternion } from 'three';
 
 import type {
   BlockCollidersProps,
@@ -13,15 +14,31 @@ import { createBlockColliders } from '../BlockSystem/layout';
 import { createTileColliders } from '../TileSystem/layout';
 import { createWallColliders } from '../WallSystem/colliders';
 
+const euler = new Euler();
+const quaternion = new Quaternion();
+
+/**
+ * Static world colliders without a parent body or scene-graph object: nothing is traversed per frame or
+ * iterated after each step, and a changed box list replaces exactly this list's colliders.
+ */
 export function BuildingColliderBody({ boxes }: BuildingColliderBodyProps) {
-  if (boxes.length === 0) return null;
-  return (
-    <RigidBody type="fixed" colliders={false}>
-      {boxes.map((box) => (
-        <CuboidCollider key={box.key} position={box.position} rotation={box.rotation} args={box.args} />
-      ))}
-    </RigidBody>
-  );
+  const { world, rapier } = useRapier();
+  useEffect(() => {
+    const colliders = boxes.map((box) => {
+      quaternion.setFromEuler(euler.set(box.rotation[0], box.rotation[1], box.rotation[2]));
+      return world.createCollider(
+        rapier.ColliderDesc.cuboid(box.args[0], box.args[1], box.args[2])
+          .setTranslation(box.position[0], box.position[1], box.position[2])
+          .setRotation(quaternion),
+      );
+    });
+    return () => {
+      for (const collider of colliders) {
+        if (world.getCollider(collider.handle)) world.removeCollider(collider, true);
+      }
+    };
+  }, [boxes, rapier, world]);
+  return null;
 }
 
 const TileGroupColliders = memo(function TileGroupColliders({ tiles }: TileGroupCollidersProps) {

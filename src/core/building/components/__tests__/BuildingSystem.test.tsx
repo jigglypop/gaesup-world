@@ -52,10 +52,17 @@ jest.mock('../BlockSystem', () => ({
   ),
 }));
 
-jest.mock('@react-three/rapier', () => ({
-  RigidBody: ({ children }: { children: React.ReactNode }) => <group name="rigid-body">{children}</group>,
-  CuboidCollider: () => <group name="cuboid-collider" />,
-}));
+const mockColliders = new Set<number>();
+jest.mock('@react-three/rapier', () => {
+  let handle = 0;
+  const desc = { setTranslation: () => desc, setRotation: () => desc };
+  const world = {
+    createCollider: () => { const collider = { handle: handle++ }; mockColliders.add(collider.handle); return collider; },
+    getCollider: (id: number) => mockColliders.has(id),
+    removeCollider: (collider: { handle: number }) => { mockColliders.delete(collider.handle); },
+  };
+  return { useRapier: () => ({ world, rapier: { ColliderDesc: { cuboid: () => desc } } }) };
+});
 
 jest.mock('../GridHelper', () => ({
   GridHelper: ({ size }: GridHelperProps) => <gridHelper name="grid-helper" args={[size, 25]} />,
@@ -358,9 +365,10 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
 
       expectSceneMissingName(renderer, 'tile-system-tile-group-2');
       expectSceneMissingName(renderer, 'wall-system-wall-group-2');
-      expect(renderer.scene.findAllByProps({ name: 'cuboid-collider' })).toHaveLength(4);
+      expect(mockColliders.size).toBe(4);
 
-      renderer.unmount();
+      await renderer.unmount();
+      expect(mockColliders.size).toBe(0);
     });
 
     test('벽 편집 모드에서는 벽 collider를 만들지 않아야 함', async () => {
@@ -377,7 +385,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
 
       const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
 
-      expect(renderer.scene.findAllByProps({ name: 'cuboid-collider' })).toHaveLength(0);
+      expect(mockColliders.size).toBe(0);
 
       renderer.unmount();
     });

@@ -66,8 +66,76 @@ function pushSlicedColliders(
   }
 }
 
+type MergeCell = { i: number; j: number; id: string };
+type MergeLayer = { phaseX: number; phaseZ: number; y: number; cells: MergeCell[] };
+
+function latticePhase(value: number, cell: number): number {
+  const phase = Math.round((((value % cell) + cell) % cell) * 1000) / 1000;
+  return phase >= cell ? 0 : phase;
+}
+
+function isRightAngle(rotation: number): boolean {
+  const quarters = rotation / (Math.PI / 2);
+  return Math.abs(quarters - Math.round(quarters)) < 1e-6;
+}
+
+function flatBoxCollider(key: string, x: number, y: number, z: number, halfX: number, halfZ: number, rotation: number): BuildingColliderBox {
+  const elevated = y > ELEVATED_TILE_MIN_Y;
+  return {
+    key,
+    position: [x, elevated ? y * 0.5 : -FLAT_TILE_HALF_HEIGHT, z],
+    rotation: [0, rotation, 0],
+    args: [halfX, elevated ? y * 0.5 : FLAT_TILE_HALF_HEIGHT, halfZ],
+  };
+}
+
+/**
+ * Same-height, unit-size, axis-aligned box tiles on one lattice become rectangles: runs along each row, then
+ * equal runs in consecutive rows merge. A 20x20 floor is one collider instead of 400.
+ */
+function pushMergedBoxColliders(colliders: BuildingColliderBox[], layers: Map<string, MergeLayer>): void {
+  const cell = TILE_CONSTANTS.GRID_CELL_SIZE;
+  for (const { phaseX, phaseZ, y, cells } of layers.values()) {
+    cells.sort((a, b) => a.j - b.j || a.i - b.i);
+    type Rect = { i0: number; i1: number; j0: number; j1: number; id: string; count: number };
+    const rects: Rect[] = [];
+    let open = new Map<string, Rect>();
+    for (let k = 0; k < cells.length;) {
+      const j = cells[k]!.j;
+      const next = new Map<string, Rect>();
+      while (k < cells.length && cells[k]!.j === j) {
+        const start = cells[k]!;
+        let end = start.i;
+        k++;
+        while (k < cells.length && cells[k]!.j === j && cells[k]!.i === end + 1) end = cells[k++]!.i;
+        const key = `${start.i}:${end}`;
+        const above = open.get(key);
+        if (above && above.j1 === j - 1) {
+          above.j1 = j;
+          above.count += end - start.i + 1;
+          next.set(key, above);
+        } else {
+          const rect = { i0: start.i, i1: end, j0: j, j1: j, id: start.id, count: end - start.i + 1 };
+          rects.push(rect);
+          next.set(key, rect);
+        }
+      }
+      open = next;
+    }
+    for (const rect of rects) {
+      colliders.push(flatBoxCollider(
+        rect.count === 1 ? rect.id : `${rect.id}:x${rect.count}`,
+        phaseX + ((rect.i0 + rect.i1) / 2) * cell, y, phaseZ + ((rect.j0 + rect.j1) / 2) * cell,
+        ((rect.i1 - rect.i0 + 1) * cell) / 2, ((rect.j1 - rect.j0 + 1) * cell) / 2, 0,
+      ));
+    }
+  }
+}
+
 export function createTileColliders(tiles: readonly TileConfig[]): BuildingColliderBox[] {
   const colliders: BuildingColliderBox[] = [];
+  const layers = new Map<string, MergeLayer>();
+  const cell = TILE_CONSTANTS.GRID_CELL_SIZE;
 
   for (const tile of tiles) {
     const shape = getTileShape(tile);
@@ -109,13 +177,22 @@ export function createTileColliders(tiles: readonly TileConfig[]): BuildingColli
       continue;
     }
 
-    colliders.push({
-      key: tile.id,
-      position: [tile.position.x, elevated ? tile.position.y * 0.5 : -FLAT_TILE_HALF_HEIGHT, tile.position.z],
-      rotation: [0, tile.rotation ?? 0, 0],
-      args: [tileSize / 2, elevated ? tile.position.y * 0.5 : FLAT_TILE_HALF_HEIGHT, tileSize / 2],
-    });
+    const rotation = tile.rotation ?? 0;
+    if ((tile.size || 1) === 1 && isRightAngle(rotation)) {
+      const phaseX = latticePhase(tile.position.x, cell);
+      const phaseZ = latticePhase(tile.position.z, cell);
+      const key = `${phaseX}|${phaseZ}|${tile.position.y}`;
+      let layer = layers.get(key);
+      if (!layer) {
+        layer = { phaseX, phaseZ, y: tile.position.y, cells: [] };
+        layers.set(key, layer);
+      }
+      layer.cells.push({ i: Math.round((tile.position.x - phaseX) / cell), j: Math.round((tile.position.z - phaseZ) / cell), id: tile.id });
+      continue;
+    }
+    colliders.push(flatBoxCollider(tile.id, tile.position.x, tile.position.y, tile.position.z, tileSize / 2, tileSize / 2, rotation));
   }
 
+  pushMergedBoxColliders(colliders, layers);
   return colliders;
 }

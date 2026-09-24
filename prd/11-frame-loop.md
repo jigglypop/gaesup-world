@@ -186,7 +186,7 @@ input → prePhysics → physics.step(FixedStepClock.advance) → present(보간
 | 11-h | `PhysicsPresentation` 부모 역행렬 1회 계산, 중복 읽기 제거(FR-11-12), 3.3절 할당 제거 | frame-harness 프레임당 할당 감소 기록. body당 step당 `translation()` 호출 1회 |
 | 11-i | 카메라 충돌 2단계(Rapier shape cast) | 1단계 대비 camera phase ms 감소, 기존 계약 테스트 통과 |
 | 11-j | 카메라 narrow phase 단일화(FR-11-11) | `radius > 0`에서 `intersectObject` 호출 0, 기존 카메라 계약 테스트 통과 |
-| 11-k | 건물 collider 구조(FR-11-13). 먼저 fixed body 순회 비용을 계측 | 타일 1k에서 collider 수와 step 후 순회 body 수 기록 후 감소 |
+| 11-k | 건물 collider 구조(FR-11-13). 먼저 fixed body 순회 비용을 계측. 완료(2026-09-25): `BuildingColliderBody`가 부모 body와 장면 객체 없이 Rapier world에 정적 collider를 직접 만들고 목록이 바뀌면 그 목록만 교체한다. 같은 높이·격자의 1칸 직각 box 타일은 사각형으로 병합한다. `/world?size=m`: 타일 collider 10,000→25, fixed body 50→0, 장면 객체 17,162→6,615, script 81.9→64.3ms, 14.7fps. 정적 collider는 충돌 이벤트를 내지 않아 NPC·캐릭터가 바닥에 닿을 때 `onClick`/`onSelect`가 불리던 부작용도 사라졌다. 계단·경사로 slice는 캡슐 등반 때문에 유지(convex 경사로는 필요 시) | 타일 1k에서 collider 수와 step 후 순회 body 수 기록 후 감소 |
 | 11-l | setter 캐시, 하늘 색 사전 파싱, 스크립트 hook, 인덱스 조회, water patch(FR-11-14) | 정지 캐릭터에서 setter 호출 0, 발소리 1회당 타일 순회 0 |
 
 11-l 진행(2026-09-24): Rapier setter 캐시 완료(`motions/core/system/bodySettings.ts`, 바디별 마지막 적용값). 발소리 지면 판정은 타일 인덱스에 타일 종류가 없고 겹친 타일에서 결과가 달라질 수 있어 보류(초당 최대 6회 호출). 하늘 색, 스크립트 hook, water patch는 잔여.
