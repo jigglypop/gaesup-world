@@ -8,7 +8,7 @@ const read = (file) => readFileSync(path.join(root, file), 'utf8');
 assert.ok(existsSync(path.join(root, 'AGENTS.md')), 'Missing AGENTS.md');
 // Check executable gates, not prose in AGENTS.md.
 const scripts = JSON.parse(read('package.json')).scripts;
-for (const gate of ['test:harness', 'lint', 'test:asset-tools', 'build']) {
+for (const gate of ['test:harness', 'typecheck', 'lint', 'check:layer1', 'check:entries', 'check:quality', 'test:asset-tools', 'build']) {
   assert.ok(scripts.verify.includes(gate), `verify must invoke ${gate}`);
 }
 for (const gate of ['verify', 'test:memory:ci', 'test:package:built', 'test:demo']) {

@@ -3,8 +3,9 @@ name: Verify, publish and deploy
 on:
   push:
     branches: [main]
+  # Work lands on main while the GitHub default branch is still master; check PRs to either.
   pull_request:
-    branches: [main]
+    branches: [main, master]
   workflow_dispatch:
 
 permissions:
@@ -25,7 +26,8 @@ jobs:
           node-version: '24'
           package-manager-cache: false
       - run: npm install --global corepack
-      - run: corepack pnpm install --frozen-lockfile
+      # prepare is `build`; verify builds once itself.
+      - run: corepack pnpm install --frozen-lockfile --ignore-scripts
       - run: corepack pnpm run verify:full
       - run: corepack pnpm run audit:core
       - uses: actions/upload-artifact@v4
@@ -54,7 +56,7 @@ jobs:
           node-version: '24'
           package-manager-cache: false
       - run: npm install --global corepack npm@11.11.1
-      - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm install --frozen-lockfile --ignore-scripts
       - run: corepack pnpm run build
       - id: publish
         run: node scripts/release/run.mjs
