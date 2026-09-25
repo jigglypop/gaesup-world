@@ -112,18 +112,17 @@
 ### DOM-08 원격 플레이어·네트워크(M3, DOM-08a는 언제든)
 
 현재 상태 [확인]:
-- **Update 메시지:** 식별 필드를 포함한 전체 상태를 매 틱 JSON으로 보낸다. 정지 중에도 보낸다(`networks/core/PlayerPositionTracker.ts:109-137`). rate limit이 세 곳에 있다.
-- **원격 아바타:** 메시지마다 React 재렌더된다(`networks/components/RemotePlayers.tsx:64-69`).
-- **연결:** half-open 감지가 없고 재연결에 jitter가 없다. 효과 없는 설정 knob이 4개 있다.
+- **Update 메시지:** transform과 animation만 보내고 식별 필드는 Join·변경 시에만 싣는다. 정지 중에는 1Hz keepalive뿐이다. rate limit은 `PlayerNetworkManager` 한 곳이다.
+- **원격 아바타:** transform 메시지는 React를 거치지 않고 공유 프레임 채널 하나에서 보간한다(`networks/core/remoteMotion.ts`). 원격 플레이어는 아직 엔티티가 아니다.
+- **연결:** half-open 감지, jitter 백오프, 재연결 중 원격 플레이어 유지, 피어별 token bucket(PlayerUpdate, Chat)이 있다. `compressionLevel`·`enableEncryption`은 `@deprecated`다.
 - **`MultiplayerCanvas`:** HDR을 외부 CDN에서 받아 월드 전체를 대기시키고, 채팅·입퇴장마다 memo가 깨지고, WebGPU 렌더러를 쓰지 않는다(`MultiplayerCanvas.tsx:72,113`).
 - **NPC `NetworkSystem`:** 매 틱 큐를 통째로 slice한다. `useNetworkGroup`은 메시지를 전달하지 못하면서 250ms 폴링을 계속한다.
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
 | DOM-08a | 정확성: D-06 `verifyActor` 미지정 시 최초 1회 경고와 `trustActors` 옵션(2.0 기본 거부, G4), D-07 transport가 채우는 `senderId`와 `VisitLeave`는 `senderId===hostId`만 수용, 원격 모델 URL은 path prefix allowlist와 `allowedModelOrigins`·`resolveModel(assetId)` 전달, 검증기 하나, 퇴장 후 캐시 해제 | 재현 테스트(위조 `VisitLeave` 무시, allowlist 밖 로드 0) |
-| DOM-08b | wire: Update는 transform·animation만, identity는 Join·변경 시, epsilon 비교와 idle keepalive, rate limit 한 곳 | S-H13 |
-| DOM-08c | 원격 플레이어를 transient 엔티티로, 보간은 SoA 시스템 하나(wasm `batch_smooth_damp` 재사용), React는 이름·색·모델 변경 시에만 | S-B14 |
-| DOM-08d | half-open 감지(`lastPongAt`), jitter 백오프, 짧은 끊김 동안 원격 플레이어 유지 후 reconcile. knob 구현 또는 제거, 채팅 피어별 rate limit. `NetworkSystem` 큐 재사용과 소비자 없을 때 정지, `useNetworkGroup` 폴링 정리, authority 큐를 target 단위로 | fake timers 테스트, 채팅 1000/s 주입 시 `setState` ≤ 제한 |
+| DOM-08c | 원격 플레이어를 transient 엔티티로 바꾸고, 공유 채널 보간(`remoteMotion`)을 SoA 시스템 하나로(wasm `batch_smooth_damp` 재사용). 원격 모델 렌더는 RenderWorld 스킨 인스턴스(REN-09a) | S-B14, 원격 24명에서 per-avatar 프레임 등록 0 |
+| DOM-08d | `NetworkSystem`이 매 틱 큐를 통째로 slice하지 않고 소비자가 없으면 멈춘다. `useNetworkGroup`은 group 메시지를 전달하거나 250ms 폴링을 없앤다. authority 직렬 큐를 domain이 아닌 target 단위로 | 틱당 할당 0 테스트, 소비자 없는 엔진 틱 0 |
 | DOM-08e | 프로토콜 하나(`adapter/contracts`)와 codec 경계(`PlayerNetworkManager`는 transport로), visit 메시지 흡수, 이어서 binary codec(버전 협상) | codec 왕복 테스트, binary Update ≤ 32B |
 | DOM-08f | `MultiplayerCanvas`: 로컬 환경맵(외부 HDR 0)과 별도 Suspense, memo 안정화, `createRenderer` 사용, 이름표 폰트 로컬화 | S-B07(원격 입장 중 월드 유지), 외부 CDN 요청 0 |
 | DOM-08g | minihome 서버 fan-out 문자열 1회 생성과 SSE backpressure | SSE 클라이언트 24개 부하 스크립트 |

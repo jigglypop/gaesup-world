@@ -57,7 +57,7 @@ SaveSystem
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| AST-03a | 레코드 형식, `kind`에 scene·prefab·script·model·texture·material·audio·animatorController 추가, `assets.resolve`, `scripts/assets/build.mjs` 레코드 출력. LOD variant를 레코드에 남기고 런타임이 선택. 에셋 store의 공개 selector(`selectAssetsByKind` 등)는 호출마다 새 배열을 만들지 않게 쿼리별 memo | 레코드 왕복 테스트, LOD1·2 선택 테스트 |
+| AST-03a | 레코드 형식, `kind`에 scene·prefab·script·model·texture·material·audio·animatorController 추가, `assets.resolve`, `scripts/assets/build.mjs` 레코드 출력. LOD variant를 레코드에 남기고 런타임이 선택. | 레코드 왕복 테스트, LOD1·2 선택 테스트 |
 | AST-03b | 영속 URL → GUID migration(building, npc, meshRenderer). 미등록 URL은 `external` 레코드로 보존. 끝나면 URL 복구 코드 삭제 | S-H15, 영속 데이터 원시 URL 0 |
 
 ### AST-04 프리팹

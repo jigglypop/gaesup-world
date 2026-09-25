@@ -64,7 +64,7 @@ COR-05c(스케줄러 밖 루프 0)는 M2 끝까지
 | NPC | DOM-03b → DOM-03c + REN-09a → REN-09b |
 | 캐릭터 | DOM-04a → DOM-04b → COR-07c |
 | 입력·애니메이션·카메라 | DOM-05a, DOM-06a, DOM-07a(병렬) |
-| 네트워크 | DOM-08b → DOM-08c → DOM-08d → DOM-08e, DOM-08f·DOM-08g(병렬) |
+| 네트워크 | DOM-08c → DOM-08d → DOM-08e, DOM-08f·DOM-08g(병렬) |
 | 스크립트 | COR-11a → COR-11b |
 | kit | COR-09b → DOM-09a → DOM-09b, COR-09d |
 | 내비게이션 | DOM-10a |
@@ -138,7 +138,6 @@ COR-05c(스케줄러 밖 루프 0)는 M2 끝까지
 | CI 트리거 브랜치를 `main`과 `master` 중 무엇으로 통일할 것인가 | VER-06a | 기본 브랜치 하나 |
 | 샘플 GLB를 별도 패키지로 분리할 것인가, CDN으로 둘 것인가 | PKG-02c | 별도 패키지 |
 | 루트의 `info.tsx`, `todolist.md`, `index.ts` 유지 여부 | PKG-04f | 확인 후 정리 |
-| 네트워크 효과 없는 설정 필드를 제거할 것인가, 구현할 것인가 | DOM-08d | 1.x는 `@deprecated`, 2.0 제거 |
 
 ## 6. 운영 규칙
 
