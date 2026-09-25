@@ -14,7 +14,7 @@
     "S-H11": { "title": "기본 runtime + NPC 30체 60초", "runner": "headless", "item": "DOM-03a", "status": "green", "budget": { "externalFetches": 0 } },
     "S-H12": { "title": "save → load, legacy 포맷 load", "runner": "headless", "item": "AST-06b", "status": "pending", "budget": { "roundTripEqual": true, "legacyLoaded": true } },
     "S-H13": { "title": "로컬 정지 송신률과 Update 크기", "runner": "headless", "item": "DOM-08", "status": "green", "budget": { "restingUpdatesPerSecond": 2, "maxMovingUpdateBytes": 120 } },
-    "S-H14": { "title": "각 공개 엔트리 import만 실행", "runner": "headless", "item": "COR-09c", "status": "known-red", "budget": { "listeners": 0, "timers": 0, "storageReads": 0, "globalWrites": 0 } },
+    "S-H14": { "title": "공개 엔트리가 도달하는 모듈의 최상위 부수효과", "runner": "headless", "item": "COR-09c", "status": "known-red", "budget": { "statementCalls": 0, "classDecorators": 0, "globalStores": 0, "otherCalls": null, "sourceFiles": null } },
     "S-H15": { "title": "에셋 URL 변경 후 저장본 load, prefab base 변경", "runner": "headless", "item": "AST-03b", "status": "pending", "budget": { "legacyUrlLoaded": true, "prefabChangePropagated": true } },
     "S-H16": { "title": "2k 객체 문서에서 편집 후 undo", "runner": "headless", "item": "AST-07a", "status": "pending", "budget": { "undoTouchesOnlyChanged": true, "resetDeltas": 0 } },
     "S-B01": { "title": "경로별 첫 로드", "runner": "browser", "item": "PKG-01b", "status": "pending", "budget": { "rootInitialJsGzipBytes": null, "unusedHeavyChunksOnRoot": 0 } },

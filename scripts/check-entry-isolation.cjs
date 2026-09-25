@@ -1,63 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.resolve(__dirname, '..');
-// Wildcard tsconfig paths, e.g. ['@core/', 'src/core/']; tsconfig is the only alias list.
-const ALIASES = Object.entries(JSON.parse(fs.readFileSync(path.join(ROOT, 'tsconfig.json'), 'utf8')).compilerOptions.paths)
-  .filter(([alias]) => alias.endsWith('/*'))
-  .map(([alias, [target]]) => [alias.slice(0, -1), target.replace(/^\.\//, '').slice(0, -1)]);
+const { ROOT, importChain, walkRuntimeImports } = require('./lib/importGraph.cjs');
+
 const FORBIDDEN = [/^react$/, /^react\//, /^react-dom/, /^zustand/, /^@react-three\//];
 const LAYER_ONE_ALLOWED = [/^@react-three\/rapier$/];
 let allowed = [];
-const IMPORT_PATTERN = /(?:import|export)\s+(?:type\s+)?(?:[^'"`]*?\sfrom\s+)?['"]([^'"]+)['"]/g;
-const TYPE_ONLY_PATTERN = /^\s*(?:import|export)\s+type\s/;
-
-function resolveFile(base) {
-  const candidates = [base, `${base}.ts`, `${base}.tsx`, path.join(base, 'index.ts'), path.join(base, 'index.tsx')];
-  return candidates.find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile()) ?? null;
-}
-
-function resolveSpecifier(from, specifier) {
-  if (specifier.startsWith('.')) return resolveFile(path.resolve(path.dirname(from), specifier));
-  for (const [prefix, target] of ALIASES) {
-    if (specifier.startsWith(prefix)) return resolveFile(path.join(ROOT, target, specifier.slice(prefix.length)));
-  }
-  return null;
-}
-
-function collectRuntimeImports(file) {
-  const source = fs.readFileSync(file, 'utf8');
-  const statements = source.split(/;\s*\n|\n(?=import|export)/);
-  const specifiers = [];
-  for (const statement of statements) {
-    if (TYPE_ONLY_PATTERN.test(statement)) continue;
-    IMPORT_PATTERN.lastIndex = 0;
-    let match;
-    while ((match = IMPORT_PATTERN.exec(statement))) specifiers.push(match[1]);
-  }
-  return specifiers;
-}
 
 function checkEntry(entry) {
-  const start = path.join(ROOT, entry);
-  const parents = new Map([[start, null]]);
-  const queue = [start];
   const violations = [];
-  while (queue.length > 0) {
-    const file = queue.shift();
-    for (const specifier of collectRuntimeImports(file)) {
-      if (FORBIDDEN.some((pattern) => pattern.test(specifier)) && !allowed.some((pattern) => pattern.test(specifier))) {
-        const chain = [];
-        for (let cursor = file; cursor; cursor = parents.get(cursor)) chain.unshift(path.relative(ROOT, cursor));
-        violations.push({ specifier, chain });
-        continue;
-      }
-      const resolved = resolveSpecifier(file, specifier);
-      if (!resolved || parents.has(resolved)) continue;
-      parents.set(resolved, file);
-      queue.push(resolved);
-    }
-  }
+  const parents = walkRuntimeImports(entry, (specifier, file, reached) => {
+    if (!FORBIDDEN.some((pattern) => pattern.test(specifier)) || allowed.some((pattern) => pattern.test(specifier))) return true;
+    violations.push({ specifier, chain: importChain(reached, file) });
+    return false;
+  });
   return { files: parents.size, violations };
 }
 

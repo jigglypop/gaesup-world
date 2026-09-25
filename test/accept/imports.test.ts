@@ -1,34 +1,27 @@
-/** @jest-environment jsdom */
-import { acceptScenario, type Metrics } from './scenario';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 
-const ENTRIES = ['gaesup-world', 'gaesup-world/runtime', 'gaesup-world/network', 'gaesup-world/server-contracts'];
+import { acceptScenario } from './scenario';
+import { moduleScopeEffects, packageSourceFiles, type ModuleScopeEffects } from './support/moduleScope';
 
-/** Observable effects of importing one entry into a fresh module registry. */
-async function importEffects(entry: string): Promise<Metrics> {
-  const listeners = [jest.spyOn(window, 'addEventListener'), jest.spyOn(document, 'addEventListener')];
-  const timers = [jest.spyOn(window, 'setTimeout'), jest.spyOn(window, 'setInterval'), jest.spyOn(window, 'requestAnimationFrame')];
-  const reads = jest.spyOn(Storage.prototype, 'getItem');
-  const globals = new Set(Object.getOwnPropertyNames(globalThis));
-  try {
-    await jest.isolateModulesAsync(async () => {
-      await import(entry);
-    });
-    return {
-      listeners: listeners.reduce((sum, spy) => sum + spy.mock.calls.length, 0),
-      timers: timers.reduce((sum, spy) => sum + spy.mock.calls.length, 0),
-      storageReads: reads.mock.calls.length,
-      globalWrites: Object.getOwnPropertyNames(globalThis).filter((name) => !globals.has(name)).length,
-    };
-  } finally {
-    jest.restoreAllMocks();
+// What importing a package entry runs before anything is called: registrations and polyfills (statement calls),
+// decorator registries and global stores. Other module-scope calls are mostly pure values and are only recorded.
+acceptScenario('S-H14', () => {
+  const total: ModuleScopeEffects = { statementCalls: [], classDecorators: [], globalStores: [], otherCalls: [] };
+  const files = packageSourceFiles();
+  for (const file of files) {
+    const effects = moduleScopeEffects(file);
+    for (const kind of Object.keys(total) as (keyof ModuleScopeEffects)[]) total[kind].push(...effects[kind]);
   }
-}
-
-acceptScenario('S-H14', async () => {
-  const total: Metrics = { listeners: 0, timers: 0, storageReads: 0, globalWrites: 0 };
-  for (const entry of ENTRIES) {
-    const effects = await importEffects(entry);
-    for (const [name, value] of Object.entries(effects)) total[name] = (total[name] as number) + (value as number);
-  }
-  return total;
-}, 180_000);
+  const report = path.resolve(__dirname, '../../.artifacts/accept/headless/S-H14-effects.txt');
+  mkdirSync(path.dirname(report), { recursive: true });
+  writeFileSync(report, (['statementCalls', 'classDecorators', 'globalStores'] as const)
+    .flatMap((kind) => total[kind].map((effect) => `${kind} ${effect.file}:${effect.line} ${effect.callee}`)).join('\n'));
+  return {
+    statementCalls: total.statementCalls.length,
+    classDecorators: total.classDecorators.length,
+    globalStores: total.globalStores.length,
+    otherCalls: total.otherCalls.length,
+    sourceFiles: files.length,
+  };
+}, 60_000);

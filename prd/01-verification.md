@@ -66,7 +66,7 @@
 | S-H11 | 기본 runtime + NPC 30체 60초 | 외부 fetch 0 | DOM-03 |
 | S-H12 | save → load, legacy 포맷 load | 문서 해시 동일, legacy load 성공 | AST-06 |
 | S-H13 | mock 원격 24명, 로컬 정지 | 송신 ≤ 2Hz, Update ≤ 120B | DOM-08 |
-| S-H14 | 각 공개 엔트리 import만 실행 | 전역 구독·타이머·저장소 읽기·레지스트리 등록 0 | COR-09, PKG-01 |
+| S-H14 | 공개 엔트리가 도달하는 우리 모듈의 최상위 부수효과(TypeScript 구문 트리로 정적 측정) | 결과를 버리는 최상위 호출 0, 클래스 decorator 0, 모듈 최상위 store 0. 그 밖의 최상위 호출은 기록만 | COR-09, COR-12, PKG-01 |
 | S-H15 | 에셋 URL 변경 후 저장본 load, prefab base 변경 | 저장본 정상 load, 인스턴스·variant에 base 변경 반영(override 보존) | AST-03, AST-04 |
 | S-H16 | 2k 객체 문서에서 편집 후 undo | undo 비용이 변경 객체 수에 비례, reset delta 0 | AST-07 |
 
