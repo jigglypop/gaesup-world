@@ -221,6 +221,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
       ...(binding.prepareHydrate ? { prepareHydrate: (data: Parameters<RuntimeDomainBinding['hydrate']>[0]) => binding.prepareHydrate!(data) } : {}),
       ...(binding.owned ? { owned: true } : {}),
       ...(binding.revision ? { revision: () => binding.revision!() } : {}),
+      ...(binding.reset ? { reset: () => binding.reset!() } : {}),
     });
     unregisterSaveBindings.set(binding.key, unregister);
   };

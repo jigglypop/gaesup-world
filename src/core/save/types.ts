@@ -24,6 +24,8 @@ export type DomainBinding<T = SerializedDomainValue> = {
   owned?: boolean;
   /** Changes whenever serialize() output may change. Lets unchanged autosaves skip serialization. */
   revision?: () => number;
+  /** Returns the domain to a fresh session's state. A load whose save lacks this domain applies it, so no state carries over from the last slot. */
+  reset?: () => void;
 };
 
 export type SaveOptions = {

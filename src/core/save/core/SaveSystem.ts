@@ -59,6 +59,7 @@ export class SaveSystem {
       ...(binding.prepareHydrate ? { prepareHydrate: (data: Parameters<DomainBinding['hydrate']>[0]) => binding.prepareHydrate!(data) } : {}),
       ...(binding.owned ? { owned: true } : {}),
       ...(binding.revision ? { revision: () => binding.revision!() } : {}),
+      ...(binding.reset ? { reset: () => binding.reset!() } : {}),
     };
     this.bindings.set(binding.key, normalizedBinding);
     this.bindingsChanged();
@@ -215,9 +216,11 @@ export class SaveSystem {
     for (const [key, binding] of this.bindings) {
       try {
         const data = blob.domains[key];
-        applications.push({ key, binding, apply: binding.prepareHydrate
+        // A save written before this domain existed describes it as fresh, not as whatever the last slot left.
+        const reset = Object.hasOwn(blob.domains, key) ? undefined : binding.reset;
+        applications.push({ key, binding, apply: reset ?? (binding.prepareHydrate
           ? binding.prepareHydrate(data)
-          : () => binding.hydrate(data) });
+          : () => binding.hydrate(data)) });
       } catch (error) {
         errors.push(error);
         this.reportDiagnostic({ phase: 'hydrate', key, slot, error });

@@ -1,5 +1,6 @@
 import type { DomainBinding, SerializedDomainValue } from '../save';
 import type { GaesupPlugin, PluginContext, PluginRuntime } from './types';
+import { createStoreReset } from '../save/core/reset';
 import { createIdentityRevision } from '../save/core/revision';
 
 export type SerializableStoreState<TSerialized extends SerializedDomainValue> = {
@@ -73,6 +74,7 @@ export function createStoreDomainPlugin<
     setup(ctx: PluginContext) {
       const store = config.resolveStore?.(ctx) ?? config.store;
       const { serialize, hydrate, prepareHydrate } = config;
+      const reset = createStoreReset(store);
       const binding: DomainBinding<TSerialized> = {
         key: config.saveExtensionId,
         serialize: () => serialize ? serialize(store) : store.getState().serialize(),
@@ -80,6 +82,7 @@ export function createStoreDomainPlugin<
         ...(prepareHydrate ? { prepareHydrate: (data: TSerialized | null | undefined) => prepareHydrate(data, store) } : {}),
         // Zustand replaces the state object on every set, so an unchanged identity means nothing to save.
         revision: createIdentityRevision(() => [store.getState()]),
+        ...(reset ? { reset } : {}),
       };
 
       ctx.save.register(config.saveExtensionId, binding, config.id);
