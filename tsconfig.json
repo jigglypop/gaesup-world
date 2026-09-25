@@ -60,7 +60,7 @@
     },
     "emitDecoratorMetadata": false
   },
-  "include": ["src", "examples", "vite.config.ts", "jest.config.js", "jest.memory.config.js", "index.ts"],
+  "include": ["src", "examples", "vite.config.ts", "jest.config.js", "jest.memory.config.js"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"],
   "ts-node": {
     "esm": true

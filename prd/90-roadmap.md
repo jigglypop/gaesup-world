@@ -23,12 +23,11 @@
 
 | 순서 | Slice | 내용 |
 |---|---|---|
-| 1 | 정리 | 워크트리·WIP 브랜치·stash 정리, 남은 작업 회수, 루트의 오래된 파일 정리 |
-| 2 | VER-06a | 커밋 push, PR에서 CI가 실제로 도는지 확인, 트리거 브랜치 정리 |
-| 3 | VER-01a, VER-02a, VER-08a, VER-08b | 엔진 카운터, headless 수용 러너, 깨진 probe 정리, 내부 경로 fixture 정리 |
-| 4 | VER-03a, VER-04a, VER-05a | 브라우저 수용 러너(운영 빌드), `/accept`(PerformanceLab 확장), 기준 장면 확장 |
-| 5 | VER-01b, DOM-03a, AST-06a, DOM-11a | 도메인 카운터, 측정을 오염시키는 기본값 결함 3건(NPC 정책 요청, 저장 skip, minihome 대기 루프) |
-| 6 | VER-03b, VER-07a, VER-08c | ms 기준 파일, A/B 화면 비교, 1.x 표면 동결 게이트 |
+| 1 | VER-06a | 커밋 push, PR에서 CI가 실제로 도는지 확인, 트리거 브랜치 정리 |
+| 2 | VER-01a, VER-02a, VER-08a, VER-08b | 엔진 카운터, headless 수용 러너, 깨진 probe 정리, 내부 경로 fixture 정리 |
+| 3 | VER-03a, VER-04a, VER-05a | 브라우저 수용 러너(운영 빌드), `/accept`(PerformanceLab 확장), 기준 장면 확장 |
+| 4 | VER-01b, DOM-03a, AST-06a, DOM-11a | 도메인 카운터, 측정을 오염시키는 기본값 결함 3건(NPC 정책 요청, 저장 skip, minihome 대기 루프) |
+| 5 | VER-03b, VER-07a, VER-08c | ms 기준 파일, A/B 화면 비교, 1.x 표면 동결 게이트 |
 
 M0 끝에 전체 시나리오를 돌려 `test/accept/budgets.json`과 known-red 목록을 확정한다. 이 목록이 이후 진행률 보드다.
 
@@ -89,22 +88,22 @@ COR-05c(스케줄러 밖 루프 0)는 M2 끝까지
 | DOM-08a | 네트워크 정확성 결함(D-06, D-07)과 원격 모델 allowlist. 언제든 가능 |
 | AST-01a | D-14(Draco GLB 로드 실패). M4 전에 해도 된다 |
 | PKG-01a~g | 번들 경계. PKG-01g만 COR-09·COR-12 이후 |
-| PKG-03a~d, PKG-04a~f, PKG-05a~e | 계층·코드 건강·툴링. PKG-03d는 COR-06(모드) 이후 |
+| PKG-03a~d, PKG-04a~e, PKG-05a~e | 계층·코드 건강·툴링. PKG-03d는 COR-06(모드) 이후 |
 
 ## 3. 먼저 할 10개
 
 | 순위 | Slice | 이유 |
 |---|---|---|
-| 1 | 정리 | 판본이 섞인 워크트리·브랜치·stash와 루트의 오래된 파일 |
-| 2 | VER-06a | CI가 한 번도 실제로 돈 적이 없다. 이후 모든 판정의 전제 |
-| 3 | VER-01a, VER-02a | 카운터와 headless 러너. S-H 시나리오의 기반 |
-| 4 | VER-08a, VER-08b | 깨진 probe와 내부 경로 fixture. 코어를 바꾸기 전에 회귀 장치를 살린다 |
-| 5 | VER-03a, VER-04a | 운영 빌드 측정과 `/accept`. 소유자가 직접 보는 화면 |
-| 6 | DOM-03a | 기본 설정에서 NPC마다 없는 서버로 요청을 보낸다. 측정을 오염시킨다 |
-| 7 | AST-06a | 변경 없는 autosave가 전 도메인을 직렬화한다 |
-| 8 | DOM-11a | 대표 데모가 대기 중에도 매 프레임 그린다 |
-| 9 | VER-05a | 기준 장면에 NPC·원격·편집·궤도·그림자 경로가 없다 |
-| 10 | COR-01a | 엔진 코어의 첫 단계(kernel). 이후 모든 코어 작업의 전제 |
+| 1 | VER-06a | CI가 한 번도 실제로 돈 적이 없다. 이후 모든 판정의 전제 |
+| 2 | VER-01a, VER-02a | 카운터와 headless 러너. S-H 시나리오의 기반 |
+| 3 | VER-08a, VER-08b | 깨진 probe와 내부 경로 fixture. 코어를 바꾸기 전에 회귀 장치를 살린다 |
+| 4 | VER-03a, VER-04a | 운영 빌드 측정과 `/accept`. 소유자가 직접 보는 화면 |
+| 5 | DOM-03a | 기본 설정에서 NPC마다 없는 서버로 요청을 보낸다. 측정을 오염시킨다 |
+| 6 | AST-06a | 변경 없는 autosave가 전 도메인을 직렬화한다 |
+| 7 | DOM-11a | 대표 데모가 대기 중에도 매 프레임 그린다 |
+| 8 | VER-05a | 기준 장면에 NPC·원격·편집·궤도·그림자 경로가 없다 |
+| 9 | COR-01a | 엔진 코어의 첫 단계(kernel). 이후 모든 코어 작업의 전제 |
+| 10 | COR-05b | D-10. 프로젝트 설정의 고정 틱 설정이 runtime clock에 들어가지 않는다. 작고 독립적이다 |
 
 ## 4. 결정 기록
 
@@ -137,7 +136,6 @@ COR-05c(스케줄러 밖 루프 0)는 M2 끝까지
 | 기준 기기(ms 판정) | VER-03b | 개발 PC(RTX 5060 Ti) 1종 + 내장 GPU 노트북 1종 |
 | CI 트리거 브랜치를 `main`과 `master` 중 무엇으로 통일할 것인가 | VER-06a | 기본 브랜치 하나 |
 | 샘플 GLB를 별도 패키지로 분리할 것인가, CDN으로 둘 것인가 | PKG-02c | 별도 패키지 |
-| 루트의 `info.tsx`, `todolist.md`, `index.ts` 유지 여부 | PKG-04f | 확인 후 정리 |
 
 ## 6. 운영 규칙
 

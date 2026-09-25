@@ -80,7 +80,6 @@ editor      editor, project-settings, admin
 | PKG-04c | `defineStoreDomainPlugin`으로 13개 `plugin.ts` 대체(DOM-09와 함께), 정의 registry 6개를 kernel `createDefinitionRegistry<T>()`로, pub/sub을 kernel emitter 하나로(`mitt` 제거), 수학·UI 헬퍼 통합 | registry 싱글턴 0, `mitt` 0, `cx` 정의 1 |
 | PKG-04d | 대형 파일 분할: `NavigationSystem.ts`, `NPCNetworkManager.ts`(공통 transport). 나머지 대형 파일은 해당 항목에서 분할(buildingStore·npcStore는 DOM-01·DOM-03, brain 패널은 EDT-04, `PlayerNetworkManager`는 DOM-08) | 500줄 초과 모듈 10개 이하, 800줄 초과 0 |
 | PKG-04e | 같은 이름 export 53개와 명칭 정리(NPC brain blueprint → behavior graph, `catalog` → collection, 달력 `events` → calendar). 내부 즉시, 공개는 2.0 | 중복 이름 수 감소 |
-| PKG-04f | 루트 추적 파일(`info.tsx`, `todolist.md`, `index.ts`) 정리 | 사용자 확인 후 |
 
 ### PKG-05 CI·jest·컴파일러
 
