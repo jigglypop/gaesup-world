@@ -176,7 +176,7 @@ defineSystem({
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| COR-01a | `src/core/kernel/`: `runtime/frame`(FrameScheduler, phases, hooks), `frameTime`(boilerplate에서 이동), `runtimeContext`, service key, emitter, logger·`reportError`, `Result`, 정의 registry 팩토리, `EngineStats`(VER-01a). kernel은 도메인 import 0. 기존 경로는 re-export shim | kernel 폐포 검사(도메인 import 0), 도메인 SCC 감소 기록 |
+| COR-01a | `src/core/kernel/`(`EngineStats`가 첫 모듈로 이미 있음)로 `runtime/frame`(FrameScheduler, phases, hooks), `frameTime`(boilerplate에서 이동), `runtimeContext`, service key, emitter, logger·`reportError`, `Result`, 정의 registry 팩토리를 옮긴다. kernel은 도메인 import 0. 기존 경로는 re-export shim | kernel 폐포 검사(도메인 import 0), 도메인 SCC 감소 기록 |
 
 ### COR-02 `EntityWorld`와 컴포넌트 레지스트리
 

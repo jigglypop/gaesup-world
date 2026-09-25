@@ -34,6 +34,7 @@ import { createWorldInputScope } from '../input/WorldInputScope';
 import { DEFAULT_INTERACTION_INPUT_EXTENSION_ID, type InputBackendExtension } from '../interactions/core/adapter';
 import { createInteractablesStore } from '../interactions/stores/interactablesStore';
 import { INVENTORY_STORE_SERVICE, createInventoryStore } from '../inventory/stores/inventoryStore';
+import { EngineStats } from '../kernel';
 import { MAIL_STORE_SERVICE, createMailStore } from '../mail/stores/mailStore';
 import { MotionBridge } from '../motions/bridge/MotionBridge';
 import { PhysicsBridge } from '../motions/bridge/PhysicsBridge';
@@ -150,6 +151,9 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   grassManager.suspend();
   const clockLoop = getTimeClock(timeStore);
   clockLoop.suspend();
+  const stats = new EngineStats();
+  stats.source('fixedTicks', () => clockLoop.clock.tick);
+  stats.source('clockSystems', () => clockLoop.clock.systemCount, 'gauge');
   const npcSimulation = new NPCSimulation(npcStore, clockLoop, { conditions: { questStore, friendshipStore }, adapters: npcBrainAdapters, scoped: true });
   const runtimeLogger = createPluginLogger(options.logger);
   const plugins = createPluginRegistry(options.logger ? { logger: options.logger } : {});
@@ -509,7 +513,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   };
 
   return {
-    worldId, store, timeStore, clockLoop, inputScope, inputActions, gamepad, interactablesStore, cinematics, navigation, clickNavigation, stateManager, inputAdapter, grassManager, worldBridge, worldObjectStore, worldViews,
+    worldId, store, timeStore, clockLoop, stats, inputScope, inputActions, gamepad, interactablesStore, cinematics, navigation, clickNavigation, stateManager, inputAdapter, grassManager, worldBridge, worldObjectStore, worldViews,
     inventoryStore, walletStore, shopStore, friendshipStore, weatherStore, plotStore, questStore, dialogStore,
     audioEngine, audioStore, characterStore, sceneStore, roomVisibilityStore,
     catalogStore, craftingStore, mailStore, townStore, eventsStore,

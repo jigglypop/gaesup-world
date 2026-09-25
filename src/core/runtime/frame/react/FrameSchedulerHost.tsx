@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 
 import { getFrameTimeMs } from '../../../boilerplate/hooks/frameTime';
+import { useGaesupRuntime } from '../../runtimeContext';
 import { frameScheduler, POST_PHYSICS_PHASE_INDEX, type FrameScheduler } from '../FrameScheduler';
 import { FRAME_PHASES } from '../types';
 import { useCanvasFrameScheduler } from './canvasScheduler';
@@ -32,6 +33,10 @@ export function FrameSchedulerHost({ scheduler: schedulerProp, metrics = false }
   const canvasScheduler = useCanvasFrameScheduler();
   const scheduler = schedulerProp ?? canvasScheduler;
   const [token] = useState(() => ({}));
+  const runtime = useGaesupRuntime();
+
+  // Frames are counted where the scheduler already numbers them, so reading the stat costs nothing per frame.
+  useLayoutEffect(() => runtime?.stats.source('frames', () => scheduler.getFrame()), [runtime, scheduler]);
 
   useLayoutEffect(() => {
     const detach = scheduler.attachHost(token);

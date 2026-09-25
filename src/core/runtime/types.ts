@@ -25,6 +25,7 @@ import type { WorldInputActions } from '../input/WorldInputActions';
 import type { WorldInputScope } from '../input/WorldInputScope';
 import type { InteractablesStore } from '../interactions/stores/interactablesStore';
 import type { InventoryStore } from '../inventory/stores/inventoryStore';
+import type { EngineStats } from '../kernel';
 import type { MailStore } from '../mail/stores/mailStore';
 import type { MotionBridge } from '../motions/bridge/MotionBridge';
 import type { EntityStateManager } from '../motions/core/system/EntityStateManager';
@@ -139,6 +140,8 @@ export type GaesupRuntime = {
   subscribeLifecycle: (listener: () => void) => () => void;
   timeStore: TimeStore;
   clockLoop: AnimationClockLoop;
+  /** Engine counters for tests, the acceptance runner and debug HUDs. */
+  readonly stats: EngineStats;
   pluginRuntime: RuntimePluginTarget;
   plugins: PluginRegistry;
   save: SaveSystem;

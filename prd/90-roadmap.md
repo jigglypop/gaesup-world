@@ -24,7 +24,7 @@
 | 순서 | Slice | 내용 |
 |---|---|---|
 | 1 | VER-06a | 커밋 push, PR에서 CI가 실제로 도는지 확인, 트리거 브랜치 정리 |
-| 2 | VER-01a, VER-02a, VER-08a, VER-08b | 엔진 카운터, headless 수용 러너, 깨진 probe 정리, 내부 경로 fixture 정리 |
+| 2 | VER-02a, VER-08a, VER-08b | headless 수용 러너, 깨진 probe 정리, 내부 경로 fixture 정리 |
 | 3 | VER-03a, VER-04a, VER-05a | 브라우저 수용 러너(운영 빌드), `/accept`(PerformanceLab 확장), 기준 장면 확장 |
 | 4 | VER-01b, DOM-03a, AST-06a, DOM-11a | 도메인 카운터, 측정을 오염시키는 기본값 결함 3건(NPC 정책 요청, 저장 skip, minihome 대기 루프) |
 | 5 | VER-03b, VER-07a, VER-08c | ms 기준 파일, A/B 화면 비교, 1.x 표면 동결 게이트 |
@@ -95,7 +95,7 @@ COR-05c(스케줄러 밖 루프 0)는 M2 끝까지
 | 순위 | Slice | 이유 |
 |---|---|---|
 | 1 | VER-06a | CI가 한 번도 실제로 돈 적이 없다. 이후 모든 판정의 전제 |
-| 2 | VER-01a, VER-02a | 카운터와 headless 러너. S-H 시나리오의 기반 |
+| 2 | VER-02a | headless 수용 러너. S-H 시나리오의 기반 |
 | 3 | VER-08a, VER-08b | 깨진 probe와 내부 경로 fixture. 코어를 바꾸기 전에 회귀 장치를 살린다 |
 | 4 | VER-03a, VER-04a | 운영 빌드 측정과 `/accept`. 소유자가 직접 보는 화면 |
 | 5 | DOM-03a | 기본 설정에서 NPC마다 없는 서버로 요청을 보낸다. 측정을 오염시킨다 |

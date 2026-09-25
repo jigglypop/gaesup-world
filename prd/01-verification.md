@@ -28,7 +28,7 @@
 
 ## 3. 엔진 카운터(VER-01)
 
-엔진이 운영 빌드에서도 유지하는 정수 카운터다. 증가 연산만 하고 수집·표시 UI는 운영 번들에 넣지 않는다. `runtime.stats.snapshot()`으로 읽고 `reset()`으로 0으로 만든다.
+엔진이 운영 빌드에서도 유지하는 정수 카운터다(`kernel/stats.ts` `EngineStats`). 다른 곳에 이미 있는 값(고정 시계 틱 수, 스케줄러 프레임 번호)은 source로 등록해 조회할 때만 읽고, 없는 값만 counter 핸들을 증가시킨다. 수집·표시 UI는 운영 번들에 넣지 않는다. `runtime.stats.snapshot()`으로 읽고 `reset()`으로 측정 구간을 새로 시작한다. 지금 등록된 것은 `fixedTicks`, `clockSystems`, `frames`(`FrameSchedulerHost`가 있을 때)다.
 
 | 분류 | 카운터 | 출처 |
 |---|---|---|
@@ -165,7 +165,6 @@ CI가 실제로 도는지 확인하는 것이 VER-06의 첫 완료 조건이다.
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| VER-01a | kernel `EngineStats`(정수 카운터, snapshot/reset)와 `runtime.stats`. 렌더 카운터는 `readRendererStats` 확장, 프레임 카운터는 FrameScheduler·FixedStepClock | 카운터 단위 테스트, 운영 번들에 수집 UI 0 |
 | VER-01b | 도메인 카운터 연결(저장, 네트워크, 에셋, 오류). batch·엔티티 카운터는 해당 항목이 생길 때 추가. `PerformanceCollector`는 4Hz store 쓰기 대신 `runtime.stats`를 읽는 HUD로 바꾸고 dev에서도 기본 마운트하지 않는다(editor 경로 re-export는 `@deprecated`) | S-H10·S-H11이 카운터로 판정, 기본 설정 월드에서 성능 store 쓰기 0 |
 | VER-02a | jest project `accept`, 시나리오 정의 형식, `measureAllocations`, budgets.json·known-red 처리 | 지금 코드로 S-H10, S-H11, S-H13, S-H14를 실행해 green/known-red 판정 |
 | VER-03a | `pnpm accept`: 운영 빌드, preview 서버, Playwright 러너, 카운터 수집, 보고서(터미널·JSON·HTML) | 지금 코드로 S-B01~S-B05, S-B11을 실행해 판정 |
