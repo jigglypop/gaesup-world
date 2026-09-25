@@ -9,7 +9,8 @@ import {
   wallToPlacementEntry,
 } from './model';
 import { useBuildingStore, BUILDING_STORE_SERVICE } from './stores/buildingStore';
-import { readBuildingSaveFields } from './stores/persistence';
+import { applyBuildingHydration, readBuildingSaveFields } from './stores/persistence';
+import { BuildingSpatialIndex } from './stores/spatialIndex';
 import type { BuildingSerializedState } from './types';
 import { createIdentityRevision } from '../save/core/revision';
 
@@ -91,6 +92,10 @@ export function createBuildingPlugin(options: BuildingPluginOptions = {}): Gaesu
       // serialize() clones every entry; UI-only store updates keep the revision.
       owned: true,
       revision: createIdentityRevision(() => readBuildingSaveFields(store.getState())),
+      // The index mutates in place, so the construction state gets a fresh one; `initialized: false` reseeds defaults.
+      reset: () => store.setState((state) => applyBuildingHydration(state, {
+        ...store.getInitialState(), spatialIndex: new BuildingSpatialIndex(), initialized: false,
+      })),
     }, pluginId);
     ctx.services.register(storeServiceId, {
       useStore: store,

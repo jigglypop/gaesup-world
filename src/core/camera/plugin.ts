@@ -214,6 +214,14 @@ function prepareCameraState(data: CameraSerializedState | null | undefined, stor
   };
 }
 
+/** Only the camera fields go back to construction; the rest of the runtime store belongs to other domains. */
+function resetCameraState(store: GaesupStore): void {
+  const { mode, cameraOption } = store.getInitialState();
+  // The hydrate round trip gives the reset its own vectors; a full option comes back full.
+  const option = deserializeCameraOption(serializeValue(cameraOption) as CameraSerializedState['cameraOption']) as CameraOptionType;
+  store.setState({ mode: { ...mode }, cameraOption: option });
+}
+
 function hydrateCameraState(data: CameraSerializedState | null | undefined, store: GaesupStore = useGaesupStore): void {
   prepareCameraState(data, store)();
 }
@@ -242,6 +250,7 @@ export function createCameraPlugin(options: CameraPluginOptions = {}): GaesupPlu
         hydrate: (data: CameraSerializedState | null | undefined) => hydrateCameraState(data, store),
         prepareHydrate: (data: CameraSerializedState | null | undefined) => prepareCameraState(data, store),
         revision: createIdentityRevision(() => [store.getState().mode, store.getState().cameraOption]),
+        reset: () => resetCameraState(store),
       }, pluginId);
       ctx.services.register(storeServiceId, {
         useStore: store,

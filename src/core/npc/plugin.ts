@@ -121,6 +121,11 @@ export function createNPCPlugin(options: NPCPluginOptions = {}): GaesupPlugin {
           return [state.templates, state.instances, state.categories, state.clothingSets, state.clothingCategories,
             state.animations, state.brainBlueprints, state.editMode, findNPCSimulation(store)?.poseRevision ?? 0];
         }),
+        // The saved fields as constructed; the simulation drops poses of instances that leave the store.
+        reset: () => {
+          const { templates, instances, categories, clothingSets, clothingCategories, animations, brainBlueprints, editMode } = store.getInitialState();
+          store.setState({ templates, instances, categories, clothingSets, clothingCategories, animations, brainBlueprints, editMode, initialized: false });
+        },
       }, pluginId);
       ctx.services.register(storeServiceId, {
         useStore: store,

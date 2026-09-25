@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 
+import { createBuildingPlugin } from '../../building/plugin';
+import { createCameraPlugin } from '../../camera/plugin';
 import { createInventoryPlugin } from '../../inventory/plugin';
+import { createNPCPlugin } from '../../npc/plugin';
 import { createGaesupRuntime } from '../../runtime';
 import { createStoreReset } from '../core/reset';
 import { SaveSystem } from '../core/SaveSystem';
@@ -73,6 +76,38 @@ test('loading a slot written without the inventory domain empties the inventory 
 
     expect(await runtime.save.load('before-inventory')).toBe(true);
     expect(runtime.inventoryStore.getState().countOf('wood')).toBe(0);
+  } finally {
+    await runtime.dispose();
+  }
+});
+
+test('loading a slot without building, npc or camera data gives each of them a new session state', async () => {
+  const adapter = memoryAdapter();
+  const runtime = createGaesupRuntime({ saveOptions: { adapter }, plugins: [createBuildingPlugin(), createNPCPlugin(), createCameraPlugin()] });
+  await runtime.setup();
+  try {
+    const blob = runtime.save.createBlob();
+    for (const key of ['building', 'npc', 'camera']) delete blob.domains[key];
+    await adapter.write('before-town', blob);
+    const position = { x: 40, y: 0, z: 40 };
+    runtime.buildingStore.getState().addBlock({ id: 'block', position, materialId: 'stone' });
+    runtime.npcStore.getState().addInstance({ id: 'npc', templateId: 't', name: 'npc', position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] });
+    runtime.store.getState().setMode({ type: 'vehicle' });
+    runtime.store.getState().setCameraOption({ zoom: 3 });
+    runtime.store.getState().setUrls({ characterUrl: 'kept.glb' });
+
+    expect(await runtime.save.load('before-town')).toBe(true);
+
+    const building = runtime.buildingStore.getState();
+    expect(building.blocks).toEqual([]);
+    // A reused index would still report the removed block's cell as taken.
+    expect(building.checkBlockPosition({ position })).toBe(false);
+    expect(building.initialized).toBe(false);
+    expect(runtime.npcStore.getState().instances.size).toBe(0);
+    const camera = runtime.store.getState();
+    expect(camera.mode.type).toBe('character');
+    expect(camera.cameraOption.zoom).toBe(runtime.store.getInitialState().cameraOption.zoom);
+    expect(camera.urls.characterUrl).toBe('kept.glb');
   } finally {
     await runtime.dispose();
   }
