@@ -12,8 +12,8 @@ export const PACKAGE_ENTRIES = [
   'src/network.ts', 'src/next.ts', 'src/plugins.ts', 'src/postprocessing.ts', 'src/runtime.ts', 'src/server-contracts.ts',
 ];
 
-/** Factories whose module-scope result is a global store (RC-4). */
-const STORE_FACTORIES = new Set(['create', 'createStore', 'createWithEqualityFn', 'createScopedStoreHook']);
+/** Factories whose module-scope result is a global store (RC-4); `lazyStore` and `lazyScopedStore` create on first use. */
+const STORE_FACTORIES = new Set(['create', 'createStore', 'createWithEqualityFn']);
 
 export type ModuleScopeEffect = { file: string; line: number; callee: string };
 export type ModuleScopeEffects = {

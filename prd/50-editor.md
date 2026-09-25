@@ -62,7 +62,7 @@
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| EDT-04a | `BuildingPanel/brain/index.tsx`(2,142줄)를 graph editor, node inspector, condition/action editor, preview-state hook, validation util로 분할. `GameplayEventPanel`(useState 9개)도 같은 방식 | 파일 500줄 이하, 에디터 수용 시나리오(VER-08a로 옮긴 에디터 확인) 통과 |
+| EDT-04a | `BuildingPanel/brain/index.tsx`(2,142줄)를 graph editor, node inspector, condition/action editor, preview-state hook, validation util로 분할. `GameplayEventPanel`(useState 9개)도 같은 방식 | 파일 500줄 이하, 에디터 수용 시나리오(보관한 에디터 probe의 확인 항목) 통과 |
 
 ### EDT-05 보조 캔버스(M3)
 
@@ -96,5 +96,5 @@
 
 | 리스크 | 대응 |
 |---|---|
-| `BuildingPanel` 흡수 중 편집 기능 누락 | 에디터 기능 체크리스트를 수용 시나리오로 먼저 만든다. 기존 에디터 probe(`probe-creator-menu`, `probe-editor-return`)는 삭제된 라우트를 열어 지금 동작하지 않으므로 VER-08a에서 옮긴다. 흡수 전후 같은 조작 결과를 비교 |
+| `BuildingPanel` 흡수 중 편집 기능 누락 | 에디터 기능 체크리스트를 수용 시나리오로 먼저 만든다. 삭제된 라우트를 열던 에디터 probe는 `scripts/archive/`(`probe-creator-menu.cjs`, `probe-editor-return.cjs`)에 있다. 체크리스트는 그 확인 항목에서 시작한다. 흡수 전후 같은 조작 결과를 비교 |
 | 미리보기 격리로 spawn 경로(`runtime.worldBridge` 요구)가 깨짐 | spawn은 메인 runtime에 명시적으로 요청하는 API로 분리 |

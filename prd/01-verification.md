@@ -47,7 +47,7 @@
 
 ## 4. 수용 시나리오
 
-시나리오는 `test/accept/scenarios/`에 한 번 정의한다. 정의는 준비(장면·규모), 단계(입력·명령), 단언(카운터 예산·동작)으로 이루어진다. 예산 수치는 `test/accept/budgets.json`에 두고 PR에서 이유와 함께만 바꾼다.
+시나리오는 한 번만 정의한다. headless는 `test/accept/*.test.ts`, browser는 PerformanceLab 수용 모음(`examples/performance/accept/suite.ts`)이다. 정의는 준비(장면·규모), 단계(입력·명령), 단언(카운터 예산·동작)으로 이루어진다. 예산 수치는 `test/accept/budgets.json`에 두고 PR에서 이유와 함께만 바꾼다.
 
 ### 4.1 headless(S-H, Node, 캔버스·React 없음)
 
@@ -106,27 +106,24 @@ jest project `accept`(`test/accept/*.test.ts`, 기본 node 환경)로 돈다. `p
 
 ### 5.2 `pnpm accept`(VER-03)
 
-1. `vite build`로 examples 운영 빌드를 만든다(수용 페이지 포함, 5.3).
-2. `vite preview`로 서빙하고 Playwright로 연다(`@playwright/test` 1.63, chromium 채널). 로컬은 실제 GPU(WebGPU), CI는 `--software`(SwiftShader)다. Windows headless shell은 WebGPU device를 만들지 못하므로 chromium 채널을 쓴다. 기존 `scripts/frame-harness.cjs`의 브라우저 인자, `__THREE_DEVTOOLS__` renderer 포착, rAF당 draw 합산, CDP 수집, 3회 중앙값을 재사용한다. 지금 `perf:check`는 minihome `/`를 재고 `perf:world`에는 기준 파일이 없다. 두 명령을 이 러너로 대체한다.
-3. 시나리오마다 카운터를 reset하고 단계를 실행한 뒤 snapshot을 읽는다.
-4. 결과를 터미널 표, `.artifacts/accept/<시각>/report.json`, `report.html`(스크린샷 포함)로 낸다. CI에서는 같은 표를 job summary에 쓴다.
-5. `--timing`이면 ms 지표를 기기별 기준 파일(`test/accept/timing/<기기>.json`)과 비교해 경고한다.
+`scripts/accept.mjs`가 다음 순서로 돈다. `--no-build`는 기존 `demo-dist`를 쓰고, `--only=S-B02,S-B11`은 일부만 돈다.
+
+1. `scripts/build-demo.mjs`로 배포 데모와 같은 운영 빌드를 만든다(수용 페이지 포함, 5.3).
+2. `vite preview`로 `/gaesup-world/` 아래에 서빙하고 Playwright로 `/accept`를 연다. 로컬은 Chrome 채널의 실제 GPU(WebGPU)다. CI는 `--software`(SwiftShader)다.
+3. 브라우저 시나리오는 페이지의 `window.performanceLab.run`으로 실행한다. 판정도 페이지가 같은 예산표로 한다(`accept.verdict`). 러너는 시나리오가 판정한 직후 살아 있는 장면을 스크린샷으로 남긴다.
+4. S-B01(경로별 첫 로드)만 러너가 잰다. 경로마다 로드한 청크의 gzip 크기를 합하고, 청크 sourcemap의 원본 경로로 rapier·editor·postprocessing 포함 여부를 본다. 판정은 페이지의 `accept.judge`로 한다.
+5. 결과를 터미널 표, `.artifacts/accept/<시각>/report.json`, `report.html`(스크린샷 포함)로 낸다. CI에서는 같은 표를 job summary에 쓴다. green이 예산을 넘거나 known-red가 예산 안으로 들어오거나 측정이 오류면 실패한다.
+6. `--timing`(VER-03b)이면 ms 지표를 기기별 기준 파일(`test/accept/timing/<기기>.json`)과 비교해 경고한다. 그때 `perf:check`·`perf:world`(frame harness, dev 서버 측정)를 이 러너로 대체한다.
 
 ### 5.3 `/accept` 페이지(VER-04)
 
-새 페이지를 만들지 않고 기존 PerformanceLab(`examples/performance`)을 확장한다. PerformanceLab에는 이미 다음이 있다.
-- 시나리오 계약(`assert`/`sample`/`unavailable`, `scenarios/types.ts:5-25`)
-- 실행 기록과 소스 identity
-- IndexedDB 저장, JSON 입출력, baseline 비교
-- 자동화 API(`window.performanceLab.run`, `PerformanceLab.tsx:12-20`)
+`/accept`는 PerformanceLab(`examples/performance`)의 수용 모음(`suite="accept"`)이다. Lab의 시나리오 계약, 실행 기록, IndexedDB 저장, JSON 입출력, 자동화 API를 그대로 쓴다.
 
-`/accept`는 Lab의 수용 모음(suite)을 여는 경로다. 요구사항 표(`requirements.ts` R01~R31)는 마일스톤 체크리스트(6절)로 바꾼다.
-
-- 시나리오 목록, 개별·전체 실행, 예산·결과·판정 표, JSON 내보내기.
-- 실시간 HUD: fps, frame ms, draw, triangles, programs, batch 재생성, 업로드 바이트, commit, long task. 렌더 카운터는 `readRendererStats`로 읽는다. 브라우저 React commit은 devtools hook 스텁(`onCommitFiberRoot` 카운터)으로 센다. 지금은 jest `<Profiler>`에서만 센다.
-- 운영 빌드에 들어가므로 배포 데모(GitHub Pages)에서도 열린다. 휴대폰에서 같은 표를 본다(`pnpm dev --host` 또는 배포 데모). 기기 등급 자동 감지 결과도 표시한다.
-
-`pnpm accept`(5.2)는 이 페이지를 Playwright로 열어 `window.performanceLab.run`으로 같은 시나리오를 실행한다. 페이지와 러너가 시나리오 코드를 공유하므로 두 결과가 갈라지지 않는다.
+- 보드: 전체 시나리오의 상태, 판정, 위반. 브라우저 시나리오는 개별·전체 실행이 되고, 보고서 JSON으로 내보낸다. headless 시나리오와 S-B01은 판정하는 곳(`pnpm test:accept`, `pnpm accept`)을 표시한다.
+- 마일스톤 체크리스트: 6절 표를 문서에서 직접 읽는다(`examples/performance/accept/milestones.ts`). 형식은 `catalog.test.ts`가 지킨다.
+- 실시간 HUD: fps, 최악 프레임, draw, 삼각형, program, React commit, long task, 요청, 기기 등급(auto). React commit은 devtools hook 스텁으로 센다. 이 스텁은 `index.html`이 앱보다 먼저 실행하는 모듈(`accept/counters.ts`)이 설치한다. HUD는 DOM에 직접 쓰므로 commit을 만들지 않는다.
+- 브라우저 시나리오는 기준 장면(`examples/world`의 `PerfWorldScene`)과 minihome 엔진 위에서 돈다. 입력이 장면에 닿지 않았거나 캐릭터가 떨어지는 등 측정이 무효면 오류로 판정한다.
+- 운영 빌드에 들어가므로 배포 데모(GitHub Pages)에서도 열린다. 휴대폰에서 같은 표를 본다.
 
 ### 5.4 CI(VER-06)
 
@@ -136,7 +133,7 @@ jest project `accept`(`test/accept/*.test.ts`, 기본 node 환경)로 돈다. `p
 | accept-browser | 운영 빌드 + SwiftShader로 S-B 결정적 지표 | 예산 초과, known-red가 통과함 |
 | nightly(선택) | self-hosted GPU runner의 `pnpm accept --timing` | 경고만 |
 
-CI가 실제로 도는지 확인하는 것이 VER-06의 첫 완료 조건이다. 로컬 main은 origin보다 28커밋 앞서 있어 새 workflow가 GitHub에서 실행된 적이 없다. 지금 PR 단계에는 브라우저 검사가 없고, 배포 후 `release/browser.mjs`가 WebGL 환경에서 minihome 저장·재로드만 확인한다.
+accept-browser 잡은 `pnpm accept --software`로 돈다. `ci/**` push에서 연속으로 녹색이 된 뒤 릴리스 관문(needs)에 넣는다. 배포 후에는 `release/browser.mjs`가 WebGL 환경에서 minihome 저장·재로드를 확인한다.
 
 ### 5.5 1.x 표면 동결
 
@@ -173,14 +170,10 @@ CI가 실제로 도는지 확인하는 것이 VER-06의 첫 완료 조건이다.
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
 | VER-01b | 도메인 카운터 연결(저장, 네트워크, 에셋, 오류). batch·엔티티 카운터는 해당 항목이 생길 때 추가. `PerformanceCollector`는 4Hz store 쓰기 대신 `runtime.stats`를 읽는 HUD로 바꾸고 dev에서도 기본 마운트하지 않는다(editor 경로 re-export는 `@deprecated`) | S-H10·S-H11이 카운터로 판정, 기본 설정 월드에서 성능 store 쓰기 0 |
-| VER-03a | `pnpm accept`: 운영 빌드, preview 서버, Playwright 러너, 카운터 수집, 보고서(터미널·JSON·HTML) | 지금 코드로 S-B01~S-B05, S-B11을 실행해 판정 |
 | VER-03b | `--timing`과 기기별 기준 파일, 3회 중앙값 | 같은 기기 3회 편차 기록 |
-| VER-04a | `/accept` 페이지와 HUD | 로컬·배포 데모에서 전체 실행 표 |
-| VER-05a | 기준 장면 확장(`examples/world`): NPC, 원격 mock, window 벽, water patch 규모 파라미터, 정지·궤도·편집 경로, 라이브러리 조명(`DynamicSky` 또는 `CascadedSun`) 사용 | S-B03~S-B09가 이 장면에서 실행 |
-| VER-06a | 기본 브랜치를 하나로(GitHub 기본 브랜치는 `master`, 작업은 `main`), `accept-browser` 잡 추가(VER-03a 뒤), pnpm store 캐시. CI 실행 자체는 `ci/**` 브랜치 push로 확인했다(checks·jest·package·demo 녹색, release 건너뜀) | PR과 `ci/**` push에서 브라우저 잡까지 녹색 |
+| VER-05b | 에디터 기준 경로: 예제에 에디터 셸(NPC 패널, BlueprintPreview)을 여는 경로와 그 조작 스크립트 | S-B13이 이 경로에서 실행 |
+| VER-06a | 기본 브랜치를 하나로(GitHub 기본 브랜치는 `master`, 작업은 `main`, 사용자 결정), `accept-browser`를 릴리스 관문에 추가 | PR과 `ci/**` push에서 브라우저 잡까지 녹색, 릴리스가 accept-browser를 기다림 |
 | VER-07a | S-B12 A/B 스크린샷 비교(렌더 경로 플래그) | 옛 경로끼리 비교 시 차이 0 |
-| VER-08a | 깨진 probe 정리: 삭제된 라우트를 여는 8개를 수용 시나리오로 옮기거나 `scripts/archive`로. 대상은 `browser-smoke`(`/minimal`), `probe-webgpu-world`(`/showcase`, `/minimal`), `probe-social-world`·`probe-editor-return`(`/world`에 없는 저장 버튼), `probe-creator-menu`(`/creator`), `probe-multiplayer-panel`(`/multiplayer`), `probe-toon-water`(`/water-comparison`), `probe-avatar`(`/avatar`). 남는 probe는 공용 서버(`startProbeServer`)와 오류 수집(`collectPageErrors`)을 쓰고 포트를 vite 설정에서 읽는다 | 남은 probe 전부 실행 성공, `test:browser` 통과 |
-| VER-08b | 내부 경로(`/src/core/...`)를 import하는 fixture(`rendering-performance.tsx`, `unified-world.tsx`)와 `benchmark-*.cjs`를 공개 API나 수용 시나리오로 옮김. 코어 재작성 중 깨지지 않게 하기 위해서다. minihome `apiChecks`의 라이브러리 검사 9개는 jest로 | fixture·벤치의 내부 경로 import 0 |
 | VER-08c | 1.x 표면 동결 게이트(5.5): BrowserSmoke 브라우저 실행, React 18/R3F 8 매트릭스 | 매트릭스 두 조합 통과 |
 
 ## 8. 리스크와 대응

@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 |---|---|
-| 우선순위 | P0(DOM-01, DOM-08a, DOM-11a), 나머지 P1 |
-| 마일스톤 | M0(DOM-11a), M2(DOM-01), M3(나머지) |
+| 우선순위 | P0(DOM-01, DOM-08a), 나머지 P1 |
+| 마일스톤 | M2(DOM-01), M3(나머지) |
 | 선행 | 10 PRD(코어), 20 PRD REN-01(RenderWorld) |
 
 ## 1. 목표
@@ -66,7 +66,7 @@
 ### DOM-03 NPC(M3)
 
 현재 상태 [확인]:
-- 정책 서버 엔드포인트는 기본으로 비어 있어 요청을 보내지 않고, 설정된 서버가 실패하면 모든 NPC가 함께 백오프한다. 모듈 import 때 기본 어댑터를 전역 레지스트리에 등록하는 것은 남아 있다(COR-09c).
+- 정책 서버 엔드포인트는 기본으로 비어 있어 요청을 보내지 않고, 설정된 서버가 실패하면 모든 NPC가 함께 백오프한다.
 - npcStore가 1,043줄이다. 결정 틱마다 전 인스턴스를 복사하고(`NPCSimulation.ts:113-120`), 관찰·결정을 store에 기록해 구독자 전원을 깨운다(`npcStore.ts:927-936`).
 - 렌더는 파츠별 skeleton·mixer다(REN-09).
 
@@ -138,14 +138,13 @@
 |---|---|---|
 | DOM-10a | traversal grid 재사용, 장애물 dirty 영역 갱신(DOM-01c), `NavigationSystem.ts` 분할, 워커 인터페이스(grid transfer, revision 기반 재전송), 클릭 이동 경로 선은 경로가 바뀔 때만 버퍼 갱신 | 256² grid 100회 요청 시 long task 감소 기록 |
 
-### DOM-11 minihome(M0, M3)
+### DOM-11 minihome(M3)
 
 minihome은 제품 예제다(`examples/minihome`). 라이브러리 수용 장면이면서, 새 코어가 제품 요구를 받치는지 보는 기준이다.
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| DOM-11a(M0) | 대기 시 루프 정지(자연 모션은 입력 없을 때 30Hz 이하·N초 후 정지, `prefers-reduced-motion` 존중), 그림자 갱신은 caster 변화가 있을 때만(잔디 `castShadow` 옵션은 REN-08), 지형 InstancedMesh `updateRange` 업로드와 크기 기반 capacity, 잔디 chunk 재사용, 보기 모드 불필요 raycast 제거, 편집·presence마다 전체 JSON 직렬화 제거, 이동 경로 선 버퍼 수정, 아바타 파츠 병렬 로드 | S-B11 |
-| DOM-11b(M3) | minihome을 새 코어 위로 재구성: 자체 projection(`roomEngine.ts:128-152` 전체 재파싱·재구축)과 `miniroom.furniture` 전용 경로를 표준 컴포넌트와 RenderWorld로. 기능 체크리스트(`probe-minihome-features`, `probe-minihome-town`, `probe-minihome-lighting`) 유지 | 기능 probe 통과, S-B11, S-B12 |
+| DOM-11b(M3) | minihome을 새 코어 위로 재구성: 자체 projection(`roomEngine.ts:128-152` 전체 재파싱·재구축)과 `miniroom.furniture` 전용 경로를 표준 컴포넌트와 RenderWorld로. 기능 체크리스트(`probe-minihome`, `probe-minihome-features`, `probe-minihome-town`, `probe-minihome-lighting`) 유지 | 기능 probe 통과, S-B11, S-B12 |
 
 ## 4. 공개 API 영향
 

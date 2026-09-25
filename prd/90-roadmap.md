@@ -23,11 +23,9 @@
 
 | 순서 | Slice | 내용 |
 |---|---|---|
-| 1 | VER-06a 잔여 | 기본 브랜치 정리(사용자 결정), pnpm store 캐시. accept-browser 잡은 VER-03a와 함께 |
-| 2 | VER-08a, VER-08b | 깨진 probe 정리, 내부 경로 fixture 정리 |
-| 3 | VER-03a, VER-04a, VER-05a | 브라우저 수용 러너(운영 빌드), `/accept`(PerformanceLab 확장), 기준 장면 확장 |
-| 4 | VER-01b, DOM-11a | 도메인 카운터, minihome 대기 루프 |
-| 5 | VER-03b, VER-07a, VER-08c | ms 기준 파일, A/B 화면 비교, 1.x 표면 동결 게이트 |
+| 1 | VER-06a 잔여 | 기본 브랜치 정리(사용자 결정), accept-browser 잡을 릴리스 관문으로(ci/** 연속 녹색 뒤) |
+| 2 | VER-01b | 도메인 카운터(S-B02 store 알림, S-H10·S-H11 카운터 판정) |
+| 3 | VER-03b, VER-07a, VER-08c, VER-05b | ms 기준 파일, A/B 화면 비교, 1.x 표면 동결 게이트, 에디터 기준 경로(S-B13) |
 
 M0 끝에 전체 시나리오를 돌려 `test/accept/budgets.json`과 known-red 목록을 확정한다. 이 목록이 이후 진행률 보드다.
 
@@ -38,7 +36,7 @@ COR-01a(kernel) ─► COR-02a(EntityWorld) ─► COR-02b(컴포넌트 레지�
                 └► COR-05a(defineSystem) ─► COR-05b(D-10) ─► COR-06a(mode) ─► COR-06b(play copy) ─► COR-06c
 COR-02a ─► COR-03a(TransformSystem) ─► COR-03b(보간)
 COR-05a + COR-03a ─► COR-07a(physics 서비스) ─► COR-08a(headless 호스트)
-COR-01a ─► COR-09a(서비스 키) ─► COR-09c(import 부수효과) ─► COR-10a(오류) ─► COR-10b(오류 타입·Result)
+COR-01a ─► COR-09a(서비스 키) ─► COR-10a(오류) ─► COR-10b(오류 타입·Result)
 COR-02a ─► COR-02c(공간 인덱스 비교 벤치와 결정)
 ```
 
@@ -94,16 +92,16 @@ COR-05c(스케줄러 밖 루프 0)는 M2 끝까지
 
 | 순위 | Slice | 이유 |
 |---|---|---|
-| 1 | VER-08a, VER-08b | 깨진 probe와 내부 경로 fixture. 코어를 바꾸기 전에 회귀 장치를 살린다 |
-| 2 | VER-03a, VER-04a | 운영 빌드 측정과 `/accept`. 소유자가 직접 보는 화면 |
-| 3 | DOM-11a | 대표 데모가 대기 중에도 매 프레임 그린다 |
-| 4 | VER-05a | 기준 장면에 NPC·원격·편집·궤도·그림자 경로가 없다 |
-| 5 | COR-09c | S-H14 빨강. 엔트리 import만으로 전역 리스너 3·타이머 3·전역 쓰기 1 |
-| 6 | COR-01a | 엔진 코어의 첫 단계(kernel). 이후 모든 코어 작업의 전제 |
-| 7 | COR-05b | D-10. 프로젝트 설정의 고정 틱 설정이 runtime clock에 들어가지 않는다. 작고 독립적이다 |
-| 8 | VER-06a | 기본 브랜치를 `main` 하나로(사용자 결정) |
-| 9 | EDT-03b | 패널 전환마다 `initializeDefaults`가 템플릿·의상을 새 객체로 바꿔 모든 NPC가 재렌더된다 |
-| 10 | AST-01a | D-14. 공용 로더가 Draco를 못 읽어 번들 GLB 9개가 캐시 경로로 로드되지 않는다 |
+| 1 | PKG-01b | S-B01 빨강. 기본 경로(minihome) 첫 로드가 rapier·editor·postprocessing 청크 5개를 받는다(JS gz 2.1MB) |
+| 2 | COR-01a | 엔진 코어의 첫 단계(kernel). 이후 모든 코어 작업의 전제 |
+| 3 | COR-05b | D-10. 프로젝트 설정의 고정 틱 설정이 runtime clock에 들어가지 않는다. 작고 독립적이다 |
+| 4 | VER-01b | S-B02의 store 알림을 재야 대기 판정이 완성된다 |
+| 5 | VER-07a | S-B12. 렌더 경로를 바꾸기 전에 옛 경로와 새 경로의 화면 비교 장치가 있어야 한다 |
+| 6 | VER-06a | 기본 브랜치를 `main` 하나로(사용자 결정), accept-browser를 관문으로 |
+| 7 | EDT-03b | 패널 전환마다 `initializeDefaults`가 템플릿·의상을 새 객체로 바꿔 모든 NPC가 재렌더된다 |
+| 8 | AST-01a | D-14. 공용 로더가 Draco를 못 읽어 번들 GLB 9개가 캐시 경로로 로드되지 않는다 |
+| 9 | VER-05b | S-B13을 돌릴 에디터 경로가 예제에 없다 |
+| 10 | VER-03b | ms 기준 파일과 3회 중앙값. frame harness(`perf:check`, `perf:world`)를 이 러너로 대체 |
 
 ## 4. 결정 기록
 

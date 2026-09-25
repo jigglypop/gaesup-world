@@ -67,9 +67,6 @@
 
 - **frame harness가 vite dev 서버를 잰다**(`scripts/frame-harness.cjs:261`). development React와 dev 전용 수집기가 켜진 상태다.
 - **성능 게이트가 draw call에도 ms와 같은 15% 허용치를 쓴다**(`frame-harness.cjs:251-256`). draw call이 늘어도 통과한다.
-- **기준 장면에 빠진 것이 많다.** NPC, 원격 플레이어, 편집·궤도 경로, commit 계측이 없다. 그림자 frustum은 기본 ±5m다(`examples/world/PerfWorld.tsx:24`).
-- **CI가 실행된 적이 없다.** 로컬 main이 origin보다 28커밋 앞서 있어 새 CI workflow가 GitHub에서 돈 적이 없다. PR 단계에는 브라우저 검사가 없다.
-- **회귀 장치 일부가 깨져 있다.** 삭제된 라우트를 여는 probe 8개가 동작하지 않는다(`browser-smoke`, `probe-webgpu-world`, `probe-social-world`, `probe-editor-return`, `probe-creator-menu`, `probe-multiplayer-panel`, `probe-toon-water`, `probe-avatar`). fixture와 벤치 일부가 내부 경로(`/src/core/...`)를 import해 코어를 바꾸면 깨진다.
 
 결과: "고쳤다"를 판정할 수 없다. 01 문서가 이 원인을 없앤다.
 
@@ -79,7 +76,6 @@
 
 | 증상 | 위치 | 비용 | 원인 | 처리 |
 |---|---|---|---|---|
-| minihome 기본 설정에서 렌더 루프가 멈추지 않음 | `examples/minihome/roomEngine.ts:306` | 대기 중 60Hz bloom·그림자 | 기본값 결함 | DOM-11a(M0) |
 | 월드 Suspense 하나라 새 GLB가 월드를 숨김 | `WorldContainer/index.tsx:171` | 새 URL마다 0.1~1초 공백 | RC-2 | REN-06 |
 | 로드 직렬 워터폴(렌더러 → Rapier → 본체 GLB → Draco → 파츠 → wasm), 선로드 0 | `world/components/WorldPhysics/index.tsx:53` | [추정] 0.5~1.3초 | RC-2 | REN-06 |
 | 잔디 그룹 전체 재생성, 편집마다 blade 무작위 변화 | `mesh/grass/chunks.tsx:52` | 400타일 약 70ms, 2천 타일 약 300ms | RC-3 | REN-10 |
@@ -96,8 +92,7 @@
 | BlueprintPreview가 메인 월드 store·runtime을 직접 변경 | `blueprints/components/BlueprintPreview/index.tsx:130` | 선택마다 메인 플레이어 모델 교체 | RC-4 | EDT-05 |
 | BlueprintPreview 두 번째 Canvas가 입력 없이 매 프레임 렌더 | `BlueprintPreview/index.tsx:165` | [추정] iGPU 1~3ms/frame | RC-3 | EDT-05 |
 | `MultiplayerCanvas` HDR을 raw.githack.com에서 받아 월드 전체 대기 | `networks/components/MultiplayerCanvas.tsx:113` | 외부 CDN 1~2MB, 장애 시 캔버스 오류 | RC-2 | DOM-08 |
-| minihome 지형 버퍼 전체 업로드(pointermove마다 약 6~8.7MB), 커밋마다 잔디 13.6만 blade 재생성, 대기 중 그림자 15Hz | `examples/minihome/roomTerrain.ts:17`, `roomEnvironment.tsx:49`, `roomEngine.ts:309` | 칠하기 중 수백 MB/s | 예제 | DOM-11 |
-| 기본 경로 minihome이 루트 barrel로 rapier·editor·postprocessing을 로드 | `examples/minihome/apiChecks.ts:10` | 첫 로드 JS 5.4MB(gz 1.77MB) | RC-4 | PKG-01 |
+| 기본 경로 minihome이 루트 barrel로 rapier·editor·postprocessing을 로드 | `examples/minihome/model.ts:1` | 첫 로드 JS 5.4MB(gz 1.77MB) | RC-4 | PKG-01 |
 | frame harness가 dev 서버를 잼, 기준 장면 지표 누락 | `frame-harness.cjs:261`, `PerfWorld.tsx:24` | 판정 불가 | RC-5 | VER-03, VER-05 |
 
 심각도 하 항목은 해당 문서의 "작은 항목" 표에 있다.

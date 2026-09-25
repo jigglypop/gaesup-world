@@ -3,7 +3,7 @@
 | 항목 | 값 |
 |---|---|
 | 우선순위 | P0 |
-| 마일스톤 | M1(COR-01~COR-06, COR-07a, COR-08, COR-09a·c, COR-10), M2(COR-05c, COR-07b), M3(COR-07c·d, COR-09b·d, COR-11, COR-12), M7(COR-09e의 legacy 제거) |
+| 마일스톤 | M1(COR-01~COR-06, COR-07a, COR-08, COR-09a, COR-10), M2(COR-05c, COR-07b), M3(COR-07c·d, COR-09b·d, COR-11, COR-12), M7(COR-09e의 legacy 제거) |
 | 선행 | 01 PRD VER-01·VER-02(카운터, headless 러너) |
 
 ## 1. 목표
@@ -236,7 +236,6 @@ defineSystem({
 |---|---|---|
 | COR-09a | 남은 문자열 서비스 키(runtime 내부 14개, 상수 3개, plugin 기본 id 23개, literal 조회)를 도메인 `defineService` 키로. literal 금지 lint | 문자열 literal 서비스 키 0 |
 | COR-09b | `runtime.get(key)`, `GaesupRuntime` store 필드를 위임 getter로(`@deprecated`), struct 필드(clockLoop, navigation, stateManager, npcSimulation, bridge)를 서비스로, kit 자체 등록과 기본 preset. kit을 등록하면 저장 binding도 항상 함께 등록한다(지금은 plugin이 없으면 building·npc가 저장되지 않음) | kit 없는 runtime에서 해당 store 0, preset runtime은 기존 테스트 통과, kit 등록 runtime의 저장 도메인 목록 테스트 |
-| COR-09c | legacy store lazy 생성, import 부수효과 제거(`ensureSystemListeners`, `subscribeDefaultAutomation`, presets localStorage 읽기, NPC 조건 store 등록, `enableMapSet`, 기본 reinforcement 등록), fallback dev 경고 | S-H14 |
 | COR-09d | 순수 전역 store 4종(`assetStore`, `toastStore`, `editorStore`, `UIConfigStore`)을 runtime 스코프로, `window.CHARACTER_URL` 기록 제거 | S-H08 |
 | COR-09e | 외부 `getState/setState` 사용 lint와 도메인별 호출처 이전. legacy store 제거는 2.0 | lint 위반 0 |
 
@@ -258,8 +257,8 @@ defineSystem({
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| COR-12a | 새 코드는 bridge를 만들지 않는다(시스템과 `EntityWorld` 조회로 대체). 기존 bridge는 도메인 이전(30 PRD) 때 시스템으로 바꾼다. 남는 동안은 `CORE_BRIDGES` 명시 목록 하나와 runtime 소유 캐시 하나로 등록(D-12 잔여, `getOrCreateFor` 재등록 제거) | `CORE_BRIDGES`와 `BridgeRegistry.list()` 비교 테스트 |
-| COR-12b | DI(`@Service`/`@Inject`), decorator, `reflect-metadata`, `experimentalDecorators` 제거. `decorators/bridge.ts` 깨진 인코딩 주석 정리 | `reflect-metadata` 0, export snapshot 불변 |
+| COR-12a | 새 코드는 bridge를 만들지 않는다(시스템과 `EntityWorld` 조회로 대체). 기존 bridge는 도메인 이전(30 PRD) 때 시스템으로 바꾼다. 남는 동안은 `CORE_BRIDGES` 명시 목록 하나와 runtime 소유 캐시 하나로 등록(D-12 잔여, `getOrCreateFor` 재등록 제거) | `CORE_BRIDGES`와 `BridgeRegistry.list()` 비교 테스트, 엔트리 import 시 bridge 등록 0(S-H14 최상위 호출 0) |
+| COR-12b | DI(`@Service`/`@Inject`), decorator, `reflect-metadata`, `experimentalDecorators` 제거. `decorators/bridge.ts` 깨진 인코딩 주석 정리 | `reflect-metadata` 0, export snapshot 불변, S-H14 green |
 
 ## 5. 공개 API 영향
 
