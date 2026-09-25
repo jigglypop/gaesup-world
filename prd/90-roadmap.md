@@ -1,203 +1,149 @@
 # PRD-90 로드맵
 
-작성일: 2026-09-24
-개정: 2026-09-24 2차(작업 순서 점검, 30~32 PRD 반영, M0 진행 상태 기록)
+작성일: 2026-09-25
 
-## 1. 단계
+## 1. 마일스톤
 
-| 단계 | 이름 | 목표 | 종료 조건 |
+| 마일스톤 | 이름 | 목표 | 종료 조건(01 문서 6절) |
 |---|---|---|---|
-| 0 | 선행 정리 | 작업 트리 커밋 분리, 결정 게이트 확정 | 커밋 분리 완료, 5절 게이트 확정(2026-09-24 완료) |
-| M0 | 정확성·검증 복구 | 결함 수정, verify 녹색, 기준선 측정 | D-01~D-23 재현 테스트 존재, 치명 결함 수정, `pnpm verify` 통과, 00 문서 3.2절 기록 |
-| M1 | 측정 게이트와 저비용 개선 | 회귀 게이트 가동, 삭제로 표면 축소, 구조 변경 없이 얻는 성능 | `perf:check` CI 가동, 10 PRD 예산 중 CI 판정 항목의 절반 이상 충족, knip baseline 감소 |
-| M2 | 구조 전환(Epoch) | kernel·kit 분리, 인덱스·컬링·입력·저장, 엔진 모델(30~32) | 10 PRD 예산 전체 충족, NFR-20·21·22·30·31 충족 |
-| M3 | 2.0 major | deprecated 제거, CJS 제거, 패키지 경계 확정 | export snapshot 갱신, 마이그레이션 가이드, peer 매트릭스 통과 |
+| M0 | 검증 체계와 기준선 | "고쳤다"를 판정하는 장치를 먼저 만든다. 측정을 오염시키는 기본값 결함과 미커밋 작업을 정리한다 | 모든 시나리오가 green 또는 known-red로 분류됨, S-H10·S-H11·S-B11 green, PR에서 세 체크가 실제로 돔 |
+| M1 | 엔진 코어 | kernel, `EntityWorld`, `TransformSystem`, `SceneProjector`, `defineSystem`, `runtime.mode`, physics 서비스, headless 호스트 | S-H01~S-H08 green, 손 확인: Play → 조작 → Stop 후 씬 동일 |
+| M2 | 렌더 추출과 building | RenderWorld, GPU 상주 경로, 가시성, 오버레이, 셰이더 워밍업, 비동기 에셋 표시, 절차 지형. 첫 소비자는 building | S-B03~S-B08, S-B12, S-H09 green, 손 확인: 1만 타일 칠하기 연타에 long task 0 |
+| M3 | 도메인 이전 | 월드 오브젝트, NPC, 캐릭터, 카메라, 입력, 애니메이션, 원격 플레이어, 게임플레이 kit, 내비게이션, minihome 재구성, 에디터 구독·보조 캔버스 | S-B09, S-B11, S-B13, S-B14, S-H13 green, minihome 기능 probe 통과 |
+| M4 | 에셋·씬·저장 | 로더·캐시 통일, AssetDB, 프리팹 revision, SceneManager, 저장 경로, undo 역연산 | S-H12, S-H15, S-H16 green |
+| M5 | 에디터 | Hierarchy/Inspector 통합, Play 제어, 대형 패널 분할 | 손 확인: 모든 엔티티 표시, 필드 편집, undo가 그 변경만 되돌림 |
+| M6 | 화질 | 품질 등급 확대, TSL 수렴, 라이트 프로브·라이트맵, 클러스터 조명, 룩 스택, 고사양 기능 | S-B10 green, 등급별 스크린샷·GPU ms 비교표 |
+| M7 | 2.0 | `@deprecated` 제거, CJS 제거, peer·자산 정리, `quality` 기본 `auto` | 마이그레이션 가이드, export snapshot 갱신, 매트릭스 통과 |
 
-## 2. 0단계 선행 정리
+## 2. slice 배치
 
-| 항목 | 내용 | 이유 |
+### M0 검증 체계와 기준선
+
+위에서 아래 순서로 한다. 같은 칸 안은 병렬로 할 수 있다.
+
+| 순서 | Slice | 내용 |
 |---|---|---|
-| 0-a | 작업 트리 171파일을 커밋 4개로 나눈다: ① docs·`.codex` 삭제와 참조 정리(D-19) ② D-xx 수정과 테스트 ③ minihome farm 예제·자산 ④ PRD. 사용자 확인 후 진행 | 이후 slice PR의 diff 기준선이 된다. 섞여 있으면 회귀 원인을 추적할 수 없다 |
-| 0-b | 5절 결정 게이트 확정(완료) | M0 잔여 항목이 이 결정에 막혀 있었다 |
+| 1 | REN-07a, REN-08a | 미커밋 품질 프로파일·그림자 작업 마무리와 커밋(작업 트리를 깨끗하게 해야 이후 diff가 읽힌다) |
+| 2 | VER-06a | 커밋 push, PR에서 CI가 실제로 도는지 확인, 트리거 브랜치 정리 |
+| 3 | VER-01a, VER-02a, VER-08a, VER-08b | 엔진 카운터, headless 수용 러너, 깨진 probe 정리, 내부 경로 fixture 정리 |
+| 4 | VER-03a, VER-04a, VER-05a | 브라우저 수용 러너(운영 빌드), `/accept`(PerformanceLab 확장), 기준 장면 확장 |
+| 5 | VER-01b, DOM-03a, AST-06a, DOM-11a | 도메인 카운터, 측정을 오염시키는 기본값 결함 3건(NPC 정책 요청, 저장 skip, minihome 대기 루프) |
+| 6 | VER-03b, VER-07a, VER-08c | ms 기준 파일, A/B 화면 비교, 1.x 표면 동결 게이트 |
 
-## 3. slice 배치
+M0 끝에 전체 시나리오를 돌려 `test/accept/budgets.json`과 known-red 목록을 확정한다. 이 목록이 이후 진행률 보드다.
 
-### M0 정확성·검증 복구
-
-| Slice | 내용 | PRD | 상태(2026-09-24 2차) |
-|---|---|---|---|
-| 25-a | harness·docs 참조 정리(D-19) | 25 | 완료(0635e00c) |
-| 25-b, 10-b | 벽시계 테스트 교체(D-20), 느린 테스트 Program 재사용 | 25, 10 | 부분. 벽시계 패턴 9곳 잔여 |
-| 11-a | automation 재귀(D-01), 이월 상한(D-10) | 11 | D-01 완료. D-10 부분(설정 주입은 11-f) |
-| 12-a | collider 가시성 분리(D-03), bounding sphere(D-15) | 12 | 완료 |
-| 12-p | NPC toon 재질 누수(D-23) | 12 | 완료(11615abe) |
-| 32-a | 자동 ID UUID화(D-22) | 32 | 완료(58dc1fec) |
-| 23-a, 23-b, 23-c | ratchet 카운터, 미사용 decorator·ManagedEntity 삭제(D-02), `reportError` | 23 | 23-b(ee38c581), 23-c(b8746c0e) 완료. 23-d 핫패스 `@HandleError` 제거(ad7833c7). 23-a 잔여 |
-| 14-a, 14-b, 14-c | 원격 아바타 격리(D-05), authority·visit(D-06, D-07), 슬롯·wasm·로더(D-08, D-13, D-14) | 14 | D-05, D-13 완료. D-06, D-14 부분. D-07은 G4, D-08은 G5 대기 |
-| 21-a | canonical ADR, D-09, D-18 | 21 | D-09 완료. D-18은 G6 대기 |
-| 22-b | 전역 접지 상태(D-17), autoSaveSuspension 인스턴스화 | 22 | 구조 작업(M2 초반) |
-| 10-a | 기준 장면과 기준선 측정 | 10 | minihome WebGPU 기준선 완료(00 3.1.2). R3F GaesupWorld 장면과 seeded S/M/L은 잔여 |
-
-### 3.1 진행 기록(2026-09-24~25)
-
-| Slice | 커밋 | 비고 |
-|---|---|---|
-| 0-a | 0635e00c, 446a54d3, d7faf543, 69422eda | 작업 트리 4묶음 분리 |
-| 32-a, 12-p | 58dc1fec, 11615abe | D-22, D-23 |
-| 12-q, 13-k, 11-j | 0ba14667, b1fd7b47, 384eec19 | M1 묶음 2 |
-| 11-h 일부, 11-l 일부 | 934b3205, 585bb879, b23aa430 | 물리 step 전 읽기, 발소리 인덱스는 보류(11 PRD) |
-| 24-e, 23-b | 140c74ad, ee38c581 | M1 묶음 1 |
-| 13-c, 12-r, 13-b | b7561109, 3cac611b | NPC LOD는 히스테리시스로 설계 변경(12 PRD) |
-| 20-h, 20-b | 55b41090, e37bf6ea | Layer 1 누수 0, `check:layer1`·`check:entries`·`check:quality`를 verify에 연결 |
-| 22-a | 08efa006 | 키는 도메인별로 둔다(FR-22-01 수정) |
-| 10-a, 10-c | 3685cc03, c43e3894 | 1차 측정 폐기 후 재측정. harness draw 합산·WebGPU 채널·3회 중앙값·`pnpm perf:check` |
-| 23-c, 23-d | b8746c0e, ad7833c7 | G2 오류 경계, 핫패스 `@HandleError` 17개 제거 |
-| 30-a delta | b9fa2103 | `SceneObjectDelta`. 레지스트리는 30-f와 함께 |
-| 23-e, 23-f, 23-a | ff92fd7e | `@HandleError`·`@Profile` 0, 명령 경계 보고 |
-| 12-s 일부 | 1871b513 | fire·snow·weather TSL 내장 time, 날씨 uniform. flag·Grass 잔여 |
-| 13-d 일부 | 16d287b3 | `BuildingSpatialIndex`. FR-13-04 잔여 |
-| 13-e 일부 | 5083275f | 스냅샷·가시성 증분. delta 발행 보류, navigation 잔여 |
-| 30-b 일부 | 7fcfbc9c | `SceneRuntime` 행렬 캐시. 가변 `TransformSystem`은 30-c와 함께 |
-| 12-e 일부, 12-i 일부 | c7dadfe4 | 거리 상주와 히스테리시스, readback 예산 clamp와 드라이버 마운트 제거 |
-
-### M1 측정 게이트와 저비용 개선
-
-위에서 아래 순서로 진행한다. 같은 묶음 안은 병렬로 진행할 수 있다.
-
-| 묶음 | Slice | 내용 | PRD |
-|---|---|---|---|
-| 1. 삭제로 표면 축소 | 24-a → 24-e, 23-b | knip baseline, 미사용 28파일·코드 삭제, 미사용 decorator 삭제 | 24, 23 |
-| 2. 결정적 카운터로 검증하는 성능(10-a와 병행) | 12-q, 13-k, 11-j, 11-h, 11-l, 12-r, 12-s, 13-c | WebGPU 섀도 순회 제거, 성능 수집기 조건부, 카메라 narrow phase, 물리 중복 읽기, setter·색·스캔, NPC LOD, TSL time, devtools·usePlayerPosition | 11, 12, 13 |
-| 3. 측정이 필요한 성능(10-a 이후) | 11-b, 11-c, 11-d, 11-e, 11-k, 12-b, 12-c, 13-a, 13-b, 14-d | 카메라 캐시, 저빈도 publish, 건물 collider, memo, 품질 프로파일, hover·NPC, 네트워크 identity | 11, 12, 13, 14 |
-| 4. 구조 준비(작고 독립) | 20-a, 20-b, 20-h, 22-a | lint patterns, npc/core port, 입력 타입 이동, typed 서비스 키 | 20, 22 |
-| 5. 게이트 | 10-c, 10-d, 10-e, 25-c, 25-d, 15-a, 15-b | 비교 스크립트, CI 게이트, check 연결, 엔트리 폐포 ratchet | 10, 25, 15 |
-
-### M2 구조 전환
-
-| 흐름 | slice 순서 | 순서 근거 |
-|---|---|---|
-| kernel·kit | 20-h → 20-f(kernel) → 22-g → 20-i(port: 날씨 → 지면) → 22-h(kit 자체 등록) → 20-j | port와 서비스 키를 kernel에 두어야 도메인이 kernel만 보고 의존을 끊을 수 있다. kit 등록(22-h)은 `runtime.get`(22-g)이 전제다 |
-| boilerplate | 20-f(`frameTime` 이동) → 23-c → 23-d → 23-e → 23-f → 23-g → 23-h → 15-g | `runtime/frame`이 `boilerplate/hooks/frameTime`을 import하므로 먼저 kernel로 옮긴다 |
-| building 데이터 | 13-d → 30-a → 13-e → 12-e → 12-f → 13-j | 13-e의 delta는 30-a objectId delta와 같은 형식으로 만든다. 12-f batch는 공용으로 만들어 30-d가 재사용한다 |
-| 프레임·시스템 | 11-f → 31-a → 11-g → 31-f(13-e 이후) | `defineSystem` fixed lane은 통합된 물리 시계 위에 올린다. Driver는 delta를 소비하므로 13-e 이후 시스템으로 옮긴다 |
-| 엔티티 | G1 → 14-h → 30-b → 30-c(31-a, 22-g 이후) → 30-d(12-f 이후) → 30-e → 30-f(21-g, 13-j 이후) → 30-g | `EntityWorld`는 문서 증분 검증, 시스템 등록, 서비스 등록 위에 올린다 |
-| 모드·스크립트 | 22-b → 31-c(11-f 이후) → 31-d → 31-b(30-a 이후) → 31-e(13-j 이후) → 31-g | play 중 autosave 중단은 SaveSystem 인스턴스 상태(22-b)가 필요하다. `isInEditMode` 교체는 buildingEditorStore 분리(13-j) 후 |
-| world model | 14-h → 21-f → 21-g | 기존 |
-| 에셋·프리팹 | 14-c → 14-i → 32-b → 32-c → 32-d → 32-e → 32-f → 32-g(30-c 이후) | `resolve`는 통합 GLTF 캐시(14-i) 위에 둔다 |
-| 입력 | 20-h → 13-h → 11-d 후속 정리 | 입력 소유 도메인을 먼저 정하고 store 밖 경로를 만든다 |
-| 에디터·NPC UI | 13-f → 13-g → 24-c | 기존 |
-| GPU 경로 | 12-h → 12-i → 12-j → 12-g → 12-k → 12-l → 12-m → 12-o | 기존 |
-| 네트워크 | 14-e → 14-f → 14-j → 21-h | 기존 |
-| 저장 | 14-g → 21-c | 기존 |
-| 번들 | 15-c → 15-d → 15-e → 15-f | 기존 |
-| 툴링 | 25-e → 25-f → 25-g → 25-h → 25-i | 기존 |
-| 모듈 | 24-b → 24-d → 24-g | 24-g는 kernel(20-f) 이후 |
-| 단일화 | 21-b → 21-d → 21-e → 21-i → 21-j → 21-k | 기존 |
-
-### M3 2.0 major
-
-| Slice | 내용 | PRD |
-|---|---|---|
-| 15-h | CJS 제거 | 15 |
-| 15-d 후속 | 루트 editor re-export 제거 | 15 |
-| 15-i, 15-j | `three-stdlib` 제거, peer 정리, 샘플 GLB 분리 | 15 |
-| 21 후속 | `SaveLoadManager`, `createPersistenceSlice`, `BuildingUI`, world slice 제거, 중복 이름 정리 | 21 |
-| 22-f | legacy store와 정적 `getState` 제거, `GaesupRuntime` store 필드 제거 | 22 |
-| 24-h | 공개 중복 이름·명칭 정리 | 24 |
-| 30-g 후속 | `src/blueprints` 제거 | 30 |
-| 31 후속 | buildingStore 편집 모드 API 제거 | 31 |
-| 32 후속 | `ContentBundle` 제거 | 32 |
-| 12-n | TSL 수렴, GLSL compat 경계 | 12 |
-| 14-k | binary codec | 14 |
-| 11-i | 카메라 충돌 Rapier shape cast | 11 |
-| 25-j | 컴파일러 단일화 | 25 |
-
-## 4. 의존 관계
+### M1 엔진 코어
 
 ```
-0-a ─► M0 전체
-00 ─► 10 ─┬─► 11 ─► 11-f ─┬─► 31-a ─► 30-c
-          │               └─► 31-c ─► 31-d
-          ├─► 12 ─► 12-f ─► 30-d
-          ├─► 13 ─► 13-d ─► 13-e ─► 31-f
-          │          30-a ─┘   13-j ─► 31-e, 30-f
-          ├─► 14 ─► 14-h ─► 30-c, 21-g ─► 30-f
-          │         14-i ─► 32-b
-          └─► 15 ◄── 20, 23
-20-h ─► 20-f(kernel) ─┬─► 22-g ─► 22-h, 30-c
-                      ├─► 20-i
-                      └─► 23-c..h ─► 15-g
-22-b ─► 31-c
-G1(SceneDocument canonical) ─► 30-c, 21-g
-25-a ─► 20-b, 23-a (verify가 녹색이어야 ratchet이 의미 있음)
+COR-01a(kernel) ─► COR-02a(EntityWorld) ─► COR-02b(컴포넌트 레지스트리) ─► COR-04a(SceneProjector)
+                └► COR-05a(defineSystem) ─► COR-05b(D-10) ─► COR-06a(mode) ─► COR-06b(play copy) ─► COR-06c
+COR-02a ─► COR-03a(TransformSystem) ─► COR-03b(보간)
+COR-05a + COR-03a ─► COR-07a(physics 서비스) ─► COR-08a(headless 호스트)
+COR-01a ─► COR-09a(서비스 키) ─► COR-09c(import 부수효과) ─► COR-10a(오류) ─► COR-10b(오류 타입·Result)
+COR-02a ─► COR-02c(공간 인덱스 비교 벤치와 결정)
 ```
 
-## 5. 결정 게이트
+### M2 렌더 추출과 building
 
-2026-09-24 확정. 사용자가 합리적인 방식으로 확정하도록 위임했다. 기준은 셋이다. 기존 소비자 동작을 minor에서 깨지 않는다. 보안 기본값은 안전한 쪽으로 두되 파괴적 변경은 major에서 한다. 엔진 동작은 유니티를 따른다.
+```
+COR-03a + COR-05a ─► REN-01a(RenderWorld) ─► REN-02a(GPU 상주) ─► REN-03a(가시성)
+                                           └► REN-05a(컴파일) ─► REN-05b(후처리)
+REN-01a ─► REN-01b(meshRenderer, 오브젝트)
+DOM-01a(store 분리) ─► DOM-01b(chunk 문서) ─► DOM-01c(파생 데이터) ─► DOM-01d + REN-01c(building 추출) ─► DOM-01e
+REN-01c ─► REN-04a(오버레이), REN-10a·REN-10b(절차 지형)
+COR-07a ─► COR-07b(건설 collider)
+REN-06a(엔티티 단위 대기) ─► REN-06b(선로드), REN-11a(demand), REN-07b(프로파일 소비), REN-08b(그림자 갱신·계측)
+COR-05c(스케줄러 밖 루프 0)는 M2 끝까지
+```
 
-| 게이트 | 결정 | 막는 slice | 근거 문서 |
-|---|---|---|---|
-| G1 | world model canonical은 `SceneDocument`다. `EntityWorld`는 projection이다 | 21-g, 30-c 이후 전부 | 21 Q1, 30 Q1 |
-| G2 | `@HandleError`는 제거한다. 오류는 phase·명령 경계에서 잡고, 유니티처럼 해당 콜백은 다음 프레임에도 계속 실행한다. 보고는 항목별 첫 오류와 이후 1초당 최대 1회 `reportError`로 한다. production 기본 sink는 `console.error`이고 runtime `onError`로 바꿀 수 있다. minor 릴리스 노트에 명시한다 | 23-c, 23-d, 23-e, 23-f | 23 Q1, Q2 |
-| G3 | `ManagedEntity`/`useManagedEntity`를 삭제한다(D-02, 공개 API 아님) | 23-b | 00 4.1 |
-| G4 | 1.x에서는 `verifyActor`가 없으면 처음 한 번 경고하고, 2.0에서는 기본 거부로 바꾼다(`trustActors: true`로 해제). visit channel에는 transport가 채우는 `senderId`를 추가하고, `VisitLeave`는 `senderId === hostId`일 때만 받는다. `senderId`가 없는 legacy transport는 기존 동작에 경고를 붙인다 | 14-b | 00 4.1 |
-| G5 | 자동 저장 슬롯은 월드당 최신 10개만 남긴다(옵션 `maxSlotsPerWorld`) | 14-c | 00 4.1 |
-| G6 | `WorldSystem`의 identity 계약(입력 객체를 그대로 보관)을 유지하고 JSDoc에 "위치 변경은 `updateObject` 경유"를 명시한다. `WorldSystem`은 30 PRD `EntityWorld`로 대체될 예정이다 | 21-a | 00 4.1 |
-| G7 | `usePlayerPosition` `reactive` 기본값 `true`를 유지하고, 위치가 바뀐 경우에만 재렌더한다 | 13-c | 13 Q1 |
-| G8 | `persistPlayChanges` 기본값은 에디터 false, 런타임 true | 31-d | 31 Q1 |
-| G9 | `createGaesupRuntime()` 기본값은 모든 kit preset으로 유지한다. engine만 만들려면 `kits: []`를 넘긴다 | 22-h | 22 Q3 |
-| G10 | CJS는 2.0에서 제거한다(D-21) | 15-h | 15 |
-| G11 | 자동 ID는 UUIDv4(`crypto.randomUUID`)로 한다 | 32-a | 32 Q1 |
+### M3 도메인 이전
 
-### 5.1 기타 열린 질문 결정
-
-| 질문 | 결정 |
+| 흐름 | 순서 |
 |---|---|
-| 11 Q1 카메라 충돌 기본값 | 11-b 측정 전까지 `true` 유지 |
-| 11 Q2 SkinnedMesh 카메라 충돌 | 제외하지 않고 world bounding sphere로 근사 |
-| 12 Q1 기본 water·glass | 시각 결과가 바뀌므로 기본값은 유지하고 옵션만 추가 |
-| 12 Q2 readback culling 경로 | 제거하고 CPU 가시성으로 fallback |
-| 13 Q2 selector 없는 공개 hook | dev 경고 후 2.0 제거 |
-| 21 Q2 `BuildingUI` | editor 섹션을 조합하는 wrapper로 줄이고 `@deprecated` |
-| 22 Q1 정적 `getState/setState` | `@deprecated` 후 2.0 제거 |
-| 22 Q2 한 페이지 여러 world | 공식 지원 |
-| 30 Q2 저장하지 않는 엔티티 | `transient` 플래그로 허용 |
-| 30 Q3, 32 Q3 `src/blueprints`, `ContentBundle` | `@deprecated` 후 2.0 제거 |
-| 31 Q2 pause 중 네트워크 | 원격 플레이어 보간은 계속 |
-| 31 Q3 edit 모드 물리 미리보기 | 옵션, 기본 off |
-| 32 Q2 AssetDB 기본 레코드 | 샘플 에셋 패키지의 매니페스트에 둔다 |
+| 월드 오브젝트 | DOM-02a → DOM-02b |
+| NPC | DOM-03b → DOM-03c + REN-09a → REN-09b |
+| 캐릭터 | DOM-04a → DOM-04b → COR-07c |
+| 입력·애니메이션·카메라 | DOM-05a, DOM-06a, DOM-07a(병렬) |
+| 네트워크 | DOM-08b → DOM-08c → DOM-08d → DOM-08e, DOM-08f·DOM-08g(병렬) |
+| 스크립트 | COR-11a → COR-11b |
+| kit | COR-09b → DOM-09a → DOM-09b, COR-09d |
+| 내비게이션 | DOM-10a |
+| 에디터 | EDT-03a~c, EDT-05a~c, EDT-06a |
+| 렌더 잔여 | REN-12a, REN-12b(병렬) |
+| 정리 | COR-12a → COR-12b, COR-07d(React 바디 이전 완료 후) |
+| minihome | DOM-11b(마지막. 새 코어가 제품을 받치는지 확인) |
 
-## 6. 먼저 할 10개
+### M4~M7
 
-| 순위 | slice | 이유 |
+| 마일스톤 | 순서 |
+|---|---|
+| M4 | AST-01a → AST-02a → AST-03a → AST-03b → AST-04a → AST-04b → AST-05a → AST-05b. AST-06b~d, AST-07a, AST-08a는 병렬 |
+| M5 | EDT-01a → EDT-01b → EDT-01c, EDT-02a, EDT-04a |
+| M6 | REN-13a(도메인별) → REN-14a + EDT-07a → REN-14b → REN-14c → REN-14d |
+| M7 | PKG-02a~d, COR-09e의 legacy 제거, 공개 이름 정리(PKG-04e) |
+
+### 병행 트랙(마일스톤과 무관, 작고 독립)
+
+| Slice | 이유 |
+|---|---|
+| DOM-08a | 네트워크 정확성 결함(D-06, D-07)과 원격 모델 allowlist. 언제든 가능 |
+| AST-01a | D-14(Draco GLB 로드 실패). M4 전에 해도 된다 |
+| PKG-01a~g | 번들 경계. PKG-01g만 COR-09·COR-12 이후 |
+| PKG-03a~d, PKG-04a~f, PKG-05a~e | 계층·코드 건강·툴링. PKG-03d는 COR-06(모드) 이후 |
+
+## 3. 먼저 할 10개
+
+| 순위 | Slice | 이유 |
 |---|---|---|
-| 1 | 0-a | 섞인 작업 트리에서는 이후 PR의 회귀를 추적할 수 없다 |
-| 2 | 32-a | 저장된 씬에 객체를 추가하지 못하는 결함. 수정이 작다 |
-| 3 | 12-p | NPC 재질 누수. 수정이 작다 |
-| 4 | 12-q, 13-k | production에서 효과 없이 도는 작업 제거. 각 수십 줄 |
-| 5 | 11-j, 11-h | 카메라·물리 핫패스의 중복 계산 제거. 작다 |
-| 6 | 10-a | 이후 성능 판정의 기준 |
-| 7 | 24-a, 24-e, 23-b | 삭제로 이후 구조 작업의 범위를 줄인다 |
-| 8 | 20-h, 22-a | kernel과 서비스 키의 준비 단계. 작고 독립적이다 |
-| 9 | 11-b, 13-a, 13-b | 기본 활성 기능의 씬 크기 비례 비용, hover·NPC 재렌더 |
-| 10 | G1 → 30-a | 엔진 모델의 첫 계약. 13-e보다 먼저 있어야 한다 |
+| 1 | REN-07a, REN-08a | 작업 트리의 미커밋 변경이 테스트 2건과 품질 검사를 깨뜨리고 있다 |
+| 2 | VER-06a | CI가 한 번도 실제로 돈 적이 없다. 이후 모든 판정의 전제 |
+| 3 | VER-01a, VER-02a | 카운터와 headless 러너. S-H 시나리오의 기반 |
+| 4 | VER-08a, VER-08b | 깨진 probe와 내부 경로 fixture. 코어를 바꾸기 전에 회귀 장치를 살린다 |
+| 5 | VER-03a, VER-04a | 운영 빌드 측정과 `/accept`. 소유자가 직접 보는 화면 |
+| 6 | DOM-03a | 기본 설정에서 NPC마다 없는 서버로 요청을 보낸다. 측정을 오염시킨다 |
+| 7 | AST-06a | 변경 없는 autosave가 전 도메인을 직렬화한다 |
+| 8 | DOM-11a | 대표 데모가 대기 중에도 매 프레임 그린다 |
+| 9 | VER-05a | 기준 장면에 NPC·원격·편집·궤도·그림자 경로가 없다 |
+| 10 | COR-01a | 엔진 코어의 첫 단계(kernel). 이후 모든 코어 작업의 전제 |
 
-## 7. 2차 점검에서 바뀐 순서
+## 4. 결정 기록
 
-| 변경 | 이유 |
-|---|---|
-| 13-e를 30-a 뒤로 | building delta와 문서 delta를 한 형식으로 만든다. 먼저 하면 building 전용 delta를 만든 뒤 다시 바꿔야 한다 |
-| 12-f batch를 공용으로 | 30-d `meshRenderer`가 같은 batch를 쓴다 |
-| 11-f를 31-a, 31-c 앞으로 | fixed lane과 pause gating의 전제 |
-| 20-h를 13-h 앞으로 | 입력 경로를 다시 쓰기 전에 소유 도메인을 정한다 |
-| 24-e, 23-b를 M1 첫 묶음으로 | 삭제할 코드를 옮기거나 리팩터링하지 않는다 |
-| 14-i를 저장 흐름에서 에셋 흐름으로 | AssetDB `resolve`(32-b)의 전제 |
-| 20-f를 boilerplate 삭제 앞으로 | `frameTime`이 `runtime/frame`의 의존이라 먼저 kernel로 옮겨야 한다 |
+이전 판에서 이어받은 결정과 3판에서 새로 정한 결정이다. 사용자가 바꾸면 이 표와 해당 문서를 함께 고친다.
 
-## 8. 운영 규칙
+| ID | 결정 | 관련 |
+|---|---|---|
+| G1 | 영속 world model 원본은 `SceneDocument`다. `EntityWorld`는 projection이다 | COR-02, COR-04 |
+| G2 | 오류는 phase·명령·시스템 경계에서 잡고, 해당 콜백은 다음 프레임에도 실행한다. 항목별 첫 오류와 이후 초당 최대 1회 보고. production 기본 sink는 `console.error`, runtime `onError`로 교체 | COR-10 |
+| G4 | 1.x에서 `verifyActor` 미지정 시 최초 1회 경고, 2.0에서 기본 거부(`trustActors: true`로 해제). visit channel에 transport가 채우는 `senderId`, `VisitLeave`는 `senderId === hostId`만 수용 | DOM-08a |
+| G6 | 1.x에서 `WorldSystem` identity 계약 유지, JSDoc에 "위치 변경은 `updateObject` 경유" 명시. `EntityWorld` facade로 대체 후 2.0에서 제거 | DOM-02b |
+| G8 | `persistPlayChanges` 기본값은 에디터 false, 런타임 true | COR-06b |
+| G9 | `createGaesupRuntime()` 기본값은 모든 kit preset. engine만 원하면 `kits: []` | COR-09b |
+| G10 | CJS는 2.0에서 제거 | PKG-02a |
+| N1 | 렌더 단위는 공유 batch다. 엔진 콘텐츠(타일, 벽, NPC, 오브젝트)를 엔티티마다 React 컴포넌트로 그리지 않는다. 공개 React 컴포넌트는 엔티티를 만드는 선언형 adapter로 남긴다 | REN-01, 30 PRD |
+| N2 | 물리 바디는 시스템이 Rapier API로 소유한다. Rapier 모듈은 주입받고 직접 의존성을 추가하지 않는다 | COR-07 |
+| N3 | 1.x 공개 API는 adapter로 유지하고 제거는 2.0에서만 한다 | 전체 |
+| N4 | 대량 콘텐츠(타일, 벽, 잔디, 인스턴스)는 엔티티를 하나씩 만들지 않고 그룹 엔티티 + 데이터 컴포넌트로 둔다. building은 16×16 셀 chunk 객체로 나눈다 | COR-02a, DOM-01b |
+| N5 | 화질 목표는 고품질 스타일라이즈드다. 실사와 하드웨어 레이 트레이싱은 비목표다 | REN-14 |
+| N6 | 1.x에서 `quality` 미지정은 기존 동작 유지, 예제·수용 장면은 `auto`, 2.0 기본값은 `auto` | REN-07 |
+| N7 | 판정은 결정적 지표로 한다. ms는 기준 기기 로컬에서만 판정하고 CI에서는 경고만 한다 | 01 PRD |
+| N8 | 수용 페이지는 PerformanceLab을 확장해 만든다. 새 페이지를 따로 만들지 않는다 | VER-04a |
 
-- 한 slice는 한 PR이다. PR 설명에 PRD 번호, slice, 실행한 검증, 10 PRD 지표 변화를 적는다.
-- Epoch 트랙 slice는 설계 메모를 해당 PRD 설계 절에 먼저 추가한다.
-- 테스트 기대 수치 변경, 공개 API 삭제, peer 변경, 파일 삭제는 사용자 확인 후 진행한다.
-- 각 단계 종료 시 00 문서의 기준선 표에 측정일과 커밋을 추가한다.
+기타 이어받은 결정: 카메라 충돌 기본값 유지(COR-07c 측정 전), SkinnedMesh 카메라 충돌은 bounds 근사, water·glass 기본값 유지(옵션만 추가), 한 페이지 여러 world 공식 지원, 저장하지 않는 엔티티는 `transient`, `src/blueprints`와 `ContentBundle`은 `@deprecated` 후 2.0 제거, pause 중 원격 플레이어 보간은 계속, edit 모드 물리 미리보기는 옵션(기본 off), AssetDB 기본 레코드는 샘플 에셋 패키지 매니페스트에.
+
+## 5. 열린 질문(사용자 결정)
+
+| 질문 | 관련 | 기본 제안 |
+|---|---|---|
+| `CascadedSun`을 공개해 쓸 것인가, 지울 것인가(지금 export·사용 0) | REN-08a | `/world` 기준 장면에 쓰고 공개 |
+| 기준 기기(ms 판정) | VER-03b | 개발 PC(RTX 5060 Ti) 1종 + 내장 GPU 노트북 1종 |
+| CI 트리거 브랜치를 `main`과 `master` 중 무엇으로 통일할 것인가 | VER-06a | 기본 브랜치 하나 |
+| 샘플 GLB를 별도 패키지로 분리할 것인가, CDN으로 둘 것인가 | PKG-02c | 별도 패키지 |
+| 루트의 `info.tsx`, `todolist.md`, `index.ts` 유지 여부 | PKG-04f | 확인 후 정리 |
+| 네트워크 효과 없는 설정 필드를 제거할 것인가, 구현할 것인가 | DOM-08d | 1.x는 `@deprecated`, 2.0 제거 |
+
+## 6. 운영 규칙
+
+- 한 slice는 한 PR이다. PR 설명에 slice ID, 실행한 검증, 수용 시나리오 결과 표(`pnpm accept` 요약)를 적는다.
+- known-red 시나리오가 green이 되면 같은 PR에서 known-red 목록에서 지운다.
+- slice가 끝나면 해당 PRD에서 그 slice를 지운다. 항목의 모든 slice가 끝나면 항목을 지운다.
+- 예산(`budgets.json`) 증가는 사용자 확인 후에만 한다.
