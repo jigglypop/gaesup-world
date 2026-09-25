@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
-import { createScopedStoreHook } from '../../stores/scopedStore';
+import { lazyScopedStore } from '../../stores/scopedStore';
 import type { WalletSerialized } from '../types';
 
 type WalletState = {
@@ -82,6 +82,6 @@ export function createWalletStore() {
 
 export type WalletStore = ReturnType<typeof createWalletStore>;
 export const WALLET_STORE_SERVICE = runtimeStoreServiceKey<WalletStore>('wallet');
-export const { useStore: useWalletStore, useStoreApi: useWalletStoreApi } = createScopedStoreHook(
-  createWalletStore(), () => useGaesupRuntime()?.walletStore,
+export const { useStore: useWalletStore, useStoreApi: useWalletStoreApi } = lazyScopedStore(
+  'useWalletStore', createWalletStore, () => useGaesupRuntime()?.walletStore,
 );

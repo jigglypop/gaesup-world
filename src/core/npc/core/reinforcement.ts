@@ -1,5 +1,5 @@
 import type { NPCBrainDecision, NPCInstance, NPCObservation } from '../types';
-import { registerNPCBrainAdapter, type NPCBrainAdapter, type NPCBrainAdapterContext, type NPCBrainAdapterRegistry } from './brain';
+import type { NPCBrainAdapter, NPCBrainAdapterContext, NPCBrainAdapterRegistry } from './brain';
 import { isNPCPolicyResponse } from './validatePolicy';
 
 export type ReinforcementAdapterConfig = {
@@ -172,13 +172,7 @@ export function attachReinforcementAdapter(registry: NPCBrainAdapterRegistry, cl
   return () => releases.forEach(release => release());
 }
 
-const legacyClient = createReinforcementAdapter();
-let registered = false;
-export const configureReinforcementAdapter = legacyClient.configure;
-export const getReinforcementAdapterConfig = legacyClient.getConfig;
-export function registerDefaultReinforcementAdapter(): void {
-  if (registered) return;
-  for (const id of ['default', 'openai', 'huggingface']) registerNPCBrainAdapter('reinforcement', id, legacyClient.adapter);
-  registered = true;
-}
-registerDefaultReinforcementAdapter();
+/** The legacy global client; the default brain adapter registry attaches it on first use. */
+export const legacyReinforcementClient = createReinforcementAdapter();
+export const configureReinforcementAdapter = legacyReinforcementClient.configure;
+export const getReinforcementAdapterConfig = legacyReinforcementClient.getConfig;

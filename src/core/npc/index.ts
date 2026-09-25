@@ -27,6 +27,7 @@ export {
 export {
   createNPCObservation,
   createNPCBrainAdapterRegistry,
+  registerDefaultReinforcementAdapter,
   resolveNPCBrainDecision,
   registerNPCBrainAdapter,
 } from './core/brain';
@@ -35,7 +36,6 @@ export {
   createReinforcementAdapter,
   attachReinforcementAdapter,
   getReinforcementAdapterConfig,
-  registerDefaultReinforcementAdapter,
 } from './core/reinforcement';
 export {
   createNPCPlugin,

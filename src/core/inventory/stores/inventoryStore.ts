@@ -4,7 +4,7 @@ import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import type { ItemId } from '../../items/types';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
-import { createScopedStoreHook } from '../../stores/scopedStore';
+import { lazyScopedStore } from '../../stores/scopedStore';
 import {
   DEFAULT_HOTBAR_SIZE,
   DEFAULT_INVENTORY_SIZE,
@@ -217,6 +217,6 @@ export function createInventoryStore() {
 
 export type InventoryStore = ReturnType<typeof createInventoryStore>;
 export const INVENTORY_STORE_SERVICE = runtimeStoreServiceKey<InventoryStore>('inventory');
-export const { useStore: useInventoryStore, useStoreApi: useInventoryStoreApi } = createScopedStoreHook(
-  createInventoryStore(), () => useGaesupRuntime()?.inventoryStore,
+export const { useStore: useInventoryStore, useStoreApi: useInventoryStoreApi } = lazyScopedStore(
+  'useInventoryStore', createInventoryStore, () => useGaesupRuntime()?.inventoryStore,
 );

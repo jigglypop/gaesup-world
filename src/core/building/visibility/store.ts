@@ -1,6 +1,7 @@
-import { create, useStore } from 'zustand';
+import { create } from 'zustand';
 
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { lazyScopedStore } from '../../stores/scopedStore';
 
 type BuildingVisibilityState = {
   initialized: boolean;
@@ -72,14 +73,7 @@ export function createBuildingVisibilityStore() {
 }
 
 export type BuildingVisibilityStore = ReturnType<typeof createBuildingVisibilityStore>;
-const legacyStore = createBuildingVisibilityStore();
-export function useBuildingVisibilityStoreApi(): BuildingVisibilityStore {
-  return useGaesupRuntime()?.buildingVisibilityStore ?? useBuildingVisibilityStore;
-}
-function useScopedStore(): BuildingVisibilityState;
-function useScopedStore<T>(selector: (state: BuildingVisibilityState) => T): T;
-function useScopedStore(selector: (state: BuildingVisibilityState) => unknown = state => state) {
-  return useStore(useBuildingVisibilityStoreApi(), selector);
-}
 /** React uses the nearest runtime; static methods retain the legacy default. */
-export const useBuildingVisibilityStore = Object.assign(useScopedStore, legacyStore);
+export const { useStore: useBuildingVisibilityStore, useStoreApi: useBuildingVisibilityStoreApi } = lazyScopedStore(
+  'useBuildingVisibilityStore', createBuildingVisibilityStore, () => useGaesupRuntime()?.buildingVisibilityStore,
+);

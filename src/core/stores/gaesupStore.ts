@@ -1,10 +1,11 @@
 import { createContext, useContext } from 'react';
 
-import { create, useStore } from 'zustand';
+import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 
 import { createCameraOptionSlice } from '@core/camera/stores/slices/cameraOption';
 
+import { lazyScopedStore } from './scopedStore';
 import {
   createModeSlice,
   createUrlsSlice,
@@ -59,18 +60,10 @@ export function createGaesupStore(inputBackend: InputBackend = createMemoryInput
 
 export type GaesupStore = ReturnType<typeof buildGaesupStore>;
 export const RUNTIME_GAESUP_STORE_SERVICE_ID = 'gaesup.runtime.world-store';
-const legacyGaesupStore = buildGaesupStore();
 const GaesupStoreContext = createContext<GaesupStore | null>(null);
 export const GaesupStoreProvider = GaesupStoreContext.Provider;
-export function useGaesupStoreApi(): GaesupStore {
-  return useContext(GaesupStoreContext) ?? useGaesupStore;
-}
-
-function useScopedGaesupStore(): GaesupState;
-function useScopedGaesupStore<T>(selector: (state: GaesupState) => T): T;
-function useScopedGaesupStore(selector: (state: GaesupState) => unknown = (state) => state) {
-  return useStore(useGaesupStoreApi(), selector);
-}
 
 /** React reads the nearest world; static methods retain the legacy default store. */
-export const useGaesupStore = Object.assign(useScopedGaesupStore, legacyGaesupStore);
+export const { useStore: useGaesupStore, useStoreApi: useGaesupStoreApi } = lazyScopedStore(
+  'useGaesupStore', () => buildGaesupStore(), () => useContext(GaesupStoreContext),
+);

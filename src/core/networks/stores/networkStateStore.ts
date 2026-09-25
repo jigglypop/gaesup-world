@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { lazyStore } from '../../stores/lazyStore';
 import { NetworkSnapshot, NPCNetworkNode, NetworkGroup, NetworkMessage } from '../types';
 
 interface NetworkState {
@@ -39,7 +40,7 @@ const initialState: NetworkState = {
   lastUpdate: 0
 };
 
-export const useNetworkStateStore = create<NetworkStateStore>((set, get) => ({
+export const useNetworkStateStore = lazyStore(() => create<NetworkStateStore>((set, get) => ({
   state: { ...initialState },
 
   updateSnapshot: (snapshot) =>
@@ -166,7 +167,7 @@ export const useNetworkStateStore = create<NetworkStateStore>((set, get) => ({
         recentMessages: []
       }
     })
-}));
+})));
 
 // 유틸리티 함수들
 export const useNetworkStats = () => {

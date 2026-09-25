@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
-import { createScopedStoreHook } from '../../stores/scopedStore';
+import { lazyScopedStore } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
 import type {
   HouseId,
@@ -200,6 +200,6 @@ export function createTownStore() {
 
 export type TownStore = ReturnType<typeof createTownStore>;
 export const TOWN_STORE_SERVICE = runtimeStoreServiceKey<TownStore>('town');
-export const { useStore: useTownStore, useStoreApi: useTownStoreApi } = createScopedStoreHook(
-  createTownStore(), () => useGaesupRuntime()?.townStore,
+export const { useStore: useTownStore, useStoreApi: useTownStoreApi } = lazyScopedStore(
+  'useTownStore', createTownStore, () => useGaesupRuntime()?.townStore,
 );

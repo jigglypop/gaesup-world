@@ -4,7 +4,7 @@ import { dialogRuntimeAdapter } from './runtimeAdapter';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useQuestStore, type QuestStore } from '../../quests/stores/questStore';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
-import { createScopedStoreHook } from '../../stores/scopedStore';
+import { lazyScopedStore } from '../../stores/scopedStore';
 import { DialogRunner } from '../core/DialogRunner';
 import { getDialogRegistry } from '../registry/DialogRegistry';
 import type { DialogContext, DialogEffect, DialogNode, DialogTreeId, DialogRuntimeAdapter } from '../types';
@@ -73,6 +73,6 @@ export function createDialogStore(quests: QuestStore, adapter: DialogRuntimeAdap
 
 export type DialogStore = ReturnType<typeof createDialogStore>;
 export const DIALOG_STORE_SERVICE = runtimeStoreServiceKey<DialogStore>('dialog');
-export const { useStore: useDialogStore, useStoreApi: useDialogStoreApi } = createScopedStoreHook(
-  createDialogStore(useQuestStore, dialogRuntimeAdapter), () => useGaesupRuntime()?.dialogStore,
+export const { useStore: useDialogStore, useStoreApi: useDialogStoreApi } = lazyScopedStore(
+  'useDialogStore', () => createDialogStore(useQuestStore, dialogRuntimeAdapter), () => useGaesupRuntime()?.dialogStore,
 );

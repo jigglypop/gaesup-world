@@ -1,9 +1,10 @@
 import { enableMapSet, produce } from 'immer';
-import { create, useStore } from 'zustand';
+import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { lazyScopedStore } from '../../stores/scopedStore';
 import {
   createBlockFootprint,
   getBuildingSupportHeight,
@@ -47,8 +48,6 @@ import { createDefaultTileCategories, createDefaultWallCategories } from './defa
 import { applyBuildingHydration, hydrateBuildingState, serializeBuildingState } from './persistence';
 import { BuildingSpatialIndex } from './spatialIndex';
 import { TILE_CONSTANTS } from '../types/constants';
-
-enableMapSet();
 
 const CUSTOM_TILE_CATEGORY_ID = 'custom-tiles';
 const DEFAULT_GRASS_DENSITY = 90;
@@ -302,7 +301,7 @@ function replaceTileOccupancy(index: BuildingSpatialIndex, previous: readonly Ti
 }
 
 export function createBuildingStore() {
-
+  enableMapSet();
   return create<BuildingStore>()(
   immer((set, get) => ({
     initialized: false,
@@ -1622,14 +1621,7 @@ export function createBuildingStore() {
 
 export type BuildingStoreApi = ReturnType<typeof createBuildingStore>;
 export const BUILDING_STORE_SERVICE = runtimeStoreServiceKey<BuildingStoreApi>('building');
-const legacyStore = createBuildingStore();
-export function useBuildingStoreApi(): BuildingStoreApi {
-  return useGaesupRuntime()?.buildingStore ?? useBuildingStore;
-}
-function useScopedStore(): BuildingStore;
-function useScopedStore<T>(selector: (state: BuildingStore) => T): T;
-function useScopedStore(selector: (state: BuildingStore) => unknown = state => state) {
-  return useStore(useBuildingStoreApi(), selector);
-}
 /** React uses the nearest runtime; static methods retain the legacy default. */
-export const useBuildingStore = Object.assign(useScopedStore, legacyStore);
+export const { useStore: useBuildingStore, useStoreApi: useBuildingStoreApi } = lazyScopedStore(
+  'useBuildingStore', createBuildingStore, () => useGaesupRuntime()?.buildingStore,
+);

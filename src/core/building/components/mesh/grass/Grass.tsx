@@ -1,9 +1,10 @@
 import { FC, lazy, memo, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
-import { extend, useThree } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
 import { createNoise2D } from "simplex-noise";
 import * as THREE from "three";
 
+import { extendOnce } from '@/core/rendering/extendOnce';
 import { shaderMaterial } from '@/core/rendering/legacyDrei';
 import { usePerfStore } from "@core/perf/stores/perfStore";
 import { createToonMaterial, getDefaultToonMode } from "@core/rendering/toon";
@@ -121,7 +122,7 @@ const GrassMaterial = shaderMaterial(
   fragmentShader
 );
 
-extend({ GrassMaterial });
+const extendGrassMaterial = extendOnce({ GrassMaterial });
 const NodeGrassMaterial = lazy(() => import('./NodeGrassMaterial'));
 
 function getYPosition(x: number, z: number): number {
@@ -379,6 +380,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
     bladeAlphaUrl,
     ...props
   }) => {
+    extendGrassMaterial();
     const { bW = 0.14, bH = 0.65, joints = 5 } = options;
     const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
     const manager = useGrassManager();

@@ -1,6 +1,7 @@
 import { create, useStore } from 'zustand';
 
 import { useBuildingStore, useBuildingStoreApi, type BuildingStoreApi } from './buildingStore';
+import { lazyStore } from '../../stores/lazyStore';
 
 /**
  * 사용자 배치 프리셋: 현재 선택된 타일/벽/오브젝트 설정 조합을 이름으로
@@ -129,7 +130,7 @@ return create<PlacementPresetState>((set, get) => ({
 }));
 }
 
-const legacyPresets = createPlacementPresets(useBuildingStore);
+const legacyPresets = lazyStore(() => createPlacementPresets(useBuildingStore));
 const scopedPresets = new WeakMap<BuildingStoreApi, ReturnType<typeof createPlacementPresets>>();
 function useScopedPresets(): PlacementPresetState;
 function useScopedPresets<T>(selector: (state: PlacementPresetState) => T): T;

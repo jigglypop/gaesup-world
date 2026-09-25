@@ -26,7 +26,7 @@ const EMPTY_CONDITION_STORES: NPCBrainConditionStores = {
 };
 let defaultConditionStores = EMPTY_CONDITION_STORES;
 
-/** Fallback for calls without explicit stores; the npc store layer registers the legacy global stores. */
+/** Fallback for calls without explicit stores; creating the legacy global NPC store registers the legacy global stores. */
 export function setDefaultNPCBrainConditionStores(stores: NPCBrainConditionStores): () => void {
   const previous = defaultConditionStores;
   defaultConditionStores = stores;

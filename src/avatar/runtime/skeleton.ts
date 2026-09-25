@@ -3,9 +3,13 @@ import { Bone, Group, Skeleton } from 'three';
 import definition from '../core/rig.json';
 import { HUMANOID_BONES, type HumanoidBone, type AvatarSocket } from '../core/types';
 
-for (const bone of definition.bones) Object.freeze(bone);
-Object.freeze(definition.bones);
-export const CANONICAL_AVATAR_RIG = Object.freeze(definition);
+function freezeRig(rig: typeof definition): Readonly<typeof definition> {
+  for (const bone of rig.bones) Object.freeze(bone);
+  Object.freeze(rig.bones);
+  return Object.freeze(rig);
+}
+
+export const CANONICAL_AVATAR_RIG = freezeRig(definition);
 export const AVATAR_SOCKETS: Record<
   AvatarSocket,
   { bone: HumanoidBone; position: [number, number, number] }

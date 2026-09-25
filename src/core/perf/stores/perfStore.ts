@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { lazyStore } from '../../stores/lazyStore';
 import { autoDetectProfile, profileForTier, type RendererIdentity } from '../detect';
 import type { DeviceCapabilities, PerfProfile, PerfTier } from '../types';
 
@@ -16,7 +17,7 @@ type State = {
 
 const initial = profileForTier('medium');
 
-export const usePerfStore = create<State>((set) => ({
+export const usePerfStore = lazyStore(() => create<State>((set) => ({
   profile: initial,
   capabilities: null,
   manualOverride: false,
@@ -34,4 +35,4 @@ export const usePerfStore = create<State>((set) => ({
     const { profile, capabilities } = autoDetectProfile();
     set({ profile, capabilities, manualOverride: false });
   },
-}));
+})));

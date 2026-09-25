@@ -3,6 +3,16 @@ import type { AnimatorControllerDefinition } from './types';
 import { validateAnimatorController } from './validate';
 
 const controllers = new Map<string, AnimatorControllerDefinition>();
+let defaultRegistered = false;
+
+/** The default controller joins on first use rather than at import, still ahead of any caller's controller. */
+function registry(): Map<string, AnimatorControllerDefinition> {
+  if (!defaultRegistered) {
+    defaultRegistered = true;
+    registerAnimatorController(defaultCharacterAnimator);
+  }
+  return controllers;
+}
 
 export function registerAnimatorController(definition: AnimatorControllerDefinition): () => void {
   const validation = validateAnimatorController(definition);
@@ -12,18 +22,16 @@ export function registerAnimatorController(definition: AnimatorControllerDefinit
       `[AnimatorRegistry Error]: 잘못된 컨트롤러 ${definition.id} (${first?.path}: ${first?.message})`,
     );
   }
-  controllers.set(definition.id, definition);
+  registry().set(definition.id, definition);
   return () => {
     if (controllers.get(definition.id) === definition) controllers.delete(definition.id);
   };
 }
 
 export function getAnimatorController(id: string): AnimatorControllerDefinition | undefined {
-  return controllers.get(id);
+  return registry().get(id);
 }
 
 export function listAnimatorControllers(): AnimatorControllerDefinition[] {
-  return Array.from(controllers.values());
+  return Array.from(registry().values());
 }
-
-registerAnimatorController(defaultCharacterAnimator);

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
-import { createScopedStoreHook } from '../../stores/scopedStore';
+import { lazyScopedStore } from '../../stores/scopedStore';
 import type { RoomDescriptor, RoomPortalDescriptor, SceneId } from '../types';
 
 type RoomVisibilityState = {
@@ -95,6 +95,6 @@ return create<RoomVisibilityState>((set) => ({
 }
 
 export type RoomVisibilityStore = ReturnType<typeof createRoomVisibilityStore>;
-export const { useStore: useRoomVisibilityStore, useStoreApi: useRoomVisibilityStoreApi } = createScopedStoreHook(
-  createRoomVisibilityStore(), () => useGaesupRuntime()?.roomVisibilityStore,
+export const { useStore: useRoomVisibilityStore, useStoreApi: useRoomVisibilityStoreApi } = lazyScopedStore(
+  'useRoomVisibilityStore', createRoomVisibilityStore, () => useGaesupRuntime()?.roomVisibilityStore,
 );

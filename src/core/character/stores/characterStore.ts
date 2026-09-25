@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
-import { createScopedStoreHook } from '../../stores/scopedStore';
+import { lazyScopedStore } from '../../stores/scopedStore';
 import {
   DEFAULT_APPEARANCE,
   FACE_STYLE_LABEL,
@@ -249,6 +249,6 @@ return create<CharacterState>((set, get) => {
 
 export type CharacterStore = ReturnType<typeof createCharacterStore>;
 export const CHARACTER_STORE_SERVICE = runtimeStoreServiceKey<CharacterStore>('character');
-export const { useStore: useCharacterStore, useStoreApi: useCharacterStoreApi } = createScopedStoreHook(
-  createCharacterStore(), () => useGaesupRuntime()?.characterStore,
+export const { useStore: useCharacterStore, useStoreApi: useCharacterStoreApi } = lazyScopedStore(
+  'useCharacterStore', createCharacterStore, () => useGaesupRuntime()?.characterStore,
 );

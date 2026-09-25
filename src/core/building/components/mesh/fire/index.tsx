@@ -1,8 +1,9 @@
 import React, { FC, lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
-import { extend, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { extendOnce } from '@/core/rendering/extendOnce';
 import { shaderMaterial } from '@/core/rendering/legacyDrei';
 
 import fragmentShader from './frag.glsl';
@@ -19,7 +20,7 @@ const FireMaterial = shaderMaterial(
   fragmentShader,
 );
 
-extend({ FireMaterial });
+const extendFireMaterial = extendOnce({ FireMaterial });
 
 const FIRE_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:fire' };
 const FIRE_BATCH_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:fire-batch' };
@@ -132,6 +133,7 @@ interface FireProps {
 }
 
 const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color = '#ffffff' }) => {
+  extendFireMaterial();
   const nodes = useThree((state) => isWebGPURenderer(state.gl));
   const tintColor = useMemo(() => new THREE.Color(color), [color]);
 

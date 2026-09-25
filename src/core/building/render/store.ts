@@ -1,4 +1,4 @@
-import { create, useStore } from 'zustand';
+import { create } from 'zustand';
 
 
 import { createEmptyRenderSnapshot, type BuildingRenderSnapshot } from './core';
@@ -10,6 +10,7 @@ import {
   type BuildingGpuUploadResources,
 } from './upload';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { lazyScopedStore } from '../../stores/scopedStore';
 
 type BuildingGpuUploadResourcesUpdate =
   | BuildingGpuUploadResources
@@ -97,14 +98,7 @@ export function createBuildingRenderStore() {
 }
 
 export type BuildingRenderStore = ReturnType<typeof createBuildingRenderStore>;
-const legacyStore = createBuildingRenderStore();
-export function useBuildingRenderStateStoreApi(): BuildingRenderStore {
-  return useGaesupRuntime()?.buildingRenderStore ?? useBuildingRenderStateStore;
-}
-function useScopedStore(): BuildingRenderState;
-function useScopedStore<T>(selector: (state: BuildingRenderState) => T): T;
-function useScopedStore(selector: (state: BuildingRenderState) => unknown = state => state) {
-  return useStore(useBuildingRenderStateStoreApi(), selector);
-}
 /** React uses the nearest runtime; static methods retain the legacy default. */
-export const useBuildingRenderStateStore = Object.assign(useScopedStore, legacyStore);
+export const { useStore: useBuildingRenderStateStore, useStoreApi: useBuildingRenderStateStoreApi } = lazyScopedStore(
+  'useBuildingRenderStateStore', createBuildingRenderStore, () => useGaesupRuntime()?.buildingRenderStore,
+);

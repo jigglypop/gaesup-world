@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { lazyStore } from '../../stores/lazyStore';
 import { UIConfig } from '../types';
 
 interface UIConfigStore {
@@ -64,7 +65,7 @@ const defaultConfig: UIConfig = {
   },
 };
 
-export const useUIConfigStore = create<UIConfigStore>((set) => ({
+export const useUIConfigStore = lazyStore(() => create<UIConfigStore>((set) => ({
   config: defaultConfig,
   
   updateConfig: (partial) =>
@@ -121,4 +122,4 @@ export const useUIConfigStore = create<UIConfigStore>((set) => ({
     })),
     
   resetConfig: () => set({ config: defaultConfig }),
-})); 
+})));

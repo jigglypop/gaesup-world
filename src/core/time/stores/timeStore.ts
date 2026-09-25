@@ -1,7 +1,8 @@
 import { createContext, useContext } from 'react';
 
-import { create, useStore } from 'zustand';
+import { create } from 'zustand';
 
+import { lazyScopedStore } from '../../stores/scopedStore';
 import { computeGameTime, isNewDay, isNewHour, realMsToGameMinutes } from '../core/Clock';
 import type { GameTime, TimeMode, TimeSerialized } from '../types';
 
@@ -144,16 +145,10 @@ export function createTimeStore() {
 }
 
 export type TimeStore = ReturnType<typeof createTimeStore>;
-const legacyTimeStore = createTimeStore();
 const TimeStoreContext = createContext<TimeStore | null>(null);
 export const TimeStoreProvider = TimeStoreContext.Provider;
-export function useTimeStoreApi(): TimeStore { return useContext(TimeStoreContext) ?? useTimeStore; }
-
-function useScopedTimeStore(): TimeState;
-function useScopedTimeStore<T>(selector: (state: TimeState) => T): T;
-function useScopedTimeStore(selector: (state: TimeState) => unknown = state => state) {
-  return useStore(useTimeStoreApi(), selector);
-}
 
 /** Hook reads the nearest world; imperative static methods retain the legacy default store. */
-export const useTimeStore = Object.assign(useScopedTimeStore, legacyTimeStore);
+export const { useStore: useTimeStore, useStoreApi: useTimeStoreApi } = lazyScopedStore(
+  'useTimeStore', createTimeStore, () => useContext(TimeStoreContext),
+);

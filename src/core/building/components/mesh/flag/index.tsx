@@ -1,9 +1,10 @@
 import React, { FC, lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 
 import { useTexture } from '@react-three/drei';
-import { extend, useThree } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
+import { extendOnce } from '@/core/rendering/extendOnce';
 import { shaderMaterial } from '@/core/rendering/legacyDrei';
 import { weightFromDistance } from "@core/utils/sfe";
 
@@ -34,11 +35,12 @@ const FlagMaterial = shaderMaterial(
   fragmentShader,
 );
 
-extend({ FlagMaterial });
+const extendFlagMaterial = extendOnce({ FlagMaterial });
 
 const NodeFlagMaterial = lazy(() => import('./NodeFlagMaterial'));
 
 function FlagSurfaceMaterial(props: FlagSurfaceMaterialProps) {
+  extendFlagMaterial();
   const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
   if (useNodes) return <NodeFlagMaterial {...props} />;
   return <flagMaterial ref={props.materialRef} map={props.texture}

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { lazyStore } from '../../core/stores/lazyStore';
+
 interface ToastItem {
   id: string;
   text: string;
@@ -14,7 +16,7 @@ interface ToastState {
   removeToast: (id: string) => void;
 }
 
-export const useToast = create<ToastState>((set, get) => ({
+export const useToast = lazyStore(() => create<ToastState>((set, get) => ({
   toasts: [],
   timers: new Map(),
   addToast: (toast) => {
@@ -46,4 +48,4 @@ export const useToast = create<ToastState>((set, get) => ({
     }
     set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) }));
   },
-}));
+})));

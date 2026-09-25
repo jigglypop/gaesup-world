@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { lazyStore } from '../../stores/lazyStore';
 import { NetworkConfig } from '../types';
 
 interface NetworkConfigStore {
@@ -189,7 +190,7 @@ const validateConfig = (config: NetworkConfig): { isValid: boolean; errors: stri
   };
 };
 
-export const useNetworkConfigStore = create<NetworkConfigStore>((set, get) => ({
+export const useNetworkConfigStore = lazyStore(() => create<NetworkConfigStore>((set, get) => ({
   config: defaultConfig,
   
   updateConfig: (partial) =>
@@ -228,4 +229,4 @@ export const useNetworkConfigStore = create<NetworkConfigStore>((set, get) => ({
     })),
     
   validateConfig: () => validateConfig(get().config),
-})); 
+})));

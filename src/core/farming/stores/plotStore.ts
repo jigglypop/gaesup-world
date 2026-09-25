@@ -4,7 +4,7 @@ import { useInventoryStore, type InventoryStore } from '../../inventory/stores/i
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
-import { createScopedStoreHook } from '../../stores/scopedStore';
+import { lazyScopedStore } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
 import { getCropRegistry } from '../registry/CropRegistry';
 import type { CropId, FarmingSerialized, Plot, PlotState } from '../types';
@@ -218,6 +218,6 @@ export function createPlotStore(inventoryStore: InventoryStore) {
 
 export type PlotStore = ReturnType<typeof createPlotStore>;
 export const FARMING_STORE_SERVICE = runtimeStoreServiceKey<PlotStore>('farming');
-export const { useStore: usePlotStore, useStoreApi: usePlotStoreApi } = createScopedStoreHook(
-  createPlotStore(useInventoryStore), () => useGaesupRuntime()?.plotStore,
+export const { useStore: usePlotStore, useStoreApi: usePlotStoreApi } = lazyScopedStore(
+  'usePlotStore', () => createPlotStore(useInventoryStore), () => useGaesupRuntime()?.plotStore,
 );

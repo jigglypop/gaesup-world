@@ -1,11 +1,12 @@
 import { enableMapSet } from 'immer';
-import { create, useStore } from 'zustand';
+import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useQuestStore } from '../../quests/stores/questStore';
 import { useFriendshipStore } from '../../relations/stores/friendshipStore';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { lazyScopedStore } from '../../stores/scopedStore';
 import { createUniqueId } from '../../utils/id';
 import {
   registerNPCBrainBlueprint,
@@ -32,8 +33,6 @@ import {
   ClothingCategory,
   NPCEvent
 } from '../types';
-
-enableMapSet();
 
 const DEFAULT_NPC_VOLUME: NPCVolumeConfig = {
   height: 1.8,
@@ -348,7 +347,7 @@ function repairDefaultNPCAssetUrls(state: NPCStore): void {
 }
 
 function buildNPCStore(legacyBlueprintRegistry = false, invalidateBrainRequests: (id?: string) => void = () => {}) {
-
+  enableMapSet();
   return create<NPCStore>()(
   immer((set, get) => ({
     initialized: false,
@@ -1021,16 +1020,12 @@ export function createNPCStore(options: { onInvalidateBrain?: (id?: string) => v
 }
 export type NPCStoreApi = ReturnType<typeof createNPCStore>;
 export const NPC_STORE_SERVICE = runtimeStoreServiceKey<NPCStoreApi>('npc');
-const legacyStore = buildNPCStore(true);
-// Legacy global brain conditions pair with the legacy global NPC store; runtimes pass their own stores.
-setDefaultNPCBrainConditionStores({ questStore: useQuestStore, friendshipStore: useFriendshipStore });
-export function useNPCStoreApi(): NPCStoreApi {
-  return useGaesupRuntime()?.npcStore ?? useNPCStore;
-}
-function useScopedStore(): NPCStore;
-function useScopedStore<T>(selector: (state: NPCStore) => T): T;
-function useScopedStore(selector: (state: NPCStore) => unknown = state => state) {
-  return useStore(useNPCStoreApi(), selector);
+/** Legacy global brain conditions pair with the legacy global NPC store; runtimes pass their own stores. */
+function createLegacyNPCStore() {
+  setDefaultNPCBrainConditionStores({ questStore: useQuestStore, friendshipStore: useFriendshipStore });
+  return buildNPCStore(true);
 }
 /** React uses the nearest runtime; static methods retain the legacy default. */
-export const useNPCStore = Object.assign(useScopedStore, legacyStore);
+export const { useStore: useNPCStore, useStoreApi: useNPCStoreApi } = lazyScopedStore(
+  'useNPCStore', createLegacyNPCStore, () => useGaesupRuntime()?.npcStore,
+);

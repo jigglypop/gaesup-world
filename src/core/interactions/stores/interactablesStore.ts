@@ -1,8 +1,9 @@
 import * as THREE from 'three';
-import { create, useStore } from 'zustand';
+import { create } from 'zustand';
 
 import type { RuntimeRecord } from '../../boilerplate/types';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { lazyScopedStore } from '../../stores/scopedStore';
 
 export type InteractableKind = 'pickup' | 'npc' | 'door' | 'shop' | 'storage' | 'tool-target' | 'misc';
 
@@ -109,10 +110,7 @@ export function createInteractablesStore(active = true) {
   }));
 }
 export type InteractablesStore = ReturnType<typeof createInteractablesStore>;
-const legacyStore = createInteractablesStore();
-export function useInteractablesStoreApi(): InteractablesStore { return useGaesupRuntime()?.interactablesStore ?? legacyStore; }
-function useScopedStore(): InteractablesState;
-function useScopedStore<T>(selector: (state: InteractablesState) => T): T;
-function useScopedStore(selector: (state: InteractablesState) => unknown = state => state) { return useStore(useInteractablesStoreApi(), selector); }
 /** Hook calls follow the provider; static methods retain the legacy default. */
-export const useInteractablesStore = Object.assign(useScopedStore, legacyStore);
+export const { useStore: useInteractablesStore, useStoreApi: useInteractablesStoreApi } = lazyScopedStore(
+  'useInteractablesStore', () => createInteractablesStore(), () => useGaesupRuntime()?.interactablesStore,
+);

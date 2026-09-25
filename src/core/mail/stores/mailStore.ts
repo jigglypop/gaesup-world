@@ -4,7 +4,7 @@ import { useWalletStore, type WalletStore } from '../../economy/stores/walletSto
 import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
-import { createScopedStoreHook } from '../../stores/scopedStore';
+import { lazyScopedStore } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
 import type { MailAttachment, MailMessage, MailSerialized } from '../types';
 
@@ -149,6 +149,6 @@ export function createMailStore(inventoryStore: InventoryStore, walletStore: Wal
 
 export type MailStore = ReturnType<typeof createMailStore>;
 export const MAIL_STORE_SERVICE = runtimeStoreServiceKey<MailStore>('mail');
-export const { useStore: useMailStore, useStoreApi: useMailStoreApi } = createScopedStoreHook(
-  createMailStore(useInventoryStore, useWalletStore), () => useGaesupRuntime()?.mailStore,
+export const { useStore: useMailStore, useStoreApi: useMailStoreApi } = lazyScopedStore(
+  'useMailStore', () => createMailStore(useInventoryStore, useWalletStore), () => useGaesupRuntime()?.mailStore,
 );

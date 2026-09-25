@@ -8,6 +8,7 @@ import type {
   NPCObservationTarget,
 } from '../types';
 import { compileNPCBrainBlueprint, getNPCBrainBlueprint, type NPCBrainConditionStores } from './blueprint';
+import { attachReinforcementAdapter, legacyReinforcementClient } from './reinforcement';
 
 type AdapterKey = `${NPCBrainMode}:${string}`;
 
@@ -65,14 +66,27 @@ export function createNPCBrainAdapterRegistry() {
   };
 }
 export type NPCBrainAdapterRegistry = ReturnType<typeof createNPCBrainAdapterRegistry>;
-const defaultAdapters = createNPCBrainAdapterRegistry();
+let defaultAdapters: NPCBrainAdapterRegistry | undefined;
+
+/** The legacy default registry, created with the legacy reinforcement client on first use rather than at import. */
+function getDefaultAdapters(): NPCBrainAdapterRegistry {
+  if (!defaultAdapters) {
+    defaultAdapters = createNPCBrainAdapterRegistry();
+    attachReinforcementAdapter(defaultAdapters, legacyReinforcementClient);
+  }
+  return defaultAdapters;
+}
+
+export function registerDefaultReinforcementAdapter(): void {
+  getDefaultAdapters();
+}
 
 export function registerNPCBrainAdapter(
   mode: NPCBrainMode,
   id: string,
   adapter: NPCBrainAdapter,
 ): () => void {
-  return defaultAdapters.register(mode, id, adapter);
+  return getDefaultAdapters().register(mode, id, adapter);
 }
 
 export function createNPCObservation(
@@ -173,7 +187,7 @@ export function resolveNPCBrainDecision(
   observation: NPCObservation,
   blueprints?: ReadonlyMap<string, NPCBrainBlueprint>,
   stores?: NPCBrainConditionStores & { npcBrainAdapters?: NPCBrainAdapterRegistry },
-  adapters: NPCBrainAdapterRegistry = stores?.npcBrainAdapters ?? defaultAdapters,
+  adapters: NPCBrainAdapterRegistry = stores?.npcBrainAdapters ?? getDefaultAdapters(),
 ): NPCBrainDecision | undefined {
   const brainMode = instance.brain?.mode ?? 'none';
   if (brainMode === 'none' || !adapters.isActive) return undefined;

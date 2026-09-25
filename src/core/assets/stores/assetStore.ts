@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { lazyStore } from '../../stores/lazyStore';
 import { SEED_ASSETS } from '../data/seedAssets';
 import type {
   AssetCatalogStatus,
@@ -64,7 +65,7 @@ function createCatalogStatus(
   return query ? { ...status, query: { ...query } } : status;
 }
 
-export const useAssetStore = create<AssetState>((set, get) => ({
+export const useAssetStore = lazyStore(() => create<AssetState>((set, get) => ({
   records: seedRecords,
   ids: SEED_ASSETS.map((asset) => asset.id),
   isLoading: false,
@@ -177,7 +178,7 @@ export const useAssetStore = create<AssetState>((set, get) => ({
       filter: {},
     });
   },
-}));
+})));
 
 type CachedAssetList = { records: AssetState['records']; ids: string[]; assets: AssetRecord[] };
 

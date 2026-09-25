@@ -6,7 +6,7 @@ import { useInventoryStore, type InventoryStore } from '../../inventory/stores/i
 import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
-import { createScopedStoreHook } from '../../stores/scopedStore';
+import { lazyScopedStore } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
 import { getRecipeRegistry } from '../registry/RecipeRegistry';
 import type { CraftingSerialized, RecipeId } from '../types';
@@ -118,6 +118,6 @@ export function createCraftingStore(inventoryStore: InventoryStore, walletStore:
 
 export type CraftingStore = ReturnType<typeof createCraftingStore>;
 export const CRAFTING_STORE_SERVICE = runtimeStoreServiceKey<CraftingStore>('crafting');
-export const { useStore: useCraftingStore, useStoreApi: useCraftingStoreApi } = createScopedStoreHook(
-  createCraftingStore(useInventoryStore, useWalletStore), () => useGaesupRuntime()?.craftingStore,
+export const { useStore: useCraftingStore, useStoreApi: useCraftingStoreApi } = lazyScopedStore(
+  'useCraftingStore', () => createCraftingStore(useInventoryStore, useWalletStore), () => useGaesupRuntime()?.craftingStore,
 );

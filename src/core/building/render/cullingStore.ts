@@ -1,6 +1,7 @@
-import { create, useStore } from 'zustand';
+import { create } from 'zustand';
 
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { lazyScopedStore } from '../../stores/scopedStore';
 
 type BuildingGpuCullingState = {
   active: boolean;
@@ -107,14 +108,7 @@ export function createBuildingCullingStore() {
 }
 
 export type BuildingCullingStore = ReturnType<typeof createBuildingCullingStore>;
-const legacyStore = createBuildingCullingStore();
-export function useBuildingGpuCullingStoreApi(): BuildingCullingStore {
-  return useGaesupRuntime()?.buildingCullingStore ?? useBuildingGpuCullingStore;
-}
-function useScopedStore(): BuildingGpuCullingState;
-function useScopedStore<T>(selector: (state: BuildingGpuCullingState) => T): T;
-function useScopedStore(selector: (state: BuildingGpuCullingState) => unknown = state => state) {
-  return useStore(useBuildingGpuCullingStoreApi(), selector);
-}
 /** React uses the nearest runtime; static methods retain the legacy default. */
-export const useBuildingGpuCullingStore = Object.assign(useScopedStore, legacyStore);
+export const { useStore: useBuildingGpuCullingStore, useStoreApi: useBuildingGpuCullingStoreApi } = lazyScopedStore(
+  'useBuildingGpuCullingStore', createBuildingCullingStore, () => useGaesupRuntime()?.buildingCullingStore,
+);

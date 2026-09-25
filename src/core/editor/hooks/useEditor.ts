@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 
+import { lazyStore } from '../../stores/lazyStore';
 import { EditorState, createEditorSlice } from '../stores/editorSlice';
 
-export const useEditorStore = create<EditorState>(createEditorSlice);
+export const useEditorStore = lazyStore(() => create<EditorState>(createEditorSlice));
 
 export const useEditor = () => {
   const store = useEditorStore(

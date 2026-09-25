@@ -1,16 +1,29 @@
-import { useStore, type StoreApi, type UseBoundStore } from 'zustand';
+import { useStore } from 'zustand';
 
-/** Keep the public static API while React reads and subscribes to its owning world. */
-export function createScopedStoreHook<T>(
-  legacy: UseBoundStore<StoreApi<T>>,
-  useOwnedStore: () => UseBoundStore<StoreApi<T>> | undefined,
+import { lazyStore, selectState, type BoundStore } from './lazyStore';
+import { isProductionEnv } from '../utils/env';
+import { logger } from '../utils/logger';
+
+/**
+ * Keep the public static API while React reads and subscribes to its owning world. The legacy global store behind the
+ * static API and the ownerless fallback is created on first use, which development reports once.
+ */
+export function lazyScopedStore<S extends BoundStore>(
+  name: string,
+  createLegacy: () => S,
+  useOwnedStore: () => S | null | undefined,
 ) {
-  const useStoreApi = (): UseBoundStore<StoreApi<T>> => useOwnedStore() ?? hook;
-  function useScoped(): T;
-  function useScoped<S>(selector: (state: T) => S): S;
-  function useScoped(selector: (state: T) => unknown = state => state) {
+  const legacy = lazyStore(() => {
+    if (!isProductionEnv()) {
+      logger.warn(`[${name}] No runtime owns this store here, so the legacy global store was created. `
+        + "Legacy stores are removed in 2.0: render under GaesupRuntimeProvider or use the runtime's store.");
+    }
+    return createLegacy();
+  });
+  const useStoreApi = (): S => useOwnedStore() ?? hook;
+  function useScoped(selector = selectState) {
     return useStore(useStoreApi(), selector);
   }
-  const hook = Object.assign(useScoped, legacy);
+  const hook: S = Object.assign(useScoped, legacy);
   return { useStore: hook, useStoreApi };
 }

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { userType } from './types';
+import { lazyStore } from '../../core/stores/lazyStore';
 import { checkApi, loginApi, logoutSession, tokenAsync } from '../api/auth';
 import { AdminApiError } from '../api/builder';
 import { adminToken } from '../api/token';
@@ -47,7 +48,7 @@ function describeFailure(error: unknown): string {
   return '서버에 연결할 수 없습니다.';
 }
 
-export const useAuthStore = create<AuthState>()((set, get) => {
+export const useAuthStore = lazyStore(() => create<AuthState>()((set, get) => {
   let generation = 0;
   dropLegacyPersistedSession();
 
@@ -121,4 +122,4 @@ export const useAuthStore = create<AuthState>()((set, get) => {
       set({ modal });
     },
   };
-});
+}));

@@ -1,9 +1,10 @@
 import { lazy, Suspense, useEffect, useMemo, useRef } from "react";
 
-import { extend, useThree } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { Water } from "three-stdlib";
 
+import { extendOnce } from '@/core/rendering/extendOnce';
 import { getDefaultToonMode } from "@core/rendering/toon";
 import { weightFromDistance } from "@core/utils/sfe";
 
@@ -21,7 +22,7 @@ class OwnedWater extends Water {
   }
 }
 
-extend({ Water: OwnedWater });
+const extendWater = extendOnce({ Water: OwnedWater });
 const WATER_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:water' };
 const NodeWaterMaterial = lazy(() => import('./NodeWaterMaterial'));
 
@@ -106,6 +107,7 @@ void main() {
 `;
 
 export default function Ocean({ lod, center, size = 16, width, depth, shore, toon, normalMap, followCamera = false, brightness = 1 }: WaterProps) {
+  extendWater();
   const useToon = toon ?? getDefaultToonMode();
   const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
   const waterRef = useRef<Water | null>(null);

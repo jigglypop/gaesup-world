@@ -7,7 +7,7 @@ import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useFriendshipStore, type FriendshipStore } from '../../relations/stores/friendshipStore';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
-import { createScopedStoreHook } from '../../stores/scopedStore';
+import { lazyScopedStore } from '../../stores/scopedStore';
 import { dayOfTotalMinutes } from '../../time/core/Clock';
 import { useTimeStore, type TimeStore } from '../../time/stores/timeStore';
 import { notify } from '../../ui/components/Toast/toastStore';
@@ -287,6 +287,6 @@ export function createQuestStore(dependencies: QuestStoreDependencies) {
 
 export type QuestStore = ReturnType<typeof createQuestStore>;
 export const QUESTS_STORE_SERVICE = runtimeStoreServiceKey<QuestStore>('quests');
-export const { useStore: useQuestStore, useStoreApi: useQuestStoreApi } = createScopedStoreHook(
-  createQuestStore({ inventory: useInventoryStore, wallet: useWalletStore, friendship: useFriendshipStore, time: useTimeStore }), () => useGaesupRuntime()?.questStore,
+export const { useStore: useQuestStore, useStoreApi: useQuestStoreApi } = lazyScopedStore(
+  'useQuestStore', () => createQuestStore({ inventory: useInventoryStore, wallet: useWalletStore, friendship: useFriendshipStore, time: useTimeStore }), () => useGaesupRuntime()?.questStore,
 );

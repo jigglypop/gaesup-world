@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import type { ItemId } from '../../items/types';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
-import { createScopedStoreHook } from '../../stores/scopedStore';
+import { lazyScopedStore } from '../../stores/scopedStore';
 import type { CatalogEntry, CatalogSerialized } from '../types';
 
 type State = {
@@ -63,6 +63,6 @@ export function createCatalogStore() {
 
 export type CatalogStore = ReturnType<typeof createCatalogStore>;
 export const CATALOG_STORE_SERVICE = runtimeStoreServiceKey<CatalogStore>('catalog');
-export const { useStore: useCatalogStore, useStoreApi: useCatalogStoreApi } = createScopedStoreHook(
-  createCatalogStore(), () => useGaesupRuntime()?.catalogStore,
+export const { useStore: useCatalogStore, useStoreApi: useCatalogStoreApi } = lazyScopedStore(
+  'useCatalogStore', createCatalogStore, () => useGaesupRuntime()?.catalogStore,
 );

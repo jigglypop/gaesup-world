@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
-import { createScopedStoreHook } from '../../stores/scopedStore';
+import { lazyScopedStore } from '../../stores/scopedStore';
 import type { GameTime } from '../../time/types';
 import { getEventRegistry } from '../registry/EventRegistry';
 import type { EventId, EventsSerialized } from '../types';
@@ -71,6 +71,6 @@ export function createEventsStore() {
 
 export type EventsStore = ReturnType<typeof createEventsStore>;
 export const EVENTS_STORE_SERVICE = runtimeStoreServiceKey<EventsStore>('events');
-export const { useStore: useEventsStore, useStoreApi: useEventsStoreApi } = createScopedStoreHook(
-  createEventsStore(), () => useGaesupRuntime()?.eventsStore,
+export const { useStore: useEventsStore, useStoreApi: useEventsStoreApi } = lazyScopedStore(
+  'useEventsStore', createEventsStore, () => useGaesupRuntime()?.eventsStore,
 );
