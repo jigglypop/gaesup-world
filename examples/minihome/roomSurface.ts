@@ -1,4 +1,4 @@
-import { Color, DataTexture, LinearFilter, LinearMipmapLinearFilter, RepeatWrapping, RGBAFormat, SRGBColorSpace } from 'three';
+import { CanvasTexture, Color, DataTexture, LinearFilter, LinearMipmapLinearFilter, RepeatWrapping, RGBAFormat, SRGBColorSpace } from 'three';
 
 import { TILES, type TileKind } from './terrain';
 
@@ -30,7 +30,10 @@ export function createRoomSurface(kind: TileKind) {
     normal[i] = (nx / length * 0.5 + 0.5) * 255; normal[i + 1] = (ny / length * 0.5 + 0.5) * 255; normal[i + 2] = (1 / length * 0.5 + 0.5) * 255; normal[i + 3] = 255;
   }
   const map = new DataTexture(color, size, size, RGBAFormat); map.colorSpace = SRGBColorSpace;
-  const normalMap = new DataTexture(normal, size, size, RGBAFormat);
+  // Canvas-backed: GLTFExporter redraws normal maps of tangent-less meshes to flip green, which a DataTexture cannot do.
+  const canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
+  canvas.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(normal.buffer), size, size), 0, 0);
+  const normalMap = new CanvasTexture(canvas); normalMap.flipY = false;
   for (const texture of [map, normalMap]) { texture.wrapS = texture.wrapT = RepeatWrapping; texture.minFilter = LinearMipmapLinearFilter; texture.magFilter = LinearFilter; texture.generateMipmaps = true; texture.needsUpdate = true; }
   return { map, normalMap };
 }

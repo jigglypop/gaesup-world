@@ -3,10 +3,10 @@ import { createSceneDocument, createSceneDocumentController } from 'gaesup-world
 import { checkAbort, nextFrame, UnsupportedScenario, type Scenario, type ScenarioContext } from './types';
 import { runMinihomeApiChecks } from '../../minihome/apiChecks';
 import { createMinihome, makeFurniture } from '../../minihome/model';
-import { mountMiniroom } from '../../minihome/room';
+import { mountMiniroom, type MiniroomEngine } from '../../minihome/room';
 import { FURNITURE, type FurnitureKind } from '../../minihome/types';
 
-async function mount(ctx: ScenarioContext, stress = false) {
+export async function mountRoom(ctx: ScenarioContext, stress = false) {
   const initial = createMinihome().room;
   const kinds = Object.keys(FURNITURE) as FurnitureKind[];
   const count = ctx.config.count;
@@ -37,10 +37,19 @@ async function mount(ctx: ScenarioContext, stress = false) {
   } catch (error) { ctx.signal.removeEventListener('abort', cancel); abort.abort(); engine?.dispose(); canvas.remove(); throw error; }
 }
 
+/** Waits until the room's demand loop has nothing scheduled: scenery moves for a few seconds after activity. */
+export async function settleRoom(engine: MiniroomEngine, signal: AbortSignal, timeoutMs = 15000) {
+  const until = performance.now() + timeoutMs;
+  while (engine.diagnostics().pendingFrame) {
+    if (performance.now() > until) throw new Error('미니룸 프레임 루프가 멈추지 않습니다.');
+    await nextFrame(signal);
+  }
+}
+
 async function lifetime(ctx: ScenarioContext) {
-  const view = await mount(ctx);
+  const view = await mountRoom(ctx);
   try {
-    for (let i = 0; i < 8; i++) await nextFrame(ctx.signal);
+    await settleRoom(view.engine, ctx.signal);
     const before = view.engine.diagnostics();
     for (let i = 0; i < 30; i++) await nextFrame(ctx.signal);
     const idle = view.engine.diagnostics();
@@ -63,7 +72,7 @@ async function lifetime(ctx: ScenarioContext) {
 }
 
 async function rendering(ctx: ScenarioContext) {
-  const view = await mount(ctx, true);
+  const view = await mountRoom(ctx, true);
   try {
     const warmup = performance.now() + ctx.config.warmupMs;
     ctx.progress('미니룸 셰이더·가구 warmup');
@@ -88,15 +97,14 @@ async function rendering(ctx: ScenarioContext) {
 }
 
 export const minihomeScenarios: Scenario[] = [
-  { id: 'minihome-api', title: '미니홈피 공개 API 기능 검사', description: '별도 fixture에서 장면 명령·계층·쿼리·저장·Unity·월드·clock·미니홈피 이력과 공유의 실제 반환 상태를 검사합니다. 패키지 전체 API 통과율을 뜻하지 않습니다.', version: 1, requirementIds: ['R25', 'R27', 'R29'], run: async ctx => {
+  { id: 'minihome-api', title: '미니홈피 API 기능 검사', description: '별도 fixture에서 미니홈피 이력과 공유의 실제 반환 상태를 검사합니다. 라이브러리 공개 API 계약은 패키지 테스트가 검사합니다.', version: 2, requirementIds: ['R25', 'R27', 'R29'], run: async ctx => {
     const results = await runMinihomeApiChecks(ctx.signal);
     for (const result of results) ctx.assert(result.id, 'passed', result.status);
     ctx.sample('miniroom-api-failures', results.filter(result => result.status === 'failed').length, 'count', 'isolated-public-api-fixtures');
     ctx.sample('miniroom-api-checks', results.length, 'count', 'isolated-public-api-fixtures');
     ctx.sample('miniroom-api-calls-covered', new Set(results.flatMap(result => result.apis)).size, 'count', 'named-entry-points-and-methods');
-    ctx.sample('miniroom-library-api-paths', new Set(results.filter(result => result.scope === 'library').flatMap(result => result.apis)).size, 'count', 'public-library-entry-points-and-methods');
     for (const result of results) if (result.status === 'failed') throw new Error(`${result.title}: ${result.detail}`);
   } },
-  { id: 'minihome-lifecycle', title: '미니룸 대기·표시·종료', description: '3D 타운의 실제 미니홈피 엔진에서 대기 프레임 루프, 컴포넌트 enabled 반영, 종료 후 작업을 검사합니다.', version: 2, requirementIds: ['R25', 'R26'], run: lifetime },
+  { id: 'minihome-lifecycle', title: '미니룸 대기·표시·종료', description: '3D 타운의 실제 미니홈피 엔진에서 대기 프레임 루프, 컴포넌트 enabled 반영, 종료 후 작업을 검사합니다.', version: 3, requirementIds: ['R25', 'R26'], run: lifetime },
   { id: 'minihome-rendering', title: '미니룸 가구 부하·렌더링', description: '타일·가구 12종·Bloom을 포함한 미니룸에서 1~1,000개 가구, 고정 배치·DPR·크기로 제출 시간과 draw call을 측정합니다. 정식 비교는 10초 예열·30초 측정입니다.', version: 2, requirementIds: ['R05', 'R13'], timed: true, run: rendering },
 ];

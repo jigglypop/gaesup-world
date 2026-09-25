@@ -2,15 +2,15 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useS
 
 import { exportUnityScene } from 'gaesup-world';
 
-import { loadMinihome, makeFurniture, MAX_FURNITURE, parseMinihome, saveMinihome } from './model';
+import { jsonEqual, loadMinihome, makeFurniture, MAX_FURNITURE, parseMinihome, saveMinihome } from './model';
 import { RoomEditorPanel } from './RoomEditorPanel';
 import { RoomSocial } from './RoomSocial';
 import { useRoomVisitors } from './roomVisitors';
 import { adoptSharedMinihome, createMinihomeSession } from './session';
-import { createShareLink, downloadJson, readShareLink } from './sharing';
+import { createShareLink, downloadJson, isShareLink, readShareLink } from './sharing';
 import { DEFAULT_EDITOR, expandTerrain, paintTiles, sculptTerrain, terrainHeight, type RoomEditor } from './terrain';
 import { FURNITURE } from './types';
-import type { FurnitureKind, HomeNote, HomeTab } from './types';
+import type { FurnitureKind, HomeNote, HomeTab, MinihomeData } from './types';
 import './world.css';
 
 const Miniroom = lazy(() => import('./Miniroom'));
@@ -41,9 +41,20 @@ function MiniAvatar() {
   );
 }
 
+/** A shared-space link decodes asynchronously before the home opens, so the session starts from the shared copy. */
 export default function Minihome() {
+  const [shared, setShared] = useState<MinihomeData | null | undefined>(() => isShareLink(location.hash) ? undefined : null);
+  useEffect(() => {
+    if (shared !== undefined) return;
+    let active = true;
+    void readShareLink(location.hash).then((home) => { if (active) setShared(home); });
+    return () => { active = false; };
+  }, [shared]);
+  return shared === undefined ? <div className="room-placeholder">공유된 공간을 여는 중…</div> : <Home shared={shared} />;
+}
+
+function Home({ shared }: { shared: MinihomeData | null }) {
   const [initial] = useState(loadMinihome);
-  const [shared] = useState(() => readShareLink(location.hash));
   const [session, setSession] = useState(() => createMinihomeSession(shared ?? initial.data));
   const { data, canUndo, canRedo } = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const { controller, update: setData } = session;
@@ -63,7 +74,7 @@ export default function Minihome() {
   const [status, setStatus] = useState(initial.warning);
   const [author, setAuthor] = useState('');
   const [message, setMessage] = useState('');
-  const [savedState, setSavedState] = useState(() => JSON.stringify(initial.data));
+  const [saved, setSaved] = useState(initial.data);
   const [saveError, setSaveError] = useState('');
   const [shareLink, setShareLink] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
@@ -72,14 +83,15 @@ export default function Minihome() {
     [editing, selected, zoom, data.theme, data.terrain, editor],
   );
   const object = document.objects.find((entry) => entry.id === selected);
-  const raw = useMemo(() => JSON.stringify(data), [data]);
-  const dirty = raw !== savedState;
+  // Compared structurally, so an edit does not serialize the whole home.
+  const dirty = useMemo(() => !jsonEqual(data, saved), [data, saved]);
   const save = useCallback(() => {
     if (preview || visitors.visiting) return;
     try {
+      const raw = JSON.stringify(data);
       saveMinihome(raw, storageBase.current);
       storageBase.current = raw;
-      setSavedState(raw);
+      setSaved(data);
       setSaveError('');
       setAutoSave(true);
       setStatus('미니홈피를 이 브라우저에 저장했어요.');
@@ -87,7 +99,7 @@ export default function Minihome() {
       setAutoSave(false);
       setSaveError(`저장하지 못했어요. ${error instanceof Error ? error.message : '브라우저 저장 공간과 권한을 확인해주세요.'}`);
     }
-  }, [raw, preview, visitors.visiting]);
+  }, [data, preview, visitors.visiting]);
   useEffect(() => {
     if (!dirty || !autoSave || preview || visitors.visiting) return;
     const timer = setTimeout(save, 1200);
@@ -173,7 +185,7 @@ export default function Minihome() {
           <button onClick={() => downloadJson(data, 'gaesup-home.json')}>파일 백업</button>
           <button onClick={() => downloadJson(exportUnityScene(data.room), 'unity-scene.json')}>Unity 장면 JSON</button>
           <button disabled={visitors.isGuest} onClick={() => fileInput.current?.click()}>백업 가져오기</button>
-          <button onClick={() => { try { setShareLink(createShareLink(data, location.href)); setStatus('공유 링크에는 프로필과 공간만 포함됩니다.'); } catch (error) { setStatus(error instanceof Error ? error.message : '공유 링크를 만들지 못했습니다.'); } }}>공간 사본 공유</button>
+          <button onClick={() => { void createShareLink(data, location.href).then((link) => { setShareLink(link); setStatus('공유 링크에는 프로필과 공간만 포함됩니다.'); }, (error: unknown) => setStatus(error instanceof Error ? error.message : '공유 링크를 만들지 못했습니다.')); }}>공간 사본 공유</button>
           <a href={`${import.meta.env.BASE_URL}engine`}>엔진 실험실 ↗</a>
         </div></details>
         <button className="world-save" aria-label="미니홈피 저장" disabled={preview || visitors.visiting} onClick={save}>{dirty && <i />}저장</button>

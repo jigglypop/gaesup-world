@@ -8,6 +8,11 @@ import type { RoomLighting, RoomQuality, RoomSettings } from './roomTypes';
 import { tilePosition, type RoomTerrain } from './terrain';
 
 type Camera = RootState['camera'];
+type Cell = readonly [number, number, number?];
+
+// Blade density steps: a paint stroke that moves the grass cell count slightly keeps every other chunk's buffers.
+const DENSITY_STEP = 20;
+const sameCells = (a: readonly Cell[], b: readonly Cell[]) => a.length === b.length && a.every((cell, index) => cell[0] === b[index]![0] && cell[1] === b[index]![1] && (cell[2] ?? 0) === (b[index]![2] ?? 0));
 
 extend({ Group, Points, Mesh, PlaneGeometry, MeshStandardMaterial, InstancedBufferGeometry, InstancedBufferAttribute });
 
@@ -33,7 +38,9 @@ export async function createRoomEnvironment(renderer: Awaited<ReturnType<typeof 
   } });
   const root = createRoot(key);
   let state: RootState | undefined;
-  let disposed = false; let elapsed = 0; let cells: Array<readonly [number, number, number?]> = [];
+  let disposed = false; let elapsed = 0; let cells: Cell[] = [];
+  // Grass rebuilds blades when a chunk's cells array changes identity, so unchanged chunks keep their previous array.
+  let chunkCells = new Map<string, Cell[]>();
   let terrainSize = 24; let weather: RoomSettings['weather'] = 'clear'; let lighting: RoomLighting = 'day';
   let previousTerrain: RoomTerrain | undefined; let previousQuality: RoomQuality | undefined;
   const waterNormals = new TextureLoader().load(`${import.meta.env.BASE_URL}resources/waternormals.jpeg`, () => { if (!disposed) invalidate(); });
@@ -48,7 +55,7 @@ export async function createRoomEnvironment(renderer: Awaited<ReturnType<typeof 
       previousTerrain = terrain; previousQuality = quality; weather = nextWeather; lighting = nextLighting; terrainSize = terrain.size;
       cells = [];
       const chunkSize = terrain.size <= 32 ? terrain.size : 16;
-      const chunks = new Map<string, { x: number; z: number; cells: Array<readonly [number, number, number?]> }>();
+      const chunks = new Map<string, { x: number; z: number; cells: Cell[] }>();
       terrain.tiles.forEach((kind, index) => {
         if (kind !== 'grass' || terrain.stairs?.[index]) return;
         const [x, , z] = tilePosition(index, terrain.size); cells.push([x, z, terrain.heights?.[index] ?? 0]);
@@ -57,8 +64,13 @@ export async function createRoomEnvironment(renderer: Awaited<ReturnType<typeof 
         let chunk = chunks.get(id); if (!chunk) { chunk = { x: cx, z: cz, cells: [] }; chunks.set(id, chunk); }
         chunk.cells.push([x - cx, z - cz, terrain.heights?.[index] ?? 0]);
       });
+      for (const [id, chunk] of chunks) {
+        const previous = chunkCells.get(id);
+        if (previous && sameCells(previous, chunk.cells)) chunk.cells = previous;
+      }
+      chunkCells = new Map([...chunks].map(([id, chunk]) => [id, chunk.cells]));
       const budget = quality === 'economy' ? 80000 : quality === 'high' ? 240000 : 140000;
-      const density = Math.min(quality === 'economy' ? 240 : quality === 'high' ? 700 : 460, budget / Math.max(1, cells.length));
+      const density = Math.max(DENSITY_STEP, Math.floor(Math.min(quality === 'economy' ? 240 : quality === 'high' ? 700 : 460, budget / Math.max(1, cells.length)) / DENSITY_STEP) * DENSITY_STEP);
       root.render(<GrassManagerProvider value={manager}>
         <ManualRender /><GrassDriver />
         <group position={[0, -0.42, 0]}>

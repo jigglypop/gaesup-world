@@ -117,6 +117,6 @@ export default function Miniroom({ controller, view, onSelect, settings, onSetti
     </details>
     {avatarLoading && <p className="room-notice" role="status">아바타 불러오는 중…</p>}
     {avatarError && <p className="room-notice" role="alert">{avatarError} <button onClick={() => setAvatarAttempt(value => value + 1)}>아바타 다시 불러오기</button></p>}
-    {diagnostics && <RoomDiagnostics engine={engine} />}
+    {diagnostics && <RoomDiagnostics engine={engine} onClose={() => setDiagnostics(false)} />}
   </div>;
 }

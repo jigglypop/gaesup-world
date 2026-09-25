@@ -175,7 +175,7 @@ export class AvatarRuntime {
     const created: Loaded[] = [];
     let committed = false;
     try {
-      for (const manifest of manifests) {
+      const plans = manifests.map((manifest) => {
         if (manifest.rig !== this.rig || !manifest.bodyArchetypes.includes(bodyArchetype))
           throw new AvatarCompatibilityError('Rig/body archetype mismatch');
         if (
@@ -194,31 +194,46 @@ export class AvatarRuntime {
           .sort((a, b) => b.level - a.level)[0];
         const selected = lod ? { ...manifest, ...lod } : manifest;
         const current = this.loaded.get(manifest.slot);
-        if (
+        const reused =
           current?.manifest.assetId === manifest.assetId &&
           current.manifest.version === manifest.version &&
           current.level === (lod?.level ?? 0) &&
-          JSON.stringify(current.manifest) === JSON.stringify(selected)
-        ) {
-          next.set(manifest.slot, current);
+          JSON.stringify(current.manifest) === JSON.stringify(selected);
+        return { manifest, selected, level: lod?.level ?? 0, reused: reused ? current : undefined };
+      });
+      // New parts download together; only assembly onto the shared skeleton stays sequential.
+      const leases = await Promise.allSettled(
+        plans.map((plan) => (plan.reused ? null : this.cache.acquire(plan.selected.source.uri))),
+      );
+      const releaseFrom = (start: number) => {
+        for (const result of leases.slice(start)) if (result.status === 'fulfilled') result.value?.release();
+      };
+      const failed = leases.find((result) => result.status === 'rejected');
+      if (failed) {
+        releaseFrom(0);
+        throw failed.reason;
+      }
+      for (const [index, plan] of plans.entries()) {
+        if (plan.reused) {
+          next.set(plan.manifest.slot, plan.reused);
           continue;
         }
-        const lease = await this.cache.acquire(selected.source.uri);
+        const lease = (leases[index] as PromiseFulfilledResult<Awaited<ReturnType<typeof this.cache.acquire>>>).value;
         let assembled: AssembledAvatarAsset;
         try {
           assembled = await assembleAvatarAsset(
             lease.gltf,
-            selected,
+            plan.selected,
             this.master.skeleton,
             this.master.bones,
           );
         } catch (error) {
-          lease.release();
+          releaseFrom(index);
           throw error;
         }
-        const loaded = { ...assembled, manifest: selected, lease, level: lod?.level ?? 0 };
+        const loaded = { ...assembled, manifest: plan.selected, lease, level: plan.level };
         created.push(loaded);
-        next.set(manifest.slot, loaded);
+        next.set(plan.manifest.slot, loaded);
       }
       if (this.disposed || generation !== this.generation)
         throw new Error('Avatar operation superseded');

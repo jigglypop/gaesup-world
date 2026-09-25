@@ -1,6 +1,6 @@
 import { BoxGeometry, Group, Matrix4, Mesh, MeshStandardMaterial } from 'three';
 
-import { createDemandLoop } from '../demandLoop';
+import { createDemandLoop, createSceneryClock } from '../demandLoop';
 import { RoomBatches } from '../roomBatches';
 
 test('demand frames coalesce, settle, suspend and stop after disposal', () => {
@@ -12,6 +12,17 @@ test('demand frames coalesce, settle, suspend and stop after disposal', () => {
   loop.invalidate(); loop.setActive(false); expect(pending.size).toBe(0); loop.invalidate(); expect(pending.size).toBe(0);
   loop.setActive(true); expect(pending.size).toBe(1); advance(); expect(draws).toBe(4);
   loop.invalidate(); loop.dispose(); loop.setActive(true); loop.invalidate(); expect(pending.size).toBe(0);
+});
+
+test('scenery steps at 30Hz after activity and stops once the room is idle', () => {
+  const scenery = createSceneryClock({ idleMs: 1000, hz: 30 });
+  expect(scenery.moving(0)).toBe(false);
+  scenery.touch(0); scenery.touch(-500);
+  const steps: number[] = [];
+  for (let frame = 0; frame < 60; frame++) { const seconds = scenery.step(frame * 1000 / 60); if (seconds > 0) steps.push(seconds); }
+  expect(steps).toHaveLength(30); expect(steps[0]).toBe(0.05); expect(steps[1]).toBeCloseTo(1 / 30);
+  expect(scenery.moving(999)).toBe(true); expect(scenery.moving(1000)).toBe(false);
+  scenery.touch(1500); expect(scenery.moving(2400)).toBe(true); expect(scenery.moving(2500)).toBe(false);
 });
 
 test('furniture instances preserve owner IDs, full transforms, visibility and shared asset lifetime', () => {

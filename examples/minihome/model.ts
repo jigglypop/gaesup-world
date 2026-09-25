@@ -97,10 +97,25 @@ function validNotes(value: unknown): value is HomeNote[] {
     )
   );
 }
+/** Structural equality of JSON-shaped values without serializing them; keys holding undefined count as absent. */
+export function jsonEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null || Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a)) return a.length === (b as unknown[]).length && a.every((value, index) => jsonEqual(value, (b as unknown[])[index]));
+  const left = Object.entries(a).filter(([, value]) => value !== undefined);
+  const right = b as Record<string, unknown>;
+  return left.length === Object.values(right).filter((value) => value !== undefined).length
+    && left.every(([key, value]) => jsonEqual(value, right[key]));
+}
+
 export function parseMinihome(raw: string): MinihomeData | null {
+  if (raw.length > 512_000) return null;
+  try { return readMinihome(JSON.parse(raw)); } catch { return null; }
+}
+
+/** Validates and copies mini-home data that is already an object, so edits skip a JSON round trip. */
+export function readMinihome(data: unknown): MinihomeData | null {
   try {
-    if (raw.length > 512_000) return null;
-    const data: unknown = JSON.parse(raw);
     if (!isRecord(data) || data['version'] !== 1 || !isRecord(data['profile'])) return null;
     const profile = data['profile'];
     // Version 1 saves and shared links created before room settings remain readable.

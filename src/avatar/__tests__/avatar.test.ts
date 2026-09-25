@@ -105,6 +105,26 @@ describe('canonical avatar manifests', () => {
 });
 
 describe('real GLB assembly and transactions', () => {
+  it('downloads new parts together and returns every lease when one part fails', async () => {
+    const failing = avatarManifestFromRecord(getAsset('shoes-001')!).source.uri;
+    let inFlight = 0;
+    let peak = 0;
+    const cache = new GLTFAssetCache(async (uri) => {
+      peak = Math.max(peak, ++inFlight);
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        if (uri === failing) throw new Error('offline');
+        return await load(uri);
+      } finally {
+        inFlight--;
+      }
+    });
+    const avatar = create({ cache });
+    await expect(avatar.restore(initial)).rejects.toThrow('offline');
+    expect(peak).toBeGreaterThan(1);
+    for (const id of [initial.body, ...Object.values(initial.equipment)])
+      expect(cache.getReferenceCount(avatarManifestFromRecord(getAsset(id)!).source.uri)).toBe(0);
+  });
   it('maps arbitrarily named animation targets through manifest bone IDs', async () => {
     const cache = new GLTFAssetCache(async (uri) => {
       const gltf = await load(uri);

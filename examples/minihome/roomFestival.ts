@@ -399,11 +399,15 @@ export function createRoomFestival(scene: Scene, sampleHeight: HeightSampler = (
         confettiState[s + 6] = random() * Math.PI; confettiState[s + 7] = (random() * 2 - 1) * 12;
       }
     },
-    /** Returns true while a transient burst still needs frames. */
-    tick(delta: number, animate: boolean): boolean {
+    /**
+     * Advances continuous decorations by `sceneryDelta` while `animate` and a confetti burst by `delta`. Returns true
+     * while the burst still needs frames.
+     */
+    tick(delta: number, animate: boolean, sceneryDelta = delta): boolean {
       if (!enabled) return false;
       if (animate) {
-        animating = true; elapsed += delta; place(elapsed, delta);
+        animating = true;
+        if (sceneryDelta > 0) { elapsed += sceneryDelta; place(elapsed, sceneryDelta); }
       } else if (animating) {
         animating = false; place(elapsed, 0);
       }

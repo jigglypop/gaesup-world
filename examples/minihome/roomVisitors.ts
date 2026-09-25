@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { parseMinihome } from './model';
+import { readMinihome } from './model';
 import type { MinihomeData } from './types';
 
 export type RoomPeer = { id: string; name: string; position: [number, number, number]; color: string };
@@ -41,7 +41,7 @@ export function useRoomVisitors(data: MinihomeData, update: (input: MinihomeData
         const message = JSON.parse(event.data);
         const acceptWorld = (world: unknown) => {
           if (!world || auth.current.id === auth.current.owner) return;
-          const parsed = parseMinihome(JSON.stringify({ ...current.current, ...world as object }));
+          const parsed = readMinihome({ ...current.current, ...world as object });
           if (!parsed) { setConnection(previous => ({ ...previous, error: '방 데이터가 올바르지 않아 적용하지 않았습니다.' })); return; }
           apply.current(previous => ({ ...parsed, diary: previous.diary, guestbook: previous.guestbook, roomSettings: previous.roomSettings }));
         };
@@ -75,12 +75,13 @@ export function useRoomVisitors(data: MinihomeData, update: (input: MinihomeData
     }, 100);
     return () => clearInterval(timer);
   }, [connection.status, connection.id, post]);
-  const world = JSON.stringify({ version: data.version, profile: data.profile, theme: data.theme, room: data.room, terrain: data.terrain });
+  // The session keeps unchanged domains by reference, so these identities change only when the shared world does.
+  const { version, profile, theme, room, terrain } = data;
   useEffect(() => {
     if (connection.status !== 'online' || connection.id !== connection.owner) return;
-    const timer = setTimeout(() => { void post({ type: 'world', world: JSON.parse(world) }).catch(error => setConnection(previous => ({ ...previous, error: error.message }))); }, 180);
+    const timer = setTimeout(() => { void post({ type: 'world', world: { version, profile, theme, room, terrain } }).catch(error => setConnection(previous => ({ ...previous, error: error.message }))); }, 180);
     return () => clearTimeout(timer);
-  }, [world, connection.status, connection.id, connection.owner, post]);
+  }, [version, profile, theme, room, terrain, connection.status, connection.id, connection.owner, post]);
   const chat = async (text: string) => {
     try { await post({ type: 'chat', text }); return true; }
     catch (error) { setConnection(previous => ({ ...previous, error: error instanceof Error ? error.message : '전송 실패' })); return false; }

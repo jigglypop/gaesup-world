@@ -6,7 +6,7 @@ import type { MiniroomEngine } from './room';
 import type { RoomDiagnostics as Diagnostics } from './roomTypes';
 import { downloadJson } from './sharing';
 
-export function RoomDiagnostics({ engine }: { engine: MiniroomEngine | null }) {
+export function RoomDiagnostics({ engine, onClose }: { engine: MiniroomEngine | null; onClose: () => void }) {
   const [stats, setStats] = useState<Diagnostics | null>(null);
   const [checks, setChecks] = useState<ApiCheck[]>([]);
   const [busy, setBusy] = useState(false);
@@ -28,7 +28,7 @@ export function RoomDiagnostics({ engine }: { engine: MiniroomEngine | null }) {
     finally { if (!signal.aborted) setBusy(false); }
   }
   return <section className="room-diagnostics" aria-label="미니룸 API·성능 검사">
-    <div className="room-diagnostic-heading"><strong>프레임 드로우콜 상세</strong><span>{stats?.backend ?? '준비 중'} · {stats?.pendingFrame ? '렌더링 중' : '대기'}</span></div>
+    <div className="room-diagnostic-heading"><strong>프레임 드로우콜 상세</strong><span>{stats?.backend ?? '준비 중'} · {stats?.pendingFrame ? '렌더링 중' : '대기'}</span><button aria-label="드로우콜·성능 닫기" onClick={onClose}>×</button></div>
     <dl className="room-metrics">
       <div><dt>Draw call</dt><dd>{stats?.frame?.stats.drawCalls ?? '—'}</dd></div>
       <div><dt>삼각형</dt><dd>{stats?.frame?.stats.triangles.toLocaleString() ?? '—'}</dd></div>
@@ -64,8 +64,8 @@ export function RoomDiagnostics({ engine }: { engine: MiniroomEngine | null }) {
     </div>
     {error && <p role="alert">{error}</p>}
     {checks.length > 0 && <>
-      <p role="status">기능 {checks.filter(check => check.status === 'passed').length}/{checks.length} 통과 · 라이브러리 {new Set(checks.filter(check => check.scope === 'library').flatMap(check => check.apis)).size}개 · 예제 {new Set(checks.filter(check => check.scope === 'example').flatMap(check => check.apis)).size}개 호출 경로</p>
-      <p>현재 방을 바꾸지 않는 별도 fixture 검사입니다. 전체 라이브러리 API의 통과율은 아닙니다.</p>
+      <p role="status">기능 {checks.filter(check => check.status === 'passed').length}/{checks.length} 통과 · 예제 {new Set(checks.flatMap(check => check.apis)).size}개 호출 경로</p>
+      <p>현재 방을 바꾸지 않는 별도 fixture 검사입니다. 라이브러리 공개 API 계약은 패키지 테스트가 검사합니다.</p>
       <ul className="room-api-checks">{checks.map(check => <li key={check.id} data-status={check.status}>
         <details><summary><span>{check.status === 'passed' ? '통과' : '실패'}</span> {check.title}</summary><p>{check.apis.join(' · ')}</p><p>{check.detail}</p></details>
       </li>)}</ul>

@@ -7,7 +7,7 @@ import type { SceneDocumentController } from 'gaesup-world';
 import { NavigationSystem } from 'gaesup-world/navigation';
 import type { Waypoint } from 'gaesup-world/navigation';
 
-import { createDemandLoop } from './demandLoop';
+import { createDemandLoop, createSceneryClock } from './demandLoop';
 import { furnitureKind } from './model';
 import { createRoomAssets } from './roomAssets';
 import { createRoomAvatar } from './roomAvatar';
@@ -87,7 +87,9 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     let latestFrame: RoomFrame | null = null; let projected: ReturnType<typeof controller.getSnapshot> | undefined;
     const frameWaiters = new Set<{ resolve: (frame: RoomFrame) => void; reject: (error: Error) => void }>();
     let wake = () => {};
-    function invalidate(shadow = false) { if (disposed) return; needsRender = true; if (shadow) sun.shadow.needsUpdate = true; wake(); }
+    const scenery = createSceneryClock();
+    const reducedMotion = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+    function invalidate(shadow = false) { if (disposed) return; needsRender = true; scenery.touch(performance.now()); if (shadow) sun.shadow.needsUpdate = true; wake(); }
     const rendererCleanup = cleanup;
     cleanup = () => { controls.dispose(); bloom.dispose(); terrainRenderer.dispose(); pathMarker.dispose(); visitors.dispose(); festival.dispose(); profiler.dispose(); navigation.dispose(); batches.dispose(); assets.dispose(); sun.shadow.dispose(); rendererCleanup(); };
     const environment = await createRoomEnvironment(renderer, scene, camera, () => invalidate(true));
@@ -229,7 +231,8 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
       }
     }, { signal });
     canvas.addEventListener('pointermove', event => {
-      if (point(event) && view.editing) {
+      // Viewing needs no hover raycast; only editing shows the tile cursor.
+      if (view.editing && point(event)) {
         const editor = view.editor ?? DEFAULT_EDITOR;
         terrainRenderer.cursor(tileIndex(hit.x, hit.z, terrain.size), editor.tool === 'tile' || editor.tool === 'height' || editor.tool === 'stairs' ? editor.brush : 1, editor.tool === 'tile' ? TILES[editor.tile].color : '#90e2f3'); invalidate();
         if (stroke?.pointer === event.pointerId) { paintPreview(hit.x, hit.z); return; }
@@ -257,7 +260,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     }, { signal });
     const cancelPointer = (event: PointerEvent) => { pointers.delete(event.pointerId); press = null; if (dragging?.pointer === event.pointerId) finish(false); if (stroke?.pointer === event.pointerId) endStroke(false); controls.enabled = true; };
     canvas.addEventListener('pointercancel', cancelPointer, { signal }); canvas.addEventListener('lostpointercapture', cancelPointer, { signal });
-    canvas.addEventListener('pointerleave', () => { terrainRenderer.cursor(-1, 1); invalidate(); }, { signal });
+    canvas.addEventListener('pointerleave', () => { if (!view.editing) return; terrainRenderer.cursor(-1, 1); invalidate(); }, { signal });
     window.addEventListener('blur', () => { pointers.clear(); press = null; finish(false); endStroke(false); }, { signal });
     canvas.addEventListener('keydown', event => {
       if (event.key === 'Escape') { finish(false); endStroke(false); onSelect(null); return; }
@@ -294,6 +297,10 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
           if (next) target.fromArray(next); else { for (const foot of feet) foot.position.z = 0.04; moving = false; movement.state = 'arrived'; }
         }
         sun.shadow.needsUpdate = true; needsRender = true;
+      } else if (movement.state === 'moving' && !view.editing) {
+        // The avatar already stood on the goal or the next waypoint.
+        const next = route[++routeIndex];
+        if (next) { target.fromArray(next); moving = true; } else movement.state = 'arrived';
       }
       if (cameraPreset === 'follow' && !view.editing) {
         const dx = avatar.position.x - controls.target.x; const dz = avatar.position.z - controls.target.z;
@@ -303,11 +310,14 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
       const visitorsMoving = visitors.tick(delta); if (visitorsMoving) { sun.shadow.needsUpdate = true; needsRender = true; }
       const cameraChanged = controls.update(delta);
       avatarRuntime.update(moving, delta);
-      const natureMoving = settings.natureMotion;
-      environment.tick(delta, natureMoving, camera);
-      const festiveBurst = festival.tick(delta, natureMoving);
-      if (natureMoving) { shadowElapsed += delta; if (shadowElapsed >= 1 / 15) { sun.shadow.needsUpdate = true; shadowElapsed = 0; } }
-      if (needsRender || cameraChanged || moving || markerActive || natureMoving || festiveBurst || frameWaiters.size) {
+      if (cameraChanged || moving || markerActive || visitorsMoving) scenery.touch(time);
+      const sceneryMoving = settings.natureMotion && !reducedMotion?.matches && scenery.moving(time);
+      const sceneryDelta = sceneryMoving ? scenery.step(time) : 0;
+      environment.tick(sceneryDelta, sceneryDelta > 0, camera);
+      const festiveBurst = festival.tick(delta, sceneryMoving, sceneryDelta);
+      // Wind-swayed grass casts shadows, so moving scenery refreshes them at 15Hz.
+      if (sceneryDelta > 0) { shadowElapsed += sceneryDelta; if (shadowElapsed >= 1 / 15) { sun.shadow.needsUpdate = true; shadowElapsed = 0; } }
+      if (needsRender || cameraChanged || moving || markerActive || sceneryDelta > 0 || festiveBurst || frameWaiters.size) {
         try {
           if (batchesDirty) { batches.update(groups); batchesDirty = false; }
           renderer.info.reset(); profiler.begin(scene); const started = performance.now();
@@ -320,7 +330,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
           failure = error instanceof Error ? error : new Error(String(error)); for (const waiter of frameWaiters) waiter.reject(failure); frameWaiters.clear(); loop.dispose(); options.onError?.(failure); return false;
         }
       }
-      return cameraChanged || moving || markerActive || visitorsMoving || natureMoving || festiveBurst;
+      return cameraChanged || moving || markerActive || visitorsMoving || sceneryMoving || festiveBurst;
     });
     const lost = () => {
       if (disposed) return;
@@ -334,6 +344,7 @@ export async function mountMiniroom(canvas: HTMLCanvasElement, controller: Scene
     }
     wake = () => { if (!disposed && !failure) { loop.setActive(document.visibilityState !== 'hidden' && (visible || frameWaiters.size > 0)); if (!loop.pending) last = 0; } };
     document.addEventListener('visibilitychange', () => { if (document.hidden) finish(false); last = 0; wake(); }, { signal });
+    reducedMotion?.addEventListener('change', () => invalidate(), { signal });
     const unsubscribe = controller.subscribe(project);
     function dispose() {
       if (disposed) return; disposed = true; loop.dispose(); lifetime.abort(); ownerSignal.removeEventListener('abort', abort);

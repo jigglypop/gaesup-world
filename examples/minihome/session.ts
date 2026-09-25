@@ -1,6 +1,6 @@
 import { createSceneDocumentController } from 'gaesup-world';
 
-import { parseMinihome } from './model';
+import { jsonEqual, readMinihome } from './model';
 import type { MinihomeData } from './types';
 
 const HISTORY_LIMIT = 50;
@@ -24,7 +24,7 @@ export function createMinihomeSession(initial: MinihomeData) {
     for (const listener of listeners) listener();
   }
   function commit(next: MinihomeData) {
-    if (JSON.stringify(data) === JSON.stringify(next)) return;
+    if (jsonEqual(data, next)) return;
     past.push(data);
     if (past.length > HISTORY_LIMIT) past.shift();
     future.length = 0;
@@ -53,7 +53,7 @@ export function createMinihomeSession(initial: MinihomeData) {
     },
     update(input: MinihomeData | ((previous: MinihomeData) => MinihomeData)) {
       const next = typeof input === 'function' ? input(data) : input;
-      const parsed = parseMinihome(JSON.stringify(next));
+      const parsed = readMinihome(next);
       if (!parsed) throw new TypeError('Invalid mini-home data.');
       // Preserve unchanged domain references after validation. A camera/weather
       // setting must not rebuild terrain geometry, grass buffers and navigation.
