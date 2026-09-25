@@ -171,4 +171,22 @@ describe('inventoryStore', () => {
     expect(slots[0]).toBeNull();
     expect(slots[5]?.itemId).toBe('apple');
   });
+
+  type Stack = { itemId: string; count: number };
+  test.each<{ name: string; items: Stack[]; removed: Stack[]; fits: boolean }>([
+    { name: 'tops up the stack, then fills the empty slot', items: [{ itemId: 'wood', count: 100 }], removed: [], fits: true },
+    { name: 'refuses one past that', items: [{ itemId: 'wood', count: 101 }], removed: [], fits: false },
+    { name: 'shares the empty slot between stacks', items: [{ itemId: 'wood', count: 100 }, { itemId: 'axe', count: 1 }], removed: [], fits: false },
+    { name: 'counts slots freed by removal', items: [{ itemId: 'axe', count: 2 }], removed: [{ itemId: 'axe', count: 1 }], fits: true },
+    { name: 'refuses a removal it cannot make', items: [{ itemId: 'apple', count: 1 }], removed: [{ itemId: 'axe', count: 2 }], fits: false },
+  ])('canAdd $name, as removeById then add would', ({ items, removed, fits }) => {
+    useInventoryStore.setState({ slots: [{ itemId: 'wood', count: 98 }, { itemId: 'axe', count: 1 }, null] });
+    const inventory = useInventoryStore.getState();
+    expect(inventory.canAdd(items, removed)).toBe(fits);
+    expect(useInventoryStore.getState()).toBe(inventory);
+
+    const taken = removed.every(({ itemId, count }) => useInventoryStore.getState().removeById(itemId, count) === count);
+    const left = items.map(({ itemId, count }) => useInventoryStore.getState().add(itemId, count));
+    expect(taken && left.every((count) => count === 0)).toBe(fits);
+  });
 });

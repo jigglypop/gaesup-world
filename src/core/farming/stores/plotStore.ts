@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 
 import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
-import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { lazyScopedStore } from '../../stores/scopedStore';
@@ -130,15 +129,7 @@ export function createPlotStore(inventoryStore: InventoryStore) {
     const def = getCropRegistry().get(cur.cropId);
     if (!def) return false;
     const inventory = inventoryStore.getState();
-    const item = getItemRegistry().get(def.yieldItemId);
-    const maxStack = item?.stackable ? Math.max(1, item.maxStack) : 1;
-    let capacity = 0;
-    for (const slot of inventory.slots) {
-      if (slot === null) capacity += maxStack;
-      else if (maxStack > 1 && slot.itemId === def.yieldItemId) capacity += Math.max(0, maxStack - slot.count);
-      if (capacity >= def.yieldCount) break;
-    }
-    if (capacity < def.yieldCount) {
+    if (!inventory.canAdd([{ itemId: def.yieldItemId, count: def.yieldCount }])) {
       notify('warn', '수확물을 담을 가방 공간이 부족해요. 공간을 비운 뒤 다시 수확해 주세요.');
       return false;
     }

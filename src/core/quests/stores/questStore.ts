@@ -3,7 +3,6 @@ import { create } from 'zustand';
 
 import { useWalletStore, type WalletStore } from '../../economy/stores/walletStore';
 import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
-import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useFriendshipStore, type FriendshipStore } from '../../relations/stores/friendshipStore';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
@@ -58,25 +57,8 @@ function objectiveTarget(obj: QuestObjective): number {
 }
 
 function canReceiveRewards(rewards: QuestReward[], dependencies: QuestStoreDependencies): boolean {
-  const slots = dependencies.inventory.getState().slots;
-  let empty = slots.filter((slot) => slot === null).length;
-  const counts = new Map<string, number>();
-  for (const reward of rewards) {
-    if (reward.type === 'item') {
-      counts.set(reward.itemId, (counts.get(reward.itemId) ?? 0) + (reward.count ?? 1));
-    }
-  }
-  for (const [itemId, count] of counts) {
-    const def = getItemRegistry().get(itemId);
-    const maxStack = def?.stackable ? Math.max(1, def.maxStack) : 1;
-    let remaining = count;
-    for (const slot of slots) {
-      if (slot?.itemId === itemId) remaining -= Math.max(0, maxStack - slot.count);
-    }
-    empty -= Math.ceil(Math.max(0, remaining) / maxStack);
-    if (empty < 0) return false;
-  }
-  return true;
+  const items = rewards.flatMap((reward) => reward.type === 'item' ? [{ itemId: reward.itemId, count: reward.count ?? 1 }] : []);
+  return dependencies.inventory.getState().canAdd(items);
 }
 
 function applyReward(reward: QuestReward, dependencies: QuestStoreDependencies) {

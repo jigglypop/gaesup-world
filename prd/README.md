@@ -25,7 +25,6 @@
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| SE-3c | 스택 용량 계산을 inventory 함수 하나로(상점·퀘스트·제작·농사의 복제 4곳 제거), `ItemRegistry.register`에서 정의 검증 | 문자열 `maxStack` 구매 재현 테스트 |
 | SE-3d | 원격 모델 URL 검증 하나(URL 파서 기반 origin·path prefix). `networks/core/remoteInputLimits`와 `PlayerNetworkManager.isSafeModelUrl` 통합 | `/\evil.com`, 탭 삽입, 앞 공백 `javascript:` 거부 테스트 |
 | SE-3e | `-0` 정리 함수 하나를 기즈모(`TransformGizmo`), Unity 변환, `scene-object/transforms`가 공유 | 기즈모 회전 결과가 `updateObject`를 통과하는 테스트 |
 | SE-3f | 원격 transform 크기 상한과 쿼터니언 정규화, authority 명령 입력 스키마와 `commandId` 필수 | 비유한·거대 값, `commandId` 없는 명령 거부 테스트 |

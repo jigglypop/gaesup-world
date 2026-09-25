@@ -5,12 +5,15 @@ import type { ItemId } from '../../items/types';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { lazyScopedStore } from '../../stores/scopedStore';
+import { isId } from '../../utils/guards';
 import {
   DEFAULT_HOTBAR_SIZE,
   DEFAULT_INVENTORY_SIZE,
   type InventorySerialized,
   type Slot,
 } from '../types';
+
+type ItemCount = { itemId: ItemId; count: number };
 
 type InventoryState = {
   size: number;
@@ -25,6 +28,8 @@ type InventoryState = {
   removeById: (itemId: ItemId, count?: number) => number;
   move: (from: number, to: number) => void;
   clear: () => void;
+  /** Whether every stack in `items` fits after `removed` is taken out, by the rule `add` uses. */
+  canAdd: (items: readonly ItemCount[], removed?: readonly ItemCount[]) => boolean;
 
   setEquippedHotbar: (index: number) => void;
   getEquipped: () => Slot;
@@ -52,6 +57,48 @@ function maxStackOf(itemId: ItemId): number {
   return def.stackable && Number.isSafeInteger(def.maxStack) ? Math.max(1, def.maxStack) : 1;
 }
 
+/** Puts `count` into `slots` in place, topping up stacks before empty slots. Returns what did not fit. */
+function place(slots: Slot[], itemId: ItemId, count: number): number {
+  if (count <= 0) return 0;
+  if (!Number.isSafeInteger(count) || !isId(itemId)) return count;
+  const max = maxStackOf(itemId);
+  let remaining = count;
+
+  if (max > 1) {
+    for (let i = 0; i < slots.length && remaining > 0; i++) {
+      const s = slots[i];
+      if (s && s.itemId === itemId && s.count < max) {
+        const move = Math.min(max - s.count, remaining);
+        slots[i] = { ...s, count: s.count + move };
+        remaining -= move;
+      }
+    }
+  }
+
+  for (let i = 0; i < slots.length && remaining > 0; i++) {
+    if (slots[i] === null) {
+      const move = Math.min(max, remaining);
+      slots[i] = { itemId, count: move };
+      remaining -= move;
+    }
+  }
+  return remaining;
+}
+
+/** Takes up to `count` out of `slots` in place. Returns how many were taken. */
+function take(slots: Slot[], itemId: ItemId, count: number): number {
+  if (!Number.isSafeInteger(count) || count <= 0) return 0;
+  let remaining = count;
+  for (let i = 0; i < slots.length && remaining > 0; i++) {
+    const s = slots[i];
+    if (!s || s.itemId !== itemId) continue;
+    const move = Math.min(s.count, remaining);
+    slots[i] = s.count <= move ? null : { ...s, count: s.count - move };
+    remaining -= move;
+  }
+  return count - remaining;
+}
+
 export function createInventoryStore() {
   return create<InventoryState>((set, get) => ({
   size: DEFAULT_INVENTORY_SIZE,
@@ -61,33 +108,9 @@ export function createInventoryStore() {
   hydrationRevision: 0,
 
   add: (itemId, count = 1) => {
-    if (count <= 0) return 0;
-    if (!Number.isSafeInteger(count) || !itemId.trim()) return count;
-    const max = maxStackOf(itemId);
     const slots = get().slots.slice();
-    let remaining = count;
-
-    if (max > 1) {
-      for (let i = 0; i < slots.length && remaining > 0; i++) {
-        const s = slots[i];
-        if (s && s.itemId === itemId && s.count < max) {
-          const space = max - s.count;
-          const move = Math.min(space, remaining);
-          slots[i] = { ...s, count: s.count + move };
-          remaining -= move;
-        }
-      }
-    }
-
-    for (let i = 0; i < slots.length && remaining > 0; i++) {
-      if (slots[i] === null) {
-        const move = Math.min(max, remaining);
-        slots[i] = { itemId, count: move };
-        remaining -= move;
-      }
-    }
-
-    set({ slots });
+    const remaining = place(slots, itemId, count);
+    if (remaining < count) set({ slots });
     return remaining;
   },
 
@@ -106,19 +129,10 @@ export function createInventoryStore() {
   },
 
   removeById: (itemId, count = 1) => {
-    if (!Number.isSafeInteger(count) || count <= 0) return 0;
     const slots = get().slots.slice();
-    let remaining = count;
-    for (let i = 0; i < slots.length && remaining > 0; i++) {
-      const s = slots[i];
-      if (!s || s.itemId !== itemId) continue;
-      const move = Math.min(s.count, remaining);
-      if (s.count <= move) slots[i] = null;
-      else slots[i] = { ...s, count: s.count - move };
-      remaining -= move;
-    }
-    set({ slots });
-    return count - remaining;
+    const taken = take(slots, itemId, count);
+    if (taken > 0) set({ slots });
+    return taken;
   },
 
   move: (from, to) => {
@@ -147,6 +161,14 @@ export function createInventoryStore() {
   },
 
   clear: () => set({ slots: emptySlots(get().size) }),
+
+  canAdd: (items, removed = []) => {
+    const slots = get().slots.slice();
+    for (const { itemId, count } of removed) {
+      if (take(slots, itemId, count) < count) return false;
+    }
+    return items.every(({ itemId, count }) => place(slots, itemId, count) === 0);
+  },
 
   setEquippedHotbar: (index) => {
     if (!Number.isSafeInteger(index)) return;

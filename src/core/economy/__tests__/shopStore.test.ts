@@ -64,6 +64,28 @@ test.each([1, 2])('purchase with room for one item and requested count %i', (cou
   }
 });
 
+test('a string stack limit cannot turn a refused purchase into a free item', () => {
+  const inventory = useInventoryStore.getState();
+  const wallet = useWalletStore.getState();
+  const shop = useShopStore.getState();
+  const itemId = 'string-stack-test';
+  // The shop once read '99' as 99 per slot while the inventory stacked it by 1: charge, add one, refund all.
+  getItemRegistry().register({ id: itemId, name: 'Test', icon: '', category: 'material', stackable: true, maxStack: '99' as unknown as number });
+  useInventoryStore.setState({ size: 1, slots: [null] });
+  useWalletStore.setState({ bells: 100, lifetimeEarned: 0, lifetimeSpent: 0 });
+  useShopStore.setState({ dailyStock: [{ itemId, price: 10, stock: 5 }] });
+  try {
+    expect(useShopStore.getState().buy(itemId, 2)).toEqual({ ok: false, reason: 'inventory full' });
+    expect(useInventoryStore.getState().countOf(itemId)).toBe(0);
+    expect(useWalletStore.getState().bells).toBe(100);
+    expect(useShopStore.getState().dailyStock[0]!.stock).toBe(5);
+  } finally {
+    useInventoryStore.setState(inventory);
+    useWalletStore.setState(wallet);
+    useShopStore.setState(shop);
+  }
+});
+
 test.each([NaN, Infinity, 0.5, -1])('rejects invalid trade count %s', (count) => {
   expect(useShopStore.getState().buy(ITEM_ID, count)).toEqual({ ok: false, reason: 'invalid count' });
   expect(useShopStore.getState().sell(ITEM_ID, count)).toEqual({ ok: false, reason: 'invalid count' });

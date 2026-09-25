@@ -38,6 +38,15 @@ describe('ItemRegistry', () => {
     expect(registry.all().map((def) => def.id)).toEqual(['stone', 'fish']);
   });
 
+  test.each<Record<string, unknown>>([
+    { maxStack: '99' }, { maxStack: 0 }, { maxStack: 1.5 }, { maxStack: NaN }, { id: ' ' }, { name: undefined },
+    { stackable: 'true' }, { buyPrice: -1 }, { sellPrice: Infinity }, { durability: '5' },
+  ])('skips a definition that stacking or prices cannot use: %j', (overrides) => {
+    const registry = getItemRegistry();
+    registry.register({ ...item('broken'), ...overrides } as ItemDef);
+    expect(registry.all()).toEqual([]);
+  });
+
   test('lookups report missing ids, and clear empties the registry', () => {
     const registry = getItemRegistry();
     registry.register(item('apple', { category: 'food' }));

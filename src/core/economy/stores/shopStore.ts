@@ -100,15 +100,7 @@ export function createShopStore(inventoryStore: InventoryStore, walletStore: Wal
       if (!Number.isFinite(price) || price < 0) return { ok: false, reason: 'invalid price' };
       const wallet = walletStore.getState();
       if (wallet.bells < price) return { ok: false, reason: 'insufficient bells' };
-      const definition = getItemRegistry().get(itemId);
-      const maxStack = definition?.stackable ? Math.max(1, definition.maxStack) : 1;
-      let capacity = 0;
-      for (const slot of inventoryStore.getState().slots) {
-        if (slot === null) capacity += maxStack;
-        else if (slot.itemId === itemId) capacity += Math.max(0, maxStack - slot.count);
-        if (capacity >= count) break;
-      }
-      if (capacity < count) return { ok: false, reason: 'inventory full' };
+      if (!inventoryStore.getState().canAdd([{ itemId, count }])) return { ok: false, reason: 'inventory full' };
       if (!wallet.spend(price)) return { ok: false, reason: 'spend failed' };
       const remaining = inventoryStore.getState().add(itemId, count);
       if (remaining > 0) {

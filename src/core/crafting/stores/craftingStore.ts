@@ -3,7 +3,6 @@ import { create } from 'zustand';
 
 import { useWalletStore, type WalletStore } from '../../economy/stores/walletStore';
 import { useInventoryStore, type InventoryStore } from '../../inventory/stores/inventoryStore';
-import { getItemRegistry } from '../../items/registry/ItemRegistry';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { lazyScopedStore } from '../../stores/scopedStore';
@@ -55,26 +54,13 @@ export function createCraftingStore(inventoryStore: InventoryStore, walletStore:
     for (const ing of def.ingredients) {
       required.set(ing.itemId, (required.get(ing.itemId) ?? 0) + ing.count);
     }
-    const output = getItemRegistry().get(def.output.itemId);
-    const maxStack = output?.stackable ? Math.max(1, output.maxStack) : 1;
-    let capacity = 0;
-    for (const slot of inv.slots) {
-      if (!slot) {
-        capacity += maxStack;
-        continue;
-      }
-      const needed = required.get(slot.itemId) ?? 0;
-      const removed = Math.min(slot.count, needed);
-      if (needed > 0) required.set(slot.itemId, needed - removed);
-      const remaining = slot.count - removed;
-      if (remaining === 0) capacity += maxStack;
-      else if (slot.itemId === def.output.itemId) capacity += Math.max(0, maxStack - remaining);
+    for (const [itemId, count] of required) {
+      if (inv.countOf(itemId) < count) return { ok: false, reason: 'missing ingredients' };
     }
-    if ([...required.values()].some((count) => count > 0)) return { ok: false, reason: 'missing ingredients' };
     if (def.requireBells && walletStore.getState().bells < def.requireBells) {
       return { ok: false, reason: 'insufficient bells' };
     }
-    if (capacity < def.output.count) return { ok: false, reason: 'inventory full' };
+    if (!inv.canAdd([def.output], def.ingredients)) return { ok: false, reason: 'inventory full' };
     return { ok: true };
   },
 
