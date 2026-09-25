@@ -61,9 +61,9 @@ async function worldDomains(ctx: ScenarioContext) {
 }
 
 export const domainScenarios: Scenario[] = [
-  { id: 'world-domains', title: '두 월드의 건물·NPC·실제 저장', description: '같은 ID를 가진 건물과 NPC를 두 Provider·저장 플러그인·장애물 driver에 연결하고 실제 IndexedDB 저장과 개별 종료를 확인합니다.', version: 1, requirementIds: ['R25'], run: worldDomains },
-  { id: 'world-render-state', title: '두 월드의 GPU 버퍼·컬링 수명', description: '실제 건물 render/mirror/upload/culling driver를 한 WebGPU renderer에서 실행하고 월드 종료·재시작 후 버퍼와 가시 객체 수를 비교합니다.', version: 1, requirementIds: ['R25'], run: worldRenderState },
-  { id: 'world-obstacle-registry', title: '장애물 등록·교체·해제', description: '동일 source ID의 장애물을 월드별로 등록하고, 교체 전 구독 해제가 새 장애물을 지우지 않는지 실제 driver로 검사합니다.', version: 1, requirementIds: ['R25'], run: worldObstacleRegistry },
+  { id: 'world-domains', title: '두 월드의 건물·NPC·실제 저장', description: '같은 ID를 가진 건물과 NPC를 두 Provider·저장 플러그인·장애물 driver에 연결하고 실제 IndexedDB 저장과 개별 종료를 확인합니다.', version: 1, run: worldDomains },
+  { id: 'world-render-state', title: '두 월드의 GPU 버퍼·컬링 수명', description: '실제 건물 render/mirror/upload/culling driver를 한 WebGPU renderer에서 실행하고 월드 종료·재시작 후 버퍼와 가시 객체 수를 비교합니다.', version: 1, run: worldRenderState },
+  { id: 'world-obstacle-registry', title: '장애물 등록·교체·해제', description: '동일 source ID의 장애물을 월드별로 등록하고, 교체 전 구독 해제가 새 장애물을 지우지 않는지 실제 driver로 검사합니다.', version: 1, run: worldObstacleRegistry },
 ];
 
 async function worldObstacleRegistry(ctx: ScenarioContext) {

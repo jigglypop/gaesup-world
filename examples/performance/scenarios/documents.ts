@@ -33,4 +33,4 @@ async function edit(ctx: ScenarioContext) {
   } finally { off(); }
 }
 
-export const documentScenarios: Scenario[] = [{ id: 'document-edit', title: '장면 문서 편집', description: '실제 공개 controller로 단일 transform 변경을 측정하고 불변 snapshot·유효성·revision을 검사합니다.', version: 1, requirementIds: ['R20'], run: edit }];
+export const documentScenarios: Scenario[] = [{ id: 'document-edit', title: '장면 문서 편집', description: '실제 공개 controller로 단일 transform 변경을 측정하고 불변 snapshot·유효성·revision을 검사합니다.', version: 1, run: edit }];

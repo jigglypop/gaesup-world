@@ -45,8 +45,8 @@ async function worldNetworkClock(ctx: ScenarioContext) {
 }
 
 export const networkClockScenarios: Scenario[] = [
-  { id: 'world-network-clock', title: '월드 clock과 네트워크 갱신', description: '실제 NetworkSystem을 고정 tick에 연결하고 중복 소비자·표시 주기·월드 종료의 갱신 횟수를 검사합니다.', version: 1, requirementIds: ['R25', 'R26'], run: worldNetworkClock },
-  { id: 'world-network-consumers', title: '네트워크 훅 공유와 월드 재시작', description: '실제 Provider와 네트워크 훅을 유지한 채 표시 주기별 RAF 소유권·갱신·알림·개별 종료와 재시작을 검사합니다.', version: 1, requirementIds: ['R25', 'R26'], run: worldNetworkConsumers },
+  { id: 'world-network-clock', title: '월드 clock과 네트워크 갱신', description: '실제 NetworkSystem을 고정 tick에 연결하고 중복 소비자·표시 주기·월드 종료의 갱신 횟수를 검사합니다.', version: 1, run: worldNetworkClock },
+  { id: 'world-network-consumers', title: '네트워크 훅 공유와 월드 재시작', description: '실제 Provider와 네트워크 훅을 유지한 채 표시 주기별 RAF 소유권·갱신·알림·개별 종료와 재시작을 검사합니다.', version: 1, run: worldNetworkConsumers },
 ];
 
 async function worldNetworkConsumers(ctx: ScenarioContext) {

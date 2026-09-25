@@ -103,6 +103,6 @@ async function restoreAudioDecode(ctx: ScenarioContext) {
 }
 
 export const restoreEffectScenarios: Scenario[] = [
-  { id: 'world-restore-effects', title: '복원 중 시네마틱·장면·오디오', description: '두 실제 Provider, IndexedDB 복원, 지연 시네마틱·재진입 장면 이동·중간 BGM·롤백·잘못된 snapshot의 효과 수명을 검사합니다.', version: 1, requirementIds: ['R02', 'R25'], run: restoreEffects },
-  { id: 'world-restore-audio-decode', title: '복원 중 지연 오디오 decode', description: '실제 AudioContext와 WAV 디코드를 지연해 이전 SFX의 재생 차단, 수동 BGM·다른 월드 보존, 복원 후 새 효과음을 검사합니다.', version: 1, requirementIds: ['R07', 'R25'], run: restoreAudioDecode },
+  { id: 'world-restore-effects', title: '복원 중 시네마틱·장면·오디오', description: '두 실제 Provider, IndexedDB 복원, 지연 시네마틱·재진입 장면 이동·중간 BGM·롤백·잘못된 snapshot의 효과 수명을 검사합니다.', version: 1, run: restoreEffects },
+  { id: 'world-restore-audio-decode', title: '복원 중 지연 오디오 decode', description: '실제 AudioContext와 WAV 디코드를 지연해 이전 SFX의 재생 차단, 수동 BGM·다른 월드 보존, 복원 후 새 효과음을 검사합니다.', version: 1, run: restoreAudioDecode },
 ];

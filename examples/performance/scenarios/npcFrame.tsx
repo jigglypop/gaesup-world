@@ -53,5 +53,5 @@ async function npcFrame(ctx: ScenarioContext) {
 }
 
 export const npcFrameScenarios: Scenario[] = [
-  { id: 'npc-frame-ownership', title: 'NPC 실제 프레임·월드 소유권', description: '두 Provider의 실제 NPCInstance·Rapier·렌더링 루프에서 같은 NPC ID의 정책 응답 적용과 종료/재시작을 검사합니다. 정책 전송만 로컬에서 제어합니다.', version: 1, requirementIds: ['R25'], run: npcFrame },
+  { id: 'npc-frame-ownership', title: 'NPC 실제 프레임·월드 소유권', description: '두 Provider의 실제 NPCInstance·Rapier·렌더링 루프에서 같은 NPC ID의 정책 응답 적용과 종료/재시작을 검사합니다. 정책 전송만 로컬에서 제어합니다.', version: 1, run: npcFrame },
 ];

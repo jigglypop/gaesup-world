@@ -1,6 +1,12 @@
 import type { BuildingSerializedState, PlacedObject, TileConfig, TileGroupConfig, TileObjectType, WallGroupConfig } from 'gaesup-world/building';
 
 export type PerfWorldSize = 's' | 'm' | 'l';
+export type PerfWorldOptions = {
+  /** Tiles per side of each water patch, from its corner; 0 removes water. Defaults to the whole patch. */
+  waterSide?: number;
+  /** Every fifth wall has a window: the non-instanced wall path. Defaults to true. */
+  windows?: boolean;
+};
 
 /** Tile patches per side and tiles per patch side for each benchmark size. */
 const SIZES: Record<PerfWorldSize, { patches: number; side: number; objectsPerPatch: number }> = {
@@ -17,9 +23,10 @@ export function parsePerfWorldSize(value: string | null): PerfWorldSize {
   return value === 's' || value === 'l' ? value : 'm';
 }
 
-/** Deterministic building world for frame-harness runs: no randomness, identical across runs and machines. */
-export function createPerfWorld(size: PerfWorldSize): BuildingSerializedState {
+/** Deterministic building world for frame-harness and /accept runs: no randomness, identical across runs and machines. */
+export function createPerfWorld(size: PerfWorldSize, { waterSide, windows = true }: PerfWorldOptions = {}): BuildingSerializedState {
   const { patches, side, objectsPerPatch } = SIZES[size];
+  const water = Math.min(side, Math.max(0, waterSide ?? side));
   const span = side * CELL + PATCH_GAP;
   const origin = -(patches * span) / 2;
   const tileGroups: TileGroupConfig[] = [];
@@ -31,10 +38,11 @@ export function createPerfWorld(size: PerfWorldSize): BuildingSerializedState {
       const x0 = origin + px * span;
       const z0 = origin + pz * span;
       const groupId = `perf-tiles-${index}`;
-      const objectType = SURFACES[index % SURFACES.length]!;
+      const surface = SURFACES[index % SURFACES.length]!;
       const tiles: TileConfig[] = [];
       for (let tz = 0; tz < side; tz++) {
         for (let tx = 0; tx < side; tx++) {
+          const objectType = surface === 'water' && (tx >= water || tz >= water) ? 'none' : surface;
           tiles.push({
             id: `${groupId}-${tx}-${tz}`, tileGroupId: groupId, size: 1,
             position: { x: x0 + tx * CELL, y: 0, z: z0 + tz * CELL },
@@ -50,6 +58,7 @@ export function createPerfWorld(size: PerfWorldSize): BuildingSerializedState {
           id: `${wallGroupId}-${i}`, wallGroupId,
           position: { x: x0 + i * CELL, y: 0, z: z0 - CELL / 2 },
           rotation: { x: 0, y: 0, z: 0 },
+          ...(windows && i % 5 === 2 ? { wallKind: 'window' as const } : {}),
         })),
       });
       for (let i = 0; i < objectsPerPatch; i++) {

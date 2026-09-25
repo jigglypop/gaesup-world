@@ -91,6 +91,6 @@ async function motion(ctx: ScenarioContext) {
 }
 
 export const gamepadScenarios: Scenario[] = [
-  { id: 'hardware-gamepad-routing', title: '게임패드 폴링·월드 포커스', description: 'getGamepads 스냅샷을 제어해 표준 매핑·포커스·중복 폴링·키보드 혼합·연결 해제를 검사합니다. 실제 USB/Bluetooth 장치 검사는 아닙니다.', version: 1, requirementIds: ['R25'], run: routing },
-  { id: 'gamepad-motion-scene', title: '게임패드 실제 물리·카메라', description: '제어된 게임패드 입력을 실제 PhysicsBridge·Rapier·카메라에 전달하고 아날로그 속도와 시점 이동을 측정합니다.', version: 1, requirementIds: ['R25'], run: motion },
+  { id: 'hardware-gamepad-routing', title: '게임패드 폴링·월드 포커스', description: 'getGamepads 스냅샷을 제어해 표준 매핑·포커스·중복 폴링·키보드 혼합·연결 해제를 검사합니다. 실제 USB/Bluetooth 장치 검사는 아닙니다.', version: 1, run: routing },
+  { id: 'gamepad-motion-scene', title: '게임패드 실제 물리·카메라', description: '제어된 게임패드 입력을 실제 PhysicsBridge·Rapier·카메라에 전달하고 아날로그 속도와 시점 이동을 측정합니다.', version: 1, run: motion },
 ];

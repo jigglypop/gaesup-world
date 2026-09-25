@@ -3,7 +3,7 @@ import { comparisonProblems, DEFAULT_CONFIG, improvementPercent, parseRun, repet
 function run(): LabRun {
   return {
     schemaVersion: 1, runId: 'test', scenarioId: 'metrics', scenarioVersion: 1,
-    requirementIds: ['R14'], role: 'baseline', kind: 'performance', status: 'passed',
+    role: 'baseline', kind: 'performance', status: 'passed',
     config: { ...DEFAULT_CONFIG },
     source: { commit: 'a'.repeat(40), contentHash: 'b'.repeat(64), lockfileHash: null, dirty: true, manifest: [], versions: { three: '0.185.0' }, host: { cpu: 'test', platform: 'test', node: 'test' } },
     environment: { userAgent: 'test', hardwareConcurrency: 4, deviceMemory: null, backend: 'webgpu', adapter: 'test', gpuClass: 'hardware', foreground: true },

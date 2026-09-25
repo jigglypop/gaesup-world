@@ -73,8 +73,8 @@ async function worldKeyboard(ctx: ScenarioContext) {
 }
 
 export const keyboardScenarios: Scenario[] = [
-  { id: 'world-keyboard-focus', title: '실제 키보드·포커스·터치 격리', description: '안내에 따라 두 월드의 입력 영역·텍스트·터치 버튼을 조작합니다. 자동 검증도 같은 화면에 실제 브라우저 키 입력을 보냅니다.', version: 1, requirementIds: ['R25'], run: worldKeyboard },
-  { id: 'editor-shortcuts', title: '편집기 단축키 매칭·등록 수명', description: '운영 shortcut registry에서 등록하지 않은 키, 서로 다른 Ctrl 조합, 이전 등록의 해제를 검사합니다.', version: 1, requirementIds: ['R25'], run: async ctx => {
+  { id: 'world-keyboard-focus', title: '실제 키보드·포커스·터치 격리', description: '안내에 따라 두 월드의 입력 영역·텍스트·터치 버튼을 조작합니다. 자동 검증도 같은 화면에 실제 브라우저 키 입력을 보냅니다.', version: 1, run: worldKeyboard },
+  { id: 'editor-shortcuts', title: '편집기 단축키 매칭·등록 수명', description: '운영 shortcut registry에서 등록하지 않은 키, 서로 다른 Ctrl 조합, 이전 등록의 해제를 검사합니다.', version: 1, run: async ctx => {
     const actions: string[] = [];
     const registry = createEditorShortcutRegistry([
       { id: 'undo', label: 'Undo', key: 'z', ctrl: true, run: () => { actions.push('undo'); } },

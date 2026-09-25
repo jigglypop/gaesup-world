@@ -263,13 +263,13 @@ async function pluginDisposal(ctx: ScenarioContext) {
 }
 
 export const functionalScenarios: Scenario[] = [
-  { id: 'material-editor', title: '재질 ID 편집', description: '왼쪽 재질만 ID로 바꾸고 다른 ID의 재질이 유지되는지 확인합니다.', version: 1, requirementIds: ['R11'], run: materialEditor },
-  { id: 'save-lifecycle', title: '플러그인 해제 실패', description: '중간 플러그인의 해제가 실패해도 나머지 service가 정리되는지 확인합니다. 저장 지연 검증은 별도 단계입니다.', version: 1, requirementIds: ['R24'], run: pluginDisposal },
-  { id: 'state-hooks', title: '공개 훅 안정성', description: '실제 시간·인벤토리 훅의 구독과 반복 렌더링을 검사합니다.', version: 1, requirementIds: ['R01'], run: hooks },
-  { id: 'save-transaction', title: '저장 복원 원자성', description: '두 번째 도메인에서 오류를 발생시킨 뒤 전체 상태를 확인합니다.', version: 1, requirementIds: ['R02'], run: saveTransaction },
-  { id: 'spatial-query', title: '최근접·큰 물체 충돌', description: '등록 순서가 다른 두 물체와 중심이 먼 큰 AABB를 조회합니다.', version: 1, requirementIds: ['R04'], run: spatial },
-  { id: 'camera-obstacles', title: '카메라 장애물', description: '아직 렌더링되지 않은 메시와 연속 충돌 질의의 결과를 확인합니다.', version: 1, requirementIds: ['R05'], run: camera },
-  { id: 'entity-lifecycle', title: '엔티티 ID 수명', description: '잘못된 용량 거부와 10,000회 슬롯 재사용을 검사합니다.', version: 2, requirementIds: ['R08'], run: entities },
-  { id: 'audio-lifecycle', title: 'BGM 정지·지연 로드', description: '실제 음원 정지와 정지 이후 늦게 완료된 decode를 검사합니다.', version: 2, requirementIds: ['R07'], run: audio },
-  { id: 'test-contract', title: '운영 큐 계약', description: '테스트용 복제 클래스 없이 실제 MessageQueue를 사용합니다.', version: 1, requirementIds: ['R31'], run: contract },
+  { id: 'material-editor', title: '재질 ID 편집', description: '왼쪽 재질만 ID로 바꾸고 다른 ID의 재질이 유지되는지 확인합니다.', version: 1, run: materialEditor },
+  { id: 'save-lifecycle', title: '플러그인 해제 실패', description: '중간 플러그인의 해제가 실패해도 나머지 service가 정리되는지 확인합니다. 저장 지연 검증은 별도 단계입니다.', version: 1, run: pluginDisposal },
+  { id: 'state-hooks', title: '공개 훅 안정성', description: '실제 시간·인벤토리 훅의 구독과 반복 렌더링을 검사합니다.', version: 1, run: hooks },
+  { id: 'save-transaction', title: '저장 복원 원자성', description: '두 번째 도메인에서 오류를 발생시킨 뒤 전체 상태를 확인합니다.', version: 1, run: saveTransaction },
+  { id: 'spatial-query', title: '최근접·큰 물체 충돌', description: '등록 순서가 다른 두 물체와 중심이 먼 큰 AABB를 조회합니다.', version: 1, run: spatial },
+  { id: 'camera-obstacles', title: '카메라 장애물', description: '아직 렌더링되지 않은 메시와 연속 충돌 질의의 결과를 확인합니다.', version: 1, run: camera },
+  { id: 'entity-lifecycle', title: '엔티티 ID 수명', description: '잘못된 용량 거부와 10,000회 슬롯 재사용을 검사합니다.', version: 2, run: entities },
+  { id: 'audio-lifecycle', title: 'BGM 정지·지연 로드', description: '실제 음원 정지와 정지 이후 늦게 완료된 decode를 검사합니다.', version: 2, run: audio },
+  { id: 'test-contract', title: '운영 큐 계약', description: '테스트용 복제 클래스 없이 실제 MessageQueue를 사용합니다.', version: 1, run: contract },
 ];

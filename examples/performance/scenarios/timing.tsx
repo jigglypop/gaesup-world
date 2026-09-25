@@ -53,5 +53,5 @@ async function tickDeterminism(ctx: ScenarioContext) {
 }
 
 export const timingScenarios: Scenario[] = [
-  { id: 'tick-determinism', title: '고정 tick·중복 clock', description: '실제 useGameClock을 30/60/144Hz 표시와 1·2개 소비자로 구동해 1초당 tick·알림을 비교합니다.', version: 1, requirementIds: ['R26'], run: tickDeterminism },
+  { id: 'tick-determinism', title: '고정 tick·중복 clock', description: '실제 useGameClock을 30/60/144Hz 표시와 1·2개 소비자로 구동해 1초당 tick·알림을 비교합니다.', version: 1, run: tickDeterminism },
 ];

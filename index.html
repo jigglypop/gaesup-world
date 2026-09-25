@@ -9,6 +9,8 @@
   <body>
     <div id="root"></div>
     <div id="modal-root"></div>
+    <!-- Evaluated before the app's graph (module scripts run in document order), so /accept can count React commits. -->
+    <script type="module" src="/examples/performance/accept/counters.ts"></script>
     <script type="module" src="/examples/main.tsx"></script>
   </body>
 </html>

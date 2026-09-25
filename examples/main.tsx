@@ -3,7 +3,9 @@ import { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 
 const route = location.pathname.slice(import.meta.env.BASE_URL.length);
-const Page = route.startsWith('performance')
+const Page = route.startsWith('accept')
+  ? lazy(() => import('./performance/PerformanceLab').then((module) => ({ default: () => <module.default suite="accept" /> })))
+  : route.startsWith('performance')
   ? lazy(() => import('./performance/PerformanceLab'))
   : route.startsWith('engine')
   ? lazy(() => import('./engine/EngineShowcase'))

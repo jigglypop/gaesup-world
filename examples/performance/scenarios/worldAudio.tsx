@@ -59,5 +59,5 @@ async function worldAudio(ctx: ScenarioContext) {
 }
 
 export const worldAudioScenarios: Scenario[] = [
-  { id: 'world-audio', title: '두 월드의 오디오·BGM 구독', description: '실제 AudioContext와 배경음 훅을 사용해 지연 초기화, 월드 간섭, 중복 구독, 일부 해제 및 종료·재시작을 측정합니다.', version: 1, requirementIds: ['R07', 'R25'], run: worldAudio },
+  { id: 'world-audio', title: '두 월드의 오디오·BGM 구독', description: '실제 AudioContext와 배경음 훅을 사용해 지연 초기화, 월드 간섭, 중복 구독, 일부 해제 및 종료·재시작을 측정합니다.', version: 1, run: worldAudio },
 ];

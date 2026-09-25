@@ -1,36 +1,9 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-export type Metrics = Record<string, number | boolean>;
-export type Budget = Record<string, number | boolean | null>;
-export type ScenarioStatus = 'green' | 'known-red' | 'pending';
-export type ScenarioEntry = {
-  title: string;
-  runner: 'headless' | 'browser';
-  item: string;
-  status: ScenarioStatus;
-  budget: Budget;
-};
+import { scenarios, verdict, violations, type Metrics } from './budget';
 
 const ROOT = path.resolve(__dirname, '../..');
-
-export const scenarios: Readonly<Record<string, ScenarioEntry>> = JSON.parse(
-  readFileSync(path.join(__dirname, 'budgets.json'), 'utf8'),
-).scenarios;
-
-/** Budget violations: numbers are upper bounds, booleans must match, null is only recorded. */
-export function violations(metrics: Metrics, budget: Budget): string[] {
-  const found: string[] = [];
-  for (const [name, limit] of Object.entries(budget)) {
-    if (limit === null) continue;
-    const value = metrics[name];
-    if (value === undefined) found.push(`${name}: not measured`);
-    else if (typeof limit === 'boolean' ? value !== limit : typeof value !== 'number' || value > limit) {
-      found.push(`${name}: ${String(value)} (budget ${String(limit)})`);
-    }
-  }
-  return found;
-}
 
 function record(id: string, result: object): void {
   const dir = path.join(ROOT, '.artifacts/accept/headless');
@@ -49,13 +22,11 @@ export function acceptScenario(id: string, measure: () => Metrics | Promise<Metr
   test(`${id} ${entry.title} [${entry.status}]`, async () => {
     const metrics = await measure();
     const over = violations(metrics, entry.budget);
-    record(id, { id, item: entry.item, status: entry.status, pass: over.length === 0, metrics, violations: over });
-    if (entry.status === 'known-red') {
-      if (over.length === 0) {
-        throw new Error(`${id} now fits its budget: set its status to "green" in test/accept/budgets.json (${entry.item} landed).`);
-      }
-      return;
+    const result = verdict(entry.status, over);
+    record(id, { id, item: entry.item, status: entry.status, verdict: result, metrics, violations: over });
+    if (result === 'fixed') {
+      throw new Error(`${id} now fits its budget: set its status to "green" in test/accept/budgets.json (${entry.item} landed).`);
     }
-    expect(over).toEqual([]);
+    if (result === 'fail') expect(over).toEqual([]);
   }, timeout);
 }

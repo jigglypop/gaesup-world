@@ -101,7 +101,7 @@ async function pausedTime(ctx: ScenarioContext) {
 }
 
 export const restoreObserverScenarios: Scenario[] = [
-  { id: 'world-restore-observers', title: '월드 구독·복원 부작용', description: '실제 날씨·달력·퀘스트 훅 두 개와 농사 clock, IndexedDB 복원·월드 종료/재시작을 검사합니다.', version: 1, requirementIds: ['R02', 'R25'], run: observers },
-  { id: 'world-restore-races', title: '저장 복원·월드 수명 경합', description: '실제 SaveSystem의 지연 읽기·월드/도메인 교체·적용 도중 취소·저장 직후 읽기를 제어된 adapter로 재현합니다.', version: 1, requirementIds: ['R02', 'R25'], run: restoreRaces },
-  { id: 'world-paused-time-restore', title: '일시 정지 clock 복원', description: '실제 IndexedDB 복원과 부분 적용 실패의 rollback에서 시간 일시 정지 상태가 유지되는지 검사합니다.', version: 1, requirementIds: ['R02', 'R25'], run: pausedTime },
+  { id: 'world-restore-observers', title: '월드 구독·복원 부작용', description: '실제 날씨·달력·퀘스트 훅 두 개와 농사 clock, IndexedDB 복원·월드 종료/재시작을 검사합니다.', version: 1, run: observers },
+  { id: 'world-restore-races', title: '저장 복원·월드 수명 경합', description: '실제 SaveSystem의 지연 읽기·월드/도메인 교체·적용 도중 취소·저장 직후 읽기를 제어된 adapter로 재현합니다.', version: 1, run: restoreRaces },
+  { id: 'world-paused-time-restore', title: '일시 정지 clock 복원', description: '실제 IndexedDB 복원과 부분 적용 실패의 rollback에서 시간 일시 정지 상태가 유지되는지 검사합니다.', version: 1, run: pausedTime },
 ];

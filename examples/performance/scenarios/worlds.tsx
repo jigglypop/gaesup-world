@@ -54,9 +54,9 @@ async function worldIsolation(ctx: ScenarioContext) {
 }
 
 export const worldScenarios: Scenario[] = [
-  { id: 'world-isolation', title: '두 월드의 시간·저장 소유권', description: '별도 runtime과 실제 Provider/시간 훅을 연결해 상태 오염과 개별 종료를 검사합니다.', version: 1, requirementIds: ['R25'], run: worldIsolation },
-  { id: 'world-storage', title: '두 월드의 실제 저장·재생성', description: '기본 IndexedDB adapter로 같은 슬롯에 서로 다른 시간을 저장하고, runtime 재생성·삭제 후 격리를 확인합니다.', version: 1, requirementIds: ['R25'], run: worldStorage },
-  { id: 'clock-lifecycle', title: 'runtime clock 50회 재시작', description: '실제 Provider와 소비자 2개를 유지한 채 setup/dispose를 50회 반복하고 RAF 잔여·다른 월드의 진행을 검사합니다.', version: 1, requirementIds: ['R25', 'R26'], run: clockLifecycle },
+  { id: 'world-isolation', title: '두 월드의 시간·저장 소유권', description: '별도 runtime과 실제 Provider/시간 훅을 연결해 상태 오염과 개별 종료를 검사합니다.', version: 1, run: worldIsolation },
+  { id: 'world-storage', title: '두 월드의 실제 저장·재생성', description: '기본 IndexedDB adapter로 같은 슬롯에 서로 다른 시간을 저장하고, runtime 재생성·삭제 후 격리를 확인합니다.', version: 1, run: worldStorage },
+  { id: 'clock-lifecycle', title: 'runtime clock 50회 재시작', description: '실제 Provider와 소비자 2개를 유지한 채 setup/dispose를 50회 반복하고 RAF 잔여·다른 월드의 진행을 검사합니다.', version: 1, run: clockLifecycle },
 ];
 
 async function worldStorage(ctx: ScenarioContext) {

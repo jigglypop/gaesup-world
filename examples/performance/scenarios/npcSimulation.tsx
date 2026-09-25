@@ -90,6 +90,6 @@ async function perception(ctx: ScenarioContext) {
 }
 
 export const npcSimulationScenarios: Scenario[] = [
-  { id: 'npc-distance', title: 'NPC 화면 밖 시뮬레이션·LOD', version: 1, requirementIds: ['R09', 'R26'], description: '실제 NPCSystem·Rapier에서 화면 밖 이동, 현재 위치 기반 LOD, 재등장 위치, 이동 중 저장과 월드 종료를 검사합니다.', run: distance },
-  { id: 'npc-perception', title: 'NPC 시야 계산 비용', version: 2, requirementIds: ['R09'], timed: true, description: 'baseline은 기존 선형 계산, candidate는 공간 인덱스를 실행합니다. 동일 결과를 검사하고 인덱스 유지 비용을 포함한 전체 판단 배치 CPU p95를 측정합니다. GPU·FPS 측정이 아닙니다.', run: perception },
+  { id: 'npc-distance', title: 'NPC 화면 밖 시뮬레이션·LOD', version: 1, description: '실제 NPCSystem·Rapier에서 화면 밖 이동, 현재 위치 기반 LOD, 재등장 위치, 이동 중 저장과 월드 종료를 검사합니다.', run: distance },
+  { id: 'npc-perception', title: 'NPC 시야 계산 비용', version: 2, timed: true, description: 'baseline은 기존 선형 계산, candidate는 공간 인덱스를 실행합니다. 동일 결과를 검사하고 인덱스 유지 비용을 포함한 전체 판단 배치 CPU p95를 측정합니다. GPU·FPS 측정이 아닙니다.', run: perception },
 ];

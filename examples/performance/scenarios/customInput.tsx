@@ -31,8 +31,8 @@ async function customInput(ctx: ScenarioContext) {
 }
 
 export const customInputScenarios: Scenario[] = [
-  { id: 'world-custom-input', title: '커스텀 입력 단일 소유권', description: '실제 motion plugin의 커스텀 factory와 두 월드의 세 입력 소비자, store·motion 경로, 종료/재시작을 검사합니다.', version: 1, requirementIds: ['R25'], run: customInput },
-  { id: 'world-input-source-lifecycle', title: '입력 소스 교체·구독 수명', description: '같은 월드의 키보드 훅 두 개와 실제 plugin 등록/해제·재시작에서 소스 구독, factory 생성, 오래된 알림과 키 해제를 검사합니다. 키 이벤트는 로컬에서 전달합니다.', version: 1, requirementIds: ['R25'], run: sourceLifecycle },
+  { id: 'world-custom-input', title: '커스텀 입력 단일 소유권', description: '실제 motion plugin의 커스텀 factory와 두 월드의 세 입력 소비자, store·motion 경로, 종료/재시작을 검사합니다.', version: 1, run: customInput },
+  { id: 'world-input-source-lifecycle', title: '입력 소스 교체·구독 수명', description: '같은 월드의 키보드 훅 두 개와 실제 plugin 등록/해제·재시작에서 소스 구독, factory 생성, 오래된 알림과 키 해제를 검사합니다. 키 이벤트는 로컬에서 전달합니다.', version: 1, run: sourceLifecycle },
 ];
 
 async function sourceLifecycle(ctx: ScenarioContext) {

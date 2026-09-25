@@ -7,7 +7,8 @@ export type ScenarioContext = {
   config: LabConfig;
   role?: LabRun['role'];
   signal: AbortSignal;
-  assert: (id: string, expected: Assertion['expected'], actual: Assertion['actual']) => void;
+  /** `pass` defaults to `expected === actual`; budget checks pass it for upper bounds. */
+  assert: (id: string, expected: Assertion['expected'], actual: Assertion['actual'], pass?: boolean) => void;
   sample: (name: string, value: number, unit: Metric['unit'], scope: string) => void;
   unavailable: (name: string, unit: Metric['unit'], scope: string, reason: string) => void;
   environment: (update: Partial<RunEnvironment>) => void;
@@ -19,7 +20,6 @@ export type Scenario = {
   title: string;
   description: string;
   version: number;
-  requirementIds: string[];
   timed?: boolean;
   run: (context: ScenarioContext) => Promise<void>;
 };

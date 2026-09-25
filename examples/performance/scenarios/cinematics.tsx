@@ -71,7 +71,7 @@ async function editorOwnership(ctx: ScenarioContext) {
 }
 
 export const cinematicScenarios: Scenario[] = [
-  { id: 'cinematic-lifetime', title: '시네마틱 취소·중첩 수명', description: '실제 재생 API의 즉시 취소, 이전 실행의 복원 간섭, shake/fade 및 오류 복원을 검사합니다.', version: 1, requirementIds: ['R25'], run: lifetime },
-  { id: 'world-cinematic-lifecycle', title: '월드별 시네마틱 수명', description: '두 월드에서 재생·종료·비활성 명령·재시작을 검사합니다.', version: 1, requirementIds: ['R25'], run: worldLifecycle },
-  { id: 'cinematic-editor-ownership', title: '시네마틱 editor 소유권', description: '실제 두 Provider의 CinematicPanel 미리 보기와 unmount 후 실행을 검사합니다.', version: 1, requirementIds: ['R25'], run: editorOwnership },
+  { id: 'cinematic-lifetime', title: '시네마틱 취소·중첩 수명', description: '실제 재생 API의 즉시 취소, 이전 실행의 복원 간섭, shake/fade 및 오류 복원을 검사합니다.', version: 1, run: lifetime },
+  { id: 'world-cinematic-lifecycle', title: '월드별 시네마틱 수명', description: '두 월드에서 재생·종료·비활성 명령·재시작을 검사합니다.', version: 1, run: worldLifecycle },
+  { id: 'cinematic-editor-ownership', title: '시네마틱 editor 소유권', description: '실제 두 Provider의 CinematicPanel 미리 보기와 unmount 후 실행을 검사합니다.', version: 1, run: editorOwnership },
 ];

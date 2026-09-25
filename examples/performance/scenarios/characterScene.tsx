@@ -59,5 +59,5 @@ async function worldCharacterScene(ctx: ScenarioContext) {
 }
 
 export const characterSceneScenarios: Scenario[] = [
-  { id: 'world-character-scene', title: '두 월드의 캐릭터·장면 전환', description: '실제 캐릭터·방 훅, 장비 명령, IndexedDB와 동시 장면 전환을 연결해 월드 간 간섭 및 종료·재시작을 계측합니다.', version: 1, requirementIds: ['R25'], run: worldCharacterScene },
+  { id: 'world-character-scene', title: '두 월드의 캐릭터·장면 전환', description: '실제 캐릭터·방 훅, 장비 명령, IndexedDB와 동시 장면 전환을 연결해 월드 간 간섭 및 종료·재시작을 계측합니다.', version: 1, run: worldCharacterScene },
 ];

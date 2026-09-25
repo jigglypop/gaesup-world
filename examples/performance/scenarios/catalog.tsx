@@ -36,5 +36,5 @@ async function catalogTracking(ctx: ScenarioContext) {
 }
 
 export const catalogScenarios: Scenario[] = [
-  { id: 'catalog-tracking', title: '도감 구독·저장 복원 중복', description: '실제 도감 훅 두 개의 구독 수·수집 중복·IndexedDB 복원 중복·종료 후 잔여 구독을 계측합니다.', version: 1, requirementIds: ['R02', 'R25'], run: catalogTracking },
+  { id: 'catalog-tracking', title: '도감 구독·저장 복원 중복', description: '실제 도감 훅 두 개의 구독 수·수집 중복·IndexedDB 복원 중복·종료 후 잔여 구독을 계측합니다.', version: 1, run: catalogTracking },
 ];

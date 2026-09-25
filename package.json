@@ -237,6 +237,7 @@
     "test:demo": "node scripts/verify-demo-surface-chunk.cjs",
     "assets:parts": "node scripts/build-character-parts.cjs",
     "test:browser": "node scripts/browser-smoke.cjs",
+    "accept": "node scripts/accept.mjs",
     "bench:frame": "node scripts/frame-harness.cjs",
     "perf:check": "node scripts/frame-harness.cjs --route=/ --runs=3 --webgpu --baseline=scripts/performance/frame-baseline.json",
     "perf:world": "node scripts/frame-harness.cjs --route=/world?size=m --webgpu --runs=3",

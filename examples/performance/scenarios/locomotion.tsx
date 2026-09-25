@@ -86,6 +86,6 @@ async function locomotion(ctx: ScenarioContext) {
 }
 
 export const locomotionScenarios: Scenario[] = [
-  { id: 'locomotion', title: '접지·고지대·경사·점프', description: '실제 Rapier world를 고정 간격으로 진행하고 PhysicsSystem의 평지·고지대·경사·움직이는 발판·점프·공중 판정을 검사합니다.', version: 1, requirementIds: ['R03'], run: locomotion },
-  { id: 'entity-grounding', title: '공개 캐릭터 접지·점프', description: 'PhysicsEntity → useEntity → PhysicsBridge의 실제 연결에서 고지대 착지, 접촉 정책, 점프, 입력 유지·재입력, 순간이동을 검사합니다.', version: 2, requirementIds: ['R03'], run: entityGrounding },
+  { id: 'locomotion', title: '접지·고지대·경사·점프', description: '실제 Rapier world를 고정 간격으로 진행하고 PhysicsSystem의 평지·고지대·경사·움직이는 발판·점프·공중 판정을 검사합니다.', version: 1, run: locomotion },
+  { id: 'entity-grounding', title: '공개 캐릭터 접지·점프', description: 'PhysicsEntity → useEntity → PhysicsBridge의 실제 연결에서 고지대 착지, 접촉 정책, 점프, 입력 유지·재입력, 순간이동을 검사합니다.', version: 2, run: entityGrounding },
 ];

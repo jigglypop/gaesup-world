@@ -97,7 +97,7 @@ async function rendering(ctx: ScenarioContext) {
 }
 
 export const minihomeScenarios: Scenario[] = [
-  { id: 'minihome-api', title: '미니홈피 API 기능 검사', description: '별도 fixture에서 미니홈피 이력과 공유의 실제 반환 상태를 검사합니다. 라이브러리 공개 API 계약은 패키지 테스트가 검사합니다.', version: 2, requirementIds: ['R25', 'R27', 'R29'], run: async ctx => {
+  { id: 'minihome-api', title: '미니홈피 API 기능 검사', description: '별도 fixture에서 미니홈피 이력과 공유의 실제 반환 상태를 검사합니다. 라이브러리 공개 API 계약은 패키지 테스트가 검사합니다.', version: 2, run: async ctx => {
     const results = await runMinihomeApiChecks(ctx.signal);
     for (const result of results) ctx.assert(result.id, 'passed', result.status);
     ctx.sample('miniroom-api-failures', results.filter(result => result.status === 'failed').length, 'count', 'isolated-public-api-fixtures');
@@ -105,6 +105,6 @@ export const minihomeScenarios: Scenario[] = [
     ctx.sample('miniroom-api-calls-covered', new Set(results.flatMap(result => result.apis)).size, 'count', 'named-entry-points-and-methods');
     for (const result of results) if (result.status === 'failed') throw new Error(`${result.title}: ${result.detail}`);
   } },
-  { id: 'minihome-lifecycle', title: '미니룸 대기·표시·종료', description: '3D 타운의 실제 미니홈피 엔진에서 대기 프레임 루프, 컴포넌트 enabled 반영, 종료 후 작업을 검사합니다.', version: 3, requirementIds: ['R25', 'R26'], run: lifetime },
-  { id: 'minihome-rendering', title: '미니룸 가구 부하·렌더링', description: '타일·가구 12종·Bloom을 포함한 미니룸에서 1~1,000개 가구, 고정 배치·DPR·크기로 제출 시간과 draw call을 측정합니다. 정식 비교는 10초 예열·30초 측정입니다.', version: 2, requirementIds: ['R05', 'R13'], timed: true, run: rendering },
+  { id: 'minihome-lifecycle', title: '미니룸 대기·표시·종료', description: '3D 타운의 실제 미니홈피 엔진에서 대기 프레임 루프, 컴포넌트 enabled 반영, 종료 후 작업을 검사합니다.', version: 3, run: lifetime },
+  { id: 'minihome-rendering', title: '미니룸 가구 부하·렌더링', description: '타일·가구 12종·Bloom을 포함한 미니룸에서 1~1,000개 가구, 고정 배치·DPR·크기로 제출 시간과 draw call을 측정합니다. 정식 비교는 10초 예열·30초 측정입니다.', version: 2, timed: true, run: rendering },
 ];

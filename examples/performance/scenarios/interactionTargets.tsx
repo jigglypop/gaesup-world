@@ -114,7 +114,7 @@ async function worldTracking(ctx: ScenarioContext) {
 }
 
 export const interactionTargetScenarios: Scenario[] = [
-  { id: 'interaction-target-ownership', title: '상호작용 대상·명령 소유권', description: '두 월드의 같은 대상 ID와 중복 입력 훅, 대상 정보 변경·제거, 종료/재시작을 실제 store와 훅으로 검사합니다.', version: 1, requirementIds: ['R25'], run: interactionTargets },
-  { id: 'tool-action-ownership', title: '도구 입력 단일 실행', description: '네이티브 렌더러에 마운트한 도구 controller 두 개에서 DOM·커스텀 backend 입력과 부분 제거·종료/재시작을 검사합니다.', version: 1, requirementIds: ['R25'], run: toolActions },
-  { id: 'interaction-world-tracking', title: '상호작용 월드 좌표·중복 탐색', description: '부모 transform을 적용한 실제 대상과 중복 tracker를 마운트해 거리, 프레임당 탐색 수, 이동·제거를 검사합니다.', version: 1, requirementIds: ['R25'], run: worldTracking },
+  { id: 'interaction-target-ownership', title: '상호작용 대상·명령 소유권', description: '두 월드의 같은 대상 ID와 중복 입력 훅, 대상 정보 변경·제거, 종료/재시작을 실제 store와 훅으로 검사합니다.', version: 1, run: interactionTargets },
+  { id: 'tool-action-ownership', title: '도구 입력 단일 실행', description: '네이티브 렌더러에 마운트한 도구 controller 두 개에서 DOM·커스텀 backend 입력과 부분 제거·종료/재시작을 검사합니다.', version: 1, run: toolActions },
+  { id: 'interaction-world-tracking', title: '상호작용 월드 좌표·중복 탐색', description: '부모 transform을 적용한 실제 대상과 중복 tracker를 마운트해 거리, 프레임당 탐색 수, 이동·제거를 검사합니다.', version: 1, run: worldTracking },
 ];

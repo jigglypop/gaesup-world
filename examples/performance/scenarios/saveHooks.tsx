@@ -74,6 +74,6 @@ async function sharing(ctx: ScenarioContext) {
 }
 
 export const saveHookScenarios: Scenario[] = [
-  { id: 'world-save-hooks', title: '월드별 자동 저장·초기 로드', description: '실제 Provider의 기본 저장소 선택, 중복 훅, 종료/재시작과 다른 월드 보존을 측정합니다.', version: 1, requirementIds: ['R02', 'R25'], run: worldHooks },
-  { id: 'save-hook-sharing', title: '저장 훅 공유·느린 I/O', description: '실제 SaveSystem에서 초기 읽기 중 저장, 늦게 추가한 소비자, 이벤트 폭주·최신 snapshot·읽기 실패를 제어된 adapter로 검사합니다.', version: 1, requirementIds: ['R02', 'R25'], run: sharing },
+  { id: 'world-save-hooks', title: '월드별 자동 저장·초기 로드', description: '실제 Provider의 기본 저장소 선택, 중복 훅, 종료/재시작과 다른 월드 보존을 측정합니다.', version: 1, run: worldHooks },
+  { id: 'save-hook-sharing', title: '저장 훅 공유·느린 I/O', description: '실제 SaveSystem에서 초기 읽기 중 저장, 늦게 추가한 소비자, 이벤트 폭주·최신 snapshot·읽기 실패를 제어된 adapter로 검사합니다.', version: 1, run: sharing },
 ];

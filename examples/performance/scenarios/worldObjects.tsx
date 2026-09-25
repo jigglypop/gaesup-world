@@ -110,7 +110,7 @@ async function worldViewPicking(ctx: ScenarioContext) {
 }
 
 export const worldObjectScenarios: Scenario[] = [
-  { id: 'world-objects', title: '월드 객체·블루프린트 소유권', description: '두 Provider의 실제 블루프린트 생성과 같은 객체 ID, 종료/재시작을 검사합니다.', version: 1, requirementIds: ['R25'], run: worldObjects },
-  { id: 'world-snapshot', title: '월드 명령 직후 snapshot', description: '같은 밀리초의 생성·선택 명령이 snapshot에 즉시 반영되는지 검사합니다.', version: 1, requirementIds: ['R25', 'R27'], run: worldSnapshot },
-  { id: 'world-view-picking', title: '월드 카메라·커서 생성', description: '두 실제 canvas의 카메라·커서로 생성 좌표를 계산하고 같은 월드의 활성 화면 전환과 종료/재시작을 검사합니다.', version: 1, requirementIds: ['R25', 'R13'], run: worldViewPicking },
+  { id: 'world-objects', title: '월드 객체·블루프린트 소유권', description: '두 Provider의 실제 블루프린트 생성과 같은 객체 ID, 종료/재시작을 검사합니다.', version: 1, run: worldObjects },
+  { id: 'world-snapshot', title: '월드 명령 직후 snapshot', description: '같은 밀리초의 생성·선택 명령이 snapshot에 즉시 반영되는지 검사합니다.', version: 1, run: worldSnapshot },
+  { id: 'world-view-picking', title: '월드 카메라·커서 생성', description: '두 실제 canvas의 카메라·커서로 생성 좌표를 계산하고 같은 월드의 활성 화면 전환과 종료/재시작을 검사합니다.', version: 1, run: worldViewPicking },
 ];

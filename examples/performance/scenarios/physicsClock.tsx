@@ -88,6 +88,5 @@ async function physicsClock(ctx: ScenarioContext) {
 }
 
 export const physicsClockScenarios: Scenario[] = [{
-  id: 'world-physics-clock', title: '월드 clock 실제 물리·입력', version: 1, requirementIds: ['R26', 'R03'],
-  description: '공개 WorldPhysics와 PhysicsEntity의 180 tick 전체 위치를 30·60·144Hz에서 비교하고 이동·점프·착지·종료를 검사합니다.', run: physicsClock,
+  id: 'world-physics-clock', title: '월드 clock 실제 물리·입력', version: 1, description: '공개 WorldPhysics와 PhysicsEntity의 180 tick 전체 위치를 30·60·144Hz에서 비교하고 이동·점프·착지·종료를 검사합니다.', run: physicsClock,
 }];

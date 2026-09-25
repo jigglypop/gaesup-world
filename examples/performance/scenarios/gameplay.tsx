@@ -67,5 +67,5 @@ async function worldGameplay(ctx: ScenarioContext) {
 }
 
 export const gameplayScenarios: Scenario[] = [
-  { id: 'world-gameplay', title: '두 월드의 날씨·작물·보상·저장', description: '실제 농사 clock과 퀘스트 보상이 해당 월드의 작물·가방·지갑만 변경하는지, 저장 복원 후에도 격리되는지 검사합니다.', version: 1, requirementIds: ['R25'], run: worldGameplay },
+  { id: 'world-gameplay', title: '두 월드의 날씨·작물·보상·저장', description: '실제 농사 clock과 퀘스트 보상이 해당 월드의 작물·가방·지갑만 변경하는지, 저장 복원 후에도 격리되는지 검사합니다.', version: 1, run: worldGameplay },
 ];

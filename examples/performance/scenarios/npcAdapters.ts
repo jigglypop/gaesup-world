@@ -81,6 +81,6 @@ async function lifetime(ctx: ScenarioContext) {
 }
 
 export const npcAdapterScenarios: Scenario[] = [
-  { id: 'npc-adapter-isolation', title: 'NPC adapter 월드 분리', description: '같은 NPC ID와 정책 ID를 사용하는 두 월드의 adapter·설정·요청·응답 소유권을 검사합니다.', version: 1, requirementIds: ['R25'], run: isolation },
-  { id: 'npc-policy-lifetime', title: 'NPC 정책 요청 수명', description: 'NPC 교체, 월드 종료와 재시작 뒤의 지연 응답을 실제 brain 경로에서 검사합니다. HTTP 전송만 로컬에서 제어합니다.', version: 1, requirementIds: ['R25'], run: lifetime },
+  { id: 'npc-adapter-isolation', title: 'NPC adapter 월드 분리', description: '같은 NPC ID와 정책 ID를 사용하는 두 월드의 adapter·설정·요청·응답 소유권을 검사합니다.', version: 1, run: isolation },
+  { id: 'npc-policy-lifetime', title: 'NPC 정책 요청 수명', description: 'NPC 교체, 월드 종료와 재시작 뒤의 지연 응답을 실제 brain 경로에서 검사합니다. HTTP 전송만 로컬에서 제어합니다.', version: 1, run: lifetime },
 ];

@@ -64,7 +64,7 @@ async function throughput(ctx: ScenarioContext) {
 }
 
 export const gameplayCommandScenarios: Scenario[] = [
-  { id: 'world-gameplay-restore', title: '복원 중 비동기 gameplay 명령', description: '실제 두 월드·IndexedDB·지연 action·취소 대기자·상태 플래그·보상·일회성 이력을 검사합니다.', version: 1, requirementIds: ['R02', 'R25', 'R30'], run: restoration },
-  { id: 'gameplay-command-order', title: '동기 gameplay 명령 순서', description: '동기 action 사이에 불필요한 microtask가 끼어 중간 상태를 노출하는지 검사합니다.', version: 1, requirementIds: ['R25', 'R30'], run: scheduling },
-  { id: 'gameplay-dispatch', title: 'gameplay 명령 처리 비용', description: '명령당 8개 실제 플래그 action을 수행한 전체 batch의 CPU 시간을 측정합니다. 객체 수는 batch당 명령 수입니다.', version: 1, requirementIds: ['R25', 'R26'], timed: true, run: throughput },
+  { id: 'world-gameplay-restore', title: '복원 중 비동기 gameplay 명령', description: '실제 두 월드·IndexedDB·지연 action·취소 대기자·상태 플래그·보상·일회성 이력을 검사합니다.', version: 1, run: restoration },
+  { id: 'gameplay-command-order', title: '동기 gameplay 명령 순서', description: '동기 action 사이에 불필요한 microtask가 끼어 중간 상태를 노출하는지 검사합니다.', version: 1, run: scheduling },
+  { id: 'gameplay-dispatch', title: 'gameplay 명령 처리 비용', description: '명령당 8개 실제 플래그 action을 수행한 전체 batch의 CPU 시간을 측정합니다. 객체 수는 batch당 명령 수입니다.', version: 1, timed: true, run: throughput },
 ];

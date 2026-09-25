@@ -41,7 +41,6 @@ export type LabRun = {
   runId: string;
   scenarioId: string;
   scenarioVersion: number;
-  requirementIds: string[];
   role: 'baseline' | 'candidate';
   kind: 'functional' | 'performance' | 'diagnostic';
   status: 'passed' | 'failed' | 'unsupported' | 'aborted';
@@ -118,7 +117,7 @@ const scalar = (value: unknown) => typeof value === 'string' || typeof value ===
 export function parseRun(value: unknown): LabRun {
   if (!record(value) || value['schemaVersion'] !== 1) throw new Error('지원하지 않는 run schema');
   for (const key of ['runId', 'scenarioId', 'startedAt', 'endedAt']) if (typeof value[key] !== 'string') throw new Error(`잘못된 ${key}`);
-  if (!finite(value['scenarioVersion']) || !strings(value['requirementIds']) || !strings(value['errors']) || !strings(value['unsupportedReasons'])) throw new Error('잘못된 run metadata');
+  if (!finite(value['scenarioVersion']) || !strings(value['errors']) || !strings(value['unsupportedReasons'])) throw new Error('잘못된 run metadata');
   if (!['baseline', 'candidate'].includes(String(value['role'])) || !['functional', 'performance', 'diagnostic'].includes(String(value['kind'])) || !['passed', 'failed', 'unsupported', 'aborted'].includes(String(value['status']))) throw new Error('잘못된 run 상태');
   const config = value['config'];
   if (!record(config) || !['webgpu', 'webgl'].includes(String(config['backend']))) throw new Error('잘못된 config');

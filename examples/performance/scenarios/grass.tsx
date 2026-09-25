@@ -103,9 +103,9 @@ async function grassRendering(ctx: ScenarioContext) {
 export const grassScenarios: Scenario[] = [{
   id: 'world-grass', title: '월드별 grass 관리·프레임·수명',
   description: '실제 grass manager의 카메라·날씨·밟힘 소유권과 144개 프레임, 중복 호출, 종료/재시작을 검사합니다. FPS 측정은 아닙니다.',
-  version: 1, requirementIds: ['R25', 'R26'], run: worldGrass,
+  version: 1, run: worldGrass,
 }, {
   id: 'grass-rendering', title: '두 월드 grass 실제 렌더링',
   description: '실제 Grass·BuildingSystem 기본 driver를 두 canvas에서 실행해 재질 값·인스턴스·종료/재시작을 확인합니다.',
-  version: 1, requirementIds: ['R25'], run: grassRendering,
+  version: 1, run: grassRendering,
 }];

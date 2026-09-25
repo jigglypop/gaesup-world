@@ -8,7 +8,7 @@ const base = process.env.GAESUP_BASE_URL ?? '/gaesup-world/';
 execFileSync(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'), 'build', `--base=${base}`], { cwd: root, stdio: 'inherit' });
 const output = path.join(root, 'demo-dist');
 copyFileSync(path.join(output, 'index.html'), path.join(output, '404.html'));
-for (const route of ['engine', 'performance']) {
+for (const route of ['accept', 'engine', 'performance', 'world']) {
   mkdirSync(path.join(output, route), { recursive: true });
   copyFileSync(path.join(output, 'index.html'), path.join(output, route, 'index.html'));
 }

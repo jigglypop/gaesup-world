@@ -49,10 +49,10 @@ async function worldConfiguration(ctx: ScenarioContext) {
 }
 
 export const configurationScenarios: Scenario[] = [
-  { id: 'world-configuration', title: '두 월드의 객체·카메라·URL', description: '실제 GaesupWorld 두 개에서 같은 ID의 객체와 서로 다른 카메라·에셋 설정을 검사합니다.', version: 1, requirementIds: ['R25'], run: worldConfiguration },
-  { id: 'world-input-state', title: '두 월드의 입력·플레이어 상태', description: '실제 공개 훅으로 한 월드의 이동 입력과 점프 상태를 바꾸고 다른 월드의 값을 검사합니다.', version: 1, requirementIds: ['R25'], run: worldInputState },
-  { id: 'world-navigation', title: '두 월드의 장애물·클릭 경로', description: '서로 다른 장애물을 가진 실제 내비게이션과 useClicker를 연결해 경로·중단·개별 종료를 확인합니다.', version: 1, requirementIds: ['R25'], run: worldNavigation },
-  { id: 'world-interactions', title: '두 월드의 입력 명령·자동 이동', description: '공개 store 명령으로 서로 다른 목표로 이동하고, 한 월드 종료·재시작 후 다른 월드의 입력과 자동화가 유지되는지 검사합니다.', version: 1, requirementIds: ['R25'], run: worldInteractions },
+  { id: 'world-configuration', title: '두 월드의 객체·카메라·URL', description: '실제 GaesupWorld 두 개에서 같은 ID의 객체와 서로 다른 카메라·에셋 설정을 검사합니다.', version: 1, run: worldConfiguration },
+  { id: 'world-input-state', title: '두 월드의 입력·플레이어 상태', description: '실제 공개 훅으로 한 월드의 이동 입력과 점프 상태를 바꾸고 다른 월드의 값을 검사합니다.', version: 1, run: worldInputState },
+  { id: 'world-navigation', title: '두 월드의 장애물·클릭 경로', description: '서로 다른 장애물을 가진 실제 내비게이션과 useClicker를 연결해 경로·중단·개별 종료를 확인합니다.', version: 1, run: worldNavigation },
+  { id: 'world-interactions', title: '두 월드의 입력 명령·자동 이동', description: '공개 store 명령으로 서로 다른 목표로 이동하고, 한 월드 종료·재시작 후 다른 월드의 입력과 자동화가 유지되는지 검사합니다.', version: 1, run: worldInteractions },
 ];
 
 async function worldInteractions(ctx: ScenarioContext) {

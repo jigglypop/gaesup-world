@@ -15,7 +15,7 @@ export async function runScenario(
   }
   const run: LabRun = {
     schemaVersion: 1, runId: crypto.randomUUID(), scenarioId: scenario.id,
-    scenarioVersion: scenario.version, requirementIds: scenario.requirementIds, role,
+    scenarioVersion: scenario.version, role,
     kind: scenario.timed ? config.warmupMs >= 10000 && config.durationMs >= 30000 ? 'performance' : 'diagnostic' : 'functional',
     status: 'failed', source, config: { ...config },
     environment: {
@@ -32,7 +32,7 @@ export async function runScenario(
   try {
     await scenario.run({
       host, config, signal, progress, role,
-      assert: (id, expected, actual) => run.assertions.push({ id, expected, actual, pass: expected === actual }),
+      assert: (id, expected, actual, pass = expected === actual) => run.assertions.push({ id, expected, actual, pass }),
       sample: (name, value, unit, scope) => {
         let entry = samples.get(name);
         if (!entry) { entry = { values: [], unit, scope }; samples.set(name, entry); }

@@ -125,7 +125,7 @@ async function gpuMaterial(ctx: ScenarioContext) {
 }
 
 export const renderingScenarios: Scenario[] = [
-  { id: 'metrics', title: '렌더러 계측', description: '고정된 인스턴스 장면을 렌더링하며 실제 카운터와 프레임 표본을 기록합니다.', version: 2, requirementIds: ['R14'], timed: true, run: (ctx) => metrics(ctx) },
-  { id: 'metrics-gpu-batch', title: '렌더러 계측 (GPU batch)', description: '같은 인스턴스 장면을 GpuBatchBridge로 렌더링해 metrics와 프레임·GPU 시간을 비교합니다.', version: 1, requirementIds: ['R14'], timed: true, run: (ctx) => metrics(ctx, true) },
-  { id: 'gpu-material', title: 'GPU 재질 변경', description: '색·roughness·opacity 편집과 투명 재질 전환을 실제 GpuBatchBridge로 검사합니다.', version: 2, requirementIds: ['R06'], run: gpuMaterial },
+  { id: 'metrics', title: '렌더러 계측', description: '고정된 인스턴스 장면을 렌더링하며 실제 카운터와 프레임 표본을 기록합니다.', version: 2, timed: true, run: (ctx) => metrics(ctx) },
+  { id: 'metrics-gpu-batch', title: '렌더러 계측 (GPU batch)', description: '같은 인스턴스 장면을 GpuBatchBridge로 렌더링해 metrics와 프레임·GPU 시간을 비교합니다.', version: 1, timed: true, run: (ctx) => metrics(ctx, true) },
+  { id: 'gpu-material', title: 'GPU 재질 변경', description: '색·roughness·opacity 편집과 투명 재질 전환을 실제 GpuBatchBridge로 검사합니다.', version: 2, run: gpuMaterial },
 ];

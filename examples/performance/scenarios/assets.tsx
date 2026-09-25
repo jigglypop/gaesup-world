@@ -85,5 +85,5 @@ async function assetSwitch(ctx: ScenarioContext) {
 }
 
 export const assetScenarios: Scenario[] = [
-  { id: 'asset-switch', title: 'GLTF 교체·빈 URL·preload', description: '실제 GLTF를 같은 훅에서 교체하고 크기 갱신과 preload, 빈 URL을 검사합니다.', version: 1, requirementIds: ['R10'], run: assetSwitch },
+  { id: 'asset-switch', title: 'GLTF 교체·빈 URL·preload', description: '실제 GLTF를 같은 훅에서 교체하고 크기 갱신과 preload, 빈 URL을 검사합니다.', version: 1, run: assetSwitch },
 ];

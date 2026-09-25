@@ -72,5 +72,5 @@ async function worldLife(ctx: ScenarioContext) {
 }
 
 export const lifeScenarios: Scenario[] = [
-  { id: 'world-life', title: '두 월드의 생활·도구·이벤트', description: '실제 도감·달력·도구 훅과 제작·우편·게임플레이 이벤트·IndexedDB를 연결해 월드 간 전달과 종료·재시작을 검사합니다.', version: 1, requirementIds: ['R25'], run: worldLife },
+  { id: 'world-life', title: '두 월드의 생활·도구·이벤트', description: '실제 도감·달력·도구 훅과 제작·우편·게임플레이 이벤트·IndexedDB를 연결해 월드 간 전달과 종료·재시작을 검사합니다.', version: 1, run: worldLife },
 ];

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { AcceptBoard, AcceptHud, MilestoneList, useAcceptResults } from './accept/AcceptBoard';
+import { acceptScenarios, judgeMetrics, runVerdict } from './accept/suite';
 import { hasBaselines, loadBaselines } from './baselines';
 import { DEFAULT_CONFIG, comparisonProblems, improvementPercent, parseRun, repetitionSummary, type LabConfig, type LabRun, type Metric } from './model';
-import { requirements } from './requirements';
 import { runScenario } from './runner';
 import { scenarios } from './scenarios/registry';
 import { loadRuns, saveRun } from './storage';
@@ -16,6 +17,8 @@ declare global {
       stop: () => void;
       runs: () => LabRun[];
       scenarioIds: string[];
+      /** /accept only: verdicts for `pnpm accept`, which reuses the page's budget table. */
+      accept?: { verdict: typeof runVerdict; judge: typeof judgeMetrics };
     };
   }
 }
@@ -32,12 +35,15 @@ function Trace({ metric }: { metric: Metric | undefined }) {
   return <svg viewBox="0 0 800 110" role="img" aria-label={`${metric.scope} 시간순 표본, 최대 ${valueText(max)} ${metric.unit}`}>{values.length === 1 ? <circle cx="400" cy={100 - values[0]! / max * 90} r="4" fill="#74e1c2" /> : <polyline points={points} fill="none" stroke="#74e1c2" strokeWidth="1.5" />}</svg>;
 }
 
-export default function PerformanceLab() {
+/** `accept` is the /accept route: the acceptance suite, milestone checklist and live HUD on the same runner. */
+export default function PerformanceLab({ suite = 'lab' }: { suite?: 'lab' | 'accept' }) {
+  const accept = suite === 'accept';
+  const list = accept ? acceptScenarios : scenarios;
   const [requestedScenarioId] = useState(() => {
     const requested = new URLSearchParams(location.search).get('scenario');
-    return scenarios.some(scenario => scenario.id === requested) ? requested : null;
+    return list.some(scenario => scenario.id === requested) ? requested : null;
   });
-  const [scenarioId, setScenarioId] = useState(requestedScenarioId ?? 'metrics');
+  const [scenarioId, setScenarioId] = useState(requestedScenarioId ?? list[0]!.id);
   // Recorded runs download per scenario once one is opened (or linked); the default view fetches none.
   const [baselineScenarioId, setBaselineScenarioId] = useState(requestedScenarioId);
   const [config, setConfig] = useState<LabConfig>(DEFAULT_CONFIG);
@@ -52,7 +58,7 @@ export default function PerformanceLab() {
   const host = useRef<HTMLDivElement>(null);
   const abort = useRef<AbortController | null>(null);
   const runRef = useRef<LabRun[]>([]);
-  const scenario = scenarios.find((entry) => entry.id === scenarioId)!;
+  const scenario = list.find((entry) => entry.id === scenarioId)!;
   const selected = runs.find((run) => run.runId === selectedRunId) ?? runs.find((run) => run.scenarioId === scenarioId);
   const baseline = runs.find((run) => run.runId === baselineId) ?? (selected?.role === 'candidate'
     ? runs.find(run => run.role === 'baseline' && comparisonProblems(run, selected).length === 0) : undefined);
@@ -80,7 +86,7 @@ export default function PerformanceLab() {
   const execute = useCallback(async (request: RunRequest = {}) => {
     if (abort.current) throw new Error('실행 중인 시나리오를 먼저 중지하세요.');
     if (!host.current) throw new Error('재현 화면이 준비되지 않았습니다.');
-    const target = scenarios.find((entry) => entry.id === (request.scenarioId ?? scenarioId));
+    const target = list.find((entry) => entry.id === (request.scenarioId ?? scenarioId));
     if (!target) throw new Error('연결되지 않은 시나리오');
     const nextConfig = { ...config, ...request.config };
     if (!Number.isInteger(nextConfig.count) || nextConfig.count < 1 || nextConfig.count > 100000) throw new Error('객체 수는 1~100,000 정수여야 합니다.');
@@ -97,13 +103,18 @@ export default function PerformanceLab() {
       setProgress(`${statusText[run.status]} · ${run.runId.slice(0, 8)}`);
       return run;
     } finally { abort.current = null; setBusy(false); }
-  }, [addRuns, config, role, scenarioId]);
+  }, [addRuns, config, list, role, scenarioId]);
+  const runMany = useCallback(async (ids: string[]) => {
+    for (const id of ids) await execute({ scenarioId: id }).catch((e: unknown) => setError(String(e)));
+  }, [execute]);
+  const results = useAcceptResults(runs);
 
   useEffect(() => {
-    const api = { run: execute, stop: () => abort.current?.abort(), runs: () => runRef.current, scenarioIds: scenarios.map((entry) => entry.id) };
+    const api = { run: execute, stop: () => abort.current?.abort(), runs: () => runRef.current, scenarioIds: list.map((entry) => entry.id),
+      ...(accept ? { accept: { verdict: runVerdict, judge: judgeMetrics } } : {}) };
     window.performanceLab = api;
     return () => { if (window.performanceLab === api) delete window.performanceLab; };
-  }, [execute]);
+  }, [accept, execute, list]);
 
   const exportRun = () => {
     if (!selected) return;
@@ -121,35 +132,29 @@ export default function PerformanceLab() {
     const firstBaseline = imported.find((run) => run.role === 'baseline');
     if (firstBaseline) setBaselineId(firstBaseline.runId);
   };
-  const core = requirements.filter((entry) => entry.id.startsWith('R'));
-  const linked = core.filter((entry) => scenarios.some((s) => s.id === entry.scenarioId));
 
   return <div className="performance-lab">
-    <header className="lab-header"><div><a href={import.meta.env.BASE_URL}>gaesup world</a><h1>Runtime performance lab</h1><p>재현 → 수정 → 같은 조건으로 비교</p></div><nav><a href={`${import.meta.env.BASE_URL}engine`}>Engine</a><a href="https://github.com/mrdoob/three.js" target="_blank" rel="noreferrer">Three.js</a></nav></header>
-    <div className="lab-summary">
-      <span>구현 <b>{core.filter((entry) => entry.implementation === 'implemented').length}/{core.length}</b></span>
-      <span>시나리오 연결 <b>{linked.length}/{core.length}</b></span>
-      <span>전후 기능 비교 <b>{core.filter(entry => entry.evidence).length}/{core.length}</b></span>
-      <span>전체 조건 검증 <b>{core.filter((entry) => entry.acceptedRunIds.length > 0).length}/{core.length}</b></span>
+    <header className="lab-header"><div><a href={import.meta.env.BASE_URL}>gaesup world</a><h1>{accept ? 'Acceptance' : 'Runtime performance lab'}</h1><p>{accept ? '예산 대비 판정 · 같은 시나리오를 pnpm accept가 실행' : '재현 → 수정 → 같은 조건으로 비교'}</p></div><nav><a href={`${import.meta.env.BASE_URL}engine`}>Engine</a><a href="https://github.com/mrdoob/three.js" target="_blank" rel="noreferrer">Three.js</a></nav></header>
+    {!accept && <div className="lab-summary">
+      <span>시나리오 <b>{list.length}</b></span>
+      <span>기록 있는 시나리오 <b>{list.filter((entry) => hasBaselines(entry.id)).length}</b></span>
       <span>저장된 실행 <b>{runs.length}</b></span>
-    </div>
+    </div>}
     <main className="lab-layout">
-      <aside className="lab-sidebar"><h2>개선 항목</h2><p>단일 시나리오 통과와 PRD 전체 완료는 구분합니다.</p>
-        {requirements.map((entry) => {
-          const available = scenarios.some((s) => s.id === entry.scenarioId);
-          const latest = runs.find((run) => run.requirementIds.includes(entry.id));
-          return <button key={entry.id} disabled={!available || busy} className={scenario.requirementIds.includes(entry.id) ? 'selected' : ''} onClick={() => selectScenario(entry.scenarioId)}>
-            <span>{entry.id} · {entry.stage}</span><strong>{entry.title}</strong>
-            <small>{entry.implementation === 'implemented' ? '구현됨' : entry.implementation === 'working' ? '일부 구현' : '미착수'} · {latest ? statusText[latest.status] : !available ? '시나리오 예정' : hasBaselines(entry.scenarioId) ? '연결됨 · 기록 있음' : '연결됨 · 미측정'}</small>
-            {latest && <small>{latest.startedAt.slice(0, 10)} · {latest.runId.slice(0, 8)}</small>}
+      {accept ? <MilestoneList results={results} /> : <aside className="lab-sidebar"><h2>시나리오</h2><p>시나리오 통과는 PRD 항목 완료가 아닙니다. 완료 판정은 /accept가 합니다.</p>
+        {list.map((entry) => {
+          const latest = runs.find((run) => run.scenarioId === entry.id);
+          return <button key={entry.id} disabled={busy} className={entry.id === scenarioId ? 'selected' : ''} onClick={() => selectScenario(entry.id)}>
+            <strong>{entry.title}</strong>
+            <small>{latest ? `${statusText[latest.status]} · ${latest.startedAt.slice(0, 10)}` : hasBaselines(entry.id) ? '기록 있음 · 미실행' : '미측정'}</small>
           </button>;
         })}
-      </aside>
+      </aside>}
       <section className="lab-main">
+        {accept && <AcceptBoard results={results} busy={busy} onRun={(ids) => void runMany(ids)} onSelect={selectScenario} />}
         <div className="lab-card"><h2>{scenario.title}</h2><p>{scenario.description}</p>
-          {requirements.filter(entry => scenario.requirementIds.includes(entry.id) && entry.evidence).map(entry => <p className="lab-note" key={entry.id}>{entry.evidence!.note}</p>)}
           <fieldset disabled={busy} className="lab-controls">
-            <label>시나리오<select aria-label="재현 시나리오" value={scenarioId} onChange={(e) => selectScenario(e.target.value)}>{scenarios.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+            <label>시나리오<select aria-label="재현 시나리오" value={scenarioId} onChange={(e) => selectScenario(e.target.value)}>{list.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
             <label>Backend<select value={config.backend} onChange={(e) => setConfig({ ...config, backend: e.target.value as LabConfig['backend'] })}><option value="webgpu">WebGPU 요청</option><option value="webgl">WebGL</option></select></label>
             <label>객체 수<input type="number" min="1" max="100000" value={config.count} onChange={(e) => setConfig({ ...config, count: Number(e.target.value) })} /></label>
             <label>Warmup (초)<input type="number" min="0" value={config.warmupMs / 1000} onChange={(e) => setConfig({ ...config, warmupMs: Number(e.target.value) * 1000 })} /></label>
@@ -184,5 +189,6 @@ export default function PerformanceLab() {
         </div>
       </section>
     </main>
+    {accept && <AcceptHud />}
   </div>;
 }
