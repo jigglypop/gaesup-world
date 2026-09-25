@@ -4,6 +4,7 @@ import { TransformControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 import type { SceneObject, SceneObjectId, SceneTransform, SceneVector3 } from '../../../scene-object';
+import { canonicalZero } from '../../../scene-object/canonical';
 
 export type TransformGizmoMode = 'translate' | 'rotate' | 'scale';
 export type TransformGizmoSpace = 'local' | 'world';
@@ -100,10 +101,10 @@ export function snapSceneTransform(transform: SceneTransform, options: {
 }
 
 function vectorToSceneVector(vector: THREE.Vector3 | THREE.Euler): SceneVector3 {
-  return [vector.x, vector.y, vector.z];
+  return [canonicalZero(vector.x), canonicalZero(vector.y), canonicalZero(vector.z)];
 }
 
 function snapVector(vector: SceneVector3, snap?: number): SceneVector3 {
   if (!snap || snap <= 0) return vector;
-  return vector.map((value) => Math.round(value / snap) * snap) as unknown as SceneVector3;
+  return vector.map((value) => canonicalZero(Math.round(value / snap) * snap)) as unknown as SceneVector3;
 }

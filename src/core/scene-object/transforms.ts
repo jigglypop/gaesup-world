@@ -1,3 +1,4 @@
+import { canonicalZero } from './canonical';
 import type { SceneEuler, SceneTransform, SceneVector3 } from './types';
 
 export type SceneQuaternion = readonly [number, number, number, number];
@@ -69,5 +70,5 @@ export function sceneMatrixToTransform(m: SceneMatrix): SceneTransform {
   const rotation: SceneVector3 = Math.abs(c) < 0.9999999
     ? [Math.atan2(-f, i), Math.asin(Math.max(-1, Math.min(1, c))), Math.atan2(-b, a)]
     : [Math.atan2(h, e), Math.asin(Math.max(-1, Math.min(1, c))), 0];
-  return { position: [m[12], m[13], m[14]], rotation: rotation.map((n) => n === 0 ? 0 : n) as [number, number, number], scale: [sx, sy, sz] };
+  return { position: [m[12], m[13], m[14]], rotation: rotation.map(canonicalZero) as [number, number, number], scale: [sx, sy, sz] };
 }

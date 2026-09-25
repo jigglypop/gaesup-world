@@ -1,3 +1,4 @@
+import { canonicalZero as clean } from './canonical';
 import { createSceneDocument } from './core';
 import { parseSceneDocument } from './serialization';
 import { sceneEulerToQuaternion, sceneQuaternionToEuler } from './transforms';
@@ -23,7 +24,6 @@ export type UnitySceneDocument = {
   objects: UnitySceneObject[];
 };
 
-const clean = (value: number) => value === 0 ? 0 : value;
 const reflectPosition = ([x, y, z]: SceneVector3): SceneVector3 => [x, y, clean(-z)];
 const reflectRotation = ([x, y, z, w]: SceneQuaternion): SceneQuaternion => [clean(-x), clean(-y), z, w];
 
