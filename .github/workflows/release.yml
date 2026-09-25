@@ -72,6 +72,22 @@ jobs:
       # Builds the demo itself and checks the initial chunk surface.
       - run: corepack pnpm run test:demo
 
+  # Browser acceptance scenarios on the production demo build (SwiftShader). Not a release gate until it has run
+  # stably on ci/** pushes; the deterministic counters it judges do not depend on the GPU.
+  accept-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - run: corepack pnpm exec playwright install --with-deps chromium
+      - run: corepack pnpm run accept --software
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: accept-browser
+          path: .artifacts/accept
+
   release:
     needs: [checks, jest, package, demo]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'

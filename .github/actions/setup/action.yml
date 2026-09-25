@@ -1,5 +1,5 @@
 name: Setup
-description: Node 24 and a frozen pnpm install without lifecycle scripts.
+description: Node 24 and a frozen pnpm install without lifecycle scripts, reusing the pnpm store between runs.
 
 runs:
   using: composite
@@ -10,6 +10,14 @@ runs:
         package-manager-cache: false
     - run: npm install --global corepack
       shell: bash
+    - id: pnpm-store
+      run: echo "path=$(corepack pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      shell: bash
+    - uses: actions/cache@v4
+      with:
+        path: ${{ steps.pnpm-store.outputs.path }}
+        key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: pnpm-store-${{ runner.os }}-
     # prepare is `build`; jobs that need dist build it once themselves.
     - run: corepack pnpm install --frozen-lockfile --ignore-scripts
       shell: bash
