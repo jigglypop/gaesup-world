@@ -3,7 +3,7 @@
 | 항목 | 값 |
 |---|---|
 | 우선순위 | P0(REN-01~REN-07), P1(나머지) |
-| 마일스톤 | M0(REN-07a, REN-08a), M2(REN-01~REN-06, REN-07b, REN-08b, REN-10, REN-11), M3(REN-09, REN-12), M6(REN-13, REN-14) |
+| 마일스톤 | M2(REN-01~REN-08, REN-10, REN-11), M3(REN-09, REN-12), M6(REN-13, REN-14) |
 | 선행 | 10 PRD COR-02·COR-03(EntityWorld, TransformSystem), 01 PRD VER-01·VER-03 |
 
 ## 1. 목표
@@ -37,9 +37,9 @@ RC-3(렌더 단위가 React 컴포넌트)을 없앤다.
 | 컴파일 | `CompileGate`는 오브젝트와 모델만 감싸고, `compileAsync`가 현재 RT·MRT 기준이라 후처리 pass(MRT, samples 0)와 다른 파이프라인을 만든다. 후처리는 로딩 중 fallback `gl.render`로 컴파일한 뒤 pass에서 전부 재컴파일. GPU batch 재질·compute는 첫 draw에 동기 컴파일 | `rendering/CompileGate.tsx:16-60`, `postprocess/WorldPostProcessing.tsx:197,260`, `GpuBatchBridge.tsx:194` |
 | NPC·캐릭터 | NPC 파츠마다 `useGLTF` + `SkeletonUtils.clone` + mixer, 스켈레톤 공유 없음, 화면 밖 mixer 갱신, LOD 범위 밖은 언마운트, NPC에 Suspense 경계 없음. 캐릭터는 `ModelRenderer`가 노드마다 스킨 메시를 만들고 파츠는 공유 스켈레톤 바인딩(identical/remappable/incompatible 3분기). 원격 플레이어는 drei `useAnimations` | `npc/components/NPCInstance/index.tsx:91-108,308-370`, `motions/entities/refs/PartsGroupRef.tsx:14-140`, `character/skeleton.ts:206-250` |
 | 후처리 | Node 경로: `pass` + MRT(output, velocity, normalView, samples 0) → TRAA → GTAO → bloom → saturation. history 리셋 규칙(revision, 5m 이동, 큰 회전, 투영 변경)과 투영 복원. 사전 컴파일 없음 | `WorldPostProcessing.tsx:93-261` |
-| 그림자 | `ShadowDepthMaterials`는 WebGL 전용, 500ms 순회. `DynamicSky`는 export만 되고 예제 미사용. `CascadedSun`은 export·사용 모두 0. 그림자 추적·텍셀 스냅(`sky/shadowFollow.ts`)은 미커밋 | `rendering/shadow/ShadowDepthMaterials.tsx`, `rendering/sky/` |
+| 그림자 | `ShadowDepthMaterials`는 WebGL 전용, 500ms 순회. `DynamicSky`·`CascadedSun`은 공개돼 있지만 예제가 쓰지 않는다. 그림자 박스는 카메라를 따라가며 세 축 모두 텍셀 단위로 스냅한다(`sky/shadowFollow.ts`) | `rendering/shadow/ShadowDepthMaterials.tsx`, `rendering/sky/` |
 | 조명 | 램프는 pointLight 4개를 가까운 램프에 0.2초마다 재배정 | `building/components/mesh/model/lampPool.tsx:8-103` |
-| 품질 | 품질 프로파일 적용(미커밋)은 후처리·CascadedSun·DynamicSky만. 잔디는 전역 perfStore를 읽고 `outline` 플래그는 미사용 | `perf/quality.tsx`, `Grass.tsx:388` |
+| 품질 | 품질 프로파일(`perf/quality.tsx`)은 DPR, 후처리, CascadedSun, DynamicSky에만 적용된다. 잔디는 전역 perfStore를 읽고 `outline` 플래그는 미사용 | `perf/quality.tsx`, `Grass.tsx:388` |
 | 백엔드 차이 | WebGPU에서 GLSL `ShaderMaterial`은 기본 NodeMaterial로 대체된다. 사쿠라 낙화(`sakura.tsx:500-510,640`)와 기본 three-stdlib `Water`가 WebGPU에서 의도대로 그려지지 않는다. 대체용 `NodeTreeParticles.tsx`는 미사용 | `three/src/nodes/core/NodeBuilder.js:3156-3163` |
 | `src/next` | `/engine` 예제만 렌더. `RenderGraph`는 패스 순서만 정하고 렌더하지 않음 | `next/core/RenderGraph.ts` |
 
@@ -138,18 +138,16 @@ WebGPU: 정적 batch를 GPU 상주 batch로 직접 연결(이름 추적 없음),
 | REN-06a | 엔티티 단위 대기(3.3). 이전 기간 공개 컴포넌트는 엔티티 단위 Suspense와 `startTransition`. NPC·PhysicsEntity·파츠·빌보드 이미지 경계 | S-B07 |
 | REN-06b | 선로드: 매니페스트 GLB·wasm·Rapier를 렌더러 초기화와 병렬로, 파츠 URL을 본체와 함께 요청, 잔디 JS→wasm 이중 빌드 제거(`peekCoreWasm`, AST-08a). `createRenderer`의 adapter 재요청·직렬 초기화 정리 | S-B01 첫 표시 ms 기록 감소, 잔디 attribute 생성 chunk당 1회 |
 
-### REN-07 품질 등급(M0, M2)
+### REN-07 품질 등급(M2)
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| REN-07a(M0) | 미커밋 품질 작업 마무리: DPR이 리사이즈·스크롤 뒤 풀리는 문제(Canvas `dpr` 전달과 현재 DPR 구독), `auto` 동기 감지, `quality`가 undefined↔값으로 바뀔 때 월드 재마운트 제거(provider 항상 유지), 줄 수 초과한 `rendering/sky/index.tsx` 분리, export snapshot 갱신(공개 API 추가, 사용자 확인) | S-B10(DPR 유지, auto), `check:quality`·jest 통과 |
 | REN-07b | 프로파일 소비 확대: 잔디 밀도는 context, 후처리 시 `antialias: false`, `cascadeCount`·물 반사·glass transmission·outline 필드, `project-settings` `rendering.pixelRatio` 소비, 감지용 WebGL 컨텍스트 해제 | 등급별 GPU ms 비교 기록 |
 
-### REN-08 그림자(M0, M2)
+### REN-08 그림자(M2)
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| REN-08a(M0) | 미커밋 그림자 추적 마무리: `shadowFollow`가 빛 방향 성분도 텍셀 단위로 스냅(테스트 `shadowFollow.test.ts:18` 기대와 일치), `DynamicSky` `shadowFocus`는 camera phase 뒤로. `CascadedSun`은 공개해 `/world` 장면에 쓰거나 지운다(사용자 결정) | 그림자 테스트 통과 |
 | REN-08b | 잔디 `castShadow` 옵션(라이브러리, 기본 true), 정적 장면 그림자 갱신 임계(caster 변화 시에만), 그림자 pass draw 계측, `CascadedSun`의 `castShadow` 전환·key 재마운트로 lit 파이프라인이 두 번 다시 만들어지는 문제, WebGL `ShadowDepthMaterials`는 객체 add/remove·revision 기반 갱신과 `(material.version, geometry.id)` 캐시 | 정지 장면 그림자 재렌더 0, WebGL 정지 장면 순회 0 |
 
 ### REN-09 스키닝과 애니메이션 비용(M3)

@@ -28,11 +28,14 @@ const mockCsmConstructor = jest.fn().mockImplementation(() => {
 });
 
 jest.mock('@react-three/fiber', () => ({
-  useFrame: (callback: () => void) => {
-    mockFrameCallback = callback;
-  },
   useThree: (selector: (state: { camera: object; gl: object }) => unknown) =>
     selector({ camera: mockCamera, gl: mockRenderer }),
+}));
+
+jest.mock('../../../runtime/frame', () => ({
+  useEngineFrame: (_phase: string, callback: () => void) => {
+    mockFrameCallback = callback;
+  },
 }));
 
 jest.mock('three/addons/csm/CSMShadowNode.js', () => ({

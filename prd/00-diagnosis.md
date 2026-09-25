@@ -98,8 +98,6 @@
 | BlueprintPreview가 메인 월드 store·runtime을 직접 변경 | `blueprints/components/BlueprintPreview/index.tsx:130` | 선택마다 메인 플레이어 모델 교체 | RC-4 | EDT-05 |
 | BlueprintPreview 두 번째 Canvas가 입력 없이 매 프레임 렌더 | `BlueprintPreview/index.tsx:165` | [추정] iGPU 1~3ms/frame | RC-3 | EDT-05 |
 | `MultiplayerCanvas` HDR을 raw.githack.com에서 받아 월드 전체 대기 | `networks/components/MultiplayerCanvas.tsx:113` | 외부 CDN 1~2MB, 장애 시 캔버스 오류 | RC-2 | DOM-08 |
-| 품질 DPR 상한이 리사이즈·스크롤 한 번에 풀림(미커밋) | `perf/quality.tsx:34` | DPR 2 기기 픽셀 1.78배 | - | REN-07a(M0) |
-| `quality='auto'`가 감지 없이 항상 medium(미커밋) | `perf/quality.tsx:23` | 저사양에서 후처리 풀가동 | - | REN-07a(M0) |
 | minihome 지형 버퍼 전체 업로드(pointermove마다 약 6~8.7MB), 커밋마다 잔디 13.6만 blade 재생성, 대기 중 그림자 15Hz | `examples/minihome/roomTerrain.ts:17`, `roomEnvironment.tsx:49`, `roomEngine.ts:309` | 칠하기 중 수백 MB/s | 예제 | DOM-11 |
 | 기본 경로 minihome이 루트 barrel로 rapier·editor·postprocessing을 로드 | `examples/minihome/apiChecks.ts:10` | 첫 로드 JS 5.4MB(gz 1.77MB) | RC-4 | PKG-01 |
 | frame harness가 dev 서버를 잼, 기준 장면 지표 누락 | `frame-harness.cjs:261`, `PerfWorld.tsx:24` | 판정 불가 | RC-5 | VER-03, VER-05 |
@@ -113,7 +111,7 @@
 | 항목 | 값 |
 |---|---|
 | src 비테스트 ts/tsx | 약 1,027파일, 110,305줄(2026-09-24) |
-| 테스트 | 425 suites, 3,091 tests(2026-09-25) |
+| 테스트 | 426 suites, 3,097 tests(2026-09-25) |
 | 공개 엔트리 | 루트 + 서브패스 15개 + `style.css`. 루트 runtime export 1,082개 |
 | 배포 패키지 | 압축 2.76MB, 해제 14.17MB. `public/gltf` 8.36MB(59%) |
 
@@ -121,9 +119,8 @@
 
 | 명령 | 결과 |
 |---|---|
-| typecheck, lint, `check:layer1`, `check:entries`, `test:harness` | 통과 |
-| `check:quality` | 실패. `oversizedComponents` 45→46(`rendering/sky/index.tsx` 186→204줄, 미커밋) |
-| jest | 3,091개 중 2개 실패. `rendering/sky/__tests__/shadowFollow.test.ts:18`(빛 방향 성분 미스냅), `src/__tests__/exportSnapshot.test.ts`(품질 프로파일 export 추가). 둘 다 미커밋 작업 |
+| typecheck, lint, `check:layer1`, `check:entries`, `check:quality`, `test:harness` | 통과 |
+| jest | 426 suites, 3,097 tests 통과(1 skip) |
 
 ### 4.3 브라우저
 

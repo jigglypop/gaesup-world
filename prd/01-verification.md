@@ -171,7 +171,7 @@ CI가 실제로 도는지 확인하는 것이 VER-06의 첫 완료 조건이다.
 | VER-03a | `pnpm accept`: 운영 빌드, preview 서버, Playwright 러너, 카운터 수집, 보고서(터미널·JSON·HTML) | 지금 코드로 S-B01~S-B05, S-B11을 실행해 판정 |
 | VER-03b | `--timing`과 기기별 기준 파일, 3회 중앙값 | 같은 기기 3회 편차 기록 |
 | VER-04a | `/accept` 페이지와 HUD | 로컬·배포 데모에서 전체 실행 표 |
-| VER-05a | 기준 장면 확장(`examples/world`): NPC, 원격 mock, window 벽, water patch 규모 파라미터, 정지·궤도·편집 경로, 라이브러리 조명(DynamicSky) 사용 | S-B03~S-B09가 이 장면에서 실행 |
+| VER-05a | 기준 장면 확장(`examples/world`): NPC, 원격 mock, window 벽, water patch 규모 파라미터, 정지·궤도·편집 경로, 라이브러리 조명(`DynamicSky` 또는 `CascadedSun`) 사용 | S-B03~S-B09가 이 장면에서 실행 |
 | VER-06a | 커밋 push, PR에서 세 체크 실행 확인, 트리거 브랜치 정리(main/master), pnpm store 캐시 | PR 화면에 세 체크와 시나리오 표 |
 | VER-07a | S-B12 A/B 스크린샷 비교(렌더 경로 플래그) | 옛 경로끼리 비교 시 차이 0 |
 | VER-08a | 깨진 probe 정리: 삭제된 라우트를 여는 8개를 수용 시나리오로 옮기거나 `scripts/archive`로. 대상은 `browser-smoke`(`/minimal`), `probe-webgpu-world`(`/showcase`, `/minimal`), `probe-social-world`·`probe-editor-return`(`/world`에 없는 저장 버튼), `probe-creator-menu`(`/creator`), `probe-multiplayer-panel`(`/multiplayer`), `probe-toon-water`(`/water-comparison`), `probe-avatar`(`/avatar`). 남는 probe는 공용 서버(`startProbeServer`)와 오류 수집(`collectPageErrors`)을 쓰고 포트를 vite 설정에서 읽는다 | 남은 probe 전부 실행 성공, `test:browser` 통과 |

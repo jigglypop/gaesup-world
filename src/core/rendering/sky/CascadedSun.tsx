@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { useFrame, useThree } from '@react-three/fiber';
-import type * as THREE from 'three';
+import { useThree } from '@react-three/fiber';
+import * as THREE from 'three';
 import type { CSMShadowNode } from 'three/addons/csm/CSMShadowNode.js';
 
+import { placeShadowLight, shadowFocus } from './shadowFollow';
+import { useQualityProfile } from '../../perf/quality';
+import { useEngineFrame } from '../../runtime/frame';
 import { logger } from '../../utils/logger';
+
+/** Half-size of the single-map fallback shadow box. */
+const FALLBACK_SHADOW_RANGE = 70;
 
 export type CascadedSunQuality = 'low' | 'medium' | 'high';
 type CascadedSunMode = 'uniform' | 'logarithmic' | 'practical';
@@ -37,6 +43,7 @@ export type CascadedSunProps = {
   position?: THREE.Vector3Tuple;
   color?: THREE.ColorRepresentation;
   intensity?: number;
+  /** Defaults to the world quality profile's tier, else `medium`. */
   quality?: CascadedSunQuality;
   castShadow?: boolean;
   cascades?: number;
@@ -85,7 +92,7 @@ export function CascadedSun({
   position = [28, 36, 18],
   color = '#ffffff',
   intensity = 1.8,
-  quality = 'medium',
+  quality: qualityProp,
   castShadow = true,
   cascades,
   maxFar,
@@ -97,7 +104,11 @@ export function CascadedSun({
   shadowNormalBias = 0.04,
   shadowRadius = 1,
 }: CascadedSunProps) {
+  const profile = useQualityProfile();
+  const quality = qualityProp ?? profile?.tier ?? 'medium';
   const lightRef = useRef<THREE.DirectionalLight>(null);
+  const sunOffset = useMemo(() => new THREE.Vector3(...position), [position]);
+  const focus = useMemo(() => new THREE.Vector3(), []);
   const shadowNodeRef = useRef<CSMShadowNode | null>(null);
   const [shadowReady, setShadowReady] = useState(false);
   const renderer = useThree((state) => state.gl) as unknown as object;
@@ -174,7 +185,13 @@ export function CascadedSun({
     shadowRadius,
   ]);
 
-  useFrame(() => {
+  // After the camera phase, so the shadow follows this frame's camera and projection.
+  useEngineFrame('effects', () => {
+    const light = lightRef.current;
+    // Without native cascades the single map follows the view, snapped to texels, instead of staying at the origin.
+    if (light && castShadow && !isNativeWebGPURenderer(renderer)) {
+      placeShadowLight(light, shadowFocus(camera, FALLBACK_SHADOW_RANGE, focus), sunOffset, (FALLBACK_SHADOW_RANGE * 2) / resolvedMapSize);
+    }
     const node = shadowNodeRef.current;
     if (!node || node.camera === null || !projectionInitialized.current) return;
 
@@ -187,7 +204,7 @@ export function CascadedSun({
       node.updateFrustums();
       break;
     }
-  });
+  }, { label: 'rendering:cascaded-sun' });
 
   return (
     <directionalLight
@@ -200,10 +217,10 @@ export function CascadedSun({
       shadow-mapSize={[resolvedMapSize, resolvedMapSize]}
       shadow-camera-near={1}
       shadow-camera-far={resolvedMaxFar}
-      shadow-camera-top={70}
-      shadow-camera-right={70}
-      shadow-camera-bottom={-70}
-      shadow-camera-left={-70}
+      shadow-camera-top={FALLBACK_SHADOW_RANGE}
+      shadow-camera-right={FALLBACK_SHADOW_RANGE}
+      shadow-camera-bottom={-FALLBACK_SHADOW_RANGE}
+      shadow-camera-left={-FALLBACK_SHADOW_RANGE}
       shadow-bias={shadowBias}
       shadow-normalBias={shadowNormalBias}
     />

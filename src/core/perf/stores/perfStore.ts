@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { autoDetectProfile, profileForTier } from '../detect';
+import { autoDetectProfile, profileForTier, type RendererIdentity } from '../detect';
 import type { DeviceCapabilities, PerfProfile, PerfTier } from '../types';
 
 type State = {
@@ -8,7 +8,8 @@ type State = {
   capabilities: DeviceCapabilities | null;
   manualOverride: boolean;
 
-  detect: () => void;
+  /** Classifies the device. Pass the identity of an existing renderer to skip the probe context. */
+  detect: (identity?: RendererIdentity | null) => void;
   setTier: (tier: PerfTier) => void;
   resetAuto: () => void;
 };
@@ -20,8 +21,8 @@ export const usePerfStore = create<State>((set) => ({
   capabilities: null,
   manualOverride: false,
 
-  detect: () => {
-    const { profile, capabilities } = autoDetectProfile();
+  detect: (identity) => {
+    const { profile, capabilities } = autoDetectProfile(identity);
     set({ profile, capabilities, manualOverride: false });
   },
 

@@ -9,11 +9,8 @@ import tseslint from 'typescript-eslint';
 // Raw useFrame owners outside the scheduler; check:quality caps their count (rawUseFrame).
 const RAW_USE_FRAME_OWNERS = [
   'src/core/runtime/frame/react/**',
-  'src/core/motions/entities/refs/RigidPartRef.tsx',
   'src/core/rendering/GpuBatchBridge.tsx',
   'src/core/rendering/postprocess/WorldPostProcessing.tsx',
-  'src/core/rendering/sky/CascadedSun.tsx',
-  'src/core/world/components/WorldPhysics/index.tsx',
 ];
 
 export default tseslint.config(

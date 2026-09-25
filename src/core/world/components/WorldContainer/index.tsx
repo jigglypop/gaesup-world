@@ -4,6 +4,7 @@ import { Camera } from '@/core/camera';
 import type { CameraOptionType } from '@/core/camera';
 import { CAMERA_DEFAULTS } from '@/core/camera/core/constants';
 import { PerformanceCollector } from '@/core/perf/PerformanceCollector';
+import { QualityProfileProvider, useQualityProfile, type WorldQuality } from '@/core/perf/quality';
 import { WorldPostProcessing, type WorldPostProcessingProps } from '@/core/rendering/postprocess/WorldPostProcessing';
 import { ShadowDepthMaterials } from '@/core/rendering/shadow/ShadowDepthMaterials';
 import { GaesupRuntimeProvider } from '@/core/runtime';
@@ -149,7 +150,7 @@ function WorldConfiguration(props: WorldContainerProps) {
  */
 export const WorldContainer = WorldConfigProvider;
 
-export function GaesupWorldContent({ children, showGrid, showAxes, postProcessing, performance }: {
+export function GaesupWorldContent({ children, showGrid, showAxes, postProcessing, performance, quality }: {
   children?: ReactNode;
   showGrid?: boolean;
   showAxes?: boolean;
@@ -157,22 +158,38 @@ export function GaesupWorldContent({ children, showGrid, showAxes, postProcessin
   postProcessing?: boolean | WorldPostProcessingProps;
   /** Samples renderer stats into the store. Defaults to on outside production; `retainPerformanceSampling` also turns it on. */
   performance?: boolean;
+  /**
+   * Applies a quality profile: canvas pixel ratio (at most 1.5), shadow map size and post-processing preset, and
+   * `postProcessing` stays off on tiers without it. Omit to keep each component's own defaults.
+   */
+  quality?: WorldQuality;
 }) {
   const sampled = useGaesupStore((state) => state.performanceSamplers > 0);
+  // The provider stays mounted without `quality` so turning it on or off does not remount the world.
   return (
-    <>
+    <QualityProfileProvider quality={quality}>
       <FrameSchedulerHost metrics={!isProductionEnv()} />
       <Suspense fallback={null}>
         <Camera/>
         {((performance ?? !isProductionEnv()) || sampled) && <PerformanceCollector />}
         <ShadowDepthMaterials />
-        {postProcessing && <WorldPostProcessing {...(typeof postProcessing === 'object' ? postProcessing : {})} />}
+        {postProcessing && <ProfiledPostProcessing props={typeof postProcessing === 'object' ? postProcessing : {}} />}
         <WorldContent showGrid={showGrid ?? false} showAxes={showAxes ?? false}>
           {children}
         </WorldContent>
       </Suspense>
-    </>
+    </QualityProfileProvider>
   );
+}
+
+const POST_PROCESSING_QUALITY = { low: 'performance', medium: 'balanced', high: 'quality' } as const;
+
+/** The profile picks the preset unless the caller set one, and tiers without post-processing skip it. */
+function ProfiledPostProcessing({ props }: { props: WorldPostProcessingProps }) {
+  const profile = useQualityProfile();
+  if (profile && !profile.postprocess) return null;
+  const quality = props.quality ?? (profile ? POST_PROCESSING_QUALITY[profile.tier] : undefined);
+  return <WorldPostProcessing {...props} {...(quality ? { quality } : {})} />;
 }
 
 export default WorldContainer;

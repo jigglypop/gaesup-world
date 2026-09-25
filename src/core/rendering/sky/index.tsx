@@ -1,93 +1,36 @@
 import { useMemo, useRef } from 'react';
 
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { createSkySample, createSkySampler, DEFAULT_KEYFRAMES, SEASON_TINT, WEATHER_FACTORS, type SkyKeyframe } from './keyframes';
+import { shadowFocus, placeShadowLight } from './shadowFollow';
+import { useQualityProfile } from '../../perf/quality';
 import { useEngineFrame } from '../../runtime/frame';
 import { useTimeStoreApi } from '../../time/stores/timeStore';
-import type { Season } from '../../time/types';
 import { useWeatherStoreApi } from '../../weather/stores/weatherStore';
-import type { WeatherKind } from '../../weather/types';
 
-export type SkyKeyframe = {
-  /** Game hour (0-24, fractional ok). */
-  hour: number;
-  sunColor: string;
-  ambientColor: string;
-  sunIntensity: number;
-  ambientIntensity: number;
-  /** Sun azimuth in radians around Y. */
-  azimuth: number;
-  /** Sun elevation in radians (0 = horizon). */
-  elevation: number;
-};
+export type { SkyKeyframe } from './keyframes';
 
 export type DynamicSkyProps = {
   /** Distance from origin used to position the directional light. */
   rigDistance?: number;
   /** Cast shadows from the directional light. Defaults to true. */
   castShadow?: boolean;
-  /** Shadow map resolution (square). Defaults to 1024. */
+  /** Shadow map resolution (square). Defaults to the world quality profile's size, else 1024. */
   shadowMapSize?: number;
+  /** Half-size of the shadow box in world units. */
+  shadowRange?: number;
+  /** Keep the shadow box on the ground ahead of the camera instead of at the world origin. */
+  followCamera?: boolean;
   /** Override the default keyframes. */
   keyframes?: SkyKeyframe[];
   /** Damping factor for color/intensity easing (0..1). */
   damping?: number;
 };
 
-const DEFAULT_KEYFRAMES: SkyKeyframe[] = [
-  { hour: 0,  sunColor: '#1f2a48', ambientColor: '#1a1f2e', sunIntensity: 0.05, ambientIntensity: 0.18, azimuth: -Math.PI / 2, elevation: -0.3 },
-  { hour: 5,  sunColor: '#3b3a5a', ambientColor: '#28304a', sunIntensity: 0.15, ambientIntensity: 0.22, azimuth: -Math.PI / 3, elevation: -0.05 },
-  { hour: 7,  sunColor: '#ffb27a', ambientColor: '#7a8aa6', sunIntensity: 0.55, ambientIntensity: 0.30, azimuth: -Math.PI / 4, elevation: 0.25 },
-  { hour: 10, sunColor: '#fff1c8', ambientColor: '#aab4c8', sunIntensity: 0.85, ambientIntensity: 0.34, azimuth: -Math.PI / 8, elevation: 0.7 },
-  { hour: 13, sunColor: '#ffffff', ambientColor: '#b6c2d8', sunIntensity: 1.05, ambientIntensity: 0.38, azimuth: 0,             elevation: 1.05 },
-  { hour: 16, sunColor: '#ffe0a8', ambientColor: '#a8b4cc', sunIntensity: 0.85, ambientIntensity: 0.34, azimuth: Math.PI / 6,  elevation: 0.65 },
-  { hour: 18, sunColor: '#ff9a5a', ambientColor: '#806a8a', sunIntensity: 0.55, ambientIntensity: 0.28, azimuth: Math.PI / 3,  elevation: 0.18 },
-  { hour: 20, sunColor: '#5a3f6a', ambientColor: '#34304a', sunIntensity: 0.18, ambientIntensity: 0.22, azimuth: Math.PI / 2,  elevation: -0.05 },
-  { hour: 24, sunColor: '#1f2a48', ambientColor: '#1a1f2e', sunIntensity: 0.05, ambientIntensity: 0.18, azimuth: 3 * Math.PI / 4, elevation: -0.3 },
-];
-
-const SEASON_TINT: Record<Season, THREE.Color> = {
-  spring: new THREE.Color('#fff0f5'),
-  summer: new THREE.Color('#fff5d8'),
-  autumn: new THREE.Color('#ffd9b0'),
-  winter: new THREE.Color('#dfe8f5'),
-};
-
-const WEATHER_FACTORS: Record<WeatherKind, { sun: number; ambient: number; tint: THREE.Color }> = {
-  sunny:  { sun: 1.0,  ambient: 1.0,  tint: new THREE.Color('#ffffff') },
-  cloudy: { sun: 0.55, ambient: 0.95, tint: new THREE.Color('#cfd6e2') },
-  rain:   { sun: 0.30, ambient: 0.85, tint: new THREE.Color('#90a0b8') },
-  snow:   { sun: 0.65, ambient: 1.10, tint: new THREE.Color('#dfeaf5') },
-  storm:  { sun: 0.20, ambient: 0.75, tint: new THREE.Color('#5a6a82') },
-};
-
-function lerpKeyframes(frames: SkyKeyframe[], hour: number): SkyKeyframe {
-  const sorted = frames; // assumed sorted ascending by hour
-  const wrapHour = ((hour % 24) + 24) % 24;
-
-  let prev = sorted[0]!;
-  let next = sorted[sorted.length - 1]!;
-  for (let i = 0; i < sorted.length - 1; i += 1) {
-    const a = sorted[i]!;
-    const b = sorted[i + 1]!;
-    if (wrapHour >= a.hour && wrapHour <= b.hour) {
-      prev = a; next = b; break;
-    }
-  }
-  const span = Math.max(0.0001, next.hour - prev.hour);
-  const t = THREE.MathUtils.clamp((wrapHour - prev.hour) / span, 0, 1);
-
-  return {
-    hour: wrapHour,
-    sunColor: prev.sunColor,
-    ambientColor: prev.ambientColor,
-    sunIntensity: THREE.MathUtils.lerp(prev.sunIntensity, next.sunIntensity, t),
-    ambientIntensity: THREE.MathUtils.lerp(prev.ambientIntensity, next.ambientIntensity, t),
-    azimuth: THREE.MathUtils.lerp(prev.azimuth, next.azimuth, t),
-    elevation: THREE.MathUtils.lerp(prev.elevation, next.elevation, t),
-    // Mix colors via THREE.Color outside this scope to avoid string allocations.
-  };
-}
+/** About 0.2 degrees. */
+const SUN_DIRECTION_EPSILON = 0.0035;
 
 /**
  * Time + weather + season aware lighting rig.
@@ -103,48 +46,45 @@ function lerpKeyframes(frames: SkyKeyframe[], hour: number): SkyKeyframe {
 export function DynamicSky({
   rigDistance = 60,
   castShadow = true,
-  shadowMapSize = 1024,
+  shadowMapSize: shadowMapSizeProp,
+  shadowRange = 90,
+  followCamera = true,
   keyframes,
   damping = 0.12,
 }: DynamicSkyProps = {}) {
+  const profile = useQualityProfile();
+  const shadowMapSize = shadowMapSizeProp ?? profile?.shadowMapSize ?? 1024;
+  const getThree = useThree((state) => state.get);
   const weatherStore = useWeatherStoreApi();
   const timeStore = useTimeStoreApi();
   const sunRef = useRef<THREE.DirectionalLight>(null);
   const ambientRef = useRef<THREE.AmbientLight>(null);
 
-  const frames = useMemo(() => {
-    const list = (keyframes ?? DEFAULT_KEYFRAMES).slice().sort((a, b) => a.hour - b.hour);
-    return list;
-  }, [keyframes]);
+  const sample = useMemo(() => createSkySampler(keyframes ?? DEFAULT_KEYFRAMES), [keyframes]);
+  const scratch = useMemo(
+    () => ({ sky: createSkySample(), sunOffset: new THREE.Vector3(), appliedOffset: new THREE.Vector3(), focus: new THREE.Vector3() }),
+    [],
+  );
 
-  const tmpSun = useMemo(() => new THREE.Color(), []);
-  const tmpAmbient = useMemo(() => new THREE.Color(), []);
-  const targetSun = useMemo(() => new THREE.Color(), []);
-  const targetAmbient = useMemo(() => new THREE.Color(), []);
-
-  useEngineFrame('lateUpdate', () => {
+  // After the camera phase, so the shadow box follows this frame's camera rather than the previous one.
+  useEngineFrame('effects', () => {
     const sun = sunRef.current;
     const ambient = ambientRef.current;
     if (!sun || !ambient) return;
 
     const t = timeStore.getState().time;
     const w = weatherStore.getState().current;
-    const weather = w?.kind ?? 'sunny';
     const intensity01 = THREE.MathUtils.clamp(w?.intensity ?? 0.5, 0, 1);
-    const factor = WEATHER_FACTORS[weather] ?? WEATHER_FACTORS.sunny;
+    const factor = WEATHER_FACTORS[w?.kind ?? 'sunny'] ?? WEATHER_FACTORS.sunny;
     const seasonTint = SEASON_TINT[t.season] ?? SEASON_TINT.spring;
+    const k = sample(t.hour + t.minute / 60, scratch.sky);
 
-    const k = lerpKeyframes(frames, t.hour + t.minute / 60);
-
-    // Compose target colors: keyframe -> season tint -> weather tint.
-    targetSun.set(k.sunColor).lerp(seasonTint, 0.18).lerp(factor.tint, 0.35 + 0.25 * intensity01);
-    targetAmbient.set(k.ambientColor).lerp(seasonTint, 0.20).lerp(factor.tint, 0.30 + 0.30 * intensity01);
-
+    // Target colors: keyframe -> season tint -> weather tint, eased from the current color.
     const easing = THREE.MathUtils.clamp(damping, 0.01, 1);
-    tmpSun.copy(sun.color).lerp(targetSun, easing);
-    tmpAmbient.copy(ambient.color).lerp(targetAmbient, easing);
-    sun.color.copy(tmpSun);
-    ambient.color.copy(tmpAmbient);
+    k.sunColor.lerp(seasonTint, 0.18).lerp(factor.tint, 0.35 + 0.25 * intensity01);
+    k.ambientColor.lerp(seasonTint, 0.20).lerp(factor.tint, 0.30 + 0.30 * intensity01);
+    sun.color.lerp(k.sunColor, easing);
+    ambient.color.lerp(k.ambientColor, easing);
 
     const sunMul = THREE.MathUtils.lerp(1, factor.sun, 0.5 + 0.5 * intensity01);
     const ambMul = THREE.MathUtils.lerp(1, factor.ambient, 0.5 + 0.5 * intensity01);
@@ -152,13 +92,13 @@ export function DynamicSky({
     ambient.intensity = THREE.MathUtils.lerp(ambient.intensity, k.ambientIntensity * ambMul, easing);
 
     const cosE = Math.cos(k.elevation);
-    const sinE = Math.sin(k.elevation);
-    const x = Math.cos(k.azimuth) * cosE * rigDistance;
-    const z = Math.sin(k.azimuth) * cosE * rigDistance;
-    const y = Math.max(2, sinE * rigDistance);
-    sun.position.set(x, y, z);
-    sun.target.position.set(0, 0, 0);
-    sun.target.updateMatrixWorld();
+    const { sunOffset, appliedOffset, focus } = scratch;
+    sunOffset.set(Math.cos(k.azimuth) * cosE * rigDistance, Math.max(2, Math.sin(k.elevation) * rigDistance), Math.sin(k.azimuth) * cosE * rigDistance);
+    // The sun moves a fraction of a degree per minute; turning the shadow map for each step only makes it swim.
+    if (appliedOffset.lengthSq() === 0 || appliedOffset.angleTo(sunOffset) > SUN_DIRECTION_EPSILON) appliedOffset.copy(sunOffset);
+    if (followCamera) shadowFocus(getThree().camera, shadowRange, focus);
+    else focus.set(0, 0, 0);
+    placeShadowLight(sun, focus, appliedOffset, (shadowRange * 2) / shadowMapSize);
   }, { label: 'rendering:dynamic-sky' });
 
   return (
@@ -171,10 +111,10 @@ export function DynamicSky({
         shadow-normalBias={0.06}
         shadow-camera-near={1}
         shadow-camera-far={Math.max(120, rigDistance * 2)}
-        shadow-camera-top={90}
-        shadow-camera-right={90}
-        shadow-camera-bottom={-90}
-        shadow-camera-left={-90}
+        shadow-camera-top={shadowRange}
+        shadow-camera-right={shadowRange}
+        shadow-camera-bottom={-shadowRange}
+        shadow-camera-left={-shadowRange}
         intensity={0.8}
         color="#ffffff"
         position={[20, 30, 10]}
