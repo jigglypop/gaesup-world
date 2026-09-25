@@ -7,6 +7,7 @@ import type { ItemId } from '../../items/types';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { lazyScopedStore } from '../../stores/scopedStore';
+import { isAmount, isCount, isId, isRecord } from '../../utils/guards';
 import type { ShopOffer, ShopSerialized } from '../types';
 
 type ShopState = {
@@ -31,6 +32,16 @@ type ShopState = {
 
 
 const DEFAULT_CATALOG: ItemId[] = ['axe', 'shovel', 'water-can', 'net', 'rod', 'apple'];
+
+/** `lastRolledDay` stays -1 until the first roll. */
+const isRollDay = (value: unknown): value is number => value === -1 || isCount(value);
+
+/** What `rollDailyStock` produces and a shop save may hold. */
+function isOffer(value: unknown): value is ShopOffer {
+  return isRecord<ShopOffer>(value) && isId(value.itemId)
+    && (value.price === undefined || isAmount(value.price))
+    && (value.stock === undefined || isCount(value.stock));
+}
 
 function pickN<T>(arr: T[], n: number, rng: () => number): T[] {
   const a = arr.slice();
@@ -57,17 +68,19 @@ export function createShopStore(inventoryStore: InventoryStore, walletStore: Wal
   dailyStock: [],
   lastRolledDay: -1,
 
-  setCatalog: (ids) => set({ catalog: ids.slice() }),
+  setCatalog: (ids) => set({ catalog: ids.filter(isId) }),
 
   rollDailyStock: (gameDay, count = 4) => {
     const s = get();
+    if (!isCount(gameDay) || !isCount(count)) return;
     if (s.lastRolledDay === gameDay && s.dailyStock.length > 0) return;
     const rng = makeRng(gameDay * 9301 + 49297);
     const picks = pickN(s.catalog, count, rng);
     const offers: ShopOffer[] = picks.map((itemId) => {
       const def = getItemRegistry().get(itemId);
       const stock = def?.stackable ? 5 + Math.floor(rng() * 6) : 1;
-      return { itemId, price: def?.buyPrice ?? 100, stock };
+      const price = def?.buyPrice;
+      return { itemId, price: isAmount(price) ? price : 100, stock };
     });
     set({ dailyStock: offers, lastRolledDay: gameDay });
   },
@@ -148,17 +161,11 @@ export function createShopStore(inventoryStore: InventoryStore, walletStore: Wal
 
   prepareHydrate: (data) => {
     if (data === null || data === undefined) return () => {};
-    if (typeof data !== 'object' || data.version !== 1 ||
-      !Number.isSafeInteger(data.lastRolledDay) || data.lastRolledDay < -1 ||
+    if (typeof data !== 'object' || data.version !== 1 || !isRollDay(data.lastRolledDay) ||
       !Array.isArray(data.dailyStock)) throw new TypeError('Invalid shop snapshot');
     const ids = new Set<string>();
     const dailyStock = Array.from(data.dailyStock, (offer) => {
-      if (!offer || typeof offer !== 'object' || typeof offer.itemId !== 'string' ||
-        !offer.itemId.trim() || ids.has(offer.itemId) ||
-        (offer.price !== undefined && (typeof offer.price !== 'number' || !Number.isFinite(offer.price) || offer.price < 0)) ||
-        (offer.stock !== undefined && (!Number.isSafeInteger(offer.stock) || offer.stock < 0))) {
-        throw new TypeError('Invalid shop offer');
-      }
+      if (!isOffer(offer) || ids.has(offer.itemId)) throw new TypeError('Invalid shop offer');
       ids.add(offer.itemId);
       return { ...offer };
     });

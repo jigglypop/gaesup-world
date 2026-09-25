@@ -6,6 +6,7 @@ import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { lazyScopedStore } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
+import { isAmount, isCount, isId, isRecord } from '../../utils/guards';
 import type { MailAttachment, MailMessage, MailSerialized } from '../types';
 
 type State = {
@@ -30,6 +31,26 @@ function isItemAttachment(a: MailAttachment): a is { itemId: string; count?: num
   return (a as { itemId?: string }).itemId !== undefined;
 }
 
+function isMailAttachment(value: unknown): value is MailAttachment {
+  if (!isRecord<{ itemId: unknown; bells: unknown; count: unknown }>(value)) return false;
+  if ('itemId' in value) return isId(value.itemId) && !('bells' in value) && (value.count === undefined || (isCount(value.count) && value.count > 0));
+  return isAmount(value.bells);
+}
+
+/** What `send` accepts and a mail save may hold. */
+function isMailMessage(value: unknown): value is MailMessage {
+  return isRecord<MailMessage>(value) && isId(value.id) && typeof value.from === 'string' && typeof value.subject === 'string'
+    && typeof value.body === 'string' && isCount(value.sentDay)
+    && (value.read === undefined || typeof value.read === 'boolean')
+    && (value.claimed === undefined || typeof value.claimed === 'boolean')
+    && (value.attachments === undefined || (Array.isArray(value.attachments) && value.attachments.every(isMailAttachment)));
+}
+
+const copyAttachment = (a: MailAttachment): MailAttachment => (isItemAttachment(a)
+  ? { itemId: a.itemId, ...(a.count !== undefined ? { count: a.count } : {}) }
+  : { bells: a.bells });
+
+const copyMessage = (m: MailMessage): MailMessage => ({ ...m, ...(m.attachments ? { attachments: m.attachments.map(copyAttachment) } : {}) });
 
 
 export function createMailStore(inventoryStore: InventoryStore, walletStore: WalletStore) {
@@ -52,7 +73,8 @@ export function createMailStore(inventoryStore: InventoryStore, walletStore: Wal
       read: false,
       claimed: !msg.attachments || msg.attachments.length === 0,
     };
-    set({ messages: [...get().messages, next] });
+    if (!isMailMessage(next)) return '';
+    set({ messages: [...get().messages, copyMessage(next)] });
     notify('mail', `새 우편: ${msg.subject}`);
     return id;
   },
@@ -99,13 +121,7 @@ export function createMailStore(inventoryStore: InventoryStore, walletStore: Wal
   unreadCount: () => get().messages.reduce((n, m) => n + (m.read ? 0 : 1), 0),
   hasUnclaimedAttachments: () => get().messages.some((m) => !m.claimed && (m.attachments?.length ?? 0) > 0),
 
-  serialize: () => ({
-    version: 1,
-    messages: get().messages.map((m) => ({
-      ...m,
-      ...(m.attachments ? { attachments: m.attachments.map((a) => ({ ...a })) } : {}),
-    })),
-  }),
+  serialize: () => ({ version: 1, messages: get().messages.map(copyMessage) }),
 
   prepareHydrate: (data) => {
     if (data === null || data === undefined) return () => {};
@@ -114,32 +130,9 @@ export function createMailStore(inventoryStore: InventoryStore, walletStore: Wal
     }
     const ids = new Set<string>();
     const messages = data.messages.map((message) => {
-      if (!message || typeof message !== 'object' || typeof message.id !== 'string' || !message.id.trim()
-        || ids.has(message.id) || typeof message.from !== 'string' || typeof message.subject !== 'string'
-        || typeof message.body !== 'string' || !Number.isSafeInteger(message.sentDay) || message.sentDay < 0
-        || (message.read !== undefined && typeof message.read !== 'boolean')
-        || (message.claimed !== undefined && typeof message.claimed !== 'boolean')
-        || (message.attachments !== undefined && !Array.isArray(message.attachments))) {
-        throw new TypeError('Invalid mail message');
-      }
+      if (!isMailMessage(message) || ids.has(message.id)) throw new TypeError('Invalid mail message');
       ids.add(message.id);
-      const attachments = message.attachments?.map((attachment) => {
-        if (!attachment || typeof attachment !== 'object' || Array.isArray(attachment)) {
-          throw new TypeError('Invalid mail attachment');
-        }
-        if (isItemAttachment(attachment)) {
-          if (typeof attachment.itemId !== 'string' || !attachment.itemId.trim() || 'bells' in attachment
-            || (attachment.count !== undefined && (!Number.isSafeInteger(attachment.count) || attachment.count <= 0))) {
-            throw new TypeError('Invalid mail item attachment');
-          }
-          return { ...attachment };
-        }
-        if (!Number.isFinite(attachment.bells) || attachment.bells < 0) {
-          throw new TypeError('Invalid mail currency attachment');
-        }
-        return { bells: attachment.bells };
-      });
-      return { ...message, ...(attachments ? { attachments } : {}) };
+      return copyMessage(message);
     });
     return () => set({ messages });
   },

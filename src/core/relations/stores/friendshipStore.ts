@@ -5,6 +5,7 @@ import type { ItemId } from '../../items/types';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { lazyScopedStore } from '../../stores/scopedStore';
+import { isAmount, isCount, isId, isRecord } from '../../utils/guards';
 import {
   DAILY_FRIENDSHIP_CAP,
   FRIENDSHIP_LEVELS,
@@ -31,6 +32,16 @@ type State = {
 
 function emptyEntry(npcId: string): FriendshipEntry {
   return { npcId, score: 0, todayGained: 0, lastGiftDay: -1, giftHistory: {} };
+}
+
+/** `lastGiftDay` stays -1 until the first gift. */
+const isGiftDay = (value: unknown): value is number => value === -1 || isCount(value);
+
+/** What `add`/`giveGift` may leave behind and a relations save may hold. */
+function isFriendshipEntry(id: string, entry: unknown): entry is FriendshipEntry {
+  return isRecord<FriendshipEntry>(entry) && isId(id) && entry.npcId === id && isAmount(entry.score) && isAmount(entry.todayGained)
+    && entry.todayGained <= DAILY_FRIENDSHIP_CAP && isGiftDay(entry.lastGiftDay) && isRecord(entry.giftHistory)
+    && Object.entries(entry.giftHistory).every(([itemId, count]) => isId(itemId) && isCount(count));
 }
 
 function levelFromScore(score: number): FriendshipLevel {
@@ -62,12 +73,12 @@ export function createFriendshipStore() {
     const cur = get().entries[npcId];
     if (cur) return cur;
     const next = emptyEntry(npcId);
-    set({ entries: { ...get().entries, [npcId]: next } });
+    if (isId(npcId)) set({ entries: { ...get().entries, [npcId]: next } });
     return next;
   },
 
   add: (npcId, amount, gameDay) => {
-    if (amount === 0) return 0;
+    if (!isId(npcId) || !Number.isFinite(amount) || amount === 0 || !isCount(gameDay)) return 0;
     const cur = get().entries[npcId] ?? emptyEntry(npcId);
     let entry = cur;
     if (entry.lastGiftDay !== gameDay) {
@@ -89,6 +100,7 @@ export function createFriendshipStore() {
   },
 
   giveGift: (npcId, itemId, gameDay) => {
+    if (!isId(npcId) || !isId(itemId) || !isCount(gameDay)) return { gained: 0, capped: false };
     const value = giftValue(itemId);
     const gained = get().add(npcId, value, gameDay);
     const cur = get().entries[npcId]!;
@@ -124,17 +136,9 @@ export function createFriendshipStore() {
       throw new TypeError('Invalid relations snapshot');
     }
     const entries = Object.fromEntries(Object.entries(data.entries).map(([id, entry]) => {
-      if (!id.trim() || !entry || typeof entry !== 'object' || entry.npcId !== id ||
-        ![entry.score, entry.todayGained].every((value) => typeof value === 'number' && Number.isFinite(value) && value >= 0) ||
-        entry.todayGained > DAILY_FRIENDSHIP_CAP || !Number.isSafeInteger(entry.lastGiftDay) || entry.lastGiftDay < -1 ||
-        !entry.giftHistory || typeof entry.giftHistory !== 'object' || Array.isArray(entry.giftHistory)) {
-        throw new TypeError('Invalid friendship entry');
-      }
-      const giftHistory = Object.fromEntries(Object.entries(entry.giftHistory).map(([itemId, count]) => {
-        if (!itemId.trim() || !Number.isSafeInteger(count) || count < 0) throw new TypeError('Invalid gift history');
-        return [itemId, count];
-      }));
-      return [id, { npcId: id, score: entry.score, todayGained: entry.todayGained, lastGiftDay: entry.lastGiftDay, giftHistory }];
+      if (!isFriendshipEntry(id, entry)) throw new TypeError('Invalid friendship entry');
+      const { score, todayGained, lastGiftDay, giftHistory } = entry;
+      return [id, { npcId: id, score, todayGained, lastGiftDay, giftHistory: { ...giftHistory } }];
     }));
     return () => set({ entries });
   },

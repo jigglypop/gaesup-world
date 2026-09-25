@@ -4,7 +4,13 @@ import type { ItemId } from '../../items/types';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { lazyScopedStore } from '../../stores/scopedStore';
+import { isCount, isId, isRecord } from '../../utils/guards';
 import type { CatalogEntry, CatalogSerialized } from '../types';
+
+/** What `record` may leave behind and a catalog save may hold. */
+function isCatalogEntry(id: string, entry: unknown): entry is CatalogEntry {
+  return isRecord<CatalogEntry>(entry) && isId(id) && entry.itemId === id && isCount(entry.firstSeenDay) && isCount(entry.totalCollected);
+}
 
 type State = {
   entries: Record<ItemId, CatalogEntry>;
@@ -24,7 +30,7 @@ export function createCatalogStore() {
   entries: {},
 
   record: (itemId, count, gameDay) => {
-    if (count <= 0) return;
+    if (!isId(itemId) || !isCount(count) || count === 0 || !isCount(gameDay)) return;
     const cur = get().entries[itemId];
     const next: CatalogEntry = cur
       ? { ...cur, totalCollected: cur.totalCollected + count }
@@ -48,11 +54,7 @@ export function createCatalogStore() {
       throw new TypeError('Invalid catalog snapshot');
     }
     const entries = Object.fromEntries(Object.entries(data.entries).map(([id, entry]) => {
-      if (!id.trim() || !entry || typeof entry !== 'object' || entry.itemId !== id ||
-        !Number.isSafeInteger(entry.firstSeenDay) || entry.firstSeenDay < 0 ||
-        !Number.isSafeInteger(entry.totalCollected) || entry.totalCollected < 0) {
-        throw new TypeError('Invalid catalog entry');
-      }
+      if (!isCatalogEntry(id, entry)) throw new TypeError('Invalid catalog entry');
       return [id, { itemId: id, firstSeenDay: entry.firstSeenDay, totalCollected: entry.totalCollected }];
     }));
     return () => set({ entries });

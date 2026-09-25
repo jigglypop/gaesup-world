@@ -1,3 +1,4 @@
+import { isFlagValue } from './state';
 import type { GameplayEventBlueprint, GameplayEventContext, GameplayEventRuntimeState, GameplayTriggerEvent } from './types';
 
 /** Stable object shape and shared methods keep the synchronous command path allocation-light. */
@@ -16,7 +17,7 @@ export class GameplayExecutionContext implements GameplayEventContext {
   isCurrent(): boolean { return !this.finished && !this.signal.aborted; }
   finish(): void { this.finished = true; }
   setFlag(key: string, value: string | number | boolean): boolean {
-    if (!this.isCurrent()) return false;
+    if (!this.isCurrent() || !isFlagValue(value)) return false;
     if (key === '__proto__') Object.defineProperty(this.ownedState.flags, key, { value, enumerable: true, configurable: true, writable: true });
     else this.ownedState.flags[key] = value;
     return true;

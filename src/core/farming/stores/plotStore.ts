@@ -6,6 +6,7 @@ import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { lazyScopedStore } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
+import { isAmount, isCount, isId, isRecord, isVector3 } from '../../utils/guards';
 import { getCropRegistry } from '../registry/CropRegistry';
 import type { CropId, FarmingSerialized, Plot, PlotState } from '../types';
 
@@ -33,6 +34,17 @@ function emptyPlot(id: string, position: [number, number, number]): Plot {
   return { id, position, state: 'empty', stageIndex: 0 };
 }
 
+const PLOT_STATES: readonly unknown[] = ['empty', 'tilled', 'planted', 'mature', 'dried'];
+
+/** What the farming actions may store and a farming save may hold. */
+function isPlot(value: unknown): value is Plot {
+  return isRecord<Plot>(value) && isId(value.id) && isVector3(value.position) && PLOT_STATES.includes(value.state)
+    && isCount(value.stageIndex)
+    && (value.cropId === undefined || isId(value.cropId))
+    && (value.plantedAt === undefined || isAmount(value.plantedAt))
+    && (value.lastWateredAt === undefined || isAmount(value.lastWateredAt));
+}
+
 function effectiveStageIndex(plot: Plot, currentMinutes: number): number {
   if (plot.state !== 'planted' && plot.state !== 'mature') return plot.stageIndex;
   const def = plot.cropId ? getCropRegistry().get(plot.cropId) : undefined;
@@ -44,7 +56,7 @@ function effectiveStageIndex(plot: Plot, currentMinutes: number): number {
     if (elapsed < s.durationMinutes) return i;
     elapsed -= s.durationMinutes;
   }
-  return def.stages.length - 1;
+  return Math.max(0, def.stages.length - 1);
 }
 
 export function createPlotStore(inventoryStore: InventoryStore) {
@@ -55,6 +67,7 @@ export function createPlotStore(inventoryStore: InventoryStore) {
     const cur = get().plots[input.id];
     if (cur) return;
     const next: Plot = { ...emptyPlot(input.id, input.position), ...input };
+    if (!isPlot(next)) return;
     set({ plots: { ...get().plots, [input.id]: next } });
   },
 
@@ -76,7 +89,7 @@ export function createPlotStore(inventoryStore: InventoryStore) {
   plant: (id, cropId, currentMinutes) => {
     const cur = get().plots[id];
     const def = getCropRegistry().get(cropId);
-    if (!cur || !def) return false;
+    if (!cur || !def || !isAmount(currentMinutes)) return false;
     if (cur.state !== 'tilled') return false;
     const inv = inventoryStore.getState();
     if (inv.countOf(def.seedItemId) < 1) {
@@ -103,7 +116,7 @@ export function createPlotStore(inventoryStore: InventoryStore) {
 
   water: (id, currentMinutes) => {
     const cur = get().plots[id];
-    if (!cur) return false;
+    if (!cur || !isAmount(currentMinutes)) return false;
     if (cur.state !== 'planted' && cur.state !== 'dried') return false;
     let next: Plot = { ...cur, lastWateredAt: currentMinutes };
     if (cur.state === 'dried') next = { ...next, state: 'planted' };
@@ -144,6 +157,8 @@ export function createPlotStore(inventoryStore: InventoryStore) {
   },
 
   tick: (currentMinutes) => {
+    // A NaN clock would read as "long enough" and mature every crop.
+    if (!isAmount(currentMinutes)) return;
     const cur = get().plots;
     let next = cur;
     for (const id in cur) {
@@ -196,15 +211,7 @@ export function createPlotStore(inventoryStore: InventoryStore) {
     }
     const ids = new Set<string>();
     const plots = Object.fromEntries(data.plots.map((plot) => {
-      if (!plot || typeof plot !== 'object' || typeof plot.id !== 'string' || !plot.id.trim() || ids.has(plot.id)
-        || !Array.isArray(plot.position) || plot.position.length !== 3 || ![...plot.position].every(Number.isFinite)
-        || !['empty', 'tilled', 'planted', 'mature', 'dried'].includes(plot.state)
-        || !Number.isSafeInteger(plot.stageIndex) || plot.stageIndex < 0
-        || (plot.cropId !== undefined && (typeof plot.cropId !== 'string' || !plot.cropId.trim()))
-        || (plot.plantedAt !== undefined && (!Number.isFinite(plot.plantedAt) || plot.plantedAt < 0))
-        || (plot.lastWateredAt !== undefined && (!Number.isFinite(plot.lastWateredAt) || plot.lastWateredAt < 0))) {
-        throw new TypeError('Invalid farming plot');
-      }
+      if (!isPlot(plot) || ids.has(plot.id)) throw new TypeError('Invalid farming plot');
       ids.add(plot.id);
       const prepared: Plot = { ...plot, position: [...plot.position] };
       return [plot.id, prepared];

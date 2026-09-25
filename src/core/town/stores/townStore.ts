@@ -4,6 +4,7 @@ import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { lazyScopedStore } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
+import { isCount, isId, isRecord, isVector3 } from '../../utils/guards';
 import type {
   HouseId,
   HousePlot,
@@ -41,6 +42,26 @@ function emptyHouse(id: HouseId, position: [number, number, number]): HousePlot 
   return { id, position, size: [4, 4], state: 'empty' };
 }
 
+const HOUSE_STATES: readonly unknown[] = ['empty', 'reserved', 'occupied'];
+
+/** What the town actions may store and a town save may hold. */
+function isHouse(value: unknown): value is HousePlot {
+  return isRecord<HousePlot>(value) && isId(value.id) && isVector3(value.position)
+    && Array.isArray(value.size) && value.size.length === 2 && value.size.every((size) => Number.isFinite(size) && size > 0)
+    && HOUSE_STATES.includes(value.state)
+    && (value.residentId === undefined || isId(value.residentId))
+    && (value.reservedFor === undefined || isId(value.reservedFor))
+    && (value.reservedUntilDay === undefined || isCount(value.reservedUntilDay));
+}
+
+function isResident(value: unknown): value is Resident {
+  return isRecord<Resident>(value) && isId(value.id) && typeof value.name === 'string'
+    && (value.npcId === undefined || isId(value.npcId))
+    && (value.movedInDay === undefined || isCount(value.movedInDay))
+    && (value.hatColor === undefined || typeof value.hatColor === 'string')
+    && (value.bodyColor === undefined || typeof value.bodyColor === 'string');
+}
+
 export function createTownStore() {
   return create<State>((set, get) => ({
   houses: {},
@@ -51,6 +72,7 @@ export function createTownStore() {
     const cur = get().houses[input.id];
     if (cur) return;
     const next: HousePlot = { ...emptyHouse(input.id, input.position), ...input };
+    if (!isHouse(next)) return;
     set({ houses: { ...get().houses, [input.id]: next } });
   },
 
@@ -62,7 +84,7 @@ export function createTownStore() {
   },
 
   registerResident: (resident) => {
-    if (get().residents[resident.id]) return;
+    if (!isResident(resident) || get().residents[resident.id]) return;
     set({ residents: { ...get().residents, [resident.id]: resident } });
   },
 
@@ -79,7 +101,7 @@ export function createTownStore() {
 
   reserveHouse: (houseId, residentId, untilDay) => {
     const h = get().houses[houseId];
-    if (!h || h.state !== 'empty') return false;
+    if (!h || h.state !== 'empty' || !isId(residentId) || (untilDay !== undefined && !isCount(untilDay))) return false;
     set({
       houses: {
         ...get().houses,
@@ -106,7 +128,7 @@ export function createTownStore() {
   moveIn: (houseId, residentId, gameDay) => {
     const h = get().houses[houseId];
     const r = get().residents[residentId];
-    if (!h || !r) return false;
+    if (!h || !r || !isCount(gameDay)) return false;
     if (h.state === 'occupied') return false;
     set({
       houses: {
@@ -166,29 +188,14 @@ export function createTownStore() {
     }
     const houseIds = new Set<string>();
     const houses = Object.fromEntries(data.houses.map((house) => {
-      if (!house || typeof house !== 'object' || typeof house.id !== 'string' || !house.id.trim() || houseIds.has(house.id)
-        || !Array.isArray(house.position) || house.position.length !== 3 || ![...house.position].every(Number.isFinite)
-        || !Array.isArray(house.size) || house.size.length !== 2 || ![...house.size].every((size) => Number.isFinite(size) && size > 0)
-        || !['empty', 'reserved', 'occupied'].includes(house.state)
-        || (house.residentId !== undefined && (typeof house.residentId !== 'string' || !house.residentId.trim()))
-        || (house.reservedFor !== undefined && (typeof house.reservedFor !== 'string' || !house.reservedFor.trim()))
-        || (house.reservedUntilDay !== undefined && (!Number.isSafeInteger(house.reservedUntilDay) || house.reservedUntilDay < 0))) {
-        throw new TypeError('Invalid town house');
-      }
+      if (!isHouse(house) || houseIds.has(house.id)) throw new TypeError('Invalid town house');
       houseIds.add(house.id);
       const prepared: HousePlot = { ...house, position: [...house.position], size: [...house.size] };
       return [house.id, prepared];
     }));
     const residentIds = new Set<string>();
     const residents = Object.fromEntries(data.residents.map((resident) => {
-      if (!resident || typeof resident !== 'object' || typeof resident.id !== 'string' || !resident.id.trim()
-        || residentIds.has(resident.id) || typeof resident.name !== 'string'
-        || (resident.npcId !== undefined && (typeof resident.npcId !== 'string' || !resident.npcId.trim()))
-        || (resident.movedInDay !== undefined && (!Number.isSafeInteger(resident.movedInDay) || resident.movedInDay < 0))
-        || (resident.hatColor !== undefined && typeof resident.hatColor !== 'string')
-        || (resident.bodyColor !== undefined && typeof resident.bodyColor !== 'string')) {
-        throw new TypeError('Invalid town resident');
-      }
+      if (!isResident(resident) || residentIds.has(resident.id)) throw new TypeError('Invalid town resident');
       residentIds.add(resident.id);
       return [resident.id, { ...resident }];
     }));

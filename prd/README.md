@@ -25,7 +25,6 @@
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| SE-3a | 저장 도메인마다 검증 함수 하나. 값 변경 API와 `prepareHydrate`가 같은 함수를 쓴다(mail, relations, town, economy, farming, catalog). gameplay flag의 NaN이 serialize를 막지 않게 한다 | hydrate가 거부할 값을 변경 API도 거부하는 테스트, 저장→로드 왕복 |
 | SE-3b | `SaveSystem` 로드 실패를 도메인 단위로 격리해 보고한다. 저장본에 없는 도메인은 빈 상태로 초기화한다 | 한 도메인이 깨진 슬롯에서 나머지가 로드되는 테스트, 슬롯 간 상태 섞임 재현 테스트 |
 | SE-3c | 스택 용량 계산을 inventory 함수 하나로(상점·퀘스트·제작·농사의 복제 4곳 제거), `ItemRegistry.register`에서 정의 검증 | 문자열 `maxStack` 구매 재현 테스트 |
 | SE-3d | 원격 모델 URL 검증 하나(URL 파서 기반 origin·path prefix). `networks/core/remoteInputLimits`와 `PlayerNetworkManager.isSafeModelUrl` 통합 | `/\evil.com`, 탭 삽입, 앞 공백 `javascript:` 거부 테스트 |
@@ -59,6 +58,7 @@
 | SE-6d | pub/sub 하나(`mitt`, `InMemoryEventBus`, `ToolEventBus`) | `mitt` 의존성 0 |
 | SE-6e | 패키지 엔트리 목록 하나(vite, package.json, export snapshot, S-H14) | 엔트리 목록 정의 1과 대조 테스트 |
 | SE-6f | 정의 registry 6개의 등록 규칙 통일(중복 id 처리, freeze) | registry 계약 테스트 |
+| SE-6g | 모듈마다 따로 둔 `isRecord` 8벌(networks, project-settings, scene-object, world persistence, assets)을 `utils/guards` 하나로 | 정의 1 |
 
 ### SE-7 관측 가능성
 

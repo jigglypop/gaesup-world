@@ -1,3 +1,4 @@
+import { isFlagValue } from './state';
 import type {
   GameplayActionHandler,
   GameplayConditionHandler,
@@ -91,6 +92,7 @@ export function createDefaultGameplayEventRegistry(
   );
   registry.registerCondition('custom', () => false);
   registry.registerAction<Extract<GameplayEventAction, { type: 'setFlag' }>>('setFlag', (action, context) => {
+    if (!isFlagValue(action.value)) return;
     if (context.setFlag) context.setFlag(action.key, action.value);
     else context.state.flags[action.key] = action.value;
   });
