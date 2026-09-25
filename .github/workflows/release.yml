@@ -2,7 +2,8 @@ name: Verify, publish and deploy
 
 on:
   push:
-    branches: [main]
+    # ci/** runs the same checks without the release job, which only runs on main.
+    branches: [main, 'ci/**']
   # Work lands on main while the GitHub default branch is still master; check PRs to either.
   pull_request:
     branches: [main, master]
