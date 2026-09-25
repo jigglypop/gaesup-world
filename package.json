@@ -234,6 +234,7 @@
     "check:layer1": "node scripts/check-entry-isolation.cjs --layer1 --max-violations=0",
     "check:quality": "node scripts/check-quality-ratchet.cjs",
     "test": "jest",
+    "test:accept": "jest --selectProjects accept",
     "test:harness": "node scripts/check-harness.mjs",
     "test:package": "npm run build && npm run test:package:built",
     "test:package:built": "node scripts/verify-package-consumer.cjs",

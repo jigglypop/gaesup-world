@@ -60,4 +60,5 @@ __pycache__/
 .artifacts/performance/
 .artifacts/minihome/
 .artifacts/release/
+.artifacts/accept/
 .artifacts/minihome-release/

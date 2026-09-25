@@ -57,10 +57,12 @@ export default {
       displayName: 'node',
       testEnvironment: 'node',
       testMatch: ['**/*.test.ts'],
-      testPathIgnorePatterns: [...base.testPathIgnorePatterns, '/src/__tests__/'],
+      testPathIgnorePatterns: [...base.testPathIgnorePatterns, '/src/__tests__/', '/test/accept/'],
     },
     { ...base, displayName: 'dom', testEnvironment: 'jsdom', testMatch: ['**/*.test.tsx'] },
     // Package, export and public API contracts.
     { ...base, displayName: 'package', testEnvironment: 'node', testMatch: ['**/src/__tests__/**/*.test.ts'] },
+    // Headless acceptance scenarios (prd/01-verification.md); budgets and known-red live in test/accept/budgets.json.
+    { ...base, displayName: 'accept', testEnvironment: 'node', testMatch: ['<rootDir>/test/accept/**/*.test.ts'] },
   ],
 };

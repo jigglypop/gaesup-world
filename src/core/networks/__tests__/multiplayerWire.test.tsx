@@ -1,97 +1,17 @@
-import type { RefObject } from 'react';
-
-import type { RapierRigidBody } from '@react-three/rapier';
 import { act, renderHook } from '@testing-library/react';
 
+import { body, resting, streamUpdates, installWireSocket, walking, WireSocket } from '../../../../test/support/multiplayerWire';
 import { defaultMultiplayerConfig } from '../config/defaultConfig';
 import { useMultiplayer } from '../hooks/useMultiplayer';
-import type { MultiplayerConfig } from '../types';
 
 jest.mock('@stores/gaesupStore', () => ({
   useGaesupStore: (selector: (state: object) => unknown) => selector({}),
 }));
 
-type Vec = { x: number; y: number; z: number };
-
-class WireSocket {
-  static readonly CONNECTING = 0;
-  static readonly OPEN = 1;
-  static last: WireSocket | null = null;
-  readyState = WireSocket.CONNECTING;
-  onopen: (() => void) | null = null;
-  onmessage: ((event: { data: string }) => void) | null = null;
-  onerror: (() => void) | null = null;
-  onclose: ((event: { code: number; reason: string }) => void) | null = null;
-  readonly sent: string[] = [];
-
-  constructor(readonly url: string) {
-    WireSocket.last = this;
-    setTimeout(() => {
-      this.readyState = WireSocket.OPEN;
-      this.onopen?.();
-    }, 0);
-  }
-
-  send(raw: string): void {
-    this.sent.push(raw);
-  }
-
-  receive(message: object): void {
-    this.onmessage?.({ data: JSON.stringify(message) });
-  }
-
-  close(): void {
-    this.readyState = 3;
-  }
-}
-
-const originalWebSocket = globalThis.WebSocket;
-beforeAll(() => {
-  globalThis.WebSocket = WireSocket as unknown as typeof WebSocket;
-});
-afterAll(() => {
-  globalThis.WebSocket = originalWebSocket;
-});
-
-/** A body whose pose advances once per tracking sample, like a Rapier body read at 20 Hz. */
-function body(sample: (tick: number) => { position: Vec; velocity: Vec }): RefObject<RapierRigidBody> {
-  let tick = 0;
-  let current = sample(0);
-  return {
-    current: {
-      translation: () => (current = sample(tick++)).position,
-      rotation: () => ({ x: 0, y: 0, z: 0, w: 1 }),
-      linvel: () => current.velocity,
-    } as unknown as RapierRigidBody,
-  };
-}
-
-/** Streams ten seconds of tracking through the real hook, manager and tracker; returns the sent Updates. */
-function streamUpdates(rigidBodyRef: RefObject<RapierRigidBody>, config: MultiplayerConfig = defaultMultiplayerConfig): string[] {
-  jest.useFakeTimers();
-  const view = renderHook(() => useMultiplayer({ config, rigidBodyRef, characterUrl: '/gltf/ally.glb' }));
-  try {
-    act(() => view.result.current.connect({ roomId: 'room', playerName: 'player', playerColor: '#ff8800' }));
-    act(() => { jest.advanceTimersByTime(1); });
-    act(() => { jest.advanceTimersByTime(10_000); });
-    return WireSocket.last!.sent.filter((raw) => raw.startsWith('{"type":"Update"'));
-  } finally {
-    view.unmount();
-    jest.useRealTimers();
-  }
-}
-
-const noise = (tick: number) => (((tick * 7919) % 13) - 6) * 1e-4;
-const walking = (tick: number) => ({
-  position: { x: -123.456 + tick * 0.1, y: 0.52, z: 87.654321 },
-  velocity: { x: 2, y: 0, z: 0 },
-});
+installWireSocket();
 
 test('a resting player with physics noise sends a 1 Hz keepalive instead of a 20 Hz stream', () => {
-  const updates = streamUpdates(body((tick) => ({
-    position: { x: 12.345678, y: 0.52 + noise(tick), z: -5.4321 },
-    velocity: { x: noise(tick), y: noise(tick + 1), z: noise(tick + 2) },
-  })));
+  const updates = streamUpdates(body(resting));
   // First snapshot plus one keepalive per second over 10 s.
   expect(updates).toHaveLength(10);
 });

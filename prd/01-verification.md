@@ -95,7 +95,14 @@ S-B12는 이전 기간에만 둔다. 옛 경로를 지우면 시나리오도 지
 
 ### 5.1 `accept-headless`(VER-02)
 
-jest project `accept`(node 환경)로 돈다. `pnpm verify`에 포함한다. 할당 측정은 `--expose-gc`와 heap delta를 쓰는 `measureAllocations`(`test/perf/`)로 한다. 순수 Node 수치가 필요한 벤치(00 문서 4.3 참고)는 jest 밖에서 돈다.
+jest project `accept`(`test/accept/*.test.ts`, 기본 node 환경)로 돈다. `pnpm test:accept`로 따로 돌리고, `pnpm verify`와 CI jest 잡에는 자동으로 포함된다.
+
+- 시나리오 상태와 예산은 `test/accept/budgets.json` 하나에 둔다. 상태는 green, known-red, pending 셋이다.
+- `catalog.test.ts`가 이 파일과 이 문서의 시나리오 표가 같은지 검사한다. pending 시나리오는 매 실행에 todo로 표시한다.
+- 시나리오는 공개 엔트리(`gaesup-world`, `gaesup-world/network` 등)로만 작성한다. 코어를 바꾸는 동안에도 깨지지 않게 하기 위해서다.
+- 결과는 `.artifacts/accept/headless/<id>.json`(측정값, 위반 목록)에 남는다.
+- 할당 측정은 `--expose-gc`와 heap delta를 쓰는 `measureAllocations`(`test/perf/`, 첫 할당 시나리오와 함께 추가)로 한다.
+- 순수 Node 수치가 필요한 벤치(00 문서 4.3 참고)는 jest 밖에서 돈다.
 
 ### 5.2 `pnpm accept`(VER-03)
 
@@ -125,7 +132,7 @@ jest project `accept`(node 환경)로 돈다. `pnpm verify`에 포함한다. 할
 
 | job | 내용 | 실패 조건 |
 |---|---|---|
-| verify | typecheck, lint, 계층·엔트리·품질 검사, jest(accept-headless 포함), build, publint, 패키지 소비자 검증 | 기존과 같음 |
+| verify | typecheck, lint, 계층·엔트리·품질 검사, jest(accept 프로젝트 포함), build, publint, 패키지 소비자 검증 | 기존과 같음. known-red가 예산 안으로 들어오면 실패 |
 | accept-browser | 운영 빌드 + SwiftShader로 S-B 결정적 지표 | 예산 초과, known-red가 통과함 |
 | nightly(선택) | self-hosted GPU runner의 `pnpm accept --timing` | 경고만 |
 
@@ -166,12 +173,11 @@ CI가 실제로 도는지 확인하는 것이 VER-06의 첫 완료 조건이다.
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
 | VER-01b | 도메인 카운터 연결(저장, 네트워크, 에셋, 오류). batch·엔티티 카운터는 해당 항목이 생길 때 추가. `PerformanceCollector`는 4Hz store 쓰기 대신 `runtime.stats`를 읽는 HUD로 바꾸고 dev에서도 기본 마운트하지 않는다(editor 경로 re-export는 `@deprecated`) | S-H10·S-H11이 카운터로 판정, 기본 설정 월드에서 성능 store 쓰기 0 |
-| VER-02a | jest project `accept`, 시나리오 정의 형식, `measureAllocations`, budgets.json·known-red 처리 | 지금 코드로 S-H10, S-H11, S-H13, S-H14를 실행해 green/known-red 판정 |
 | VER-03a | `pnpm accept`: 운영 빌드, preview 서버, Playwright 러너, 카운터 수집, 보고서(터미널·JSON·HTML) | 지금 코드로 S-B01~S-B05, S-B11을 실행해 판정 |
 | VER-03b | `--timing`과 기기별 기준 파일, 3회 중앙값 | 같은 기기 3회 편차 기록 |
 | VER-04a | `/accept` 페이지와 HUD | 로컬·배포 데모에서 전체 실행 표 |
 | VER-05a | 기준 장면 확장(`examples/world`): NPC, 원격 mock, window 벽, water patch 규모 파라미터, 정지·궤도·편집 경로, 라이브러리 조명(`DynamicSky` 또는 `CascadedSun`) 사용 | S-B03~S-B09가 이 장면에서 실행 |
-| VER-06a | 커밋 push, PR에서 세 체크 실행 확인, 트리거 브랜치 정리(main/master), pnpm store 캐시 | PR 화면에 세 체크와 시나리오 표 |
+| VER-06a | 기본 브랜치를 하나로(GitHub 기본 브랜치는 `master`, 작업은 `main`), `accept-browser` 잡 추가(VER-03a 뒤), pnpm store 캐시. CI 실행 자체는 `ci/**` 브랜치 push로 확인했다(checks·jest·package·demo 녹색, release 건너뜀) | PR과 `ci/**` push에서 브라우저 잡까지 녹색 |
 | VER-07a | S-B12 A/B 스크린샷 비교(렌더 경로 플래그) | 옛 경로끼리 비교 시 차이 0 |
 | VER-08a | 깨진 probe 정리: 삭제된 라우트를 여는 8개를 수용 시나리오로 옮기거나 `scripts/archive`로. 대상은 `browser-smoke`(`/minimal`), `probe-webgpu-world`(`/showcase`, `/minimal`), `probe-social-world`·`probe-editor-return`(`/world`에 없는 저장 버튼), `probe-creator-menu`(`/creator`), `probe-multiplayer-panel`(`/multiplayer`), `probe-toon-water`(`/water-comparison`), `probe-avatar`(`/avatar`). 남는 probe는 공용 서버(`startProbeServer`)와 오류 수집(`collectPageErrors`)을 쓰고 포트를 vite 설정에서 읽는다 | 남은 probe 전부 실행 성공, `test:browser` 통과 |
 | VER-08b | 내부 경로(`/src/core/...`)를 import하는 fixture(`rendering-performance.tsx`, `unified-world.tsx`)와 `benchmark-*.cjs`를 공개 API나 수용 시나리오로 옮김. 코어 재작성 중 깨지지 않게 하기 위해서다. minihome `apiChecks`의 라이브러리 검사 9개는 jest로 | fixture·벤치의 내부 경로 import 0 |
