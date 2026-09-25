@@ -110,12 +110,17 @@ describe('PlayerNetworkManager inbound peer state', () => {
     });
     socket.receive({ type: 'PlayerJoined', client_id: 'peer-2', state: { ...peerState, modelUrl: 'data:model/gltf-binary;base64,AAAA' } });
     socket.receive({ type: 'PlayerJoined', client_id: 'peer-3', state: { ...peerState, modelUrl: '/gltf/ally.glb' } });
+    // The URL parser drops edge spaces and tabs, so these are javascript: URLs too.
+    socket.receive({ type: 'PlayerJoined', client_id: 'peer-4', state: { ...peerState, modelUrl: ' javascript:alert(1)' } });
+    socket.receive({ type: 'PlayerJoined', client_id: 'peer-5', state: { ...peerState, modelUrl: 'java\tscript:alert(1)' } });
     socket.receive({ type: 'Chat', client_id: 'peer-1', text: 'c'.repeat(1000), timestamp: 1 });
 
     expect(received.joins.get('peer-1')?.name).toHaveLength(64);
     expect(received.joins.get('peer-1')?.modelUrl).toBeUndefined();
     expect(received.joins.get('peer-2')?.modelUrl).toBeUndefined();
     expect(received.joins.get('peer-3')?.modelUrl).toBe('/gltf/ally.glb');
+    expect(received.joins.get('peer-4')?.modelUrl).toBeUndefined();
+    expect(received.joins.get('peer-5')?.modelUrl).toBeUndefined();
     expect(received.chats[0]).toHaveLength(200);
     manager.disconnect();
   });

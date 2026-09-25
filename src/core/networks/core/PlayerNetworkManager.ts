@@ -2,8 +2,8 @@ import {
   clampRemoteString,
   MAX_REMOTE_CHAT_TEXT_LENGTH,
   MAX_REMOTE_CHATS_PER_SECOND,
-  MAX_REMOTE_MODEL_URL_LENGTH,
   MAX_REMOTE_WIRE_MESSAGE_LENGTH,
+  parseRemoteModelUrl,
   PeerRateLimiter,
 } from './remoteInputLimits';
 import { NetworkPayload, PlayerState } from '../types';
@@ -587,7 +587,7 @@ export class PlayerNetworkManager {
     if (typeof state.name === 'string') out.name = clampRemoteString('name', state.name);
     if (typeof state.color === 'string') out.color = clampRemoteString('color', state.color);
     if (typeof state.animation === 'string') out.animation = clampRemoteString('animation', state.animation);
-    if (typeof state.modelUrl === 'string' && isSafeModelUrl(state.modelUrl)
+    if (typeof state.modelUrl === 'string' && parseRemoteModelUrl(state.modelUrl)
       && (this.acceptModelUrl?.(state.modelUrl) ?? true)) {
       out.modelUrl = state.modelUrl;
     }
@@ -963,12 +963,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isFiniteTuple(value: unknown, length: number): boolean {
   return Array.isArray(value) && value.length === length
     && value.every((component: unknown) => typeof component === 'number' && Number.isFinite(component));
-}
-
-function isSafeModelUrl(url: string): boolean {
-  if (!url || url.length > MAX_REMOTE_MODEL_URL_LENGTH) return false;
-  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(url)?.[1]?.toLowerCase();
-  return scheme === undefined || scheme === 'http' || scheme === 'https';
 }
 
 function isPlayerState(value: unknown, partial: boolean): boolean {

@@ -55,16 +55,35 @@ export class PeerRateLimiter {
   }
 }
 
-export function isTrustedRemoteModelUrl(url: string, allowedOrigins: readonly string[] = []): boolean {
-  const trimmed = url.trim();
-  if (!trimmed || trimmed.length > MAX_REMOTE_MODEL_URL_LENGTH) return false;
-  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return true;
-  let parsed: URL;
+/** Outside a browser only equality with this origin matters, so any fixed origin can stand in for the page. */
+const pageBase = (): string => (typeof document === 'undefined' ? 'https://page.invalid/' : document.baseURI);
+
+/**
+ * Parses a peer-chosen model URL as fetch will (edge spaces, tabs and newlines dropped, `\` read as `/`)
+ * and keeps it only if it is http(s).
+ */
+export function parseRemoteModelUrl(url: string, base = pageBase()): URL | null {
+  if (!url || url.length > MAX_REMOTE_MODEL_URL_LENGTH) return null;
   try {
-    parsed = new URL(trimmed);
+    const parsed = new URL(url, base);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed : null;
   } catch {
-    return false;
+    return null;
   }
-  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
-  return allowedOrigins.includes(parsed.origin);
+}
+
+/**
+ * Whether a peer-chosen model URL resolves to this page's origin or under an allowed entry:
+ * an origin (`https://cdn.example.com`) or an origin with a directory (`https://cdn.example.com/models/`).
+ */
+export function isTrustedRemoteModelUrl(url: string, allowedOrigins: readonly string[] = [], base = pageBase()): boolean {
+  const parsed = parseRemoteModelUrl(url, base);
+  if (!parsed) return false;
+  if (parsed.origin === new URL(base).origin) return true;
+  return allowedOrigins.some((entry) => {
+    const allowed = parseRemoteModelUrl(entry, base);
+    if (!allowed || allowed.origin !== parsed.origin) return false;
+    const dir = allowed.pathname.endsWith('/') ? allowed.pathname : `${allowed.pathname}/`;
+    return parsed.pathname === allowed.pathname || parsed.pathname.startsWith(dir);
+  });
 }
