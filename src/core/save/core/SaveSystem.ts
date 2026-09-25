@@ -13,9 +13,11 @@ import type {
   SaveOptions,
   SaveRestoreGuard,
   SaveSystemOptions,
+  SerializedDomainValue,
 } from '../types';
 
-type DomainRevisions = Map<string, number>;
+/** The value a revisioned domain last wrote to a slot and the revision it wrote it at. */
+type SavedDomain = { revision: number; value: SerializedDomainValue };
 
 export class SaveSystem {
   private adapter: SaveAdapter;
@@ -30,8 +32,8 @@ export class SaveSystem {
   private restoreGeneration = 0;
   private loading: { generation: number; signal: AbortSignal | undefined } | undefined;
   private pendingMutations = new Map<string, Promise<void>>();
-  // Revisions of each slot's last skipUnchanged write, valid only for the binding generation that wrote it.
-  private savedRevisions = new Map<string, DomainRevisions>();
+  // Each slot's domains from its last skipUnchanged write, valid only for the binding generation that wrote them.
+  private savedDomains = new Map<string, Map<string, SavedDomain>>();
   private bindingGeneration = 0;
 
   constructor(opts: SaveSystemOptions) {
@@ -73,7 +75,7 @@ export class SaveSystem {
     this.cancelPendingLoads();
     // A replaced binding may restart its revision count, so no earlier write proves a slot current.
     this.bindingGeneration++;
-    this.savedRevisions.clear();
+    this.savedDomains.clear();
   }
 
   has(key: string): boolean { return this.bindings.has(key); }
@@ -112,12 +114,39 @@ export class SaveSystem {
   }
 
   private serializeBlob(slot: string): SaveBlob {
+    return this.envelope(this.serializeDomains(slot).domains);
+  }
+
+  private envelope(domains: SaveBlob['domains']): SaveBlob {
+    return { version: this.currentVersion, savedAt: Date.now(), domains };
+  }
+
+  /**
+   * Serializes each domain, reusing `previous` values whose revision has not moved. A domain without a revision
+   * is always serialized, since nothing tells whether it changed.
+   */
+  private serializeDomains(slot: string, previous?: ReadonlyMap<string, SavedDomain>): {
+    domains: SaveBlob['domains']; saved: Map<string, SavedDomain>; serialized: number;
+  } {
     const domains: SaveBlob['domains'] = {};
+    const saved = new Map<string, SavedDomain>();
     const errors: unknown[] = [];
+    let serialized = 0;
     for (const [key, b] of this.bindings) {
+      // Read before serializing, so a change made during serialization reads as dirty next time.
+      const revision = b.revision?.();
+      const cached = revision === undefined ? undefined : previous?.get(key);
+      if (cached && cached.revision === revision) {
+        domains[key] = cached.value;
+        saved.set(key, cached);
+        continue;
+      }
       try {
         const value = b.serialize();
-        domains[key] = b.owned ? value : clonePlainData(value);
+        const owned = b.owned ? value : clonePlainData(value);
+        domains[key] = owned;
+        serialized++;
+        if (revision !== undefined) saved.set(key, { revision, value: owned });
       } catch (error) {
         errors.push(error);
         this.reportDiagnostic({ phase: 'serialize', key, slot, error });
@@ -125,11 +154,7 @@ export class SaveSystem {
     }
 
     if (errors.length > 0) throw new AggregateError(errors, 'Save serialization failed');
-    return {
-      version: this.currentVersion,
-      savedAt: Date.now(),
-      domains,
-    };
+    return { domains, saved, serialized };
   }
 
   hydrateBlob(raw: SaveBlob, slot: string = this.defaultSlot): boolean {
@@ -242,32 +267,26 @@ export class SaveSystem {
     return current();
   }
 
+  /**
+   * With `skipUnchanged`, only domains whose revision moved since this slot's last such write are serialized, and
+   * nothing is written when none moved. A plain save serializes every domain.
+   */
   async save(slot: string = this.defaultSlot, options: SaveOptions = {}): Promise<void> {
     const generation = this.bindingGeneration;
-    let revisions: DomainRevisions | undefined;
+    let saved: Map<string, SavedDomain> | undefined;
     const blob = this.process(() => {
-      if (options.skipUnchanged) {
-        // Read before serializing, so a change made during serialization reads as dirty next time.
-        revisions = this.readRevisions();
-        if (revisions && sameRevisions(revisions, this.savedRevisions.get(slot))) return undefined;
-      }
-      return this.serializeBlob(slot);
+      if (!options.skipUnchanged) return this.serializeBlob(slot);
+      const previous = this.savedDomains.get(slot);
+      const result = this.serializeDomains(slot, previous);
+      if (previous && result.serialized === 0) return undefined;
+      saved = result.saved;
+      return this.envelope(result.domains);
     });
     if (!blob) return;
     await this.enqueueMutation(slot, async () => {
       await this.adapter.write(slot, blob);
-      if (revisions && generation === this.bindingGeneration) this.savedRevisions.set(slot, revisions);
+      if (saved && generation === this.bindingGeneration) this.savedDomains.set(slot, saved);
     });
-  }
-
-  /** Undefined while any domain cannot report a revision; such saves always write. */
-  private readRevisions(): DomainRevisions | undefined {
-    const revisions: DomainRevisions = new Map();
-    for (const [key, binding] of this.bindings) {
-      if (!binding.revision) return undefined;
-      revisions.set(key, binding.revision());
-    }
-    return revisions;
   }
 
   /** An aborted or superseded load returns false without applying the stored domains. */
@@ -295,9 +314,9 @@ export class SaveSystem {
   async list(): Promise<string[]> { return this.adapter.list(); }
   async remove(slot: string = this.defaultSlot): Promise<void> {
     // Later autosaves write the slot again, including ones queued behind this removal.
-    this.savedRevisions.delete(slot);
+    this.savedDomains.delete(slot);
     return this.enqueueMutation(slot, () => {
-      this.savedRevisions.delete(slot);
+      this.savedDomains.delete(slot);
       return this.adapter.remove(slot);
     });
   }
@@ -334,14 +353,6 @@ export class SaveSystem {
 }
 
 class RestoreCancelledError extends Error { constructor() { super('Save restoration was cancelled'); } }
-
-function sameRevisions(current: DomainRevisions, saved: DomainRevisions | undefined): boolean {
-  if (!saved || saved.size !== current.size) return false;
-  for (const [key, revision] of current) {
-    if (saved.get(key) !== revision) return false;
-  }
-  return true;
-}
 
 function validateSaveEnvelope(blob: SaveBlob): void {
   if (!blob || typeof blob !== 'object' || Array.isArray(blob)

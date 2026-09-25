@@ -147,3 +147,21 @@ test('autosave triggers skip serialization while nothing changed', async () => {
     view.unmount();
   }
 });
+
+test('an autosave serializes only the domains whose revision moved', async () => {
+  const { adapter } = memory();
+  const sys = new SaveSystem({ adapter });
+  const a = domain('a');
+  const b = domain('b');
+  const plain = domain('plain', false);
+  for (const entry of [a, b, plain]) sys.register(entry.binding);
+
+  await sys.save('main', { skipUnchanged: true });
+  b.edit();
+  await sys.save('main', { skipUnchanged: true });
+  expect(a.binding.serialize).toHaveBeenCalledTimes(1);
+  expect(b.binding.serialize).toHaveBeenCalledTimes(2);
+  // Without a revision nothing proves the domain unchanged, so it is serialized every time.
+  expect(plain.binding.serialize).toHaveBeenCalledTimes(2);
+  expect(adapter.write.mock.calls[1]?.[1].domains).toEqual({ a: { value: 1 }, b: { value: 2 }, plain: { value: 1 } });
+});

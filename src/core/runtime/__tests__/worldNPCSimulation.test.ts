@@ -147,3 +147,19 @@ test('kinematic bodies are written only while their NPC moves', async () => {
     detach();
   } finally { await runtime.dispose(); }
 });
+
+test('the NPC save revision advances while a pose moves and holds while it rests', async () => {
+  const runtime = createGaesupRuntime({ plugins: [createNPCPlugin()] }); await runtime.setup();
+  try {
+    const state = runtime.npcStore.getState(); state.addInstance(npc()); state.setNavigation('one', [[1, 0, 0]], 3);
+    const binding = [...runtime.save.getBindings()].find((entry) => entry.key === 'npc')!;
+    const before = binding.revision!();
+    // Moving poses change no store state, so only the simulation's revision can mark them dirty.
+    runtime.clockLoop.clock.stepTicks(5);
+    expect(binding.revision!()).not.toBe(before);
+    runtime.clockLoop.clock.stepTicks(120);
+    const rested = binding.revision!();
+    runtime.clockLoop.clock.stepTicks(60);
+    expect(binding.revision!()).toBe(rested);
+  } finally { await runtime.dispose(); }
+});

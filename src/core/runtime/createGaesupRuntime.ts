@@ -442,7 +442,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
       unsubscribePluginLifecycle = plugins.onLifecycle(syncPluginSaveBindings);
       const gameplaySaveKey = 'gameplay-events';
       unregisterSaveBindings.set(gameplaySaveKey, save.register({
-        key: gameplaySaveKey, serialize: () => gameplayEvents.serialize(),
+        key: gameplaySaveKey, serialize: () => gameplayEvents.serialize(), revision: () => gameplayEvents.revision(),
         hydrate: data => gameplayEvents.hydrate(data), prepareHydrate: data => gameplayEvents.prepareHydrate(data),
       }));
       unregisterRestoreGuard = save.registerRestoreGuard(() => {

@@ -2,6 +2,7 @@ import type { GaesupPlugin, PluginContext } from '../plugins';
 import { useShopStore, type ShopStore, SHOP_STORE_SERVICE } from './stores/shopStore';
 import { useWalletStore, type WalletStore, WALLET_STORE_SERVICE } from './stores/walletStore';
 import type { ShopSerialized, WalletSerialized } from './types';
+import { createIdentityRevision } from '../save/core/revision';
 
 export interface EconomyPluginOptions {
   id?: string;
@@ -54,12 +55,14 @@ export function createEconomyPlugin(options: EconomyPluginOptions = {}): GaesupP
         serialize: () => serializeWalletState(wallet),
         hydrate: (data: WalletSerialized | null | undefined) => hydrateWalletState(data, wallet),
         prepareHydrate: (data: WalletSerialized | null | undefined) => wallet.getState().prepareHydrate(data),
+        revision: createIdentityRevision(() => [wallet.getState()]),
       }, pluginId);
       ctx.save.register(shopSaveExtensionId, {
         key: shopSaveExtensionId,
         serialize: () => serializeShopState(shop),
         hydrate: (data: ShopSerialized | null | undefined) => hydrateShopState(data, shop),
         prepareHydrate: (data: ShopSerialized | null | undefined) => shop.getState().prepareHydrate(data),
+        revision: createIdentityRevision(() => [shop.getState()]),
       }, pluginId);
       ctx.services.register(walletStoreServiceId, {
         useStore: wallet,

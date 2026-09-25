@@ -79,7 +79,6 @@
 
 | 증상 | 위치 | 비용 | 원인 | 처리 |
 |---|---|---|---|---|
-| revision 없는 도메인이 하나라도 있으면 변경 없는 저장 skip이 통째로 꺼짐. 런타임이 `gameplay-events`를 revision 없이 항상 등록 | `save/core/SaveSystem.ts:264-271`, `runtime/createGaesupRuntime.ts:440` | autosave·탭 숨김마다 전 도메인 직렬화 | RC-1 | AST-06a(M0) |
 | minihome 기본 설정에서 렌더 루프가 멈추지 않음 | `examples/minihome/roomEngine.ts:306` | 대기 중 60Hz bloom·그림자 | 기본값 결함 | DOM-11a(M0) |
 | 월드 Suspense 하나라 새 GLB가 월드를 숨김 | `WorldContainer/index.tsx:171` | 새 URL마다 0.1~1초 공백 | RC-2 | REN-06 |
 | 로드 직렬 워터폴(렌더러 → Rapier → 본체 GLB → Draco → 파츠 → wasm), 선로드 0 | `world/components/WorldPhysics/index.tsx:53` | [추정] 0.5~1.3초 | RC-2 | REN-06 |

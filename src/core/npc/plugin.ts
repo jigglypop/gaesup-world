@@ -1,4 +1,5 @@
 import type { GaesupPlugin, PluginContext } from '../plugins';
+import { createIdentityRevision } from '../save/core/revision';
 import { clonePlainData } from '../utils/clone';
 import { findNPCSimulation } from './core/NPCSimulation';
 import { useNPCStore, type NPCStoreApi, NPC_STORE_SERVICE } from './stores/npcStore';
@@ -114,6 +115,12 @@ export function createNPCPlugin(options: NPCPluginOptions = {}): GaesupPlugin {
         prepareHydrate: (data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined) => prepareNPCState(data, store),
         // serializeNPCState clones every entry.
         owned: true,
+        // Saved positions come from the simulation's poses, so their revision counts too.
+        revision: createIdentityRevision(() => {
+          const state = store.getState();
+          return [state.templates, state.instances, state.categories, state.clothingSets, state.clothingCategories,
+            state.animations, state.brainBlueprints, state.editMode, findNPCSimulation(store)?.poseRevision ?? 0];
+        }),
       }, pluginId);
       ctx.services.register(storeServiceId, {
         useStore: store,

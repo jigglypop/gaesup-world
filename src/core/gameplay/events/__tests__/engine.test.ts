@@ -124,3 +124,16 @@ describe('GameplayEventEngine', () => {
     expect(result).toEqual([{ blueprintId: 'blocked', actionCount: 0, skipped: 'condition:custom' }]);
   });
 });
+
+test('the save revision follows the flag and execution maps, including direct writes', () => {
+  const engine = new GameplayEventEngine({ registry: new GameplayEventRegistry() });
+  const initial = engine.revision();
+  expect(engine.revision()).toBe(initial);
+  engine.state.flags['door'] = 'open';
+  const opened = engine.revision();
+  expect(opened).not.toBe(initial);
+  engine.state.flags['door'] = 'closed';
+  expect(engine.revision()).not.toBe(opened);
+  engine.hydrate({ version: 1, executedAt: {}, flags: {} });
+  expect(engine.revision()).toBe(initial);
+});

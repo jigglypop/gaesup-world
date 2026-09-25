@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import type { GaesupPlugin, PluginContext } from '../plugins';
+import { createIdentityRevision } from '../save/core/revision';
 import { useGaesupStore, RUNTIME_GAESUP_STORE_SERVICE_ID, type GaesupStore } from '../stores/gaesupStore';
 import type { CameraSystemConfig } from './bridge/types';
 import { CameraSystem } from './core/CameraSystem';
@@ -240,6 +241,7 @@ export function createCameraPlugin(options: CameraPluginOptions = {}): GaesupPlu
         serialize: () => getCameraSerializedState(store),
         hydrate: (data: CameraSerializedState | null | undefined) => hydrateCameraState(data, store),
         prepareHydrate: (data: CameraSerializedState | null | undefined) => prepareCameraState(data, store),
+        revision: createIdentityRevision(() => [store.getState().mode, store.getState().cameraOption]),
       }, pluginId);
       ctx.services.register(storeServiceId, {
         useStore: store,

@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 |---|---|
-| 우선순위 | P1(AST-06a는 P0, M0) |
-| 마일스톤 | M0(AST-06a), M4 |
+| 우선순위 | P1 |
+| 마일스톤 | M4 |
 | 선행 | 10 PRD COR-02·COR-04(프리팹·씬), 01 PRD VER-01 |
 
 ## 1. 목표
@@ -24,7 +24,7 @@
 | 프리팹 | 인스턴스는 문서에 복사, variant는 bake, 전파에 이전 버전 인자 필요, 중첩 없음. 프리팹 편집 명령과 `SceneDocumentManager`가 증분 명령을 우회해 전체 replace | `prefab/overrides.ts:302-312`, `prefab/instances.ts:121` |
 | 씬 | 씬 관리자 2개(`scene/`, `scene-object/manager.ts:35`). 씬 전환이 문서를 load하지 않음 | |
 | undo | 명령 전 문서를 잡아 두고 `replace`로 되돌림 → reset delta로 소비자 전체 재투영 | `editor/shell.ts:266-279`, `scene-object/delta.ts:39-41` |
-| 저장 | revision 없는 binding 하나가 전 도메인 skip을 끔. 롤백 스냅샷 전체 생성, 로드 clone 중복, 로드 후 재직렬화, `beforeunload` 비동기 저장, 슬롯 메타데이터 인덱스 없음. NPC 저장에 휘발 필드(`lastObservation`, `lastDecision`) 포함. 서버 호스트가 모든 도메인을 직렬화한 뒤 절반을 버림 | `save/core/SaveSystem.ts:172,205,264-271`, `building/stores/persistence.ts:167`, `saveHookCoordinator.ts:157`, `npc/plugin.ts:44`, `platform/serverHost.ts:107` |
+| 저장 | autosave(`skipUnchanged`)는 revision이 움직인 도메인만 직렬화하고, 아무것도 안 바뀌면 쓰지 않는다. 남은 문제: 롤백 스냅샷 전체 생성, 로드 clone 중복, 로드 후 재직렬화, `beforeunload` 비동기 저장, 슬롯 메타데이터 인덱스 없음. NPC 저장에 휘발 필드(`lastObservation`, `lastDecision`) 포함. 서버 호스트가 모든 도메인을 직렬화한 뒤 절반을 버림 | `save/core/SaveSystem.ts:172,205,264-271`, `building/stores/persistence.ts:167`, `saveHookCoordinator.ts:157`, `npc/plugin.ts:44`, `platform/serverHost.ts:107` |
 | wasm | `document.baseURI` 기준 URL, `instantiateStreaming` 미사용, 본문 수신 오류를 영구 캐시 | `wasm/loader.ts:160-210` |
 
 ## 3. 설계
@@ -79,7 +79,6 @@ SaveSystem
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| AST-06a(M0) | skip 판정을 도메인 단위로: 슬롯마다 도메인별 `{revision, 값}` 캐시, revision이 같으면 재사용, 모든 도메인이 같을 때만 쓰기 생략. `gameplay-events` 엔진에 revision 카운터, `createStoreDomainPlugin`·npc·camera·economy binding에 `createIdentityRevision` | S-H10 |
 | AST-06b | 로드 clone 경계 1회(IDB structured clone 뒤 재복제 금지), 롤백 스냅샷은 적용 도메인만 lazy, 로드 후 재직렬화와 building 전체 재구성 제거 | S-H12, 로드 clone 호출 수 테스트 |
 | AST-06c | `beforeunload`는 동기 가능한 최소 저장, 나머지는 `visibilitychange`. 슬롯 메타데이터 인덱스 키. NPC 휘발 필드 저장 제외. 서버 호스트 스냅샷은 필요한 도메인만 직렬화 | 저장 크기 비교 테스트 |
 | AST-06d | `SaveLoadManager`, `createPersistenceSlice`를 SaveSystem binding 위임 adapter로 바꾸고 `@deprecated` | legacy 포맷 load 테스트, export snapshot 불변 |

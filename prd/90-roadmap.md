@@ -26,7 +26,7 @@
 | 1 | VER-06a 잔여 | 기본 브랜치 정리(사용자 결정), pnpm store 캐시. accept-browser 잡은 VER-03a와 함께 |
 | 2 | VER-08a, VER-08b | 깨진 probe 정리, 내부 경로 fixture 정리 |
 | 3 | VER-03a, VER-04a, VER-05a | 브라우저 수용 러너(운영 빌드), `/accept`(PerformanceLab 확장), 기준 장면 확장 |
-| 4 | VER-01b, AST-06a, DOM-11a | 도메인 카운터, 측정을 오염시키는 기본값 결함(저장 skip, minihome 대기 루프) |
+| 4 | VER-01b, DOM-11a | 도메인 카운터, minihome 대기 루프 |
 | 5 | VER-03b, VER-07a, VER-08c | ms 기준 파일, A/B 화면 비교, 1.x 표면 동결 게이트 |
 
 M0 끝에 전체 시나리오를 돌려 `test/accept/budgets.json`과 known-red 목록을 확정한다. 이 목록이 이후 진행률 보드다.
@@ -94,16 +94,16 @@ COR-05c(스케줄러 밖 루프 0)는 M2 끝까지
 
 | 순위 | Slice | 이유 |
 |---|---|---|
-| 1 | AST-06a | S-H10 빨강. 변경 없는 autosave가 전 도메인을 직렬화한다 |
-| 2 | VER-08a, VER-08b | 깨진 probe와 내부 경로 fixture. 코어를 바꾸기 전에 회귀 장치를 살린다 |
-| 3 | VER-03a, VER-04a | 운영 빌드 측정과 `/accept`. 소유자가 직접 보는 화면 |
-| 4 | DOM-11a | 대표 데모가 대기 중에도 매 프레임 그린다 |
-| 5 | VER-05a | 기준 장면에 NPC·원격·편집·궤도·그림자 경로가 없다 |
-| 6 | COR-09c | S-H14 빨강. 엔트리 import만으로 전역 리스너 3·타이머 3·전역 쓰기 1 |
-| 7 | COR-01a | 엔진 코어의 첫 단계(kernel). 이후 모든 코어 작업의 전제 |
-| 8 | COR-05b | D-10. 프로젝트 설정의 고정 틱 설정이 runtime clock에 들어가지 않는다. 작고 독립적이다 |
-| 9 | VER-06a | 기본 브랜치를 `main` 하나로(사용자 결정) |
-| 10 | EDT-03b | 패널 전환마다 `initializeDefaults`가 템플릿·의상을 새 객체로 바꿔 모든 NPC가 재렌더된다 |
+| 1 | VER-08a, VER-08b | 깨진 probe와 내부 경로 fixture. 코어를 바꾸기 전에 회귀 장치를 살린다 |
+| 2 | VER-03a, VER-04a | 운영 빌드 측정과 `/accept`. 소유자가 직접 보는 화면 |
+| 3 | DOM-11a | 대표 데모가 대기 중에도 매 프레임 그린다 |
+| 4 | VER-05a | 기준 장면에 NPC·원격·편집·궤도·그림자 경로가 없다 |
+| 5 | COR-09c | S-H14 빨강. 엔트리 import만으로 전역 리스너 3·타이머 3·전역 쓰기 1 |
+| 6 | COR-01a | 엔진 코어의 첫 단계(kernel). 이후 모든 코어 작업의 전제 |
+| 7 | COR-05b | D-10. 프로젝트 설정의 고정 틱 설정이 runtime clock에 들어가지 않는다. 작고 독립적이다 |
+| 8 | VER-06a | 기본 브랜치를 `main` 하나로(사용자 결정) |
+| 9 | EDT-03b | 패널 전환마다 `initializeDefaults`가 템플릿·의상을 새 객체로 바꿔 모든 NPC가 재렌더된다 |
+| 10 | AST-01a | D-14. 공용 로더가 Draco를 못 읽어 번들 GLB 9개가 캐시 경로로 로드되지 않는다 |
 
 ## 4. 결정 기록
 

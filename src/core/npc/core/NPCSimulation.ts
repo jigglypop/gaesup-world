@@ -48,6 +48,10 @@ export class NPCSimulation {
   private translation = { x: 0, y: 0, z: 0 };
   private perception = new NPCPerceptionIndex();
 
+  private movedPoses = 0;
+  /** Advances whenever a simulated pose moves; saves use it because moved poses are not in the store. */
+  get poseRevision(): number { return this.movedPoses; }
+
   constructor(private readonly store: NPCSimulationStore, private readonly loop: AnimationClockLoop,
     private readonly options: { conditions?: NPCBrainConditionStores; adapters?: NPCBrainAdapterRegistry; scoped?: boolean } = {}) {
     if (simulations.has(store)) throw new Error('NPC store already has a simulation owner');
@@ -161,6 +165,7 @@ export class NPCSimulation {
           body.setRotation(this.writeRotation(pose), true);
         }
       }
+      if (pose.moved) this.movedPoses++;
       pose.moved = false;
     }
     let observed: Map<string, NPCInstance> | undefined;
