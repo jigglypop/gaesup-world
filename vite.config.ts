@@ -187,9 +187,14 @@ export default defineConfig(({ mode }) => {
       host: '127.0.0.1',
       port: 5174,
       open: true,
-      // Tools that truncate then write a file can be read mid-write; the empty transform is then cached and the
-      // importer fails with "does not provide an export". Emit changes only after the size stops changing.
-      watch: { awaitWriteFinish: { stabilityThreshold: 50, pollInterval: 10 } },
+      watch: {
+        // Tools that truncate then write a file can be read mid-write; the empty transform is then cached and the
+        // importer fails with "does not provide an export". Emit changes only after the size stops changing.
+        awaitWriteFinish: { stabilityThreshold: 50, pollInterval: 10 },
+        // Agent worktrees and build output are full copies of the tree. Watching them let a long-running server
+        // accumulate tens of thousands of handles and stop answering when worktrees were created and removed.
+        ignored: ['**/.claude/**', '**/dist/**', '**/demo-dist/**', '**/.tmp/**', '**/.artifacts/**', '**/.jest-cache/**', '**/coverage/**'],
+      },
     },
     build: {
       outDir: 'demo-dist',
