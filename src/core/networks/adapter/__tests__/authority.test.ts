@@ -1,10 +1,11 @@
-import { COMMAND_HANDLER_FAILURE_REASON } from '../authority';
+import { COMMAND_HANDLER_FAILURE_REASON, INVALID_COMMAND_REASON } from '../authority';
 import {
   createCommandAcceptedResult,
   createCommandAuthorityRouter,
   createGameCommand,
   createServerEvent,
   createStateDelta,
+  type GameCommand,
 } from '../index';
 
 describe('command authority router', () => {
@@ -318,6 +319,31 @@ describe('command authority router', () => {
         payload: { itemId: 'apple' },
         ...(extra.expectedRevision !== undefined ? { expectedRevision: extra.expectedRevision } : {}),
       });
+
+    test.each<[string, Record<string, unknown>]>([
+      // Without an id every command of an actor shared the replay key "actor:undefined".
+      ['without a commandId', { commandId: undefined }],
+      ['with a blank commandId', { commandId: ' ' }],
+      ['with a huge commandId', { commandId: 'c'.repeat(10_000) }],
+      ['with a non-finite submittedAt', { submittedAt: Infinity }],
+      ['with a fractional expectedRevision', { expectedRevision: 1.5 }],
+      ['with an object domain', { domain: { toString: () => 'economy' } }],
+    ])('rejects a command %s before routing or replay', async (_name, patch) => {
+      const handler = jest.fn((incoming: GameCommand) => createCommandAcceptedResult(incoming));
+      const router = createCommandAuthorityRouter();
+      router.register({ domain: 'economy', action: 'buy' }, handler);
+      const command = { ...buy('cmd-bad'), ...patch } as GameCommand;
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        expect(await router.handle(command)).toEqual({ accepted: false, command, reason: INVALID_COMMAND_REASON, events: [], deltas: [] });
+      }
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    test('a non-object command is rejected instead of throwing', async () => {
+      const router = createCommandAuthorityRouter();
+      await expect(router.handle(null as unknown as GameCommand)).resolves.toMatchObject({ accepted: false, reason: INVALID_COMMAND_REASON });
+    });
 
     test('replays a repeated commandId from cache without running the handler again', async () => {
       const handler = jest.fn((incoming) => createCommandAcceptedResult(incoming));

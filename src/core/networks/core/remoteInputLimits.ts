@@ -7,6 +7,8 @@ export const MAX_REMOTE_CHATS_PER_SECOND = 4;
 /** Upper bound for one inbound wire message before JSON parsing, shared by presence and visit channels. */
 export const MAX_REMOTE_WIRE_MESSAGE_LENGTH = 5 * 1024 * 1024;
 export const MAX_VISIT_SNAPSHOT_DOMAINS = 64;
+/** Per-component bound for remote positions, rotations and velocities; larger finite values only break physics and culling. */
+export const MAX_REMOTE_COORDINATE = 100_000;
 
 type RemotePlayerStringKey = 'name' | 'color' | 'animation';
 

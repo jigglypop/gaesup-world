@@ -4,6 +4,7 @@ import {
   type ServerEvent,
   type StateDelta,
 } from './contracts';
+import { isCount, isId, isRecord } from '../../utils/guards';
 import { logger } from '../../utils/logger';
 
 export type CommandAuthorityContext = {
@@ -76,6 +77,22 @@ type ReplayEntry = {
 const DEFAULT_REPLAY_WINDOW_MS = 60_000;
 const DEFAULT_MAX_REPLAY_ENTRIES = 10_000;
 export const COMMAND_HANDLER_FAILURE_REASON = 'Authority handler failed.';
+export const INVALID_COMMAND_REASON = 'Invalid command.';
+/** Ids and routes become replay and route keys, so they stay short. */
+const MAX_COMMAND_KEY_LENGTH = 256;
+
+const isKey = (value: unknown): value is string => isId(value) && value.length <= MAX_COMMAND_KEY_LENGTH;
+const isOptionalString = (value: unknown): boolean => value === undefined || typeof value === 'string';
+
+/** Commands come from clients, and replay keys, routing and revision checks all read these fields. */
+function isGameCommand(value: unknown): value is GameCommand {
+  return isRecord<GameCommand>(value) && isCount(value.version)
+    && isKey(value.commandId) && isKey(value.domain) && isKey(value.action) && isKey(value.actorId)
+    && typeof value.submittedAt === 'number' && Number.isFinite(value.submittedAt)
+    && isOptionalString(value.targetId) && isOptionalString(value.traceId)
+    && (value.clientSequence === undefined || isCount(value.clientSequence))
+    && (value.expectedRevision === undefined || isCount(value.expectedRevision));
+}
 
 function logHandlerError(error: unknown, command: GameCommand): void {
   logger.error(`[CommandAuthority] ${command.domain}:${command.action} handler failed`, error instanceof Error ? error : String(error));
@@ -219,6 +236,8 @@ export function createCommandAuthorityRouter(
       };
     },
     handle: async (command) => {
+      // A malformed command has no route, replay key or id to address a rejection event to.
+      if (!isGameCommand(command)) return { accepted: false, command, reason: INVALID_COMMAND_REASON, events: [], deltas: [] };
       if (options.verifyActor && !options.verifyActor(command)) {
         return reject(command, `Actor "${command.actorId}" is not bound to this session.`);
       }

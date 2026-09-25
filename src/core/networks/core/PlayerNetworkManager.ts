@@ -2,6 +2,7 @@ import {
   clampRemoteString,
   MAX_REMOTE_CHAT_TEXT_LENGTH,
   MAX_REMOTE_CHATS_PER_SECOND,
+  MAX_REMOTE_COORDINATE,
   MAX_REMOTE_WIRE_MESSAGE_LENGTH,
   parseRemoteModelUrl,
   PeerRateLimiter,
@@ -592,7 +593,11 @@ export class PlayerNetworkManager {
       out.modelUrl = state.modelUrl;
     }
     if (state.position) out.position = [state.position[0], state.position[1], state.position[2]];
-    if (state.rotation) out.rotation = [state.rotation[0], state.rotation[1], state.rotation[2], state.rotation[3]];
+    if (state.rotation) {
+      const [w, x, y, z] = state.rotation;
+      const length = Math.hypot(w, x, y, z);
+      out.rotation = [w / length, x / length, y / length, z / length];
+    }
     if (state.velocity) out.velocity = [state.velocity[0], state.velocity[1], state.velocity[2]];
     return out;
   }
@@ -960,9 +965,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function isFiniteTuple(value: unknown, length: number): boolean {
+function isBoundedTuple(value: unknown, length: number): value is number[] {
   return Array.isArray(value) && value.length === length
-    && value.every((component: unknown) => typeof component === 'number' && Number.isFinite(component));
+    && value.every((component: unknown) => typeof component === 'number' && Math.abs(component) <= MAX_REMOTE_COORDINATE);
+}
+
+/** Any nonzero quaternion is normalized on copy; a zero one has no rotation to recover. */
+function isRotation(value: unknown): boolean {
+  return isBoundedTuple(value, 4) && Math.hypot(...value) > Number.EPSILON;
 }
 
 function isPlayerState(value: unknown, partial: boolean): boolean {
@@ -972,9 +982,9 @@ function isPlayerState(value: unknown, partial: boolean): boolean {
     const field = value[key];
     if (typeof field !== 'string') return false;
   }
-  if ('position' in value && !isFiniteTuple(value['position'], 3)) return false;
-  if ('rotation' in value && !isFiniteTuple(value['rotation'], 4)) return false;
-  if ('velocity' in value && !isFiniteTuple(value['velocity'], 3)) return false;
+  if ('position' in value && !isBoundedTuple(value['position'], 3)) return false;
+  if ('rotation' in value && !isRotation(value['rotation'])) return false;
+  if ('velocity' in value && !isBoundedTuple(value['velocity'], 3)) return false;
   return partial || ['name', 'color', 'position', 'rotation'].every((key) => key in value);
 }
 

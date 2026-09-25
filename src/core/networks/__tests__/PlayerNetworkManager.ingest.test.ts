@@ -2,6 +2,7 @@ import { PlayerNetworkManager, type PlayerNetworkManagerOptions } from '../core/
 import {
   MAX_REMOTE_CHAT_TEXT_LENGTH,
   MAX_REMOTE_CHATS_PER_SECOND,
+  MAX_REMOTE_COORDINATE,
   MAX_REMOTE_WIRE_MESSAGE_LENGTH,
   PeerRateLimiter,
 } from '../core/remoteInputLimits';
@@ -98,6 +99,19 @@ describe('PlayerNetworkManager inbound peer state', () => {
 
     expect(first?.position).toEqual([1, 2, 3]);
     expect(received.updates.get('peer-1')?.position).toEqual([9, 9, 9]);
+    manager.disconnect();
+  });
+
+  test('huge transforms and zero rotations are dropped, and rotations arrive normalized', () => {
+    const { manager, socket, received } = connect();
+    socket.receive({ type: 'PlayerJoined', client_id: 'far', state: { ...peerState, position: [MAX_REMOTE_COORDINATE * 2, 0, 0] } });
+    socket.receive({ type: 'PlayerJoined', client_id: 'fast', state: { ...peerState, velocity: [0, 1e300, 0] } });
+    socket.receive({ type: 'PlayerJoined', client_id: 'zero', state: { ...peerState, rotation: [0, 0, 0, 0] } });
+    socket.receive({ type: 'PlayerJoined', client_id: 'huge', state: { ...peerState, rotation: [1e300, 0, 0, 0] } });
+    socket.receive({ type: 'PlayerJoined', client_id: 'scaled', state: { ...peerState, rotation: [0, 0, 3, 4] } });
+
+    expect([...received.joins.keys()]).toEqual(['scaled']);
+    expect(received.joins.get('scaled')?.rotation).toEqual([0, 0, 0.6, 0.8]);
     manager.disconnect();
   });
 
