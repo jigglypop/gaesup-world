@@ -21,12 +21,7 @@ export class ManagedMotionEntity {
 
   constructor(id: string, motionType: MotionType, bridge?: MotionBridge | null) {
     this.id = id;
-    this.bridge =
-      bridge ??
-      BridgeFactory.getOrCreateFor(MotionBridge) ??
-      (() => {
-        throw new Error(`[ManagedMotionEntity] MotionBridge not available for id: ${id}`);
-      })();
+    this.bridge = bridge ?? BridgeFactory.getOrCreateFor(MotionBridge);
     this.motionType = motionType;
   }
 

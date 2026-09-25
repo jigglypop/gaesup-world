@@ -1,3 +1,4 @@
+import { logger } from '../../utils/logger';
 import { IDisposable, BridgeEventType, BridgeEvent, BridgeMiddleware, RuntimeValue } from '../types';
 
 export abstract class AbstractBridge<
@@ -88,6 +89,11 @@ export abstract class AbstractBridge<
   execute(id: string, command: CommandType): void {
     const engine = this.getEngine(id);
     if (!engine) return;
+    // Untyped callers reach bridges too; anything but a command object never gets to the engine.
+    if (!command || typeof command !== 'object') {
+      logger.warn(`[${this.constructor.name}] Ignored invalid command for ${id}`);
+      return;
+    }
     if (this.hasEventObservers('execute')) {
       this.emit({ type: 'execute', id, timestamp: Date.now(), data: { command } });
     }

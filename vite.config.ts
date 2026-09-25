@@ -26,7 +26,6 @@ const libraryExternals = [
   'immer',
   /^immer\//,
   'mitt',
-  'reflect-metadata',
   'simplex-noise',
   'zustand',
   /^zustand\//,
@@ -84,20 +83,7 @@ export default defineConfig(({ mode }) => {
   if (isLibraryBuild) {
     return {
       plugins: [
-        react({
-          parserConfig: (id) => {
-            // Enable decorators for all TypeScript files
-            if (id.endsWith('.ts') || id.endsWith('.tsx')) {
-              return {
-                syntax: 'typescript',
-                tsx: id.endsWith('.tsx'),
-                decorators: true,
-              };
-            }
-            return undefined;
-          },
-          tsDecorators: true,
-        }),
+        react(),
         svgr(),
         glsl(),
       ],
@@ -153,20 +139,7 @@ export default defineConfig(({ mode }) => {
   }
   return {
     plugins: [
-      react({
-        parserConfig: (id) => {
-          // Enable decorators for all TypeScript files
-          if (id.endsWith('.ts') || id.endsWith('.tsx')) {
-            return {
-              syntax: 'typescript',
-              tsx: id.endsWith('.tsx'),
-              decorators: true,
-            };
-          }
-          return undefined;
-        },
-        tsDecorators: true,
-      }),
+      react(),
       svgr(),
       glsl(),
       serveDemoGltfAssets(),

@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import * as THREE from 'three';
 
 import { logger } from '@/core/utils/logger';

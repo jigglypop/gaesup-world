@@ -9,9 +9,7 @@ import {
 import { MotionSystem } from '@/core/motions/core/system/MotionSystem';
 import { MotionType } from '@/core/motions/core/system/types';
 import { GameStatesType } from '@/core/world/components/Rideable/types';
-import { ValidateCommand } from '@core/boilerplate';
-import { CoreBridge, DomainBridge, EnableEventLog } from '@core/boilerplate';
-import { DIContainer } from '@core/boilerplate';
+import { CoreBridge } from '@core/boilerplate';
 
 import { MotionCommand, MotionEntity, MotionSnapshot } from './types';
 
@@ -31,14 +29,16 @@ function createCommandGameStates(): GameStatesType {
   };
 }
 
-@DomainBridge('motion')
-@EnableEventLog()
 export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, MotionCommand> {
   private tempQuaternion = new THREE.Quaternion();
   private readonly commandGameStates = createCommandGameStates();
   private readonly syncPosition = new THREE.Vector3();
   private readonly syncVelocity = new THREE.Vector3();
   private playerEntityId: string | null = null;
+
+  constructor() {
+    super({ eventLog: true });
+  }
 
   private createEmptySnapshot(type: MotionType): MotionSnapshot {
     return {
@@ -72,7 +72,6 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
     void _;
     if (!type || !rigidBody) return null;
     const system = new MotionSystem({ type });
-    DIContainer.getInstance().injectProperties(system);
     return {
       system,
       rigidBody,
@@ -81,7 +80,6 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
     };
   }
 
-  @ValidateCommand()
   protected executeCommand(entity: MotionEntity, command: MotionCommand, entityId: string): void {
     const { system, rigidBody } = entity;
     switch (command.type) {

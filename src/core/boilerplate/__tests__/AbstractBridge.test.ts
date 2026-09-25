@@ -125,6 +125,15 @@ describe('AbstractBridge', () => {
         bridge.execute('nonexistent', { type: 'set', value: 100 });
       }).not.toThrow();
     });
+
+    test('명령 객체가 아니면 엔진에 닿기 전에 버리고 이벤트도 내지 않는다', () => {
+      const executed = jest.fn();
+      bridge.on('execute', executed);
+      for (const invalid of [null, undefined, 'set', 7]) bridge.execute(testId, invalid as never);
+
+      expect(bridge.snapshot(testId)?.value).toBe(10);
+      expect(executed).not.toHaveBeenCalled();
+    });
   });
 
   describe('스냅샷 생성', () => {

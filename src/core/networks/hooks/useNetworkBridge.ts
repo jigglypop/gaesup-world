@@ -42,7 +42,7 @@ export function useNetworkBridge(options: UseNetworkBridgeOptions = {}): UseNetw
   const timeStore = useTimeStoreApi();
 
   useEffect(() => {
-    bridgeRef.current = runtime ? (runtime.isActive() ? runtime.networkBridge : null) : BridgeFactory.getOrCreate<NetworkBridge>('networks');
+    bridgeRef.current = runtime ? (runtime.isActive() ? runtime.networkBridge : null) : BridgeFactory.getOrCreateFor(NetworkBridge);
 
     const b = bridgeRef.current;
     if (!b) {

@@ -1,4 +1,4 @@
-import { CoreBridge, DomainBridge, EnableMetrics, ValidateCommand, LogSnapshot } from '@core/boilerplate';
+import { CoreBridge } from '@core/boilerplate';
 
 import type { AnimationClockLoop } from '../../simulation/AnimationClockLoop';
 import type { FixedStepClock } from '../../simulation/FixedStepClock';
@@ -13,15 +13,13 @@ export interface NetworkBridgeEntity {
   dispose: () => void;
 }
 
-@DomainBridge('networks')
-@EnableMetrics()
 export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapshot, NetworkCommand> {
   private readonly updates = new Map<string, UpdateLease>();
   private readonly clockId = `network-publish:${++nextBridgeClockId}`;
   private clock: FixedStepClock | undefined;
 
   constructor() {
-    super();
+    super({ metrics: true });
     this.setupEngineSubscriptions();
   }
 
@@ -55,14 +53,12 @@ export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapsh
     }
   }
 
-  @ValidateCommand()
   protected executeCommand(entity: NetworkBridgeEntity, command: NetworkCommand, id: string): void {
     const { system } = entity;
     void id;
     system.executeCommand(command);
   }
 
-  @LogSnapshot()
   protected createSnapshot(entity: NetworkBridgeEntity, id: string): NetworkSnapshot {
     const { system } = entity;
     void id;

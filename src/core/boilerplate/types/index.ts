@@ -53,11 +53,4 @@ export type BridgeMiddleware<EngineType, SnapshotType, CommandType> = (
 
 export const MILLISECONDS_IN_SECOND = 1000;
 
-export type Constructor<T = object> = new (...args: never[]) => T;
-export type AbstractConstructor<T = object> = abstract new (...args: never[]) => T;
-export type ServiceTarget<T = object> = Constructor<T> | AbstractConstructor<T>;
-export type Factory<T> = () => T;
-export type Token<T> = ServiceTarget<T> | string | symbol;
-export type BridgeClass = new (...args: RuntimeValue[]) => object
 export type BridgeInstance = IDisposable;
-export type BridgeConstructor = new (...args: RuntimeValue[]) => BridgeInstance; 

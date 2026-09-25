@@ -5,7 +5,6 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "types": ["node", "jest"],
     "allowJs": true,
-    "experimentalDecorators": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -57,8 +56,7 @@
       "@stores/*": ["./src/core/stores/*"],
       "@utils/*": ["./src/core/utils/*"],
       "@motions/*": ["./src/core/motions/*"]
-    },
-    "emitDecoratorMetadata": false
+    }
   },
   "include": ["src", "examples", "vite.config.ts", "jest.config.js", "jest.memory.config.js"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"],

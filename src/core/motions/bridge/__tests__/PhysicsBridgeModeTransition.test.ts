@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 
 import type { RootState } from '@react-three/fiber';
 import type { RapierRigidBody } from '@react-three/rapier';

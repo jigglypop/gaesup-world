@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { Component, type ReactNode } from 'react';
 
 import { flushSync } from 'react-dom';

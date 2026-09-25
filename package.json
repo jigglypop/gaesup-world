@@ -253,7 +253,6 @@
     "@xyflow/react": "^12.11.6",
     "immer": "^11.1.18",
     "mitt": "^3.0.1",
-    "reflect-metadata": "^0.2.2",
     "simplex-noise": "^4.0.3",
     "zustand": "^5.0.15"
   },

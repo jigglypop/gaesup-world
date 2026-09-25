@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-import { MonitorMemory } from '@/core/boilerplate/decorators';
 import { getDefaultToonMode, getToonGradient } from '@/core/rendering/toon';
 
 import { MeshConfig } from '../types';
@@ -100,7 +99,6 @@ export class MaterialManager {
     return new THREE.MeshStandardMaterial(baseOptions);
   }
 
-  @MonitorMemory(20) // 텍스처는 메모리를 많이 사용할 수 있음
   private loadTexture(url: string): THREE.Texture {
     const cached = this.textures.get(url);
     if (cached) return cached;

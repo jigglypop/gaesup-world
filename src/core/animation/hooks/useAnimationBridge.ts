@@ -10,14 +10,8 @@ import { AnimationCommand } from '../bridge/types';
 import { AnimationType } from '../core/types';
 import type { EntityAnimationStates } from '../core/types';
 
-let fallbackAnimationBridge: AnimationBridge | null = null;
-
 export function getGlobalAnimationBridge(): AnimationBridge {
-  const bridge = BridgeFactory.getOrCreateFor(AnimationBridge);
-  if (bridge) return bridge;
-
-  fallbackAnimationBridge ??= new AnimationBridge();
-  return fallbackAnimationBridge;
+  return BridgeFactory.getOrCreateFor(AnimationBridge);
 }
 
 export function useScopedAnimationBridge(): AnimationBridge | null {

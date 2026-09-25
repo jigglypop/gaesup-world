@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-import { MonitorMemory } from '../boilerplate/decorators';
 
 const MAX_CACHE_SIZE = 100;
 const MAX_TRIG_CACHE_SIZE = 1000;
@@ -89,7 +88,6 @@ export class MemoizationManager {
     clearTrigCache();
   }
 
-  @MonitorMemory(10)
   getStats() {
     return {
       vectorCaches: Array.from(this.vectorCaches.entries()).map(([id, cache]) => ({

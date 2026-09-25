@@ -1,7 +1,7 @@
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
-import { AbstractSystem, SystemContext, SystemUpdateArgs, Inject } from '@core/boilerplate/engine';
+import { AbstractSystem, SystemContext, SystemUpdateArgs } from '@core/boilerplate/engine';
 import type { RuntimeRecord } from '@core/boilerplate/engine';
 import type { GameStatesType } from '@core/world/components/Rideable/types';
 
@@ -144,8 +144,7 @@ function isMotionUpdateArgs(context: SystemContext | MotionUpdateArgs): context 
 }
 
 export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, MotionSystemOptions, MotionUpdateArgs> {
-  @Inject(MotionService)
-  private motionService!: MotionService;
+  private readonly motionService = new MotionService();
 
   // Hot-path scratch objects to avoid per-frame allocations.
   private temp = {

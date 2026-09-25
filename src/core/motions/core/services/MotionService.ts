@@ -1,9 +1,7 @@
 import * as THREE from 'three';
 
 import { GameStatesType } from '@/core/world/components/Rideable/types';
-import { Service } from '@core/boilerplate/engine';
 
-@Service()
 export class MotionService {
   private readonly DEFAULT_JUMP_FORCE = 12;
   private readonly DEFAULT_MAX_SPEED = 10;

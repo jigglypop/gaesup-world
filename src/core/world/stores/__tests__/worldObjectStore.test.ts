@@ -33,7 +33,7 @@ test('owned stores retain data across engine disposal, isolate identical IDs, an
 });
 
 test('legacy slices share the default engine without resetting it or replacing each other subscriptions', () => {
-  const bridge = new WorldBridge(); const factory = jest.spyOn(BridgeFactory, 'getOrCreate').mockReturnValue(bridge);
+  const bridge = new WorldBridge(); const factory = jest.spyOn(BridgeFactory, 'getOrCreateFor').mockReturnValue(bridge);
   const a = createStore<WorldSlice>()(createWorldSlice);
   a.getState().addObject(object('one', 1)); const engine = bridge.getEngine('default');
   const b = createStore<WorldSlice>()(createWorldSlice);

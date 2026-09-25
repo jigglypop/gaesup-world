@@ -2,9 +2,6 @@
 // Jest loads setupFilesAfterEnv via CommonJS; keep this file CJS-compatible.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 require("@testing-library/jest-dom");
-// Decorator metadata used by boilerplate/decorators tests.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-require("reflect-metadata");
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { TextEncoder, TextDecoder } = require("node:util");

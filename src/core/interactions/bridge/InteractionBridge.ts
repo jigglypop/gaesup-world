@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-import { LogSnapshot } from '@/core/boilerplate/decorators';
 import { logger } from '@/core/utils/logger';
 import { reportError } from '@/core/utils/reportError';
 
@@ -309,7 +308,6 @@ export class InteractionBridge {
     }
   }
 
-  @LogSnapshot()
   snapshot(): BridgeSnapshot {
     const state = this.createInteractionSnapshot();
     const config = this.interactionSystem.getConfig();

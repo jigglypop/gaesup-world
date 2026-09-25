@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import * as THREE from 'three';
 
 import type { GameStatesType } from '@core/world/components/Rideable/types';

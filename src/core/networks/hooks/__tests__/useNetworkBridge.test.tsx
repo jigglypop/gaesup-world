@@ -18,7 +18,7 @@ function inRuntime(runtime: GaesupRuntime) {
 }
 const leases = (bridge: NetworkBridge | null) => (bridge ? bridge['updates'].size : 0);
 
-afterEach(() => BridgeFactory.dispose('networks'));
+afterEach(() => BridgeFactory.dispose(NetworkBridge));
 
 describe('useNetworkBridge', () => {
   test('without a runtime it starts the main engine on the shared networks bridge', async () => {
@@ -26,7 +26,7 @@ describe('useNetworkBridge', () => {
     await waitFor(() => expect(result.current.isReady).toBe(true));
 
     expect(result.current.bridge).toBeInstanceOf(NetworkBridge);
-    expect(result.current.bridge).toBe(BridgeFactory.get('networks'));
+    expect(result.current.bridge).toBe(BridgeFactory.get(NetworkBridge));
     expect(result.current.getSystemState()?.isRunning).toBe(true);
     unmount();
   });
@@ -81,7 +81,7 @@ describe('useNetworkBridge', () => {
       const active = renderHook(() => useNetworkBridge(), { wrapper: inRuntime(runtime) });
       await waitFor(() => expect(active.result.current.isReady).toBe(true));
       expect(active.result.current.bridge).toBe(runtime.networkBridge);
-      expect(BridgeFactory.get('networks')).toBeNull();
+      expect(BridgeFactory.get(NetworkBridge)).toBeNull();
       active.unmount();
     } finally {
       await runtime.dispose();

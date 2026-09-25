@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 
-import { CoreBridge, DomainBridge, EnableEventLog } from '@core/boilerplate';
-import { ValidateCommand, LogSnapshot } from '@core/boilerplate/decorators';
+import { CoreBridge } from '@core/boilerplate';
 
 import { WorldCommand, WorldSnapshot, WorldBridgeState } from './types';
 import { WorldSystem, WorldObject, InteractionEvent } from '../core/WorldSystem';
@@ -24,11 +23,13 @@ function createSnapshotQueries(system: WorldSystem): WorldSnapshotQueries {
   };
 }
 
-@DomainBridge('world')
-@EnableEventLog()
 export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, WorldCommand> {
   private enabled = true;
   private snapshotCache = new WeakMap<WorldSystemEntity, { revision: number; systemRevision: number; expires: number; value: WorldSnapshot }>();
+
+  constructor() {
+    super({ eventLog: true });
+  }
 
   suspend(): void { this.enabled = false; }
   resume(): void { this.enabled = true; }
@@ -57,7 +58,6 @@ export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, Wo
     };
   }
 
-  @ValidateCommand()
   protected executeCommand(entity: WorldSystemEntity, command: WorldCommand, id: string): void {
     if (!this.enabled) return;
     entity.revision++;
@@ -125,7 +125,6 @@ export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, Wo
     }
   }
 
-  @LogSnapshot()
   protected createSnapshot(entity: WorldSystemEntity, id: string): WorldSnapshot {
     void id;
     const { system, state, queries } = entity;

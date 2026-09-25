@@ -3,8 +3,6 @@ import * as THREE from 'three'
 import { CoreBridge } from '@/core/boilerplate'
 
 import { AnimationCommand, AnimationSnapshot, AnimationMetrics } from './types'
-import { DomainBridge, EnableMetrics, Command } from '../../boilerplate/decorators'
-import { LogSnapshot, ValidateCommand, RequireEngineById } from '../../boilerplate/decorators'
 import { logger } from '../../utils/logger'
 import { AnimationSystem } from '../core/AnimationSystem'
 import type { AnimatorRuntime } from '../core/animator/AnimatorRuntime'
@@ -22,8 +20,6 @@ function sanitizeAnimationName(name: string): string {
 
 
 
-@DomainBridge('animation')
-@EnableMetrics()
 export class AnimationBridge extends CoreBridge<
   AnimationSystem,
   AnimationSnapshot,
@@ -31,7 +27,7 @@ export class AnimationBridge extends CoreBridge<
 > {
   private readonly engineSnapshots = new WeakMap<AnimationSystem, AnimationSnapshot>()
   constructor() {
-    super()
+    super({ metrics: true })
     const engineTypes: AnimationType[] = ['character', 'vehicle', 'airplane']
     engineTypes.forEach(type => {
       // buildEngine() already creates AnimationSystem; avoid double instantiation.
@@ -52,7 +48,6 @@ export class AnimationBridge extends CoreBridge<
     return new AnimationSystem(id)
   }
 
-  @RequireEngineById()
   registerAnimationAction(type: AnimationType, name: string, action: THREE.AnimationAction): void {
     const engine = this.getEngine(type)
     if (engine) {
@@ -74,7 +69,6 @@ export class AnimationBridge extends CoreBridge<
     })
   }
 
-  @RequireEngineById()
   unregisterAnimations(type: AnimationType, actions?: Record<string, THREE.AnimationAction | null>): void {
     const engine = this.getEngine(type)
     if (!engine) return
@@ -87,8 +81,6 @@ export class AnimationBridge extends CoreBridge<
     })
   }
 
-  @Command('play')
-  @ValidateCommand()
   protected executeCommand(engine: AnimationSystem, command: AnimationCommand): void {
     switch (command.type) {
       case 'play':
@@ -114,7 +106,6 @@ export class AnimationBridge extends CoreBridge<
     }
   }
 
-  @LogSnapshot()
   protected createSnapshot(engine: AnimationSystem): AnimationSnapshot {
     const state = engine.getState()
     const metrics = engine.getMetrics()
@@ -151,13 +142,11 @@ export class AnimationBridge extends CoreBridge<
     return snapshot
   }
 
-  @RequireEngineById()
   getMetrics(type: AnimationType): AnimationMetrics | null {
     const engine = this.getEngine(type)
     return engine ? engine.getMetrics() : null
   }
 
-  @RequireEngineById()
   update(type: AnimationType, deltaTime: number, lease?: AnimatorLease): void {
     const engine = this.getEngine(type)
     if (engine) {
@@ -209,7 +198,6 @@ export class AnimationBridge extends CoreBridge<
     super.execute(type, command)
   }
 
-  @LogSnapshot()
   override snapshot(type: AnimationType): AnimationSnapshot | null {
     const result = super.snapshot(type)
     if (!result) {

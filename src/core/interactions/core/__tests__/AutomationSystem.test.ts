@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import { Vector3 } from 'three';
 
 import { AutomationSystem } from '../AutomationSystem';

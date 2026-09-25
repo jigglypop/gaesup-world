@@ -62,8 +62,8 @@ const legacySources: GrassManagerSources = {
   weather: () => useWeatherStore.getState().current,
   trample: () => {
     const bridge = BridgeFactory.getOrCreateFor(MotionBridge);
-    const id = bridge?.getPlayerEntityId();
-    return id ? bridge?.snapshot(id) ?? null : null;
+    const id = bridge.getPlayerEntityId();
+    return id ? bridge.snapshot(id) : null;
   },
 };
 

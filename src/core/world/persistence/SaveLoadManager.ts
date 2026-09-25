@@ -1,5 +1,5 @@
-import { MonitorMemory, Timeout } from '@/core/boilerplate/decorators';
 import type { RuntimeValue } from '@/core/boilerplate/types';
+import { withTimeout } from '@/core/utils/timeout';
 
 import { DEFAULT_MAX_SLOTS_PER_WORLD, selectExpiredWorldSlots } from './slots';
 import { 
@@ -14,6 +14,8 @@ const SAVE_VERSION = '1.0.0';
 const STORAGE_KEY_PREFIX = 'gaesup_world_save_';
 const BASE64_JSON_STORAGE_PREFIX = 'base64-json:';
 const COMPRESSED_SAVE_ENCODING = 'gaesup-world:gzip-json:v1';
+/** A compression or parse that outlives this fails the save/load instead of stalling it. */
+const SAVE_LOAD_TIMEOUT_MS = 5000;
 
 type CompressedSaveEnvelope = {
   encoding: typeof COMPRESSED_SAVE_ENCODING;
@@ -59,7 +61,6 @@ export class SaveLoadManager {
     this.maxSlotsPerWorld = options.maxSlotsPerWorld ?? DEFAULT_MAX_SLOTS_PER_WORLD;
   }
 
-  @Timeout(5000) // 5초 타임아웃
   async save(
     worldData: WorldSaveData,
     metadata?: Partial<SaveMetadata>,
@@ -67,7 +68,9 @@ export class SaveLoadManager {
   ): Promise<SaveLoadResult> {
     try {
       const saveData = this.createSaveData(worldData, metadata, options);
-      const value = options.compress ? await this.compressData(saveData) : JSON.stringify(saveData);
+      const value = options.compress
+        ? await withTimeout(this.compressData(saveData), SAVE_LOAD_TIMEOUT_MS, 'save')
+        : JSON.stringify(saveData);
       this.writeSlot(saveData, value);
       return { success: true, data: saveData };
     } catch (error) {
@@ -78,7 +81,6 @@ export class SaveLoadManager {
     }
   }
 
-  @Timeout(5000)
   async load(saveId: string, options: SaveLoadOptions = {}): Promise<SaveLoadResult> {
     try {
       const storageKey = `${STORAGE_KEY_PREFIX}${saveId}`;
@@ -88,7 +90,7 @@ export class SaveLoadManager {
         throw new Error(`Save data not found: ${saveId}`);
       }
 
-      const saveData = await this.parseStoredSaveData(savedDataStr);
+      const saveData = await withTimeout(this.parseStoredSaveData(savedDataStr), SAVE_LOAD_TIMEOUT_MS, 'load');
 
       if (!this.validateSaveData(saveData)) {
         throw new Error('Invalid save data format');
@@ -153,7 +155,6 @@ export class SaveLoadManager {
     }
   }
 
-  @MonitorMemory(10)
   listSaves(): Array<{ id: string; timestamp: number; metadata?: SaveMetadata }> {
     const saves: Array<{ id: string; timestamp: number; metadata?: SaveMetadata }> = [];
     let storage: LegacySaveStorage;

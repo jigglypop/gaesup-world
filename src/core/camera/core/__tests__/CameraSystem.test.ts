@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import * as THREE from 'three';
 
 import type { ActiveStateType } from '../../../motions/core/types';

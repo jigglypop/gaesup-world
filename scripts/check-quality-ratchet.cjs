@@ -20,10 +20,9 @@ const METRICS = {
     file.endsWith('.tsx') && lineCount(source) > COMPONENT_LINE_LIMIT ? 1 : 0,
   oversizedModules: (source, file) =>
     file.endsWith('.ts') && lineCount(source) > MODULE_LINE_LIMIT ? 1 : 0,
-  // PRD 23: error-swallowing and profiling decorators stay removed; reflect-metadata only shrinks.
-  handleErrorDecorators: (source) => count(source, /@HandleError\(/g),
-  profileDecorators: (source) => count(source, /@Profile\(/g),
-  reflectMetadataImports: (source) => count(source, /^import ['"]reflect-metadata['"]/gm),
+  // Decorators and their reflect-metadata registry are gone; behavior lives in plain code.
+  // Uppercase only: WGSL attributes such as `@group(0)` in shader strings are not decorators.
+  decorators: (source) => count(source, /^\s*@[A-Z]\w*\(/gm),
 };
 
 function count(source, pattern) {

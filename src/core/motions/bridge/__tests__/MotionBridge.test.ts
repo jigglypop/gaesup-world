@@ -1,4 +1,3 @@
-import 'reflect-metadata';
 import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 

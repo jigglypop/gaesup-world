@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-import { MonitorMemory } from '@/core/boilerplate/decorators';
 
 export interface CameraDebugInfo {
   position: THREE.Vector3;
@@ -163,17 +162,14 @@ export class CameraDebugger {
     }
   }
 
-  @MonitorMemory(5)
   getDebugInfo(): CameraDebugInfo[] {
     return [...this.debugInfo];
   }
 
-  @MonitorMemory(5)
   getPositionHistory(): THREE.Vector3[] {
     return [...this.positionHistory];
   }
 
-  @MonitorMemory(10)
   exportData(): string {
     const data = {
       debugInfo: this.debugInfo,
