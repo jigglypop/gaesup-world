@@ -128,11 +128,10 @@ async function main() {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     const pageErrors = collectPageErrors(page);
 
-    await page.goto(`${baseUrl}/minimal`, { waitUntil: 'domcontentloaded' });
-    await page.getByRole('heading', { name: '미니멀 개숲 런타임' }).waitFor({ timeout: 15_000 });
-    await page.getByRole('button', { name: '프리셋 적용' }).waitFor({ timeout: 5_000 });
-    await page.getByRole('button', { name: '무기 토글' }).waitFor({ timeout: 5_000 });
-    await page.getByRole('button', { name: '액션 실행' }).waitFor({ timeout: 5_000 });
+    // The default route is the minihome product example; it reports its backend once the renderer is up.
+    await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
+    await page.locator('.miniroom-view:not([data-renderer="loading"])').waitFor({ timeout: 30_000 });
+    await expectWorldCanvasPaint(page);
 
     await page.goto(`${baseUrl}/world`, { waitUntil: 'domcontentloaded' });
     await expectWorldCanvasPaint(page);
@@ -141,7 +140,7 @@ async function main() {
       throw new Error(`Browser smoke captured page errors:\n${pageErrors.join('\n')}`);
     }
 
-    console.log('Browser smoke passed for /minimal and /world.');
+    console.log('Browser smoke passed for / and /world.');
   } finally {
     if (browser) await browser.close();
     stop();

@@ -2,10 +2,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { chromium } = require('@playwright/test');
 const { PNG } = require('pngjs');
 
-const { ROOT: root, startDevServer } = require('./lib/devServer.cjs');
+const { ROOT: root, collectPageErrors, launchWebGpuBrowser, startProbeServer } = require('./lib/devServer.cjs');
 
 const output = path.join(root, '.tmp/rendering-performance');
 function painted(buffer) {
@@ -16,17 +15,16 @@ function painted(buffer) {
 }
 async function main() {
   fs.mkdirSync(output, { recursive: true });
-  const { url: base, logs: serverLog, stop } = await startDevServer();
+  const { url: base, logs: serverLog, stop } = await startProbeServer();
   let browser;
   const errors = [];
   const result = { scenarios: [] };
   try {
-    browser = await chromium.launch({ channel: process.env.GAESUP_BROWSER_CHANNEL ?? 'chrome', headless: true, args: ['--enable-unsafe-webgpu', '--enable-gpu'] });
+    browser = await launchWebGpuBrowser();
     result.browser = browser.version();
     const page = await browser.newPage({ viewport: { width: 960, height: 640 } });
-    page.on('pageerror', error => errors.push(error.message));
+    collectPageErrors(page, { console: 'all', errors });
     page.on('response', response => { if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`); });
-    page.on('console', message => { if (message.type() === 'error' || /GPUValidationError|Invalid RenderPipeline/.test(message.text())) errors.push(message.text()); });
     await page.goto(`${base}/scripts/fixtures/rendering-performance.html`);
     console.log('Loaded rendering fixture');
     // Vite can reload once after discovering the lazy WebGPU dependencies.
@@ -51,7 +49,7 @@ async function main() {
       assert.equal(after.particles[0].count, 5000);
       assert.equal(after.particles[0].version, 0, `${kind}: static GPU positions`);
       assert.deepEqual(after.particles[0].sample, before.particles[0].sample);
-      assert.ok(after.particles[0].time > before.particles[0].time, `${kind}: time advances`);
+      assert.ok(after.frames > before.frames, `${kind}: frames advance`);
       assert.ok(painted(imageAfter) > 100, `${kind}: particles must paint`);
       assert.ok(!imageBefore.equals(imageAfter), `${kind}: rendered motion`);
       result.scenarios.push({ kind, paintedPixels: painted(imageAfter), frames: after.frames - before.frames, positionVersion: after.particles[0].version });

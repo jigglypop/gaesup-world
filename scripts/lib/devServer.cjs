@@ -45,11 +45,12 @@ async function waitForServer(url, logs) {
   throw new Error(`Timed out waiting for Vite dev server at ${url}.\n${logs.join('')}`);
 }
 
-async function startDevServer() {
+/** Runs `vite <args>` on a free port and resolves once `readyPath` answers. */
+async function startVite(args = [], readyPath = '/') {
   const port = await findPort();
   const url = `http://${HOST}:${port}`;
   const logs = [];
-  const server = spawn(process.execPath, [VITE_BIN, '--host', HOST, '--port', String(port), '--strictPort'], {
+  const server = spawn(process.execPath, [VITE_BIN, ...args, '--host', HOST, '--port', String(port), '--strictPort'], {
     cwd: ROOT,
     env: { ...process.env, BROWSER: 'none' },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -61,12 +62,21 @@ async function startDevServer() {
   for (const handle of [server, server.stdout, server.stderr]) handle.unref();
   process.once('exit', stop);
   try {
-    await waitForServer(url, logs);
+    await waitForServer(`${url}${readyPath}`, logs);
   } catch (error) {
     stop();
     throw error;
   }
   return { url, logs, stop };
+}
+
+function startDevServer() {
+  return startVite();
+}
+
+/** Serves the production demo build (scripts/build-demo.mjs) the way GitHub Pages does, under `base`. */
+function startPreviewServer(base) {
+  return startVite(['preview', '--outDir', 'demo-dist', '--base', base], base);
 }
 
 /** GAESUP_PROBE_URL targets an already running server; otherwise start one on a free port. */
@@ -75,11 +85,31 @@ async function startProbeServer() {
   return url ? { url: url.replace(/\/+$/, ''), logs: [], stop: () => {} } : startDevServer();
 }
 
-/** Uncaught page errors, recorded for the probe to assert on before it reports success. */
-function collectPageErrors(page) {
-  const errors = [];
+/** Headless Chrome with WebGPU enabled; GAESUP_BROWSER_CHANNEL selects another channel. */
+function launchWebGpuBrowser() {
+  const { chromium } = require('@playwright/test');
+  return chromium.launch({
+    channel: process.env.GAESUP_BROWSER_CHANNEL ?? 'chrome',
+    headless: true,
+    args: ['--enable-unsafe-webgpu', '--enable-gpu'],
+  });
+}
+
+// GPU validation failures reach the page only as console messages.
+const GPU_ERROR_PATTERN = /GPUValidationError|Invalid RenderPipeline|WebGL: INVALID/;
+
+/**
+ * Uncaught page errors, recorded into `errors` for the probe to assert on before it reports success. `console: 'gpu'`
+ * also records GPU validation messages; `console: 'all'` records every console error as well.
+ */
+function collectPageErrors(page, { console: level, errors = [] } = {}) {
   page.on('pageerror', (error) => errors.push(error.message));
+  if (level) {
+    page.on('console', (message) => {
+      if ((level === 'all' && message.type() === 'error') || GPU_ERROR_PATTERN.test(message.text())) errors.push(message.text());
+    });
+  }
   return errors;
 }
 
-module.exports = { ROOT, wait, startDevServer, startProbeServer, collectPageErrors };
+module.exports = { ROOT, wait, startDevServer, startPreviewServer, startProbeServer, launchWebGpuBrowser, collectPageErrors };

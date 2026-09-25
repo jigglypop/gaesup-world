@@ -4,11 +4,10 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import { createRoot } from 'react-dom/client';
 import { Matrix4, Raycaster, Vector3 } from 'three';
-import { BuildingSystem } from '/src/core/building/components/BuildingSystem/index.tsx';
-import { BuildingController } from '/src/core/building/components/BuildingController/index.tsx';
-import { useBuildingStore } from '/src/core/building/stores/buildingStore.ts';
-import { createRenderer, createLegacyRenderer } from '/src/core/rendering/webgpu.ts';
-import { WorldPostProcessing } from '/src/core/rendering/postprocess/WorldPostProcessing.tsx';
+
+import { createLegacyRenderer, createRenderer } from 'gaesup-world';
+import { BuildingController, BuildingSystem, useBuildingStore } from 'gaesup-world/building';
+import { WorldPostProcessing } from 'gaesup-world/postprocessing';
 
 useBuildingStore.getState().initializeDefaults();
 const initial = useBuildingStore.getState();

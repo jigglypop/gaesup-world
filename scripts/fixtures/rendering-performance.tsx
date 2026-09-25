@@ -1,13 +1,10 @@
-import 'reflect-metadata';
 import React, { useEffect, useState } from 'react';
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { createRoot } from 'react-dom/client';
 
-import { CameraSystem } from '/src/core/camera/core/CameraSystem.ts';
-import { createRenderer, createLegacyRenderer } from '/src/core/rendering/webgpu.ts';
-import { WorldPostProcessing } from '/src/core/rendering/postprocess/WorldPostProcessing.tsx';
-import { WeatherEffect } from '/src/core/weather/components/WeatherEffect/index.tsx';
+import { CameraSystem, createLegacyRenderer, createRenderer, WeatherEffect } from 'gaesup-world';
+import { WorldPostProcessing } from 'gaesup-world/postprocessing';
 
 const config = { mode: 'thirdPerson', distance: { x: 15, y: 8, z: 15 }, smoothing: { position: 0.1, rotation: 0.1, fov: 0.1 }, fov: 75, zoom: 1, enableCollision: true };
 window.benchmarkOrbit = () => {
@@ -34,7 +31,7 @@ function Probe() {
       state.scene.traverse(object => {
         const position = object.geometry?.getAttribute('weatherPosition') ?? (object.isPoints && object.geometry.getAttribute('position'));
         if (!position) return;
-        particles.push({ kind: object.type, count: position.count, version: position.version, time: object.material.time,
+        particles.push({ kind: object.type, count: position.count, version: position.version,
           sample: Array.from(position.array.slice(0, 12)), position: object.position.toArray(), uuid: object.uuid });
       });
       return { native: state.gl.backend?.isWebGPUBackend === true, particles, textures: state.gl.info.memory.textures,

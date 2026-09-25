@@ -2,27 +2,23 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { chromium } = require('@playwright/test');
 const { PNG } = require('pngjs');
 
-const { ROOT: root, startDevServer } = require('./lib/devServer.cjs');
+const { ROOT: root, collectPageErrors, launchWebGpuBrowser, startProbeServer } = require('./lib/devServer.cjs');
 
 const output = path.join(root, '.tmp/unified-world');
 async function main() {
   fs.mkdirSync(output, { recursive: true });
-  const { url: base, logs, stop } = await startDevServer();
+  const { url: base, logs, stop } = await startProbeServer();
   const errors = [], warnings = [];
   let browser;
   const result = {};
   try {
-    browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--enable-unsafe-webgpu', '--enable-gpu'] });
+    browser = await launchWebGpuBrowser();
     result.browser = browser.version();
     const page = await browser.newPage({ viewport: { width: 960, height: 640 } });
-    page.on('pageerror', error => errors.push(error.message));
-    page.on('console', message => {
-      if (message.type() === 'error' || /GPUValidationError|Invalid RenderPipeline/.test(message.text())) { errors.push(message.text()); console.log('ERROR', message.text()); }
-      else if (message.type() === 'warning') warnings.push(message.text());
-    });
+    collectPageErrors(page, { console: 'all', errors });
+    page.on('console', message => { if (message.type() === 'warning') warnings.push(message.text()); });
     await page.goto(`${base}/scripts/fixtures/unified-world.html`);
     await page.waitForTimeout(2500);
     await page.waitForFunction(async () => (await window.worldProbe?.())?.gpu >= 3, null, { timeout: 45000 });

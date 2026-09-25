@@ -3,21 +3,21 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { chromium } = require('@playwright/test');
 const { PNG } = require('pngjs');
 
-const { startProbeServer } = require('./lib/devServer.cjs');
+const { collectPageErrors, launchWebGpuBrowser, startProbeServer } = require('./lib/devServer.cjs');
+const { openRoomSettingsOnLoad, saveRoomGlb } = require('./lib/minihome.cjs');
 
 async function main() {
   const output = path.resolve('.artifacts/minihome', `lighting-${new Date().toISOString().replace(/[:.]/g, '-')}`);
   fs.mkdirSync(output, { recursive: true });
   const server = await startProbeServer();
-  const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--enable-unsafe-webgpu', '--enable-gpu'] });
+  const browser = await launchWebGpuBrowser();
   const rows = []; const errors = [];
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1040 } });
-    page.on('pageerror', error => errors.push(error.message));
-    page.on('console', message => { if (/GPUValidationError|Invalid RenderPipeline/.test(message.text())) errors.push(message.text()); });
+    collectPageErrors(page, { console: 'gpu', errors });
+    await openRoomSettingsOnLoad(page);
     const ready = () => page.waitForFunction(() => window.miniroom?.diagnostics().renderedFrames > 0 && !window.miniroom?.diagnostics().pendingFrame, undefined, { timeout: 60000 });
     async function shot(stage) {
       await ready(); await page.locator('canvas').scrollIntoViewIfNeeded(); await page.waitForTimeout(100);
@@ -39,7 +39,7 @@ async function main() {
     await page.getByRole('button', { name: '미니홈피 저장' }).click(); await page.reload();
     await page.waitForFunction(() => window.miniroom?.diagnostics().avatar.style === 'blue', undefined, { timeout: 60000 }); await shot('06-reload');
     await select('미니룸 아바타', 'mint'); await shot('07-mint');
-    const download = page.waitForEvent('download'); await page.getByRole('button', { name: '3D 방 내보내기 (.glb)', exact: true }).click(); await (await download).saveAs(path.join(output, 'export.glb')); await shot('08-export');
+    await saveRoomGlb(page, path.join(output, 'export.glb')); await shot('08-export');
     await select('미니룸 카메라', 'isometric'); await shot('09-isometric');
     await select('미니룸 아바타', 'classic'); await shot('10-classic');
     await page.setViewportSize({ width: 390, height: 844 }); await shot('11-mobile');

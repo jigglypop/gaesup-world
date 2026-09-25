@@ -2,15 +2,14 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { chromium } = require('@playwright/test');
-
-const { startProbeServer } = require('./lib/devServer.cjs');
+const { collectPageErrors, launchWebGpuBrowser, startProbeServer } = require('./lib/devServer.cjs');
+const { clickFileTool, openRoomSettingsOnLoad, saveRoomGlb } = require('./lib/minihome.cjs');
 
 async function main() {
   const output = path.resolve('.artifacts/minihome', new Date().toISOString().replace(/[:.]/g, '-'));
   fs.mkdirSync(output, { recursive: true });
   const server = await startProbeServer();
-  const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--enable-unsafe-webgpu', '--enable-gpu'] });
+  const browser = await launchWebGpuBrowser();
   const errors = [];
   const screenshots = [];
   const evidence = {};
@@ -29,10 +28,10 @@ async function main() {
         }
       };
     });
-    page.on('pageerror', error => errors.push(error.message));
-    page.on('console', message => { if (/GPUValidationError|Invalid RenderPipeline/.test(message.text())) errors.push(message.text()); });
+    collectPageErrors(page, { console: 'gpu', errors });
+    await openRoomSettingsOnLoad(page);
     await page.goto(server.url);
-    await page.waitForFunction(() => !!window.miniroom, { timeout: 60000 });
+    await page.waitForFunction(() => !!window.miniroom, null, { timeout: 60000 });
     const waitStyle = style => page.waitForFunction(expected => {
       const avatar = window.miniroom?.diagnostics().avatar;
       return avatar?.style === expected && avatar.status === 'ready' && !document.querySelector('[role="alert"]');
@@ -76,13 +75,11 @@ async function main() {
     for (const [label, value] of [['미니룸 조명', 'evening'], ['미니룸 화질', 'economy'], ['미니룸 카메라', 'front']]) assert.equal(await page.getByLabel(label, { exact: true }).inputValue(), value);
     evidence.settingsReload = true;
     await page.getByLabel('미니룸 아바타', { exact: true }).selectOption('mint'); await waitStyle('mint');
-    await page.getByRole('button', { name: '실행 취소', exact: true }).click(); await waitStyle('blue');
-    await page.getByRole('button', { name: '다시 실행', exact: true }).click(); await waitStyle('mint');
+    await clickFileTool(page, '실행 취소'); await waitStyle('blue');
+    await clickFileTool(page, '다시 실행'); await waitStyle('mint');
     evidence.avatarUndoRedo = true;
     // Export must retain skin joints within the exported scene.
-    const download = page.waitForEvent('download');
-    await page.getByRole('button', { name: '3D 방 내보내기 (.glb)', exact: true }).click();
-    const glbPath = path.join(output, 'avatar-room.glb'); await (await download).saveAs(glbPath);
+    const glbPath = path.join(output, 'avatar-room.glb'); await saveRoomGlb(page, glbPath);
     const validation = await require('gltf-validator').validateBytes(new Uint8Array(fs.readFileSync(glbPath)));
     assert.equal(validation.issues.numErrors, 0, JSON.stringify(validation.issues));
     evidence.glbErrors = validation.issues.numErrors;
