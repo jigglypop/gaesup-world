@@ -21,15 +21,6 @@
 
 위에서 아래 순서로 한다.
 
-### SE-2 테스트 판정력
-
-| Slice | 내용 | 완료 기준 |
-|---|---|---|
-| SE-2a | PRD 의존 제거. `test/accept/catalog.test.ts`는 budgets.json과 구현(헤드리스 `acceptScenario` 등록, 브라우저 suite)을 대조한다. `/accept` 마일스톤 보드와 파서를 지운다 | catalog 테스트 통과, `build:demo` 통과 |
-| SE-2b | 예산 범위 `{min,max}`, 비유한 측정값은 미측정으로 판정. S-H10은 정확히 1, S-H13 정지 송신에 하한 | 범위·미측정 판정 단위 테스트, S-H10·S-H13 green |
-| SE-2c | 브라우저 러너: budgets.json에 있는데 페이지에 없는 시나리오와 `--only` 오타는 오류, 시나리오별 제한 시간, 레거시 WebGL program 계측, `--software`는 WebGL 설정으로 실행 | `pnpm accept` 전체 실행 판정이 직전 보고와 같음 |
-| SE-2d | 공허하게 통과하는 단위 테스트 정리(빈 시드로 통과하는 ItemRegistry 테스트) | 해당 테스트 삭제 또는 실제 검증 |
-
 ### SE-3 검증 규칙 단일화
 
 | Slice | 내용 | 완료 기준 |

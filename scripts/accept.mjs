@@ -22,11 +22,35 @@ const HEAVY = {
   postprocessing: /\/src\/core\/rendering\/postprocess\/|\/node_modules\/(?:@react-three\/)?postprocessing\//,
 };
 const FAILING = new Set(['fail', 'fixed', 'error']);
+// A hung scenario (a renderer that never initializes) is stopped and judged as an error instead of stalling the job.
+const SCENARIO_TIMEOUT_MS = 180_000;
+const scenarios = JSON.parse(readFileSync(path.join(ROOT, 'test/accept/budgets.json'), 'utf8')).scenarios;
 
 const argv = process.argv.slice(2);
 const software = argv.includes('--software');
+// SwiftShader gives no dependable WebGPU adapter; scenarios that follow the requested backend run on WebGL there.
+const config = software ? { backend: 'webgl' } : undefined;
 const only = argv.find((arg) => arg.startsWith('--only='))?.slice('--only='.length).split(',');
 const selected = (id) => !only || only.includes(id);
+
+/** Runs one scenario on the page; past the time limit it stops the Lab run and throws. */
+async function runOnPage(page, id) {
+  const pending = page.evaluate(([scenarioId, request]) => window.performanceLab.run({ scenarioId, config: request }), [id, config]);
+  pending.catch(() => {});
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${id} did not finish within ${SCENARIO_TIMEOUT_MS / 1000}s`)), SCENARIO_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([pending, timeout]);
+  } catch (error) {
+    await page.evaluate(() => window.performanceLab.stop()).catch(() => {});
+    await Promise.race([pending.catch(() => {}), new Promise((resolve) => setTimeout(resolve, 10_000))]);
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /** Scripts each route loads until the network is idle, their gzip size and the heavy chunks among them. */
 async function measureRoutes(browser, url) {
@@ -78,6 +102,8 @@ pre{margin:0;font-size:11px}img{width:240px}.pass{color:#74e1c2}.fail,.error{col
 }
 
 async function main() {
+  const unknown = (only ?? []).filter((id) => scenarios[id]?.runner !== 'browser');
+  if (unknown.length > 0) throw new Error(`--only names no browser scenario in test/accept/budgets.json: ${unknown.join(', ')}`);
   if (!argv.includes('--no-build')) execFileSync(process.execPath, [path.join(ROOT, 'scripts/build-demo.mjs')], { cwd: ROOT, stdio: 'inherit', env: { ...process.env, GAESUP_BASE_URL: BASE } });
   const startedAt = new Date().toISOString();
   const dir = path.join(ROOT, '.artifacts/accept', startedAt.replace(/[:.]/g, '-'));
@@ -104,10 +130,16 @@ async function main() {
       const metrics = { rootInitialJsGzipBytes: routes[0].gzipBytes, unusedHeavyChunksOnRoot: routes[0].heavy.length };
       results.push({ id: 'S-B01', ...(await judge('S-B01', metrics)), metrics: { ...metrics, routes }, screenshot: null });
     }
-    for (const id of (await page.evaluate(() => window.performanceLab.scenarioIds)).filter(selected)) {
+    const onPage = await page.evaluate(() => window.performanceLab.scenarioIds);
+    // A judged scenario the page does not offer would otherwise vanish from the report and pass the job.
+    for (const [id, entry] of Object.entries(scenarios)) {
+      if (entry.runner !== 'browser' || entry.status === 'pending' || id === 'S-B01' || !selected(id) || onPage.includes(id)) continue;
+      results.push({ id, status: entry.status, verdict: 'error', violations: ['/accept 페이지에 이 시나리오가 없습니다'], metrics: {}, screenshot: null });
+    }
+    for (const id of onPage.filter(selected)) {
       process.stdout.write(`${id} … `);
       try {
-        const run = await page.evaluate((scenarioId) => window.performanceLab.run({ scenarioId }), id);
+        const run = await runOnPage(page, id);
         const verdict = await page.evaluate((value) => window.performanceLab.accept.verdict(value), run);
         results.push({ id, ...verdict, metrics: metricValues(run), screenshot: screenshots.get(id) ?? null });
       } catch (error) {

@@ -10,7 +10,8 @@ let active: RendererTracker | null = null;
 /**
  * Counts render calls and created programs, and keeps the latest frame's draw calls and triangles. Frame totals come
  * from the renderer's own counters (WebGPU accumulates per frame; WebGL reports the last render). Programs are counted
- * where the common renderer creates them, since the live count also drops when unused programs are released.
+ * where they are created, since the live count also drops when unused programs are released: the common renderer's
+ * `createProgram`, or the push into WebGLRenderer's live program list.
  */
 export function trackRenderer(renderer: TrackedRenderer) {
   const frame: RendererFrame = { renders: 0, drawCalls: 0, triangles: 0, compiles: 0 };
@@ -18,6 +19,9 @@ export function trackRenderer(renderer: TrackedRenderer) {
   let created = 0;
   const createProgram = info.createProgram;
   if (createProgram) info.createProgram = function (this: unknown, ...args: never[]) { created++; return createProgram.apply(this, args); };
+  const programs = createProgram ? null : info.programs as unknown[] | null | undefined;
+  const push = programs?.push;
+  if (programs && push) programs.push = function (this: unknown[], ...items: unknown[]) { created += items.length; return push.apply(this, items); };
   const render = renderer.render;
   renderer.render = function (this: unknown, ...args: never[]) {
     const before = created;
@@ -30,11 +34,12 @@ export function trackRenderer(renderer: TrackedRenderer) {
   const tracker = {
     frame: frame as Readonly<RendererFrame>,
     stats: () => readRendererStats(info),
-    /** Programs created since tracking began (WebGPU and its WebGL2 backend). */
+    /** Programs created since tracking began, on either renderer. */
     programsCreated: () => created,
     dispose: () => {
       renderer.render = render;
       if (createProgram) info.createProgram = createProgram;
+      if (programs && push) programs.push = push;
       if (active === tracker) active = null;
     },
   };

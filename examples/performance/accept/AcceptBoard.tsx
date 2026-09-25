@@ -2,19 +2,16 @@ import { useEffect, useMemo, useRef } from 'react';
 
 import { autoDetectProfile } from 'gaesup-world';
 
-import verification from '../../../prd/01-verification.md?raw';
 import { scenarios as entries, type ScenarioStatus } from '../../../test/accept/budget';
 import type { LabRun } from '../model';
 import { pageCounters } from './counters';
 import { activeRenderer } from './instrument';
-import { parseMilestones } from './milestones';
 import { acceptScenarios, RUNNER_ONLY, runVerdict, type AcceptVerdict } from './suite';
 
 const STATUS: Record<ScenarioStatus, string> = { green: 'green', 'known-red': 'known-red', pending: 'pending' };
 const VERDICT: Record<AcceptVerdict['verdict'], string> = {
   pass: '통과', fail: '실패', 'known-red': '예상된 실패', fixed: '예산 안 · green으로 바꿀 것', pending: '판정 없음', error: '측정 오류',
 };
-const milestones = parseMilestones(verification);
 const runnable = new Set(acceptScenarios.map((scenario) => scenario.id));
 const ids = Object.keys(entries).sort();
 
@@ -69,15 +66,14 @@ export function AcceptBoard({ results, busy, onRun, onSelect }: { results: Resul
   </div>;
 }
 
-export function MilestoneList({ results }: { results: Results }) {
-  return <aside className="lab-sidebar"><h2>마일스톤</h2><p>녹색이어야 할 시나리오와 손으로 하는 확인(prd/01-verification.md 6절)입니다.</p>
-    {milestones.map((milestone) => {
-      const green = milestone.scenarios.filter((id) => entries[id]!.status === 'green').length;
-      return <details key={milestone.id} className="accept-milestone"><summary>{milestone.id} · green {green}/{milestone.scenarios.length}</summary>
-        <ul>{milestone.scenarios.map((id) => <li key={id} className={`accept-${entries[id]!.status}`}>{id} {entries[id]!.title}{results.get(id) ? ` · ${VERDICT[results.get(id)!.verdict]}` : ''}</li>)}</ul>
-        <p>{milestone.note}</p><p>손으로 확인: {milestone.manual}</p>
-      </details>;
-    })}
+const withStatus = (status: ScenarioStatus) => ids.filter((id) => entries[id]!.status === status);
+
+/** Progress from budgets.json: green is done, known-red is the open work, pending has no measurement yet. */
+export function AcceptProgress() {
+  const open = withStatus('known-red');
+  return <aside className="lab-sidebar"><h2>진행</h2>
+    <p>green {withStatus('green').length} · known-red {open.length} · pending {withStatus('pending').length}</p>
+    <ul className="accept-progress">{open.map((id) => <li key={id} className="accept-known-red">{id} {entries[id]!.title}<small>{entries[id]!.item}</small></li>)}</ul>
   </aside>;
 }
 

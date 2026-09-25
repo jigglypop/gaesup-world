@@ -1,4 +1,3 @@
-import { SEED_ITEMS, registerSeedItems } from '../data/items';
 import { getItemRegistry } from '../registry/ItemRegistry';
 import type { ItemDef } from '../types';
 
@@ -50,11 +49,5 @@ describe('ItemRegistry', () => {
     registry.clear();
     expect(registry.has('apple')).toBe(false);
     expect(registry.all()).toEqual([]);
-  });
-
-  test('registerSeedItems registers every seed item', () => {
-    registerSeedItems();
-    const registry = getItemRegistry();
-    expect(SEED_ITEMS.every((seed) => registry.has(seed.id))).toBe(true);
   });
 });

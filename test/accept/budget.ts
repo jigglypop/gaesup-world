@@ -1,7 +1,11 @@
 import budgets from './budgets.json';
 
 export type Metrics = Record<string, number | boolean>;
-export type Budget = Record<string, number | boolean | null>;
+/** Inclusive bounds; either end may stay open. `{ "min": 1, "max": 1 }` demands exactly 1. */
+export type BudgetRange = { min?: number; max?: number };
+/** A number is an upper bound, a boolean must match, a range bounds both ends, null is only recorded. */
+export type BudgetLimit = number | boolean | BudgetRange | null;
+export type Budget = Record<string, BudgetLimit>;
 export type ScenarioStatus = 'green' | 'known-red' | 'pending';
 export type ScenarioEntry = {
   title: string;
@@ -13,24 +17,40 @@ export type ScenarioEntry = {
 /** pass/fail judge a green scenario; a known-red one reads known-red until it fits its budget, then fixed. */
 export type Verdict = 'pass' | 'fail' | 'known-red' | 'fixed' | 'pending';
 
-/** Acceptance scenarios of prd/01-verification.md; shared by the jest runner, `pnpm accept` and the /accept page. */
+/** Acceptance scenarios, their status and budgets; shared by the jest runner, `pnpm accept` and the /accept page. */
 export const scenarios = budgets.scenarios as Readonly<Record<string, ScenarioEntry>>;
 
-export type BudgetCheck = { name: string; limit: number | boolean | null; value: number | boolean | undefined; pass: boolean };
+export type BudgetCheck = { name: string; limit: BudgetLimit; value: number | boolean | undefined; pass: boolean };
 
-/** One line per budget entry: numbers are upper bounds, booleans must match, null is only recorded (always passes). */
+/** How the board and reports print a budget line. */
+export function formatLimit(limit: BudgetLimit): string {
+  if (limit === null) return '기록';
+  if (typeof limit === 'boolean') return String(limit);
+  if (typeof limit === 'number') return `≤ ${limit}`;
+  const { min, max } = limit;
+  if (min !== undefined && max !== undefined) return min === max ? `= ${min}` : `${min}~${max}`;
+  return min !== undefined ? `≥ ${min}` : `≤ ${max}`;
+}
+
+function within(value: number | boolean, limit: Exclude<BudgetLimit, null>): boolean {
+  if (typeof limit === 'boolean') return value === limit;
+  if (typeof value !== 'number') return false;
+  if (typeof limit === 'number') return value <= limit;
+  return (limit.min === undefined || value >= limit.min) && (limit.max === undefined || value <= limit.max);
+}
+
+/** One line per budget entry. A non-finite number (an empty `Math.max()`, 0/0) is a broken measurement, not a value. */
 export function checkBudget(metrics: Readonly<Metrics>, budget: Readonly<Budget>): BudgetCheck[] {
   return Object.entries(budget).map(([name, limit]) => {
-    const value = metrics[name];
-    const pass = limit === null
-      || (value !== undefined && (typeof limit === 'boolean' ? value === limit : typeof value === 'number' && value <= limit));
-    return { name, limit, value, pass };
+    const raw = metrics[name];
+    const value = typeof raw === 'number' && !Number.isFinite(raw) ? undefined : raw;
+    return { name, limit, value, pass: limit === null || (value !== undefined && within(value, limit)) };
   });
 }
 
 export function violations(metrics: Readonly<Metrics>, budget: Readonly<Budget>): string[] {
   return checkBudget(metrics, budget).filter((check) => !check.pass).map(({ name, limit, value }) => (
-    value === undefined ? `${name}: not measured` : `${name}: ${String(value)} (budget ${String(limit)})`
+    value === undefined ? `${name}: not measured` : `${name}: ${String(value)} (budget ${formatLimit(limit)})`
   ));
 }
 

@@ -9,7 +9,7 @@ import { useBuildingStore } from 'gaesup-world/building';
 
 import { instrumented, pageCounters } from './counters';
 import { trackRenderer } from './instrument';
-import { checkBudget, scenarios as entries, verdict, violations, type Metrics, type ScenarioStatus, type Verdict } from '../../../test/accept/budget';
+import { checkBudget, formatLimit, scenarios as entries, verdict, violations, type Metrics, type ScenarioStatus, type Verdict } from '../../../test/accept/budget';
 import { createTerrain, paintTiles } from '../../minihome/terrain';
 import { PerfWorldScene, REMOTE_UPDATE_HZ, type PerfWorldSceneProps } from '../../world/PerfWorld';
 import type { LabRun } from '../model';
@@ -28,7 +28,7 @@ declare global {
 async function judge(ctx: ScenarioContext, id: string, metrics: Metrics): Promise<void> {
   for (const [name, value] of Object.entries(metrics)) ctx.sample(name, Number(value), /Bytes/.test(name) ? 'bytes' : 'count', 'accept');
   for (const { name, limit, value, pass } of checkBudget(metrics, entries[id]!.budget)) {
-    ctx.assert(name, limit === null ? '기록' : typeof limit === 'boolean' ? limit : `≤ ${limit}`, value ?? '미측정', pass);
+    ctx.assert(name, typeof limit === 'boolean' ? limit : formatLimit(limit), value ?? '미측정', pass);
   }
   await window.__acceptCapture?.(id);
 }
@@ -132,7 +132,7 @@ async function drive(ctx: ScenarioContext, canvas: HTMLCanvasElement, ms: number
 // useCamera turns 0.0015 rad per dragged pixel and ignores the first 4 px as a click.
 const ORBIT_RADIANS_PER_PIXEL = 0.0015;
 const ORBIT_DRAG_START_PX = 5;
-// Population of the NPC and remote-player scenarios (prd/01-verification.md S-B09, S-B14).
+// Population of the NPC and remote-player scenarios (S-B09, S-B14).
 const NPCS = 30;
 const REMOTES = 24;
 

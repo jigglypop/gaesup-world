@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { AcceptBoard, AcceptHud, MilestoneList, useAcceptResults } from './accept/AcceptBoard';
+import { AcceptBoard, AcceptHud, AcceptProgress, useAcceptResults } from './accept/AcceptBoard';
 import { acceptScenarios, judgeMetrics, runVerdict } from './accept/suite';
 import { hasBaselines, loadBaselines } from './baselines';
 import { DEFAULT_CONFIG, comparisonProblems, improvementPercent, parseRun, repetitionSummary, type LabConfig, type LabRun, type Metric } from './model';
@@ -35,7 +35,7 @@ function Trace({ metric }: { metric: Metric | undefined }) {
   return <svg viewBox="0 0 800 110" role="img" aria-label={`${metric.scope} 시간순 표본, 최대 ${valueText(max)} ${metric.unit}`}>{values.length === 1 ? <circle cx="400" cy={100 - values[0]! / max * 90} r="4" fill="#74e1c2" /> : <polyline points={points} fill="none" stroke="#74e1c2" strokeWidth="1.5" />}</svg>;
 }
 
-/** `accept` is the /accept route: the acceptance suite, milestone checklist and live HUD on the same runner. */
+/** `accept` is the /accept route: the acceptance suite, its progress and live HUD on the same runner. */
 export default function PerformanceLab({ suite = 'lab' }: { suite?: 'lab' | 'accept' }) {
   const accept = suite === 'accept';
   const list = accept ? acceptScenarios : scenarios;
@@ -141,7 +141,7 @@ export default function PerformanceLab({ suite = 'lab' }: { suite?: 'lab' | 'acc
       <span>저장된 실행 <b>{runs.length}</b></span>
     </div>}
     <main className="lab-layout">
-      {accept ? <MilestoneList results={results} /> : <aside className="lab-sidebar"><h2>시나리오</h2><p>시나리오 통과는 PRD 항목 완료가 아닙니다. 완료 판정은 /accept가 합니다.</p>
+      {accept ? <AcceptProgress /> : <aside className="lab-sidebar"><h2>시나리오</h2><p>재현 시나리오가 통과해도 완료는 아닙니다. 완료 판정은 /accept가 합니다.</p>
         {list.map((entry) => {
           const latest = runs.find((run) => run.scenarioId === entry.id);
           return <button key={entry.id} disabled={busy} className={entry.id === scenarioId ? 'selected' : ''} onClick={() => selectScenario(entry.id)}>
