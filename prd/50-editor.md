@@ -25,7 +25,7 @@
 | Inspector가 컴포넌트 타입을 자유 텍스트로 추가하고 데이터를 `<pre>{JSON.stringify(...)}</pre>`로 표시 | `InspectorPanel.tsx:285` |
 | 모드 출처 4곳, `createEditorPlayModeController` 호출 0 | `editor/playMode.ts:37`, `editorSlice.ts:19` |
 | NPC 패널이 `instances` Map 전체 구독 → NPC 결정 틱마다 memo 없는 `NPCBrainSection`(2,142줄), ReactFlow, 미리보기 Canvas 재렌더 | `BuildingPanel/NPCPanel.tsx:26-33`, `brain/index.tsx:68`, `BuildingPanel/flow.tsx:161-172` |
-| `BuildingPanel` 마운트마다 `initializeDefaults`가 템플릿·의상·NPC를 새 객체로 바꾸고 두뇌를 reinforcement로 덮어씀(패널 전환마다) | `BuildingPanel/index.tsx:126-129`, `npc/stores/npcStore.ts:228-241,373` |
+| `BuildingPanel` 마운트마다 `initializeDefaults`가 템플릿·의상을 새 객체로 바꿈(패널 전환마다 모든 NPC 재렌더) | `BuildingPanel/index.tsx:126-129`, `npc/stores/npcStore.ts:319-355,373` |
 | 에셋 재질 섹션이 그룹 이름 표시를 위해 `tileGroups`·`wallGroups` 전체 구독 | `BuildingPanel/index.tsx:270` |
 | 건설 hover가 mousemove마다 `getBoundingClientRect`와 블록 전체 선형 탐색 | `building/hooks/useBuildingEditor.ts:116` |
 | `BuildingUI`가 store 필드 108개를 한 번에 구독(1,555줄), 에디터 섹션과 중복 | `building/components/BuildingUI/index.tsx:156-260` |

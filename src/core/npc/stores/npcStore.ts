@@ -225,18 +225,11 @@ function applyNPCAction(state: NPCStore, instanceId: string, action: NPCAction, 
   state.instances.set(instanceId, next);
 }
 
-function attachReinforcementBrainToInstances(state: NPCStore): void {
+/** Gives NPCs without a brain the default one; a brain the author picked, including 'none', is kept. */
+function attachDefaultBrainToInstances(state: NPCStore): void {
   state.instances.forEach((instance, id) => {
-    const current = instance.brain ?? DEFAULT_NPC_BRAIN;
-    if (current.mode === 'reinforcement' && (current.policyId ?? '').length > 0) return;
-    state.instances.set(id, {
-      ...instance,
-      brain: {
-        ...current,
-        mode: 'reinforcement',
-        policyId: current.policyId ?? 'openai',
-      },
-    });
+    if (instance.brain) return;
+    state.instances.set(id, { ...instance, brain: { ...DEFAULT_NPC_BRAIN } });
   });
 }
 
@@ -372,7 +365,7 @@ function buildNPCStore(legacyBlueprintRegistry = false, invalidateBrainRequests:
     initializeDefaults: () => set((state) => {
       if (state.initialized) {
         repairDefaultNPCAssetUrls(state);
-        attachReinforcementBrainToInstances(state);
+        attachDefaultBrainToInstances(state);
         return;
       }
       
@@ -634,7 +627,7 @@ function buildNPCStore(legacyBlueprintRegistry = false, invalidateBrainRequests:
       state.selectedTemplateId = 'ally';
       state.selectedClothingCategoryId = 'basic';
       state.selectedClothingSetId = 'rabbit-outfit';
-      attachReinforcementBrainToInstances(state);
+      attachDefaultBrainToInstances(state);
       state.initialized = true;
     }),
 

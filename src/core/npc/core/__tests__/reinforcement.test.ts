@@ -44,7 +44,7 @@ test('two clients keep same-ID requests, configuration and response queues indep
 });
 
 test('release, reconfiguration and suspend reject late responses even if transport ignores abort', async () => {
-  const port = transport(); const client = createReinforcementAdapter({ fetch: port.fetch, config: { fallbackToScriptedBehavior: false, minRequestIntervalMs: 0 } });
+  const port = transport(); const client = createReinforcementAdapter({ fetch: port.fetch, config: { endpoint: '/policy', fallbackToScriptedBehavior: false, minRequestIntervalMs: 0 } });
   try {
     for (const invalidate of [() => client.release('same'), () => client.configure({ endpoint: '/new' }), () => client.suspend()]) {
       client.adapter(context); const old = port.requests.at(-1)!; invalidate();
@@ -60,7 +60,7 @@ test('release, reconfiguration and suspend reject late responses even if transpo
 
 test('timeout releases an uncooperative request and does not let its finally clear a newer request', async () => {
   jest.useFakeTimers(); const port = transport();
-  const client = createReinforcementAdapter({ fetch: port.fetch, config: { timeoutMs: 30, minRequestIntervalMs: 0, fallbackToScriptedBehavior: false } });
+  const client = createReinforcementAdapter({ fetch: port.fetch, config: { endpoint: '/policy', timeoutMs: 30, minRequestIntervalMs: 0, fallbackToScriptedBehavior: false } });
   try {
     client.adapter(context); jest.advanceTimersByTime(30);
     expect(port.requests[0]!.signal.aborted).toBe(true); expect(client.getStats()).toMatchObject({ pending: 0, timedOutRequests: 1 });
@@ -72,7 +72,7 @@ test('timeout releases an uncooperative request and does not let its finally cle
 
 test('TTL includes transit and queued time; throttling uses monotonic time across simulation rewind', async () => {
   const port = transport(); let time = 0;
-  const client = createReinforcementAdapter({ fetch: port.fetch, now: () => time, config: { minRequestIntervalMs: 100, fallbackToScriptedBehavior: false } });
+  const client = createReinforcementAdapter({ fetch: port.fetch, now: () => time, config: { endpoint: '/policy', minRequestIntervalMs: 100, fallbackToScriptedBehavior: false } });
   try {
     client.adapter(context); time = 20; port.requests[0]!.reply({ ...speak('late'), ttlMs: 10 }); await flush();
     expect(client.getStats()).toMatchObject({ queued: 0, discardedResponses: 1 });
@@ -88,12 +88,12 @@ test('response validation covers every action and rejects the entire malformed b
   expect(isNPCPolicyResponse({ actions: valid, ttlMs: 0 })).toBe(true);
   for (const action of [{ type: 'moveTo', target: [NaN, 0, 0] }, { type: 'patrol', waypoints: [[1]] }, { type: 'speak', text: 4 }, { type: 'moveTo', target: [0, 0, 0], speed: -1 }, { type: 'unknown' }]) expect(isNPCPolicyResponse({ actions: [...valid, action] })).toBe(false);
   for (const body of [null, { actions: {} }, { actions: valid, ttlMs: -1 }, { actions: valid, reason: {} }]) expect(isNPCPolicyResponse(body)).toBe(false);
-  const port = transport(); const client = createReinforcementAdapter({ fetch: port.fetch, config: { fallbackToScriptedBehavior: false } });
+  const port = transport(); const client = createReinforcementAdapter({ fetch: port.fetch, config: { endpoint: '/policy', fallbackToScriptedBehavior: false } });
   try { client.adapter(context); port.requests[0]!.reply({ actions: [{ type: 'moveTo' }] }); await flush(); expect(client.adapter(context)).toBeUndefined(); expect(client.getStats().invalidResponses).toBe(1); } finally { client.dispose(); }
 });
 
 test('invalid configuration is atomic and does not cancel a valid pending request', () => {
-  const port = transport(); const client = createReinforcementAdapter({ fetch: port.fetch });
+  const port = transport(); const client = createReinforcementAdapter({ fetch: port.fetch, config: { endpoint: '/policy' } });
   try {
     client.adapter(context); const before = client.getConfig();
     expect(() => client.configure({ timeoutMs: NaN })).toThrow(); expect(client.getConfig()).toEqual(before); expect(port.requests[0]!.signal.aborted).toBe(false);
@@ -104,10 +104,54 @@ test('entity invalidation while JSON is being decoded cannot enqueue the old res
   let decode: (body: unknown) => void = () => {};
   let current = true;
   const fetch: typeof globalThis.fetch = async () => ({ ok: true, json: () => new Promise(resolve => { decode = resolve; }) }) as Response;
-  const client = createReinforcementAdapter({ fetch, isCurrent: () => current });
+  const client = createReinforcementAdapter({ fetch, isCurrent: () => current, config: { endpoint: '/policy' } });
   try {
     client.adapter(context); await flush(); current = false; decode(speak('old')); await flush();
     expect(client.getStats()).toMatchObject({ pending: 0, queued: 0, discardedResponses: 1 });
     expect(client.adapter(context)).toBeUndefined();
+  } finally { client.dispose(); }
+});
+
+test('without a configured endpoint no request leaves and the scripted fallback decides', () => {
+  const fetch = jest.fn<ReturnType<typeof globalThis.fetch>, Parameters<typeof globalThis.fetch>>();
+  const client = createReinforcementAdapter({ fetch });
+  const wanderer: NPCInstance = { ...instance, behavior: { mode: 'wander', speed: 1, wanderRadius: 3 } };
+  try {
+    const decision = client.adapter({ instance: wanderer, observation: createNPCObservation(wanderer, new Map(), 10) });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(decision?.reason).toBe('fallback wander');
+    expect(client.getStats().requests).toBe(0);
+  } finally { client.dispose(); }
+});
+
+test('transport failures back off every NPC together until the server answers again', async () => {
+  let time = 0;
+  let reachable = false;
+  const fetch = jest.fn(async () => {
+    if (!reachable) throw new TypeError('connect ECONNREFUSED');
+    return { ok: true, json: async () => speak('back') } as Response;
+  });
+  const client = createReinforcementAdapter({ fetch, now: () => time, config: { endpoint: '/policy', minRequestIntervalMs: 0 } });
+  const other: NPCInstance = { ...instance, id: 'other' };
+  try {
+    client.adapter(context); await flush();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    // Within the first second no NPC asks again, including one that never asked.
+    time = 500;
+    client.adapter(context); client.adapter({ instance: other, observation: createNPCObservation(other, new Map(), 10) }); await flush();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    time = 1000;
+    client.adapter(context); await flush();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    // The second failure doubles the wait.
+    time = 2500;
+    client.adapter(context); await flush();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    reachable = true;
+    time = 3000;
+    client.adapter(context); await flush();
+    expect(client.getStats().failures).toBe(0);
+    client.adapter({ instance: other, observation: createNPCObservation(other, new Map(), 10) }); await flush();
+    expect(fetch).toHaveBeenCalledTimes(4);
   } finally { client.dispose(); }
 });

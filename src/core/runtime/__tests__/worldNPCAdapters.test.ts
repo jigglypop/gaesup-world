@@ -5,6 +5,8 @@ import { createGaesupRuntime } from '../createGaesupRuntime';
 
 const npc = (): NPCInstance => ({ id: 'same', templateId: 'lab', name: 'NPC', position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], brain: { mode: 'reinforcement' } });
 const flush = async () => { for (let i = 0; i < 8; i++) await Promise.resolve(); };
+/** The policy client only talks to a server it was given; these tests stand one in with a pending fetch. */
+const withPolicy = (runtime: ReturnType<typeof createGaesupRuntime>) => { runtime.npcReinforcement.configure({ endpoint: '/policy' }); return runtime; };
 const decide = (runtime: ReturnType<typeof createGaesupRuntime>) => {
   const instance = runtime.npcStore.getState().instances.get('same')!;
   return resolveNPCBrainDecision(instance, createNPCObservation(instance, runtime.npcStore.getState().instances, 10), runtime.npcStore.getState().brainBlueprints, runtime);
@@ -18,7 +20,7 @@ beforeEach(() => {
 afterEach(async () => { pending.forEach(request => request.reply('cleanup')); await flush(); globalThis.fetch = previousFetch; });
 
 test('owned policy clients follow entity replacement, brain edits and validated snapshot commits', async () => {
-  const a = createGaesupRuntime(); const b = createGaesupRuntime();
+  const a = withPolicy(createGaesupRuntime()); const b = withPolicy(createGaesupRuntime());
   try {
     await a.setup(); await b.setup(); a.npcStore.getState().addInstance(npc()); b.npcStore.getState().addInstance(npc());
     a.npcReinforcement.configure({ minRequestIntervalMs: 0 });
@@ -47,7 +49,7 @@ test('owned policy clients follow entity replacement, brain edits and validated 
 });
 
 test('local fallback actions do not cancel the external decision they are waiting for', async () => {
-  const runtime = createGaesupRuntime();
+  const runtime = withPolicy(createGaesupRuntime());
   try {
     await runtime.setup(); runtime.npcStore.getState().addInstance({ ...npc(), behavior: { mode: 'patrol', speed: 2, waypoints: [[1, 0, 0]] } });
     const fallback = decide(runtime)!;
@@ -59,7 +61,7 @@ test('local fallback actions do not cancel the external decision they are waitin
 });
 
 test('50 runtime restarts release all requests and keep stopped adapters inert', async () => {
-  const runtime = createGaesupRuntime(); runtime.npcStore.getState().addInstance(npc());
+  const runtime = withPolicy(createGaesupRuntime()); runtime.npcStore.getState().addInstance(npc());
   expect(decide(runtime)).toBeUndefined(); expect(pending).toHaveLength(0);
   try {
     for (let i = 0; i < 50; i++) {
@@ -77,7 +79,7 @@ test('50 runtime restarts release all requests and keep stopped adapters inert',
 
 test('setup failure leaves NPC services inactive and a later successful setup restores them', async () => {
   let fail = true;
-  const runtime = createGaesupRuntime({ plugins: [{ id: 'npc-test-failure', name: 'NPC setup failure', version: '1.0.0', setup: () => { if (fail) throw new Error('setup failed'); } }] });
+  const runtime = withPolicy(createGaesupRuntime({ plugins: [{ id: 'npc-test-failure', name: 'NPC setup failure', version: '1.0.0', setup: () => { if (fail) throw new Error('setup failed'); } }] }));
   runtime.npcStore.getState().addInstance(npc());
   try {
     await expect(runtime.setup()).rejects.toThrow(); expect(decide(runtime)).toBeUndefined(); expect(pending).toHaveLength(0);

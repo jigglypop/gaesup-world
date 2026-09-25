@@ -11,7 +11,7 @@
     "S-H08": { "title": "runtime 2개 생성·조작 후 dispose", "runner": "headless", "item": "COR-09d", "status": "pending", "budget": { "sharedState": 0, "leakedListeners": 0, "leakedTimers": 0 } },
     "S-H09": { "title": "10k 타일 월드에 타일 1개 추가", "runner": "headless", "item": "DOM-01c", "status": "pending", "budget": { "touchedGroups": 1, "deltas": 1, "fullNavigationResets": 0 } },
     "S-H10": { "title": "변경 없는 autosave, 이어서 도메인 1개 변경 후 autosave", "runner": "headless", "item": "AST-06a", "status": "known-red", "budget": { "unchangedSerializeCalls": 0, "changedDomainsSerialized": 1 } },
-    "S-H11": { "title": "기본 runtime + NPC 30체 60초", "runner": "headless", "item": "DOM-03a", "status": "known-red", "budget": { "externalFetches": 0 } },
+    "S-H11": { "title": "기본 runtime + NPC 30체 60초", "runner": "headless", "item": "DOM-03a", "status": "green", "budget": { "externalFetches": 0 } },
     "S-H12": { "title": "save → load, legacy 포맷 load", "runner": "headless", "item": "AST-06b", "status": "pending", "budget": { "roundTripEqual": true, "legacyLoaded": true } },
     "S-H13": { "title": "로컬 정지 송신률과 Update 크기", "runner": "headless", "item": "DOM-08", "status": "green", "budget": { "restingUpdatesPerSecond": 2, "maxMovingUpdateBytes": 120 } },
     "S-H14": { "title": "각 공개 엔트리 import만 실행", "runner": "headless", "item": "COR-09c", "status": "known-red", "budget": { "listeners": 0, "timers": 0, "storageReads": 0, "globalWrites": 0 } },

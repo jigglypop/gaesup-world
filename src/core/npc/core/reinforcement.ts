@@ -3,6 +3,7 @@ import { registerNPCBrainAdapter, type NPCBrainAdapter, type NPCBrainAdapterCont
 import { isNPCPolicyResponse } from './validatePolicy';
 
 export type ReinforcementAdapterConfig = {
+  /** Policy server URL. Empty (the default) sends nothing and NPCs use the scripted fallback. */
   endpoint: string;
   apiKey?: string;
   timeoutMs: number;
@@ -21,9 +22,12 @@ export type ReinforcementAdapterOptions = {
 };
 
 const DEFAULT_CONFIG: ReinforcementAdapterConfig = {
-  endpoint: 'http://localhost:8091/policy/step', timeoutMs: 3000, minRequestIntervalMs: 700,
+  endpoint: '', timeoutMs: 3000, minRequestIntervalMs: 700,
   headers: {}, fallbackToScriptedBehavior: true,
 };
+/** Transport failures back off every NPC together: 1 s doubling up to a minute, reset by any answer. */
+const FAILURE_BACKOFF_MS = 1000;
+const MAX_FAILURE_BACKOFF_MS = 60_000;
 type RequestState = {
   brain: NPCInstance['brain'];
   templateId: string;
@@ -60,6 +64,8 @@ export function createReinforcementAdapter(options: ReinforcementAdapterOptions 
   let config: ReinforcementAdapterConfig = { ...DEFAULT_CONFIG, headers: {} };
   let active = options.active ?? true;
   let requests = 0; let discardedResponses = 0; let invalidResponses = 0; let timedOutRequests = 0;
+  let failures = 0; let backoffUntil = 0;
+  const failed = () => { failures++; backoffUntil = now() + Math.min(MAX_FAILURE_BACKOFF_MS, FAILURE_BACKOFF_MS * 2 ** (failures - 1)); };
   const getConfig = () => ({ ...config, headers: { ...config.headers } });
   const cancel = (state: RequestState) => {
     const controller = state.controller;
@@ -78,11 +84,12 @@ export function createReinforcementAdapter(options: ReinforcementAdapterOptions 
   };
   const configure = (updates: Partial<ReinforcementAdapterConfig>) => {
     const candidate = { ...config, ...updates, headers: { ...config.headers, ...updates.headers } };
-    if (!candidate.endpoint.trim() || !Number.isFinite(candidate.timeoutMs) || candidate.timeoutMs <= 0
+    candidate.endpoint = typeof candidate.endpoint === 'string' ? candidate.endpoint.trim() : '';
+    if (!Number.isFinite(candidate.timeoutMs) || candidate.timeoutMs <= 0
       || !Number.isFinite(candidate.minRequestIntervalMs) || candidate.minRequestIntervalMs < 0) {
       throw new TypeError('Invalid NPC policy endpoint or request timing');
     }
-    release(); config = candidate;
+    release(); config = candidate; failures = 0; backoffUntil = 0;
     return getConfig();
   };
   if (options.config) configure(options.config);
@@ -105,8 +112,9 @@ export function createReinforcementAdapter(options: ReinforcementAdapterOptions 
         headers: { 'Content-Type': 'application/json', ...(provider ? { 'X-Policy-Provider': provider } : {}), ...(requestConfig.apiKey ? { Authorization: `Bearer ${requestConfig.apiKey}` } : {}), ...requestConfig.headers },
         body: JSON.stringify({ ...(provider ? { provider } : {}), instance: { id: instance.id, templateId: instance.templateId, name: instance.name, brainMode: instance.brain?.mode ?? 'none', behaviorMode: instance.behavior?.mode ?? 'idle' }, observation }),
       });
+      if (!response.ok) { failed(); if (!valid()) discardedResponses++; return; }
+      failures = 0; backoffUntil = 0;
       if (!valid()) { discardedResponses++; return; }
-      if (!response.ok) return;
       const body: unknown = await response.json();
       if (!valid()) { discardedResponses++; return; }
       if (!isNPCPolicyResponse(body)) { invalidResponses++; return; }
@@ -115,7 +123,8 @@ export function createReinforcementAdapter(options: ReinforcementAdapterOptions 
       if (now() >= expiresAt) { discardedResponses++; return; }
       if (body.actions?.length) state.queued = { expiresAt, decision: { source: 'reinforcement', reason: body.reason ?? `policy@${observation.timestamp.toFixed(2)}`, actions: body.actions } };
     } catch {
-      // Transport failures retain the configured local fallback and request backoff.
+      // Transport failures keep the local fallback; an abort from release or timeout is not a server failure.
+      if (!controller.signal.aborted) failed();
     } finally {
       if (state.controller === controller) {
         if (state.timer !== undefined) clearTimeout(state.timer);
@@ -139,7 +148,7 @@ export function createReinforcementAdapter(options: ReinforcementAdapterOptions 
       if (time < queued.expiresAt) return queued.decision;
       discardedResponses++;
     }
-    if (!state.controller && time - state.lastRequestAtMs >= config.minRequestIntervalMs) {
+    if (config.endpoint && !state.controller && time >= backoffUntil && time - state.lastRequestAtMs >= config.minRequestIntervalMs) {
       state.lastRequestAtMs = time; void request(context, state);
     }
     return config.fallbackToScriptedBehavior ? fallback(instance, observation) : undefined;
@@ -152,7 +161,7 @@ export function createReinforcementAdapter(options: ReinforcementAdapterOptions 
     getStats() {
       let pending = 0; let queued = 0;
       for (const state of states.values()) { pending += Number(Boolean(state.controller)); queued += Number(Boolean(state.queued)); }
-      return { active, instances: states.size, pending, queued, requests, discardedResponses, invalidResponses, timedOutRequests };
+      return { active, instances: states.size, pending, queued, requests, discardedResponses, invalidResponses, timedOutRequests, failures };
     },
   };
 }

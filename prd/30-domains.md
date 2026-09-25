@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 |---|---|
-| 우선순위 | P0(DOM-01, DOM-03a, DOM-08a, DOM-11a), 나머지 P1 |
-| 마일스톤 | M0(DOM-03a, DOM-11a), M2(DOM-01), M3(나머지) |
+| 우선순위 | P0(DOM-01, DOM-08a, DOM-11a), 나머지 P1 |
+| 마일스톤 | M0(DOM-11a), M2(DOM-01), M3(나머지) |
 | 선행 | 10 PRD(코어), 20 PRD REN-01(RenderWorld) |
 
 ## 1. 목표
@@ -63,17 +63,15 @@
 | DOM-02a | 오브젝트를 엔티티 + 표준 컴포넌트(`meshRenderer`, `collider`, `interactable`)로. LOD는 렌더만 바꾸고 collider는 유지. `Tree`는 인스턴스 batch와 TSL 흔들림(프레임 콜백 0) | 나무 N개에서 재질 수 N과 무관, 프레임 콜백 0 |
 | DOM-02b | `WorldSystem`·`WorldBridge`·`worldObjectStore`를 `EntityWorld` 조회 facade로 바꾸고 `@deprecated`(D-18 해소, 그 전까지 G6 JSDoc). gaesupStore의 두 번째 world model(`worldStates` slice, 작업마다 `new Map`)을 `@deprecated`하고 examples 사용처 교체. 게임플레이 콘텐츠(`BugSpot`, `FishSpot`)를 kit으로 | 공개 API 테스트 통과, 엔진→kit edge 감소 |
 
-### DOM-03 NPC(M0, M3)
+### DOM-03 NPC(M3)
 
 현재 상태 [확인]:
-- 기본 두뇌가 `reinforcement/openai`이고, 엔드포인트 `localhost:8091`로 NPC마다 약 1.5초마다 요청을 보낸다. 실패해도 백오프가 없다(`npc/core/reinforcement.ts:24,143`).
-- `initializeDefaults`가 사용자가 고른 두뇌까지 reinforcement로 덮어쓴다(`npcStore.ts:228-241`).
+- 정책 서버 엔드포인트는 기본으로 비어 있어 요청을 보내지 않고, 설정된 서버가 실패하면 모든 NPC가 함께 백오프한다. 모듈 import 때 기본 어댑터를 전역 레지스트리에 등록하는 것은 남아 있다(COR-09c).
 - npcStore가 1,043줄이다. 결정 틱마다 전 인스턴스를 복사하고(`NPCSimulation.ts:113-120`), 관찰·결정을 store에 기록해 구독자 전원을 깨운다(`npcStore.ts:927-936`).
 - 렌더는 파츠별 skeleton·mixer다(REN-09).
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| DOM-03a(M0) | 정책 요청 기본 끔: 엔드포인트를 명시 설정했을 때만 요청, 전송 실패 시 공유 circuit breaker(`backoffUntil = now + min(60s, 1s·2^실패)`), 기본 두뇌는 policyId 없는 scripted. `attachReinforcementBrainToInstances`는 두뇌 없는 NPC에만. import 시 기본 adapter 등록 제거(COR-09c와 함께) | S-H11 |
 | DOM-03b | npcStore 분할(카탈로그, 인스턴스, 두뇌 side table, action executor). 휘발 두뇌 데이터(`lastObservation`, `lastDecision`)는 React 밖 side table과 호환 getter. 결정 틱 스냅샷을 pose 버퍼 재사용으로, waypoint 도착 갱신을 틱당 배치 1회로 | 결정 틱 store 알림 ≤ 1, 파일 500줄 이하 |
 | DOM-03c | NPC를 엔티티(`npc`, `animator`, 스킨 `meshRenderer`, `collider`)로, NPCSimulation을 fixed lane 시스템으로, LOD는 렌더 가시성으로(재마운트 0). 렌더는 REN-09 | S-B09, NPC LOD 경계 왕복 시 재마운트 0 |
 
