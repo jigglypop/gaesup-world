@@ -280,47 +280,61 @@ const run = {
       useBuildingStore.getState().removeObject('accept-placed-tree');
     }
   }),
-  'S-B09': (ctx: ScenarioContext) => withWorld(ctx, { size: 'm', npcs: NPCS }, async (world) => {
-    const update = AnimationMixer.prototype.update;
-    // NPCSystem renders every NPC under its "npc-system" group; the player's mixer is elsewhere.
-    const owners = new Map<AnimationMixer, boolean>();
-    // A mixer can update before its model joins the scene, so only a finished walk (NPC group or scene) is kept.
-    const isNpc = (mixer: AnimationMixer) => {
-      const known = owners.get(mixer);
-      if (known !== undefined) return known;
-      for (let node: Object3D | null = mixer.getRoot() as Object3D | null; node; node = node.parent) {
-        if (node.name === 'npc-system' || (node as { isScene?: boolean }).isScene) {
-          owners.set(mixer, node.name === 'npc-system');
-          return node.name === 'npc-system';
-        }
-      }
-      return false;
-    };
-    const frustum = new Frustum();
-    const view = new Matrix4();
-    const bounds = new Sphere(undefined, 2);
-    let counting = false;
-    let offscreen = 0;
-    AnimationMixer.prototype.update = function (this: AnimationMixer, delta: number) {
-      if (counting && this.getRoot() && isNpc(this)) {
-        frustum.setFromProjectionMatrix(view.multiplyMatrices(world.camera.projectionMatrix, world.camera.matrixWorldInverse));
-        (this.getRoot() as Object3D).getWorldPosition(bounds.center);
-        if (!frustum.intersectsSphere(bounds)) offscreen++;
-      }
-      return update.call(this, delta);
-    };
+  'S-B09': async (ctx: ScenarioContext) => {
+    // Mixers are collected when they make their first action, so an NPC that stays off screen, and so never updates,
+    // still counts.
+    const clipAction = AnimationMixer.prototype.clipAction;
+    const created = new Set<AnimationMixer>();
+    AnimationMixer.prototype.clipAction = function (this: AnimationMixer, ...args: Parameters<typeof clipAction>) {
+      created.add(this);
+      return clipAction.apply(this, args);
+    } as typeof clipAction;
     try {
-      await step(ctx, `NPC ${NPCS}체`);
-      counting = true;
-      await during(ctx, 5000);
-      counting = false;
-      const mixers = [...owners.values()].filter(Boolean).length;
-      if (mixers < NPCS) throw new Error(`NPC ${NPCS}체 중 ${mixers}체만 애니메이션을 갱신했습니다(플레이어가 NPC 표시 범위 밖이면 NPC가 마운트되지 않습니다).`);
-      await judge(ctx, 'S-B09', { mixersPerNpc: Math.round((mixers / NPCS) * 100) / 100, offscreenMixerUpdates: offscreen });
+      await withWorld(ctx, { size: 'm', npcs: NPCS }, async (world) => {
+        const update = AnimationMixer.prototype.update;
+        // NPCSystem renders every NPC under its "npc-system" group; the player's mixer is elsewhere.
+        const owners = new Map<AnimationMixer, boolean>();
+        // A mixer can update before its model joins the scene, so only a finished walk (NPC group or scene) is kept.
+        const isNpc = (mixer: AnimationMixer) => {
+          const known = owners.get(mixer);
+          if (known !== undefined) return known;
+          for (let node: Object3D | null = mixer.getRoot() as Object3D | null; node; node = node.parent) {
+            if (node.name === 'npc-system' || (node as { isScene?: boolean }).isScene) {
+              owners.set(mixer, node.name === 'npc-system');
+              return node.name === 'npc-system';
+            }
+          }
+          return false;
+        };
+        const frustum = new Frustum();
+        const view = new Matrix4();
+        const bounds = new Sphere(undefined, 2);
+        let counting = false;
+        let offscreen = 0;
+        AnimationMixer.prototype.update = function (this: AnimationMixer, delta: number) {
+          if (counting && this.getRoot() && isNpc(this)) {
+            frustum.setFromProjectionMatrix(view.multiplyMatrices(world.camera.projectionMatrix, world.camera.matrixWorldInverse));
+            (this.getRoot() as Object3D).getWorldPosition(bounds.center);
+            if (!frustum.intersectsSphere(bounds)) offscreen++;
+          }
+          return update.call(this, delta);
+        };
+        try {
+          await step(ctx, `NPC ${NPCS}체`);
+          counting = true;
+          await during(ctx, 5000);
+          counting = false;
+          const mixers = [...created].filter(isNpc).length;
+          if (mixers < NPCS) throw new Error(`NPC ${NPCS}체 중 ${mixers}체만 애니메이션이 있습니다(플레이어가 NPC 표시 범위 밖이면 NPC가 마운트되지 않습니다).`);
+          await judge(ctx, 'S-B09', { mixersPerNpc: Math.round((mixers / NPCS) * 100) / 100, offscreenMixerUpdates: offscreen });
+        } finally {
+          AnimationMixer.prototype.update = update;
+        }
+      });
     } finally {
-      AnimationMixer.prototype.update = update;
+      AnimationMixer.prototype.clipAction = clipAction;
     }
-  }),
+  },
   'S-B10': async (ctx: ScenarioContext) => {
     let dprKeptAfterResize = true;
     for (const quality of ['low', 'medium', 'high'] as const) {

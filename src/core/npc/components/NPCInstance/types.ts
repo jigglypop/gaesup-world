@@ -10,4 +10,6 @@ export interface NPCPartMeshProps {
     part: NPCPart;
     instanceId: string;
     currentAnimation?: string | undefined;
+    /** Radius around the part's origin that must be in view for its animation to advance. */
+    cullRadius?: number | undefined;
 }

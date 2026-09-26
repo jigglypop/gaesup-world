@@ -93,7 +93,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const { size } = useGltfAndSize({ url: props.url || '' });
     const modelUrl = props.url?.trim() ? props.url : EMPTY_GLTF_DATA_URI;
     const { scene, animations } = useGLTF(modelUrl);
-    const { actions, ref: animationRef } = useSharedAnimations(animations);
+    const { actions, ref: animationRef } = useSharedAnimations(animations, undefined, props.animationCullRadius);
     const activeAnimationRef = useRef<string | undefined>(undefined);
 
     const { handleIntersectionEnter, handleIntersectionExit, handleCollisionEnter } = useEntity({

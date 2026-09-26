@@ -25,7 +25,7 @@
     "S-B06": { "title": "편집 모드 진입", "runner": "browser", "item": "REN-04a", "status": "known-red", "budget": { "overlayDrawCalls": 16 } },
     "S-B07": { "title": "NPC·오브젝트 신규 모델 로드", "runner": "browser", "item": "REN-06a", "status": "known-red", "budget": { "visibleInstanceDrops": 0, "syncCompileFrames": 0 } },
     "S-B08": { "title": "후처리 켠 월드 로드와 신규 객체 배치", "runner": "browser", "item": "REN-05a", "status": "known-red", "budget": { "programsAfterWarmup": 0 } },
-    "S-B09": { "title": "NPC 30체", "runner": "browser", "item": "REN-09a", "status": "known-red", "budget": { "mixersPerNpc": 1, "offscreenMixerUpdates": 0 } },
+    "S-B09": { "title": "NPC 30체", "runner": "browser", "item": "REN-09a", "status": "green", "budget": { "mixersPerNpc": 1, "offscreenMixerUpdates": 0 } },
     "S-B10": { "title": "품질 등급 low/medium/high/auto", "runner": "browser", "item": "REN-07b", "status": "known-red", "budget": { "dprKeptAfterResize": true, "autoDetected": true, "tierAppliedToShadowsAndPost": true } },
     "S-B11": { "title": "minihome 대기와 칠하기", "runner": "browser", "item": "DOM-11a", "status": "green", "budget": { "idleFrames": 0, "paintUploadBytes": null } },
     "S-B12": { "title": "같은 seed 장면을 옛 경로와 새 경로로 렌더", "runner": "browser", "item": "VER-07a", "status": "pending", "budget": { "differingPixelRatio": 0.005 } },

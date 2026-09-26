@@ -18,6 +18,20 @@ function Animated() {
   return null;
 }
 
+const culled = new Map<Object3D, AnimationMixer>();
+
+function Culled({ root }: { root: Object3D }) {
+  const { actions, mixer } = useSharedAnimations([clip], root, 1);
+  culled.set(root, mixer);
+  actions['wave']?.play();
+  return null;
+}
+
+function ViewFromDefaultCamera() {
+  useThree((state) => state.camera).updateMatrixWorld();
+  return null;
+}
+
 function Capture() {
   scheduler = useCanvasFrameScheduler();
   const get = useThree((state) => state.get);
@@ -43,6 +57,29 @@ test('all mixers advance from one animation-phase entry, not one R3F subscriber 
     expect(new Set(mixers.slice(-5).map((mixer) => mixer.time))).toEqual(new Set([0.25]));
     await renderer.update(tree(0));
     expect(scheduler!.count('animation')).toBe(0);
+  } finally {
+    await renderer.unmount();
+  }
+});
+
+test('a mixer with a cull radius holds still off screen and catches up when its root comes back into view', async () => {
+  const seen = new Object3D();
+  const hidden = new Object3D();
+  hidden.position.set(0, 0, 50); // behind the default camera at z = 5
+  const renderer = await ReactThreeTestRenderer.create(
+    <>
+      <FrameSchedulerHost />
+      <ViewFromDefaultCamera />
+      <Culled root={seen} />
+      <Culled root={hidden} />
+    </>,
+  );
+  try {
+    await renderer.advanceFrames(1, 0.25);
+    expect([culled.get(seen)!.time, culled.get(hidden)!.time]).toEqual([0.25, 0]);
+    hidden.position.set(0, 0, 0);
+    await renderer.advanceFrames(1, 0.25);
+    expect([culled.get(seen)!.time, culled.get(hidden)!.time]).toEqual([0.5, 0.5]);
   } finally {
     await renderer.unmount();
   }

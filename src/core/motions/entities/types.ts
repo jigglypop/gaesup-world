@@ -63,6 +63,8 @@ export type PhysicsEntityProps = {
   colliderSize?: { height: number; radius: number };
   isActive: boolean;
   componentType: string;
+  /** Background characters: the animation only advances while this radius around the model is in view. */
+  animationCullRadius?: number;
   rigidbodyType ? : RigidBodyTypeString;
   groundRay ? : GroundRay;
   /** Additional support policy for detection-only or one-way physics contacts. */

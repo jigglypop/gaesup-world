@@ -88,12 +88,12 @@ function resolveNPCAssetUrl(url: string): string {
   return trimmed;
 }
 
-function NPCPartGltfMesh({ part, currentAnimation }: NPCPartMeshProps) {
+function NPCPartGltfMesh({ part, currentAnimation, cullRadius }: NPCPartMeshProps) {
   const assetUrl = useMemo(() => resolveNPCAssetUrl(part.url), [part.url]);
   const gltf = useGLTF(assetUrl);
   const clone = useMemo(() => SkeletonUtils.clone(gltf.scene), [gltf]);
   useSceneToon(clone);
-  const { actions } = useSharedAnimations(gltf.animations, clone);
+  const { actions } = useSharedAnimations(gltf.animations, clone, cullRadius);
   const activeAnimationRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
@@ -119,12 +119,12 @@ function NPCPartGltfMesh({ part, currentAnimation }: NPCPartMeshProps) {
   );
 }
 
-function NPCPartMesh({ part, instanceId, currentAnimation }: NPCPartMeshProps) {
+function NPCPartMesh({ part, instanceId, currentAnimation, cullRadius }: NPCPartMeshProps) {
   const hasUrl = !!part.url && part.url.trim() !== '';
   if (!hasUrl) return <NPCPartFallbackMesh part={part} instanceId={instanceId} />;
   return (
     <NPCPartErrorBoundary part={part} instanceId={instanceId} currentAnimation={currentAnimation}>
-      <NPCPartGltfMesh part={part} instanceId={instanceId} currentAnimation={currentAnimation} />
+      <NPCPartGltfMesh part={part} instanceId={instanceId} currentAnimation={currentAnimation} cullRadius={cullRadius} />
     </NPCPartErrorBoundary>
   );
 }
@@ -285,6 +285,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
         scale={instance.scale}
         rigidbodyType={bodyType}
         colliderSize={{ height: capsule.height, radius: capsule.radius }}
+        animationCullRadius={capsule.height}
         currentAnimation={instance.currentAnimation || 'idle'}
         userData={{
           instanceId: instance.id,
@@ -353,6 +354,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
             part={part}
             instanceId={instance.id}
             currentAnimation={instance.currentAnimation ?? instance.behavior?.idleAnimation ?? 'idle'}
+            cullRadius={capsule.height}
           />
         ))}
 
