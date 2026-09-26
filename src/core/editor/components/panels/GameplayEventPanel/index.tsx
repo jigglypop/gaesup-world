@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import {
   GAMEPLAY_EVENT_ACTION_TYPES,
@@ -157,12 +157,8 @@ export function GameplayEventPanel({
   children,
 }: GameplayEventPanelProps) {
   const runtime = useGaesupRuntime();
-  const fallbackEngine = useMemo(() => runtime?.gameplayEvents ?? new GameplayEventEngine(), [runtime]);
-  useEffect(() => {
-    if (runtime) return;
-    fallbackEngine.resume();
-    return () => fallbackEngine.suspend();
-  }, [runtime, fallbackEngine]);
+  // Test runs only preview against this engine, so a world's live events, state and rewards stay untouched.
+  const eventEngine = useMemo(() => runtime?.gameplayEvents ?? new GameplayEventEngine(), [runtime]);
   const [id, setId] = useState('manual-event');
   const [name, setName] = useState('수동 이벤트');
   const [triggerKey, setTriggerKey] = useState('manual.event');
@@ -229,18 +225,18 @@ export function GameplayEventPanel({
       if (onRun) {
         await onRun(trigger);
       } else {
-        fallbackEngine.setBlueprints(blueprints);
-        const results = await fallbackEngine.dispatch(trigger);
-        const result = results.find(item => item.blueprintId === blueprint.id);
-        if (!result || result.skipped || result.actionCount === 0) {
-          const reason = result?.skipped === 'already-executed' ? '이미 실행한 일회성 이벤트입니다.'
-            : result?.skipped === 'cooldown' ? '다시 실행하려면 대기 시간이 필요합니다.'
-              : result?.skipped === 'requires-server' ? '서버에서 실행해야 하는 이벤트입니다.'
-                : result?.skipped?.startsWith('condition:') ? '실행 조건을 충족하지 못했습니다.'
+        const result = await eventEngine.preview(blueprint, trigger);
+        if (result.skipped || result.actionCount === 0) {
+          const reason = result.skipped === 'already-executed' ? '이미 실행한 일회성 이벤트입니다.'
+            : result.skipped === 'cooldown' ? '다시 실행하려면 대기 시간이 필요합니다.'
+              : result.skipped === 'requires-server' ? '서버에서 실행해야 하는 이벤트입니다.'
+                : result.skipped?.startsWith('condition:') ? '실행 조건을 충족하지 못했습니다.'
                   : '실행된 동작이 없습니다. 이벤트 활성화와 동작 설정을 확인하세요.';
           setStatus({ kind: 'idle', message: reason });
           return;
         }
+        setStatus({ kind: 'success', message: `이벤트를 시험했습니다: ${blueprint.name} (동작 ${result.actionCount}개, 실제 보상 없음)` });
+        return;
       }
       setStatus({ kind: 'success', message: `이벤트를 실행했습니다: ${blueprint.name}` });
     } catch (error: unknown) {

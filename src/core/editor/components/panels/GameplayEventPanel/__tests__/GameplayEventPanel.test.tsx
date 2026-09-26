@@ -2,25 +2,47 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 
 import { GameplayEventPanel } from '..';
 import { createManualToastEventBlueprint } from '../../../../../gameplay';
+import { GaesupRuntimeProvider } from '../../../../../runtime/context';
+import { createGaesupRuntime } from '../../../../../runtime/createGaesupRuntime';
 import { logger } from '../../../../../utils/logger';
 
-test('retains one-time execution history across edits while accepting new event definitions', async () => {
+test('a test run records nothing, so a one-time event stays testable and its flags stay unset', async () => {
   const blueprint = createManualToastEventBlueprint({ id: 'once', name: '최초 실행', triggerKey: 'once', message: '안내' });
   blueprint.actions = [{ type: 'setFlag', key: 'visited', value: true }];
   blueprint.policy = { run: 'once' };
   const view = render(<GameplayEventPanel blueprints={[blueprint]} />);
   const run = () => fireEvent.click(screen.getByRole('button', { name: '실행' }));
   await act(async () => { run(); });
-  expect(screen.getByRole('status')).toHaveTextContent('이벤트를 실행했습니다');
+  expect(screen.getByRole('status')).toHaveTextContent('이벤트를 시험했습니다: 최초 실행 (동작 1개, 실제 보상 없음)');
   view.rerender(<GameplayEventPanel blueprints={[{ ...blueprint, name: '수정한 이름' }]} />);
   await act(async () => { run(); });
-  expect(screen.getByRole('status')).toHaveTextContent('이미 실행한 일회성 이벤트입니다.');
+  expect(screen.getByRole('status')).toHaveTextContent('이벤트를 시험했습니다: 수정한 이름');
   view.rerender(<GameplayEventPanel blueprints={[{
     ...blueprint, id: 'next', name: '다음 이벤트', trigger: { type: 'manual', key: 'next' },
     conditions: [{ type: 'flagEquals', key: 'visited', value: true }],
   }]} />);
   await act(async () => { run(); });
-  expect(screen.getByRole('status')).toHaveTextContent('이벤트를 실행했습니다: 다음 이벤트');
+  expect(screen.getByRole('status')).toHaveTextContent('실행 조건을 충족하지 못했습니다.');
+});
+
+test("a test run inside a world leaves the world's live events, state and rewards untouched", async () => {
+  const runtime = createGaesupRuntime();
+  await runtime.setup();
+  const live = createManualToastEventBlueprint({ id: 'live', name: '실제 이벤트', triggerKey: 'live', message: '안내' });
+  runtime.gameplayEvents.setBlueprints([live]);
+  const reward = createManualToastEventBlueprint({ id: 'reward', name: '보상', triggerKey: 'reward', message: '안내' });
+  reward.actions = [{ type: 'setFlag', key: 'rewarded', value: true }];
+  const view = render(<GaesupRuntimeProvider runtime={runtime}><GameplayEventPanel blueprints={[reward]} /></GaesupRuntimeProvider>);
+  try {
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: '실행' })); });
+    expect(screen.getByRole('status')).toHaveTextContent('이벤트를 시험했습니다: 보상');
+    expect(runtime.gameplayEvents.getBlueprints()).toEqual([live]);
+    expect(runtime.gameplayEvents.state.flags['rewarded']).toBeUndefined();
+    expect(runtime.gameplayEvents.state.executedAt['reward']).toBeUndefined();
+  } finally {
+    view.unmount();
+    await runtime.dispose();
+  }
 });
 
 test('waits for an event run and permits retry after failure', async () => {
