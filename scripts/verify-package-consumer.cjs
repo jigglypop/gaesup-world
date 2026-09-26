@@ -1072,8 +1072,6 @@ import {
   DEFAULT_CHARACTER_ATTACHMENT_SOCKETS,
   DEFAULT_CHARACTER_EQUIPMENT_PRESETS,
   GaesupWorld,
-  InventoryUI,
-  QuestLogUI,
   ActionEquipmentPanel,
   SCENE_DOCUMENT_SAVE_KEY,
   TeleportMarker,
@@ -1234,8 +1232,6 @@ ${createInteractionAggregateTypeProbe('')}
 const components: ComponentType<any>[] = [
   GaesupWorld as ComponentType<any>,
   BuildingUI as ComponentType<any>,
-  InventoryUI as ComponentType<any>,
-  QuestLogUI as ComponentType<any>,
   ActionEquipmentPanel as ComponentType<any>,
   TeleportOnClick as ComponentType<any>,
   TeleportMarker as ComponentType<any>,
@@ -1522,7 +1518,6 @@ import {
   DEFAULT_CHARACTER_ATTACHMENT_SOCKETS,
   DEFAULT_CHARACTER_EQUIPMENT_PRESETS,
   GaesupWorld,
-  InventoryUI,
   ActionEquipmentPanel,
   TeleportMarker,
   TeleportOnClick,
@@ -1644,7 +1639,6 @@ function BrowserSmoke() {
   void defaultMultiplayerConfig;
   void parseCubeLut;
   void BuildingUI;
-  void InventoryUI;
   void ActionEquipmentPanel;
   void TeleportOnClick;
   void TeleportMarker;

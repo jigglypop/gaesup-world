@@ -49,35 +49,11 @@ export function setDefaultGameplayEventServices(factory: (() => GameplayEventSer
 }
 
 function registerServiceHandlers(registry: GameplayEventRegistry, services: GameplayEventServices): void {
-  registry.registerCondition<Extract<GameplayEventCondition, { type: 'hasItem' }>>('hasItem', (condition) =>
-    services.hasItem(condition.itemId, condition.count ?? 1),
-  );
-  registry.registerCondition<Extract<GameplayEventCondition, { type: 'questStatus' }>>('questStatus', (condition) =>
-    services.questStatus(condition.questId) === condition.status,
-  );
-  registry.registerCondition<Extract<GameplayEventCondition, { type: 'eventActive' }>>('eventActive', (condition) =>
-    services.isEventActive(condition.eventId),
-  );
-  registry.registerAction<Extract<GameplayEventAction, { type: 'giveItem' }>>('giveItem', (action) => {
-    services.addItem(action.itemId, action.count ?? 1);
-  });
-  registry.registerAction<Extract<GameplayEventAction, { type: 'removeItem' }>>('removeItem', (action) => {
-    services.removeItem(action.itemId, action.count ?? 1);
-  });
-  registry.registerAction<Extract<GameplayEventAction, { type: 'startQuest' }>>('startQuest', (action) => {
-    services.startQuest(action.questId);
-  });
-  registry.registerAction<Extract<GameplayEventAction, { type: 'completeQuest' }>>('completeQuest', (action) => {
-    services.completeQuest(action.questId);
-  });
   registry.registerAction<Extract<GameplayEventAction, { type: 'showDialog' }>>('showDialog', (action) => {
     services.showDialog(action.dialogTreeId, action.npcId);
   });
   registry.registerAction<Extract<GameplayEventAction, { type: 'toast' }>>('toast', (action) => {
     services.notify(action.kind ?? 'info', action.text);
-  });
-  registry.registerAction<Extract<GameplayEventAction, { type: 'notifyQuestFlag' }>>('notifyQuestFlag', (action) => {
-    services.notifyQuestFlag(action.key, action.value);
   });
 }
 

@@ -7,11 +7,8 @@ import { seedNPCDefaults } from './npcDefaults';
 import { createNPCInstanceActions } from './npcInstanceActions';
 import type { NPCStore } from './npcStoreTypes';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
-import { useQuestStore } from '../../quests/stores/questStore';
-import { useFriendshipStore } from '../../relations/stores/friendshipStore';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { lazyScopedStore } from '../../stores/scopedStore';
-import { setDefaultNPCBrainConditionStores } from '../core/blueprint';
 
 export { DEFAULT_NPC_SCALE } from './npcDefaults';
 
@@ -52,12 +49,7 @@ export function createNPCStore(options: { onInvalidateBrain?: (id?: string) => v
 }
 export type NPCStoreApi = ReturnType<typeof createNPCStore>;
 export const NPC_STORE_SERVICE = runtimeStoreServiceKey<NPCStoreApi>('npc');
-/** Legacy global brain conditions pair with the legacy global NPC store; runtimes pass their own stores. */
-function createLegacyNPCStore() {
-  setDefaultNPCBrainConditionStores({ questStore: useQuestStore, friendshipStore: useFriendshipStore });
-  return buildNPCStore(true);
-}
 /** React uses the nearest runtime; static methods retain the legacy default. */
 export const { useStore: useNPCStore, useStoreApi: useNPCStoreApi } = lazyScopedStore(
-  'useNPCStore', createLegacyNPCStore, () => useGaesupRuntime()?.npcStore,
+  'useNPCStore', () => buildNPCStore(true), () => useGaesupRuntime()?.npcStore,
 );

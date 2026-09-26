@@ -9,13 +9,11 @@ export type {
   DialogEffect,
 } from './types';
 export { DialogRunner } from './core/DialogRunner';
-export type { DialogRunnerOptions } from './core/DialogRunner';
+export type { CustomDialogCondition, CustomDialogEffect, DialogRunnerOptions } from './core/DialogRunner';
 export { getDialogRegistry } from './registry/DialogRegistry';
 export type { DialogRegistry } from './registry/DialogRegistry';
 export { useDialogStore, useDialogStoreApi, createDialogStore } from './stores/dialogStore';
 export { DialogBox } from './components/DialogBox';
 export type { DialogBoxProps } from './components/DialogBox';
 
-export type { DialogStore } from './stores/dialogStore';
-export { createDialogRuntimeAdapter } from './stores/runtimeAdapter';
-export type { DialogStoreDependencies } from './stores/runtimeAdapter';
+export type { DialogStartOptions, DialogStore } from './stores/dialogStore';

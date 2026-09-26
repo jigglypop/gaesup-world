@@ -4,33 +4,19 @@ import type {
   DialogContext,
   DialogEffect,
   DialogNode,
-  DialogRuntimeAdapter,
   DialogTree,
 } from '../types';
+
+export type CustomDialogEffect = Extract<DialogEffect, { type: 'custom' }>;
+export type CustomDialogCondition = Extract<DialogCondition, { type: 'custom' }>;
 
 export type DialogRunnerOptions = {
   tree: DialogTree;
   context?: DialogContext;
-  adapter?: DialogRuntimeAdapter;
-  onCustomEffect?: (effect: Extract<DialogEffect, { type: 'custom' }>) => void;
-  onOpenShop?: (shopId?: string) => void;
-};
-
-const EMPTY_DIALOG_ADAPTER: DialogRuntimeAdapter = {
-  countItem: () => 0,
-  addItem: () => 0,
-  removeItem: () => undefined,
-  getItemName: () => undefined,
-  getBells: () => 0,
-  addBells: () => undefined,
-  spendBells: () => undefined,
-  getFriendshipScore: () => 0,
-  addFriendship: () => undefined,
-  getDay: () => 0,
-  notifyFlag: () => undefined,
-  startQuest: () => undefined,
-  completeQuest: () => undefined,
-  notify: () => undefined,
+  onCustomEffect?: (effect: CustomDialogEffect, context: DialogContext) => void;
+  /** Decides `custom` conditions; without it they hide their choice. */
+  evaluateCondition?: (condition: CustomDialogCondition, context: DialogContext) => boolean;
+  onFlag?: (key: string, value: string | number | boolean) => void;
 };
 
 export class DialogRunner {
@@ -38,17 +24,13 @@ export class DialogRunner {
   readonly context: DialogContext;
   private currentId: string | null;
   private transitioning = false;
-  private adapter: DialogRuntimeAdapter;
-  private onCustomEffect?: DialogRunnerOptions['onCustomEffect'];
-  private onOpenShop?: DialogRunnerOptions['onOpenShop'];
+  private readonly options: DialogRunnerOptions;
 
-  constructor(opts: DialogRunnerOptions) {
-    this.tree = opts.tree;
-    this.context = opts.context ?? {};
-    this.currentId = opts.tree.startId;
-    this.adapter = opts.adapter ?? EMPTY_DIALOG_ADAPTER;
-    this.onCustomEffect = opts.onCustomEffect;
-    this.onOpenShop = opts.onOpenShop;
+  constructor(options: DialogRunnerOptions) {
+    this.tree = options.tree;
+    this.context = options.context ?? {};
+    this.currentId = options.tree.startId;
+    this.options = options;
   }
 
   get current(): DialogNode | null {
@@ -67,92 +49,39 @@ export class DialogRunner {
   advance(): DialogNode | null {
     const node = this.current;
     if (!node || this.transitioning || this.visibleChoices().length > 0) return node;
-    this.transitioning = true;
-    try {
-      if (node.effects) for (const e of node.effects) this.applyEffect(e);
-      this.currentId = node.next ?? null;
-      return this.current;
-    } finally {
-      this.transitioning = false;
-    }
+    return this.move(node.effects, node.next);
   }
 
   choose(index: number): DialogNode | null {
     const node = this.current;
     if (!node?.choices || this.transitioning) return node;
-    const visible = this.visibleChoices();
-    const choice = visible[index];
+    const choice = this.visibleChoices()[index];
     if (!choice) return node;
+    return this.move(choice.effects, choice.next);
+  }
+
+  private move(effects: DialogEffect[] | undefined, next: string | null | undefined): DialogNode | null {
     this.transitioning = true;
     try {
-      if (choice.effects) for (const e of choice.effects) this.applyEffect(e);
-      this.currentId = choice.next ?? null;
+      if (effects) for (const effect of effects) this.applyEffect(effect);
+      this.currentId = next ?? null;
       return this.current;
     } finally {
       this.transitioning = false;
     }
   }
 
-  private checkCondition(cond: DialogCondition): boolean {
-    switch (cond.type) {
-      case 'hasItem':
-        return this.adapter.countItem(cond.itemId) >= (cond.count ?? 1);
-      case 'hasBells':
-        return this.adapter.getBells() >= cond.amount;
-      case 'flagEquals':
-        return this.context.flags?.[cond.key] === cond.value;
-      case 'friendshipAtLeast':
-        return this.adapter.getFriendshipScore(cond.npcId) >= cond.amount;
-      default:
-        cond satisfies never;
-        return false;
-    }
+  private checkCondition(condition: DialogCondition): boolean {
+    if (condition.type === 'flagEquals') return this.context.flags?.[condition.key] === condition.value;
+    return this.options.evaluateCondition?.(condition, this.context) ?? false;
   }
 
   private applyEffect(effect: DialogEffect): void {
-    switch (effect.type) {
-      case 'giveItem': {
-        const count = effect.count ?? 1;
-        const remaining = this.adapter.addItem(effect.itemId, count);
-        if (remaining > 0) this.adapter.notify('warn', '인벤토리가 가득 찼습니다');
-        else this.adapter.notify('reward', `${this.adapter.getItemName(effect.itemId) ?? effect.itemId} +${count}`);
-        return;
-      }
-      case 'takeItem': {
-        this.adapter.removeItem(effect.itemId, effect.count ?? 1);
-        return;
-      }
-      case 'giveBells':
-        this.adapter.addBells(effect.amount);
-        this.adapter.notify('reward', `+${effect.amount} B`);
-        return;
-      case 'takeBells':
-        this.adapter.spendBells(effect.amount);
-        return;
-      case 'setFlag':
-        if (!this.context.flags) this.context.flags = {};
-        this.context.flags[effect.key] = effect.value;
-        this.adapter.notifyFlag(effect.key, effect.value);
-        return;
-      case 'addFriendship': {
-        this.adapter.addFriendship(effect.npcId, effect.amount, this.adapter.getDay());
-        return;
-      }
-      case 'startQuest':
-        this.adapter.startQuest(effect.questId);
-        return;
-      case 'completeQuest':
-        this.adapter.completeQuest(effect.questId);
-        return;
-      case 'openShop':
-        this.onOpenShop?.(effect.shopId);
-        return;
-      case 'custom':
-        this.onCustomEffect?.(effect);
-        return;
-      default:
-        effect satisfies never;
-        return;
+    if (effect.type === 'setFlag') {
+      (this.context.flags ??= {})[effect.key] = effect.value;
+      this.options.onFlag?.(effect.key, effect.value);
+      return;
     }
+    this.options.onCustomEffect?.(effect, this.context);
   }
 }

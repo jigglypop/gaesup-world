@@ -1,36 +1,21 @@
-import type { EventId } from '../../events';
-import type { ItemId } from '../../items';
-import type { QuestId, QuestStatus } from '../../quests';
-
 export type GameplayEventId = string;
 
 export type GameplayEventTrigger =
   | { type: 'manual'; key: string }
   | { type: 'interaction'; targetId: string; action?: string }
   | { type: 'enterArea'; areaId: string }
-  | { type: 'itemCollected'; itemId: ItemId }
   | { type: 'timeChanged'; hour?: number }
-  | { type: 'calendarEventStarted'; eventId: EventId }
-  | { type: 'questChanged'; questId: QuestId; status?: QuestStatus }
   | { type: 'custom'; key: string };
 
 export type GameplayEventCondition =
   | { type: 'always' }
-  | { type: 'hasItem'; itemId: ItemId; count?: number }
-  | { type: 'questStatus'; questId: QuestId; status: QuestStatus }
-  | { type: 'eventActive'; eventId: EventId }
   | { type: 'flagEquals'; key: string; value: string | number | boolean }
   | { type: 'custom'; key: string; payload?: Record<string, unknown> };
 
 export type GameplayEventAction =
-  | { type: 'giveItem'; itemId: ItemId; count?: number }
-  | { type: 'removeItem'; itemId: ItemId; count?: number }
-  | { type: 'startQuest'; questId: QuestId }
-  | { type: 'completeQuest'; questId: QuestId }
   | { type: 'showDialog'; dialogTreeId: string; npcId?: string }
   | { type: 'toast'; kind?: 'info' | 'success' | 'warn' | 'error' | 'reward' | 'mail'; text: string }
   | { type: 'setFlag'; key: string; value: string | number | boolean }
-  | { type: 'notifyQuestFlag'; key: string; value: string | number | boolean }
   | { type: 'emit'; eventName: string; payload?: Record<string, unknown> }
   | { type: 'custom'; key: string; payload?: Record<string, unknown> };
 
@@ -58,11 +43,7 @@ export type GameplayTriggerEvent = {
   targetId?: string;
   action?: string;
   areaId?: string;
-  itemId?: ItemId;
   hour?: number;
-  eventId?: EventId;
-  questId?: QuestId;
-  status?: QuestStatus;
   payload?: Record<string, unknown>;
 };
 
@@ -106,14 +87,6 @@ export type GameplayActionHandler<TAction extends GameplayEventAction = Gameplay
 export type GameplayToastKind = NonNullable<Extract<GameplayEventAction, { type: 'toast' }>['kind']>;
 
 export type GameplayEventServices = {
-  hasItem: (itemId: string, count: number) => boolean;
-  addItem: (itemId: string, count: number) => void;
-  removeItem: (itemId: string, count: number) => void;
-  questStatus: (questId: string) => string | undefined;
-  startQuest: (questId: string) => void;
-  completeQuest: (questId: string) => void;
-  notifyQuestFlag: (key: string, value: string | number | boolean) => void;
-  isEventActive: (eventId: string) => boolean;
   showDialog: (dialogTreeId: string, npcId?: string) => void;
   notify: (kind: GameplayToastKind, text: string) => void;
   emit?: (eventName: string, payload?: Record<string, unknown>) => void;

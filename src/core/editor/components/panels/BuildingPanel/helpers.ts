@@ -12,9 +12,7 @@ const NPC_BRAIN_LABELS: Readonly<Record<string, string>> = {
   idle: '대기', moveTo: '지점 이동', patrol: '순찰', wander: '배회', playAnimation: '애니메이션 재생',
   moving: '이동 중', arrived: '도착', walk: '걷기', run: '달리기', jump: '점프', greet: '인사',
   lookAt: '바라보기', speak: '말하기', interact: '상호작용', remember: '기억 저장', moveToTarget: '대상 이동',
-  always: '항상', navigationIdle: '이동 대기 중', perceivedAny: '대상 감지', questStatus: '퀘스트 상태',
-  friendshipAtLeast: '최소 친밀도', memoryEquals: '기억 값 일치',
-  locked: '잠김', available: '시작 가능', active: '진행 중', completed: '완료', failed: '실패',
+  always: '항상', navigationIdle: '이동 대기 중', perceivedAny: '대상 감지', perceivedEntered: '새 대상 감지', memoryEquals: '기억 값 일치',
   point: '지점', self: '자신', nearestPerceived: '가장 가까운 감지 대상',
   next: '다음', true: '참', false: '거짓',
 };
@@ -53,23 +51,7 @@ export function createScopedColorMeshConfig(id: string, color: string, base?: Me
   };
 }
 
-export function createNPCConditionNode(kind: 'navigationIdle' | 'questStatus' | 'friendshipAtLeast'): NPCBrainBlueprintNode {
-  if (kind === 'questStatus') {
-    return {
-      id: createUniqueId('condition-quest'),
-      type: 'condition',
-      label: '퀘스트 진행 중',
-      condition: { type: 'questStatus', questId: 'welcome', status: 'active' },
-    };
-  }
-  if (kind === 'friendshipAtLeast') {
-    return {
-      id: createUniqueId('condition-friendship'),
-      type: 'condition',
-      label: '친밀도 조건',
-      condition: { type: 'friendshipAtLeast', score: 150 },
-    };
-  }
+export function createNPCConditionNode(): NPCBrainBlueprintNode {
   return {
     id: createUniqueId('condition-idle'),
     type: 'condition',
@@ -111,15 +93,7 @@ export function getNPCBlueprintNodeTitle(node: NPCBrainBlueprintNode): string {
 
 export function getNPCBlueprintNodeDescription(node: NPCBrainBlueprintNode): string {
   if (node.type === 'start') return '블루프린트 실행 시작점';
-  if (node.type === 'condition') {
-    if (node.condition.type === 'questStatus') {
-      return `퀘스트 ${node.condition.questId}: ${getNPCBrainLabel(node.condition.status)}`;
-    }
-    if (node.condition.type === 'friendshipAtLeast') {
-      return `친밀도 ${node.condition.score} 이상`;
-    }
-    return getNPCBrainLabel(node.condition.type);
-  }
+  if (node.type === 'condition') return getNPCBrainLabel(node.condition.type);
   if (node.action.type === 'moveToTarget') return `${getNPCBrainLabel(node.action.target.type)} 이동`;
   if (node.action.type === 'speak') return node.action.text;
   if (node.action.type === 'playAnimation') return node.action.animationId;

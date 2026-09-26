@@ -49,11 +49,11 @@ describe('BuildingPanel asset material scoping', () => {
 });
 
 describe('NPC brain presets', () => {
-  test('the quest dialogue preset adds its nodes with distinct ids in one click', () => {
+  test('a condition branch followed by a dialogue node adds its nodes with distinct ids in one step', () => {
     jest.spyOn(Date, 'now').mockReturnValue(1);
     const blueprint: NPCBrainBlueprint = { id: 'brain', name: 'brain', nodes: [{ id: 'start', type: 'start' }], edges: [] };
     const preset = appendNPCBlueprintNode(
-      appendNPCConditionNodeWithBranchTemplate(blueprint, createNPCConditionNode('questStatus')),
+      appendNPCConditionNodeWithBranchTemplate(blueprint, createNPCConditionNode()),
       createNPCActionNode('speak', undefined),
     );
     jest.restoreAllMocks();

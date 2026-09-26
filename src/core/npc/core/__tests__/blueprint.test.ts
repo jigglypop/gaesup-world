@@ -1,5 +1,3 @@
-import { useQuestStore } from '../../../quests/stores/questStore';
-import { useFriendshipStore } from '../../../relations/stores/friendshipStore';
 import { createNPCStore } from '../../stores/npcStore';
 import type { NPCBrainBlueprint, NPCInstance, NPCObservation } from '../../types';
 import {
@@ -9,10 +7,7 @@ import {
   createAgentBehaviorBlueprintFromNPCBehaviorBlueprint,
   createNPCBehaviorBlueprintFromAgentBehaviorBlueprint,
   createNPCBehaviorBlueprintFromInstance,
-  setDefaultNPCBrainConditionStores,
 } from '../blueprint';
-
-const conditionStores = { questStore: useQuestStore, friendshipStore: useFriendshipStore };
 
 const createInstance = (id: string): NPCInstance => ({
   id,
@@ -41,11 +36,6 @@ const createInstance = (id: string): NPCInstance => ({
 });
 
 describe('NPC behavior blueprint helpers', () => {
-  beforeEach(() => {
-    useQuestStore.setState({ state: {} });
-    useFriendshipStore.setState({ entries: {} });
-  });
-
   it('extracts reusable behavior without instance placement state', () => {
     const blueprint = createNPCBehaviorBlueprintFromInstance(createInstance('mei'), {
       id: 'friendly-villager',
@@ -111,115 +101,6 @@ describe('NPC behavior blueprint helpers', () => {
     expect(next.behavior?.waypoints).toEqual([[1, 0, 2], [3, 0, 4]]);
     expect(next.brain?.memory).toEqual({ metPlayer: true });
   });
-
-  it('supports questStatus condition in npc brain blueprint', () => {
-    useQuestStore.setState({
-      state: {
-        welcome: {
-          questId: 'welcome',
-          status: 'active',
-          progress: {},
-          startedAt: Date.now(),
-        },
-      },
-    });
-    const observation = {
-      instanceId: 'npc-guide',
-      templateId: 'villager',
-      timestamp: Date.now(),
-      position: [0, 0, 0] as [number, number, number],
-      rotation: [0, 0, 0] as [number, number, number],
-      currentAnimation: 'idle',
-      navigationState: 'idle' as const,
-      behaviorMode: 'idle' as const,
-      brainMode: 'scripted' as const,
-      perceptionEnabled: false,
-      perceived: [],
-    };
-    const actions = compileNPCBrainBlueprint({
-      id: 'quest-check',
-      name: 'Quest Check',
-      nodes: [
-        { id: 'start', type: 'start' },
-        { id: 'cond', type: 'condition', condition: { type: 'questStatus', questId: 'welcome', status: 'active' } },
-        { id: 'act', type: 'action', action: { type: 'idle' } },
-      ],
-      edges: [
-        { id: 'e1', source: 'start', target: 'cond', branch: 'next' },
-        { id: 'e2', source: 'cond', target: 'act', branch: 'true' },
-      ],
-    }, observation, conditionStores);
-
-    expect(actions).toEqual([{ type: 'idle' }]);
-  });
-
-  it('supports friendshipAtLeast condition in npc brain blueprint', () => {
-    useFriendshipStore.setState({
-      entries: {
-        'npc-guide': {
-          npcId: 'npc-guide',
-          score: 180,
-          todayGained: 0,
-          lastGiftDay: -1,
-          giftHistory: {},
-        },
-      },
-    });
-    const observation = {
-      instanceId: 'npc-guide',
-      templateId: 'villager',
-      timestamp: Date.now(),
-      position: [0, 0, 0] as [number, number, number],
-      rotation: [0, 0, 0] as [number, number, number],
-      currentAnimation: 'idle',
-      navigationState: 'idle' as const,
-      behaviorMode: 'idle' as const,
-      brainMode: 'scripted' as const,
-      perceptionEnabled: false,
-      perceived: [],
-    };
-    const actions = compileNPCBrainBlueprint({
-      id: 'friendship-check',
-      name: 'Friendship Check',
-      nodes: [
-        { id: 'start', type: 'start' },
-        { id: 'cond', type: 'condition', condition: { type: 'friendshipAtLeast', score: 150 } },
-        { id: 'act', type: 'action', action: { type: 'idle' } },
-      ],
-      edges: [
-        { id: 'e1', source: 'start', target: 'cond', branch: 'next' },
-        { id: 'e2', source: 'cond', target: 'act', branch: 'true' },
-      ],
-    }, observation, conditionStores);
-
-    expect(actions).toEqual([{ type: 'idle' }]);
-  });
-
-  it('uses registered default condition stores when none are passed', () => {
-    const release = setDefaultNPCBrainConditionStores({
-      questStore: { getState: () => ({ statusOf: () => 'active' }) },
-      friendshipStore: { getState: () => ({ scoreOf: () => 0 }) },
-    });
-    const actions = compileNPCBrainBlueprint({
-      id: 'default-quest-check',
-      name: 'Default Quest Check',
-      nodes: [
-        { id: 'start', type: 'start' },
-        { id: 'cond', type: 'condition', condition: { type: 'questStatus', questId: 'welcome', status: 'active' } },
-        { id: 'act', type: 'action', action: { type: 'idle' } },
-      ],
-      edges: [
-        { id: 'e1', source: 'start', target: 'cond', branch: 'next' },
-        { id: 'e2', source: 'cond', target: 'act', branch: 'true' },
-      ],
-    }, {
-      instanceId: 'npc-a', templateId: 'villager', timestamp: 0, position: [0, 0, 0], rotation: [0, 0, 0],
-      currentAnimation: 'idle', navigationState: 'idle', behaviorMode: 'idle', brainMode: 'scripted',
-      perceptionEnabled: false, perceived: [],
-    });
-    release();
-    expect(actions).toEqual([{ type: 'idle' }]);
-  });
 });
 
 describe('entered targets', () => {
@@ -247,20 +128,20 @@ describe('entered targets', () => {
   };
 
   it('greets an actor that just came into sight, facing it rather than a nearer NPC', () => {
-    expect(compileNPCBrainBlueprint(greet, observation(['neighbor', 'player']), conditionStores)).toEqual([
+    expect(compileNPCBrainBlueprint(greet, observation(['neighbor', 'player']))).toEqual([
       { type: 'lookAt', target: [0, 0, 3] },
       { type: 'speak', text: '안녕!' },
     ]);
   });
 
   it('ignores an NPC that came into sight and an actor that was already seen', () => {
-    expect(compileNPCBrainBlueprint(greet, observation(['neighbor']), conditionStores)).toEqual([]);
-    expect(compileNPCBrainBlueprint(greet, observation([]), conditionStores)).toEqual([]);
+    expect(compileNPCBrainBlueprint(greet, observation(['neighbor']))).toEqual([]);
+    expect(compileNPCBrainBlueprint(greet, observation([]))).toEqual([]);
   });
 
-  it('the default wander blueprint walks whenever the NPC is idle, with no quest involved', () => {
+  it('the default wander blueprint walks whenever the NPC is idle', () => {
     const store = createNPCStore(); store.getState().initializeDefaults();
     const wander = store.getState().brainBlueprints.get('npc-blueprint-wander')!;
-    expect(compileNPCBrainBlueprint(wander, observation([]), conditionStores)).toEqual([expect.objectContaining({ type: 'moveTo' })]);
+    expect(compileNPCBrainBlueprint(wander, observation([]))).toEqual([expect.objectContaining({ type: 'moveTo' })]);
   });
 });

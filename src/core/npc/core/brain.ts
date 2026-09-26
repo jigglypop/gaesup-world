@@ -7,7 +7,7 @@ import type {
   NPCObservation,
   NPCObservationTarget,
 } from '../types';
-import { compileNPCBrainBlueprint, getNPCBrainBlueprint, type NPCBrainConditionStores } from './blueprint';
+import { compileNPCBrainBlueprint, getNPCBrainBlueprint } from './blueprint';
 import { attachReinforcementAdapter, legacyReinforcementClient } from './reinforcement';
 import { createWanderTarget } from './wander';
 
@@ -124,11 +124,11 @@ export function createNPCObservation(
   };
 }
 
-function resolveScriptedDecision(instance: NPCInstance, observation: NPCObservation, blueprints?: ReadonlyMap<string, NPCBrainBlueprint>, stores?: NPCBrainConditionStores): NPCBrainDecision | undefined {
+function resolveScriptedDecision(instance: NPCInstance, observation: NPCObservation, blueprints?: ReadonlyMap<string, NPCBrainBlueprint>): NPCBrainDecision | undefined {
   const blueprintId = instance.brain?.blueprintId;
   const blueprint = blueprintId ? (blueprints ? blueprints.get(blueprintId) : getNPCBrainBlueprint(blueprintId)) : undefined;
   if (blueprint) {
-    const actions = compileNPCBrainBlueprint(blueprint, observation, stores);
+    const actions = compileNPCBrainBlueprint(blueprint, observation);
     if (actions.length > 0) {
       return {
         source: 'blueprint',
@@ -175,8 +175,7 @@ export function resolveNPCBrainDecision(
   instance: NPCInstance,
   observation: NPCObservation,
   blueprints?: ReadonlyMap<string, NPCBrainBlueprint>,
-  stores?: NPCBrainConditionStores & { npcBrainAdapters?: NPCBrainAdapterRegistry },
-  adapters: NPCBrainAdapterRegistry = stores?.npcBrainAdapters ?? getDefaultAdapters(),
+  adapters: NPCBrainAdapterRegistry = getDefaultAdapters(),
 ): NPCBrainDecision | undefined {
   const brainMode = instance.brain?.mode ?? 'none';
   if (brainMode === 'none' || !adapters.isActive) return undefined;
@@ -187,7 +186,7 @@ export function resolveNPCBrainDecision(
   }
 
   if (brainMode === 'scripted') {
-    return resolveScriptedDecision(instance, observation, blueprints, stores);
+    return resolveScriptedDecision(instance, observation, blueprints);
   }
 
   return undefined;

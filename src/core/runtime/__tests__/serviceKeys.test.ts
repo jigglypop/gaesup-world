@@ -1,5 +1,5 @@
 import { BUILDING_STORE_SERVICE } from '../../building/stores/buildingStore';
-import { WALLET_STORE_SERVICE } from '../../economy/stores/walletStore';
+import { DIALOG_STORE_SERVICE } from '../../dialog/stores/dialogStore';
 import { NPC_STORE_SERVICE } from '../../npc/stores/npcStore';
 import { InMemoryExtensionRegistry } from '../../plugins/ExtensionRegistry';
 import { defineService } from '../../plugins/serviceKey';
@@ -18,7 +18,7 @@ test('runtime registers its domain stores under the keys plugins read', async ()
   const runtime = createGaesupRuntime();
   await runtime.setup();
   expect(runtime.getService(WEATHER_STORE_SERVICE)).toBe(runtime.weatherStore);
-  expect(runtime.getService(WALLET_STORE_SERVICE)).toBe(runtime.walletStore);
+  expect(runtime.getService(DIALOG_STORE_SERVICE)).toBe(runtime.dialogStore);
   expect(runtime.getService(BUILDING_STORE_SERVICE)).toBe(runtime.buildingStore);
   expect(runtime.getService(NPC_STORE_SERVICE)).toBe(runtime.npcStore);
   await runtime.dispose();

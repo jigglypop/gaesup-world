@@ -95,7 +95,7 @@ npc.addInstance({ id: 'luru', templateId: 'villager', name: '루루', position: 
   behavior: { mode: 'wander', speed: 1.2, wanderRadius: 6, waitSeconds: 2, moveAnimation: 'walk', idleAnimation: 'idle' } });
 ```
 
-대화는 `DialogBox`와 대화 트리(노드·선택지·플래그)로 붙인다.
+대화는 `DialogBox`와 대화 트리(노드·선택지·플래그)로 붙인다. 아이템·퀘스트 같은 게임 규칙은 엔진에 없으므로 `custom` 효과·조건을 쓰고 `useDialogStore`의 `start(treeId, { onCustomEffect, evaluateCondition })`로 처리한다. 트리거→조건→액션 규칙은 `gaesup-world/gameplay`의 `GameplayEventEngine`이 맡는다.
 
 ## 저장
 

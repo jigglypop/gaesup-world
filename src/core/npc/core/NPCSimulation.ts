@@ -1,6 +1,5 @@
 import { Euler, Quaternion } from 'three';
 
-import type { NPCBrainConditionStores } from './blueprint';
 import { resolveNPCBrainDecision, type NPCBrainAdapterRegistry } from './brain';
 import { NPCPerceptionIndex } from './NPCPerceptionIndex';
 import { npcDecisionPhase } from './wander';
@@ -82,7 +81,7 @@ export class NPCSimulation {
 
   constructor(private readonly store: NPCSimulationStore, private readonly loop: AnimationClockLoop,
     private readonly options: {
-      conditions?: NPCBrainConditionStores; adapters?: NPCBrainAdapterRegistry; scoped?: boolean;
+      adapters?: NPCBrainAdapterRegistry; scoped?: boolean;
       /** Routes NPC movement around walls once its grid is ready. */
       navigation?: NavigationSystem;
     } = {}) {
@@ -293,7 +292,7 @@ export class NPCSimulation {
       const current = observed.get(entry.instanceId)!;
       const owner = this.store.getState().instances.get(entry.instanceId);
       if (!owner || owner.brain !== current.brain || owner.templateId !== current.templateId) continue;
-      const decision = resolveNPCBrainDecision(current, entry.observation, this.options.scoped ? this.store.getState().brainBlueprints : undefined, this.options.conditions, this.options.adapters);
+      const decision = resolveNPCBrainDecision(current, entry.observation, this.options.scoped ? this.store.getState().brainBlueprints : undefined, this.options.adapters);
       if (!this.active) return;
       // An adapter that rewrote this NPC while deciding owns the result; the stale decision is dropped.
       if (this.store.getState().instances.get(entry.instanceId) !== owner) continue;

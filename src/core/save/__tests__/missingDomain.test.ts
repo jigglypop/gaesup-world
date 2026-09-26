@@ -2,9 +2,9 @@ import { create } from 'zustand';
 
 import { createBuildingPlugin } from '../../building/plugin';
 import { createCameraPlugin } from '../../camera/plugin';
-import { createInventoryPlugin } from '../../inventory/plugin';
 import { createNPCPlugin } from '../../npc/plugin';
 import { createGaesupRuntime } from '../../runtime';
+import { createWeatherPlugin } from '../../weather/plugin';
 import { createStoreReset } from '../core/reset';
 import { SaveSystem } from '../core/SaveSystem';
 import type { SaveAdapter, SaveBlob } from '../types';
@@ -64,18 +64,18 @@ test('a store reset restores construction state and counts as a restore for trac
   expect(createStoreReset({ getState: () => ({}) })).toBeUndefined();
 });
 
-test('loading a slot written without the inventory domain empties the inventory instead of keeping the last slot', async () => {
+test('loading a slot written without the weather domain clears the weather instead of keeping the last slot', async () => {
   const adapter = memoryAdapter();
-  const runtime = createGaesupRuntime({ saveOptions: { adapter }, plugins: [createInventoryPlugin()] });
+  const runtime = createGaesupRuntime({ saveOptions: { adapter }, plugins: [createWeatherPlugin()] });
   await runtime.setup();
   try {
     const blob = runtime.save.createBlob();
-    delete blob.domains['inventory'];
-    await adapter.write('before-inventory', blob);
-    runtime.inventoryStore.getState().add('wood', 3);
+    delete blob.domains['weather'];
+    await adapter.write('before-weather', blob);
+    runtime.weatherStore.getState().setWeather('rain', 0.8, 3);
 
-    expect(await runtime.save.load('before-inventory')).toBe(true);
-    expect(runtime.inventoryStore.getState().countOf('wood')).toBe(0);
+    expect(await runtime.save.load('before-weather')).toBe(true);
+    expect(runtime.weatherStore.getState()).toMatchObject({ current: null, history: [] });
   } finally {
     await runtime.dispose();
   }

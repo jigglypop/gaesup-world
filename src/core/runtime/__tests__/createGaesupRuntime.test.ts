@@ -6,31 +6,13 @@ import { createAudioPlugin } from '../../audio/plugin';
 import { useAudioStore } from '../../audio/stores/audioStore';
 import { createBuildingPlugin } from '../../building/plugin';
 import { createCameraPlugin } from '../../camera';
-import { createCatalogPlugin } from '../../catalog/plugin';
-import { useCatalogStore } from '../../catalog/stores/catalogStore';
 import { createCharacterPlugin } from '../../character/plugin';
-import { createCraftingPlugin } from '../../crafting/plugin';
-import { useCraftingStore } from '../../crafting/stores/craftingStore';
-import { createEconomyPlugin } from '../../economy/plugin';
-import { useWalletStore } from '../../economy/stores/walletStore';
-import { createEventsPlugin } from '../../events/plugin';
-import { useEventsStore } from '../../events/stores/eventsStore';
-import { createFarmingPlugin } from '../../farming/plugin';
-import { usePlotStore } from '../../farming/stores/plotStore';
 import { createI18nPlugin } from '../../i18n/plugin';
 import { useI18nStore } from '../../i18n/stores/i18nStore';
-import { createInventoryPlugin } from '../../inventory/plugin';
-import { createMailPlugin } from '../../mail/plugin';
-import { useMailStore } from '../../mail/stores/mailStore';
 import { createMotionsPlugin, type MotionsRuntimeService } from '../../motions';
 import { PhysicsBridge } from '../../motions/bridge/PhysicsBridge';
 import { createNPCPlugin, hydrateNPCState, serializeNPCState } from '../../npc/plugin';
-import { useNPCStore } from '../../npc/stores/npcStore';
 import type { GaesupPlugin } from '../../plugins';
-import { createQuestsPlugin } from '../../quests/plugin';
-import { useQuestStore } from '../../quests/stores/questStore';
-import { createRelationsPlugin } from '../../relations/plugin';
-import { useFriendshipStore } from '../../relations/stores/friendshipStore';
 import { SaveSystem } from '../../save';
 import type { SaveAdapter, SaveBlob } from '../../save';
 import { createScenePlugin } from '../../scene/plugin';
@@ -38,8 +20,6 @@ import { createSceneDocument, createSceneDocumentController, createSceneDocument
 import { useGaesupStore } from '../../stores/gaesupStore';
 import { createTimePlugin } from '../../time/plugin';
 import { useTimeStore } from '../../time/stores/timeStore';
-import { createTownPlugin } from '../../town/plugin';
-import { useTownStore } from '../../town/stores/townStore';
 import { createWeatherPlugin } from '../../weather/plugin';
 import { useWeatherStore } from '../../weather/stores/weatherStore';
 import { createGaesupRuntime, shouldSetupPluginForRuntime } from '../createGaesupRuntime';
@@ -92,35 +72,35 @@ const createSavePlugin = (
 });
 
 describe('createGaesupRuntime', () => {
-  it('rejects malformed scene state before applying mail', async () => {
+  it('rejects malformed scene state before applying weather', async () => {
     const save = new SaveSystem({ adapter: new MemoryAdapter() });
     const runtime = createGaesupRuntime({ saveSystem: save,
-      plugins: [createMailPlugin(), createScenePlugin()], logger: { warn: () => undefined } });
+      plugins: [createWeatherPlugin(), createScenePlugin()], logger: { warn: () => undefined } });
     await runtime.setup();
-    const mail = runtime.mailStore.getState();
+    const weather = runtime.weatherStore.getState();
     const scene = runtime.sceneStore.getState();
     try {
       expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
-        mail: { version: 1, messages: [] }, scene: { version: 1, current: 12 },
+        weather: { version: 1, current: { day: 2, kind: 'rain', intensity: 0.5 }, history: [] }, scene: { version: 1, current: 12 },
       } })).toThrow('Save hydration failed');
-      expect(runtime.mailStore.getState()).toBe(mail);
+      expect(runtime.weatherStore.getState()).toBe(weather);
       expect(runtime.sceneStore.getState()).toBe(scene);
     } finally { await runtime.dispose(); }
   });
 
-  it('rejects corrupt character appearance before replacing saved mail', async () => {
+  it('rejects corrupt character appearance before changing the clock', async () => {
     const save = new SaveSystem({ adapter: new MemoryAdapter() });
     const runtime = createGaesupRuntime({ saveSystem: save,
-      plugins: [createMailPlugin(), createCharacterPlugin()], logger: { warn: () => undefined } });
+      plugins: [createTimePlugin(), createCharacterPlugin()], logger: { warn: () => undefined } });
     await runtime.setup();
-    const mail = runtime.mailStore.getState();
+    const time = runtime.timeStore.getState();
     const character = runtime.characterStore.getState();
     try {
       expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
-        mail: { version: 1, messages: [{ id: 'new', from: '', subject: '', body: '', sentDay: 0 }] },
+        time: { ...time.serialize(), totalMinutes: 2880 },
         character: { version: 3, activeCharacterId: 'custom', characters: { custom: { appearance: { hair: 'unknown' } } } },
       } })).toThrow('Save hydration failed');
-      expect(runtime.mailStore.getState()).toBe(mail);
+      expect(runtime.timeStore.getState()).toBe(time);
       expect(runtime.characterStore.getState()).toBe(character);
     } finally { await runtime.dispose(); }
   });
@@ -129,19 +109,19 @@ describe('createGaesupRuntime', () => {
     { version: 2 }, { instances: {} },
     { animations: [{ id: 'same' }, { id: 'same' }] },
     { instances: [{ id: 'npc', templateId: 'custom', name: '주민', position: [0, NaN, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }] },
-  ])('rejects malformed NPC snapshots before applying wallet: %j', async (npc) => {
-    const wallet = useWalletStore.getState();
-    const before = useNPCStore.getState();
+  ])('rejects malformed NPC snapshots before applying weather: %j', async (npc) => {
     const save = new SaveSystem({ adapter: new MemoryAdapter() });
     const runtime = createGaesupRuntime({ saveSystem: save,
-      plugins: [createEconomyPlugin(), createNPCPlugin()], logger: { warn: () => undefined } });
+      plugins: [createWeatherPlugin(), createNPCPlugin()], logger: { warn: () => undefined } });
     await runtime.setup();
+    const weather = runtime.weatherStore.getState();
+    const before = runtime.npcStore.getState();
     try {
       expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
-        wallet: { ...wallet.serialize(), bells: wallet.bells + 10 }, npc,
+        weather: { version: 1, current: { day: 2, kind: 'rain', intensity: 0.5 }, history: [] }, npc,
       } })).toThrow('Save hydration failed');
-      expect(useWalletStore.getState()).toBe(wallet);
-      expect(useNPCStore.getState()).toBe(before);
+      expect(runtime.weatherStore.getState()).toBe(weather);
+      expect(runtime.npcStore.getState()).toBe(before);
     } finally { await runtime.dispose(); }
   });
 
@@ -169,97 +149,6 @@ describe('createGaesupRuntime', () => {
     } finally {
       runtime.npcStore.setState(before);
       await runtime.dispose();
-    }
-  });
-
-  it.each(['farming', 'town'])('rejects corrupt %s before changing other world domains', async (invalid) => {
-    const farming = usePlotStore.getState();
-    const town = useTownStore.getState();
-    const save = new SaveSystem({ adapter: new MemoryAdapter() });
-    const runtime = createGaesupRuntime({ saveSystem: save,
-      plugins: [createFarmingPlugin(), createTownPlugin()], logger: { warn: () => undefined } });
-    await runtime.setup();
-    try {
-      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
-        farming: { version: 1, plots: [{ id: 'p', position: [0, 0, 0], state: 'empty', stageIndex: invalid === 'farming' ? -1 : 0 }] },
-        town: { version: 1, houses: [{ id: 'h', position: [0, 0, 0], size: [4, invalid === 'town' ? 0 : 4], state: 'empty' }], residents: [] },
-      } })).toThrow('Save hydration failed');
-      expect(usePlotStore.getState()).toBe(farming);
-      expect(useTownStore.getState()).toBe(town);
-    } finally { await runtime.dispose(); }
-  });
-
-  it('rejects corrupt quest progress before replacing the mailbox', async () => {
-    const mail = useMailStore.getState();
-    const quests = useQuestStore.getState();
-    const save = new SaveSystem({ adapter: new MemoryAdapter() });
-    const runtime = createGaesupRuntime({ saveSystem: save,
-      plugins: [createMailPlugin(), createQuestsPlugin()], logger: { warn: () => undefined } });
-    await runtime.setup();
-    try {
-      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
-        mail: { version: 1, messages: [{ id: 'new', from: '', subject: '', body: '', sentDay: 0 }] },
-        quests: { version: 1, state: { custom: { questId: 'custom', status: 'active', progress: { goal: -1 } } } },
-      } })).toThrow('Save hydration failed');
-      expect(useMailStore.getState()).toBe(mail);
-      expect(useQuestStore.getState()).toBe(quests);
-    } finally { await runtime.dispose(); }
-  });
-
-  it('rejects corrupt mail before applying a valid wallet snapshot', async () => {
-    const wallet = useWalletStore.getState();
-    const mail = useMailStore.getState();
-    const save = new SaveSystem({ adapter: new MemoryAdapter() });
-    const runtime = createGaesupRuntime({ saveSystem: save,
-      plugins: [createEconomyPlugin(), createMailPlugin()], logger: { warn: () => undefined } });
-    await runtime.setup();
-    try {
-      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
-        wallet: { ...wallet.serialize(), bells: wallet.bells + 10 },
-        mail: { version: 1, messages: [{ id: 'gift', from: '', subject: '', body: '', sentDay: 0,
-          attachments: [{ itemId: 'apple', count: -1 }] }] },
-      } })).toThrow('Save hydration failed');
-      expect(useWalletStore.getState()).toBe(wallet);
-      expect(useMailStore.getState()).toBe(mail);
-    } finally { await runtime.dispose(); }
-  });
-
-  it.each([NaN, -1, 0.5])('rejects corrupt gift history before applying events: %s', async (count) => {
-    const events = useEventsStore.getState();
-    const relations = useFriendshipStore.getState();
-    const save = new SaveSystem({ adapter: new MemoryAdapter() });
-    const runtime = createGaesupRuntime({ saveSystem: save,
-      plugins: [createEventsPlugin(), createRelationsPlugin()], logger: { warn: () => undefined } });
-    await runtime.setup();
-    try {
-      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
-        events: { version: 1, active: ['custom-event'], startedAt: { 'custom-event': 10 } },
-        relations: { version: 1, entries: { npc: { npcId: 'npc', score: 1, todayGained: 1, lastGiftDay: 0, giftHistory: { apple: count } } } },
-      } })).toThrow('Save hydration failed');
-      expect(useEventsStore.getState()).toBe(events);
-      expect(useFriendshipStore.getState()).toBe(relations);
-    } finally { await runtime.dispose(); }
-  });
-
-  it('owns prepared gift histories and clears tags from replaced events', () => {
-    const events = useEventsStore.getState();
-    const relations = useFriendshipStore.getState();
-    try {
-      useEventsStore.setState({ tags: new Set(['old-event-tag']) });
-      const data = { version: 1, entries: { npc: { npcId: 'npc', score: 1, todayGained: 1, lastGiftDay: 0, giftHistory: { apple: 2 } } } };
-      const apply = relations.prepareHydrate(data);
-      data.entries.npc.giftHistory.apple = 99;
-      expect(useFriendshipStore.getState()).toBe(relations);
-      apply();
-      expect(useFriendshipStore.getState().entries['npc']!.giftHistory['apple']).toBe(2);
-      useEventsStore.getState().hydrate({ version: 1, active: [], startedAt: {} });
-      expect(useEventsStore.getState().hasTag('old-event-tag')).toBe(false);
-      const before = useEventsStore.getState();
-      expect(() => before.prepareHydrate({ version: 1, active: ['event'], startedAt: { event: NaN } })).toThrow(TypeError);
-      expect(useEventsStore.getState()).toBe(before);
-    } finally {
-      useEventsStore.setState(events);
-      useFriendshipStore.setState(relations);
     }
   });
 
@@ -308,19 +197,19 @@ describe('createGaesupRuntime', () => {
   });
 
   it.each([NaN, -1, 2])('rejects corrupt weather before changing the clock: %s', async (intensity) => {
-    const time = useTimeStore.getState();
-    const weather = useWeatherStore.getState();
     const save = new SaveSystem({ adapter: new MemoryAdapter() });
     const runtime = createGaesupRuntime({ saveSystem: save,
       plugins: [createTimePlugin(), createWeatherPlugin()], logger: { warn: () => undefined } });
     await runtime.setup();
+    const time = runtime.timeStore.getState();
+    const weather = runtime.weatherStore.getState();
     try {
       expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains: {
         time: { ...time.serialize(), totalMinutes: 2880 },
         weather: { version: 1, current: { day: 2, kind: 'rain', intensity }, history: [] },
       } })).toThrow('Save hydration failed');
-      expect(useTimeStore.getState()).toBe(time);
-      expect(useWeatherStore.getState()).toBe(weather);
+      expect(runtime.timeStore.getState()).toBe(time);
+      expect(runtime.weatherStore.getState()).toBe(weather);
     } finally { await runtime.dispose(); }
   });
 
@@ -346,50 +235,6 @@ describe('createGaesupRuntime', () => {
       unsubscribe();
       useTimeStore.setState(time);
       useWeatherStore.setState(weather);
-    }
-  });
-
-  it.each([
-    { crafting: { version: 2, unlocked: [] } },
-    { crafting: { version: 1, unlocked: [null] } },
-    { catalog: { version: 1, entries: [] } },
-    { catalog: { version: 1, entries: { apple: { itemId: 'apple', firstSeenDay: 0, totalCollected: -1 } } } },
-  ])('rejects corrupt collection records before applying other domains: %j', async (domains) => {
-    const save = new SaveSystem({ adapter: new MemoryAdapter() });
-    const hydrate = jest.fn();
-    const crafting = useCraftingStore.getState();
-    const catalog = useCatalogStore.getState();
-    const runtime = createGaesupRuntime({ saveSystem: save,
-      plugins: [createCraftingPlugin(), createCatalogPlugin()],
-      saveBindings: [{ key: 'earlier', serialize: () => null, hydrate }], logger: { warn: () => undefined } });
-    await runtime.setup();
-    try {
-      expect(() => save.hydrateBlob({ version: 1, savedAt: 1, domains })).toThrow('Save hydration failed');
-      expect(hydrate).not.toHaveBeenCalled();
-      expect(useCraftingStore.getState()).toBe(crafting);
-      expect(useCatalogStore.getState()).toBe(catalog);
-    } finally { await runtime.dispose(); }
-  });
-
-  it('prepares owned collection records while preserving custom IDs', () => {
-    const crafting = useCraftingStore.getState();
-    const catalog = useCatalogStore.getState();
-    try {
-      const recipe = { version: 1, unlocked: ['custom-recipe'] };
-      const collection = { version: 1, entries: { custom: { itemId: 'custom', firstSeenDay: 3, totalCollected: 2 } } };
-      const applyCrafting = crafting.prepareHydrate(recipe);
-      const applyCatalog = catalog.prepareHydrate(collection);
-      recipe.unlocked.push('later');
-      collection.entries.custom.totalCollected = 99;
-      expect(useCraftingStore.getState()).toBe(crafting);
-      expect(useCatalogStore.getState()).toBe(catalog);
-      applyCrafting();
-      applyCatalog();
-      expect([...useCraftingStore.getState().unlocked]).toEqual(['custom-recipe']);
-      expect(useCatalogStore.getState().get('custom')?.totalCollected).toBe(2);
-    } finally {
-      useCraftingStore.setState(crafting);
-      useCatalogStore.setState(catalog);
     }
   });
 
@@ -1125,37 +970,12 @@ describe('createGaesupRuntime', () => {
     await runtime.dispose();
   });
 
-  it('round-trips player progress domains contributed by store plugins', async () => {
+  it('round-trips scene, character and i18n domains contributed by store plugins', async () => {
     const save = new SaveSystem({ adapter: new MemoryAdapter() });
     const runtime = createGaesupRuntime({
       saveSystem: save,
-      plugins: [
-        createScenePlugin(),
-        createCharacterPlugin(),
-        createInventoryPlugin(),
-        createEconomyPlugin(),
-        createRelationsPlugin(),
-        createQuestsPlugin(),
-        createMailPlugin(),
-        createCatalogPlugin(),
-        createCraftingPlugin(),
-        createFarmingPlugin(),
-        createEventsPlugin(),
-        createTownPlugin(),
-        createI18nPlugin(),
-      ],
+      plugins: [createScenePlugin(), createCharacterPlugin(), createI18nPlugin()],
     });
-    const originalInventory = runtime.inventoryStore.getState().serialize();
-    const originalWallet = runtime.walletStore.getState().serialize();
-    const originalShop = runtime.shopStore.getState().serialize();
-    const originalRelations = runtime.friendshipStore.getState().serialize();
-    const originalQuests = runtime.questStore.getState().serialize();
-    const originalMail = runtime.mailStore.getState().serialize();
-    const originalCatalog = runtime.catalogStore.getState().serialize();
-    const originalCrafting = runtime.craftingStore.getState().serialize();
-    const originalFarming = runtime.plotStore.getState().serialize();
-    const originalEvents = runtime.eventsStore.getState().serialize();
-    const originalTown = runtime.townStore.getState().serialize();
     const originalI18n = useI18nStore.getState().serialize();
     const originalScene = runtime.sceneStore.getState().serialize();
     const originalCharacter = runtime.characterStore.getState().serialize();
@@ -1167,170 +987,27 @@ describe('createGaesupRuntime', () => {
         Array.from(save.getBindings())
           .map((binding) => binding.key)
           .sort(),
-      ).toEqual([
-        'catalog',
-        'character',
-        'crafting',
-        'events',
-        'farming',
-        'gameplay-events',
-        'i18n',
-        'inventory',
-        'mail',
-        'quests',
-        'relations',
-        'scene',
-        'shop',
-        'town',
-        'wallet',
-      ]);
+      ).toEqual(['character', 'gameplay-events', 'i18n', 'scene']);
 
       runtime.sceneStore
         .getState()
         .registerScene({ id: 'test-house', name: 'Test House', interior: true });
       runtime.sceneStore.getState().hydrate({ version: 1, current: 'test-house' });
       runtime.characterStore.getState().setName('Runtime Player');
-      runtime.inventoryStore.getState().hydrate({
-        version: 1,
-        slots: [{ itemId: 'apple', count: 2 }, null],
-        hotbar: [0],
-        equippedHotbar: 0,
-      });
-      runtime.walletStore
-        .getState()
-        .hydrate({ version: 1, bells: 4321, lifetimeEarned: 5000, lifetimeSpent: 679 });
-      runtime.shopStore.getState().hydrate({
-        version: 1,
-        lastRolledDay: 12,
-        dailyStock: [{ itemId: 'apple', price: 90, stock: 3 }],
-      });
-      runtime.friendshipStore.getState().hydrate({
-        version: 1,
-        entries: {
-          npc_a: {
-            npcId: 'npc_a',
-            score: 42,
-            todayGained: 4,
-            lastGiftDay: 3,
-            giftHistory: { apple: 1 },
-          },
-        },
-      });
-      runtime.questStore.getState().hydrate({
-        version: 1,
-        state: {
-          quest_a: {
-            questId: 'quest_a',
-            status: 'active',
-            progress: { objective_a: 1 },
-            startedAt: 100,
-          },
-        },
-      });
-      runtime.mailStore.getState().hydrate({
-        version: 1,
-        messages: [
-          {
-            id: 'mail_a',
-            from: 'tester',
-            subject: 'Saved mail',
-            body: 'hello',
-            sentDay: 3,
-            read: false,
-            claimed: true,
-          },
-        ],
-      });
-      runtime.catalogStore.getState().hydrate({
-        version: 1,
-        entries: { apple: { itemId: 'apple', firstSeenDay: 2, totalCollected: 9 } },
-      });
-      runtime.craftingStore.getState().hydrate({ version: 1, unlocked: ['recipe_a'] });
-      runtime.plotStore.getState().hydrate({
-        version: 1,
-        plots: [
-          {
-            id: 'plot_a',
-            position: [1, 0, 2],
-            state: 'mature',
-            cropId: 'turnip',
-            stageIndex: 2,
-            plantedAt: 40,
-            lastWateredAt: 80,
-          },
-        ],
-      });
-      runtime.eventsStore.getState().hydrate({
-        version: 1,
-        active: ['event_a'],
-        startedAt: { event_a: 1440 },
-      });
-      runtime.townStore.getState().hydrate({
-        version: 1,
-        houses: [
-          {
-            id: 'house_a',
-            position: [0, 0, 0],
-            size: [4, 4],
-            state: 'occupied',
-            residentId: 'resident_a',
-          },
-        ],
-        residents: [{ id: 'resident_a', name: 'Resident A', movedInDay: 2 }],
-      });
       useI18nStore.getState().hydrate({ version: 1, locale: 'en' });
 
       await runtime.save.save('progress-slot');
 
       runtime.sceneStore.getState().hydrate({ version: 1, current: 'outdoor' });
       runtime.characterStore.getState().resetAppearance();
-      runtime.inventoryStore
-        .getState()
-        .hydrate({ version: 1, slots: [], hotbar: [], equippedHotbar: 0 });
-      runtime.walletStore
-        .getState()
-        .hydrate({ version: 1, bells: 0, lifetimeEarned: 0, lifetimeSpent: 0 });
-      runtime.shopStore.getState().hydrate({ version: 1, lastRolledDay: -1, dailyStock: [] });
-      runtime.friendshipStore.getState().hydrate({ version: 1, entries: {} });
-      runtime.questStore.getState().hydrate({ version: 1, state: {} });
-      runtime.mailStore.getState().hydrate({ version: 1, messages: [] });
-      runtime.catalogStore.getState().hydrate({ version: 1, entries: {} });
-      runtime.craftingStore.getState().hydrate({ version: 1, unlocked: [] });
-      runtime.plotStore.getState().hydrate({ version: 1, plots: [] });
-      runtime.eventsStore.getState().hydrate({ version: 1, active: [], startedAt: {} });
-      runtime.townStore.getState().hydrate({ version: 1, houses: [], residents: [] });
       useI18nStore.getState().hydrate({ version: 1, locale: 'ko' });
 
       await runtime.save.load('progress-slot');
 
       expect(runtime.sceneStore.getState().current).toBe('test-house');
       expect(runtime.characterStore.getState().appearance.name).toBe('Runtime Player');
-      expect(runtime.inventoryStore.getState().slots[0]).toEqual({ itemId: 'apple', count: 2 });
-      expect(runtime.walletStore.getState().bells).toBe(4321);
-      expect(runtime.shopStore.getState().dailyStock).toEqual([
-        { itemId: 'apple', price: 90, stock: 3 },
-      ]);
-      expect(runtime.friendshipStore.getState().entries['npc_a']?.score).toBe(42);
-      expect(runtime.questStore.getState().state['quest_a']?.progress).toEqual({ objective_a: 1 });
-      expect(runtime.mailStore.getState().messages[0]?.id).toBe('mail_a');
-      expect(runtime.catalogStore.getState().entries['apple']?.totalCollected).toBe(9);
-      expect(runtime.craftingStore.getState().unlocked.has('recipe_a')).toBe(true);
-      expect(runtime.plotStore.getState().plots['plot_a']?.state).toBe('mature');
-      expect(runtime.eventsStore.getState().active).toEqual(['event_a']);
-      expect(runtime.townStore.getState().residents['resident_a']?.name).toBe('Resident A');
       expect(useI18nStore.getState().locale).toBe('en');
     } finally {
-      runtime.inventoryStore.getState().hydrate(originalInventory);
-      runtime.walletStore.getState().hydrate(originalWallet);
-      runtime.shopStore.getState().hydrate(originalShop);
-      runtime.friendshipStore.getState().hydrate(originalRelations);
-      runtime.questStore.getState().hydrate(originalQuests);
-      runtime.mailStore.getState().hydrate(originalMail);
-      runtime.catalogStore.getState().hydrate(originalCatalog);
-      runtime.craftingStore.getState().hydrate(originalCrafting);
-      runtime.plotStore.getState().hydrate(originalFarming);
-      runtime.eventsStore.getState().hydrate(originalEvents);
-      runtime.townStore.getState().hydrate(originalTown);
       useI18nStore.getState().hydrate(originalI18n);
       runtime.sceneStore.getState().hydrate(originalScene);
       runtime.characterStore.getState().hydrate(originalCharacter);

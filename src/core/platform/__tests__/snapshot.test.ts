@@ -40,7 +40,7 @@ describe('platform snapshots', () => {
     save.register({ key: includedKey, serialize: included, hydrate: () => undefined });
     const snapshot = kind === 'world'
       ? createWorldSnapshotFromSaveSystem(save, 'world')
-      : createPlayerProgressFromSaveSystem(save, 'player');
+      : createPlayerProgressFromSaveSystem(save, 'player', { domains: [includedKey] });
     expect(snapshot.domains).toEqual({ [includedKey]: { value: 1 } });
     expect(included).toHaveBeenCalledTimes(1);
     expect(excluded).not.toHaveBeenCalled();
@@ -58,7 +58,7 @@ describe('platform snapshots', () => {
     }] };
     const capture = () => kind === 'world'
       ? createWorldSnapshotFromSaveSystem(provider, 'world')
-      : createPlayerProgressFromSaveSystem(provider, 'player');
+      : createPlayerProgressFromSaveSystem(provider, 'player', { domains: ['inventory'] });
     expect(capture).toThrow(failure);
     expect(capture().domains).toEqual({ [kind === 'world' ? 'building' : 'inventory']: { value: 1 } });
   });
@@ -147,10 +147,13 @@ describe('platform snapshots', () => {
       hydrate: () => undefined,
     });
 
+    // The engine keeps only its own player domains unless the game names its own.
+    expect(createPlayerProgressFromSaveSystem(save, 'player-1').domains).toEqual({});
     const snapshot = createPlayerProgressFromSaveSystem(save, 'player-1', {
       worldId: 'world-1',
       version: 3,
       savedAt: 200,
+      domains: ['inventory', 'quests'],
     });
 
     expect(snapshot).toEqual({

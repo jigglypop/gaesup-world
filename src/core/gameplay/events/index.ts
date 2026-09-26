@@ -17,7 +17,7 @@ export {
   createGameplayEventConditionTemplate,
   createGameplayEventTriggerTemplate,
   createManualToastEventBlueprint,
-  createNpcTalkStartsQuestEventBlueprint,
+  createNpcTalkEventBlueprint,
 } from './templates';
 export type {
   GameplayActionHandler,

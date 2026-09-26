@@ -9,7 +9,7 @@ const flush = async () => { for (let i = 0; i < 8; i++) await Promise.resolve();
 const withPolicy = (runtime: ReturnType<typeof createGaesupRuntime>) => { runtime.npcReinforcement.configure({ endpoint: '/policy' }); return runtime; };
 const decide = (runtime: ReturnType<typeof createGaesupRuntime>) => {
   const instance = runtime.npcStore.getState().instances.get('same')!;
-  return resolveNPCBrainDecision(instance, createNPCObservation(instance, runtime.npcStore.getState().instances, 10), runtime.npcStore.getState().brainBlueprints, runtime);
+  return resolveNPCBrainDecision(instance, createNPCObservation(instance, runtime.npcStore.getState().instances, 10), runtime.npcStore.getState().brainBlueprints, runtime.npcBrainAdapters);
 };
 const pending: { signal: AbortSignal; reply: (text: string) => void }[] = [];
 let previousFetch: typeof globalThis.fetch;

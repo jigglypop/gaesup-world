@@ -24,7 +24,7 @@ test('registrations have independent leases, including duplicate registration of
   registry.suspend(); expect(registry.resolve(instance.brain)).toBeUndefined(); registry.resume();
   expect(registry.resolve(instance.brain)).toBe(adapter); current(); expect(registry.resolve(instance.brain)).toBeUndefined();
   const legacy = registerNPCBrainAdapter('reinforcement', 'test-legacy', adapter);
-  expect(resolveNPCBrainDecision({ ...instance, brain: { mode: 'reinforcement', policyId: 'test-legacy' } }, context.observation, undefined, undefined, other)).toBeUndefined();
+  expect(resolveNPCBrainDecision({ ...instance, brain: { mode: 'reinforcement', policyId: 'test-legacy' } }, context.observation, undefined, other)).toBeUndefined();
   expect(adapter).not.toHaveBeenCalled(); legacy(); registry.dispose();
 });
 

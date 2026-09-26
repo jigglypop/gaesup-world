@@ -16,25 +16,6 @@ import type {
 import { createWanderTarget } from './wander';
 
 const MAX_BLUEPRINT_STEPS = 32;
-/** Read-only condition sources. Structural so quest and friendship stores satisfy it without Layer 1 importing them. */
-export type NPCBrainConditionStores = {
-  questStore: { getState(): { statusOf(questId: string): string } };
-  friendshipStore: { getState(): { scoreOf(npcId: string): number } };
-};
-const EMPTY_CONDITION_STORES: NPCBrainConditionStores = {
-  questStore: { getState: () => ({ statusOf: () => '' }) },
-  friendshipStore: { getState: () => ({ scoreOf: () => 0 }) },
-};
-let defaultConditionStores = EMPTY_CONDITION_STORES;
-
-/** Fallback for calls without explicit stores; creating the legacy global NPC store registers the legacy global stores. */
-export function setDefaultNPCBrainConditionStores(stores: NPCBrainConditionStores): () => void {
-  const previous = defaultConditionStores;
-  defaultConditionStores = stores;
-  return () => {
-    if (defaultConditionStores === stores) defaultConditionStores = previous;
-  };
-}
 const blueprints = new Map<string, NPCBrainBlueprint>();
 
 export function registerNPCBrainBlueprint(blueprint: NPCBrainBlueprint): () => void {
@@ -171,7 +152,7 @@ function enteredTarget(observation: NPCObservation, actorsOnly = false) {
   return observation.perceived.find((target) => observation.entered?.includes(target.instanceId) && (!actorsOnly || target.actor));
 }
 
-function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NPCObservation, stores: NPCBrainConditionStores): boolean {
+function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NPCObservation): boolean {
   switch (condition.type) {
     case 'always':
       return true;
@@ -181,12 +162,6 @@ function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NP
       return observation.perceived.length > 0;
     case 'perceivedEntered':
       return enteredTarget(observation, condition.actorsOnly) !== undefined;
-    case 'questStatus':
-      return stores.questStore.getState().statusOf(condition.questId) === condition.status;
-    case 'friendshipAtLeast': {
-      const npcId = condition.npcId ?? observation.instanceId;
-      return stores.friendshipStore.getState().scoreOf(npcId) >= condition.score;
-    }
     case 'memoryEquals':
       return observation.memory?.[condition.key] === condition.value;
   }
@@ -241,7 +216,6 @@ function findNextEdge(
 export function compileNPCBrainBlueprint(
   blueprint: NPCBrainBlueprint,
   observation: NPCObservation,
-  stores: NPCBrainConditionStores = defaultConditionStores,
 ): NPCAction[] {
   const nodes = new Map(blueprint.nodes.map((node) => [node.id, node]));
   const actions: NPCAction[] = [];
@@ -252,7 +226,7 @@ export function compileNPCBrainBlueprint(
     steps += 1;
 
     if (current.type === 'condition') {
-      const branch = resolveCondition(current.condition, observation, stores) ? 'true' : 'false';
+      const branch = resolveCondition(current.condition, observation) ? 'true' : 'false';
       current = nodes.get(findNextEdge(blueprint.edges, current.id, branch)?.target ?? '');
       continue;
     }

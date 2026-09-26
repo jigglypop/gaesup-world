@@ -13,20 +13,8 @@ export const WORLD_SNAPSHOT_DOMAINS = [
   'audio',
 ] as const;
 
-export const PLAYER_PROGRESS_DOMAINS = [
-  'inventory',
-  'wallet',
-  'shop',
-  'relations',
-  'quests',
-  'mail',
-  'catalog',
-  'crafting',
-  'farming',
-  'events',
-  'town',
-  'i18n',
-] as const;
+/** Player-owned domains carried between worlds. */
+export const PLAYER_PROGRESS_DOMAINS = ['i18n'] as const;
 
 export type WorldSnapshotDomain = typeof WORLD_SNAPSHOT_DOMAINS[number];
 export type PlayerProgressDomain = typeof PLAYER_PROGRESS_DOMAINS[number];
@@ -42,7 +30,7 @@ export type WorldSnapshot = DomainSnapshot<WorldSnapshotDomain> & {
   worldId: string;
 };
 
-export type PlayerProgress = DomainSnapshot<PlayerProgressDomain> & {
+export type PlayerProgress = DomainSnapshot & {
   kind: 'player';
   playerId: string;
   worldId?: string;
@@ -55,6 +43,8 @@ export type CreateWorldSnapshotOptions = {
 
 export type CreatePlayerProgressOptions = CreateWorldSnapshotOptions & {
   worldId?: string;
+  /** Player-owned domains to keep, `PLAYER_PROGRESS_DOMAINS` by default; a game adds its own, such as an inventory. */
+  domains?: readonly string[];
 };
 
 export type PlatformSaveBindingProvider = {
@@ -99,7 +89,7 @@ export function createPlayerProgress(
     ...(options.worldId ? { worldId: options.worldId } : {}),
     version: options.version ?? 1,
     savedAt: options.savedAt ?? Date.now(),
-    domains: pickDomains(domains, PLAYER_PROGRESS_DOMAINS),
+    domains: pickDomains(domains, options.domains ?? PLAYER_PROGRESS_DOMAINS),
   };
 }
 
@@ -134,5 +124,5 @@ export function createPlayerProgressFromSaveSystem(
   playerId: string,
   options: CreatePlayerProgressOptions = {},
 ): PlayerProgress {
-  return createPlayerProgress(playerId, collectDomains(provider, PLAYER_PROGRESS_DOMAINS), options);
+  return createPlayerProgress(playerId, collectDomains(provider, options.domains ?? PLAYER_PROGRESS_DOMAINS), options);
 }

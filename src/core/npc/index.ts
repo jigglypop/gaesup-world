@@ -60,4 +60,3 @@ export type {
   ActiveSlot,
 } from './core/NPCScheduler';
 export { useNpcSchedule } from './hooks/useNpcSchedule';
-export type { NPCBrainConditionStores } from './core/blueprint';

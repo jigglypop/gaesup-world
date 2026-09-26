@@ -1,9 +1,4 @@
-import { getRecipeRegistry } from '../../crafting/registry/RecipeRegistry';
 import { getDialogRegistry } from '../../dialog/registry/DialogRegistry';
-import { getEventRegistry } from '../../events/registry/EventRegistry';
-import { getCropRegistry } from '../../farming/registry/CropRegistry';
-import { getItemRegistry } from '../../items/registry/ItemRegistry';
-import { getQuestRegistry } from '../../quests/registry/QuestRegistry';
 import { logger } from '../logger';
 
 type Definition = { id: string; name: string; nested: { list: string[] } };
@@ -15,14 +10,9 @@ type AnyRegistry = {
   clear(): void;
 };
 
-const REGISTRIES: [string, () => AnyRegistry][] = [
-  ['ItemId', getItemRegistry], ['RecipeId', getRecipeRegistry], ['DialogTreeId', getDialogRegistry],
-  ['EventId', getEventRegistry], ['CropId', getCropRegistry], ['QuestId', getQuestRegistry],
-];
+const REGISTRIES: [string, () => AnyRegistry][] = [['DialogTreeId', getDialogRegistry]];
 
-// Valid for every registry: the item fields satisfy the item validator, the others only need an id.
-const definition = (id: string, name = id): Definition =>
-  ({ id, name, icon: '', category: 'material', stackable: true, maxStack: 10, nested: { list: ['a'] } }) as Definition;
+const definition = (id: string, name = id): Definition => ({ id, name, nested: { list: ['a'] } });
 
 describe.each(REGISTRIES)('%s registry contract', (kind, registryOf) => {
   const registry = registryOf();

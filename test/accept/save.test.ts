@@ -1,8 +1,8 @@
 import {
   createBuildingPlugin,
   createGaesupRuntime,
-  createInventoryPlugin,
   createNPCPlugin,
+  createWeatherPlugin,
   type SaveAdapter,
   type SaveBlob,
 } from 'gaesup-world';
@@ -22,7 +22,7 @@ function memoryAdapter(): SaveAdapter {
 acceptScenario('S-H10', async () => {
   const runtime = createGaesupRuntime({
     saveOptions: { adapter: memoryAdapter() },
-    plugins: [createBuildingPlugin(), createNPCPlugin(), createInventoryPlugin()],
+    plugins: [createBuildingPlugin(), createNPCPlugin(), createWeatherPlugin()],
   });
   await runtime.setup();
   try {
@@ -42,7 +42,7 @@ acceptScenario('S-H10', async () => {
     const unchangedSerializeCalls = [...calls.values()].reduce((sum, count) => sum + count, 0);
 
     calls.clear();
-    runtime.inventoryStore.getState().add('apple', 1);
+    runtime.weatherStore.getState().setWeather('rain', 0.8, 3);
     await autosave();
     const changedDomainsSerialized = [...calls.values()].filter((count) => count > 0).length;
 

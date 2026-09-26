@@ -4,7 +4,7 @@
 
 ## 원칙
 
-1. **웹판 Unity/Unreal**: 코어는 월드 모델, 렌더링, 물리 캐릭터, 카메라, 입력, 건축, NPC, 저장, 멀티플레이, 에디터다. 게임 장르 로직은 코어에 두지 않는다.
+1. **웹판 Unity/Unreal**: 코어는 월드 모델, 렌더링, 물리 캐릭터, 카메라, 입력, 건축, NPC, 저장, 멀티플레이, 에디터다. 게임 장르 로직(인벤토리, 퀘스트, 경제 등)은 코어에 두지 않고, 대화·게임플레이 규칙의 `custom` 확장점으로 게임이 붙인다.
 2. **WebGPU 전면**: `WebGPURenderer`와 TSL만 쓴다. WebGL2는 `WebGPURenderer` 내장 fallback으로만 지원하고, GLSL·`WebGLRenderer` 전용 경로는 새로 만들지 않는다.
 3. **upstream 우선**: three(r186)·R3F가 제공하는 기능은 자체 구현하지 않는다.
 4. **예제는 증명 수단**: `examples/minihome`은 공개 API로만 만든다. 예제가 막히면 엔진을 고친다.
@@ -58,7 +58,7 @@
 | 코어 | `rendering`, `perf`, `runtime`, `simulation`, `motions`, `camera`, `input`, `interactions`, `navigation`, `npc`, `building`, `save`, `assets`, `plugins`, `scene`, `scene-object`, `world`, `time`, `weather`, `dialog`, `ui` |
 | 고쳐서 유지 | `runtime`(서브시스템 즉시 생성, 수명 목록 중복), `networks`(서버 없는 클라이언트, 1,006줄 `PlayerNetworkManager`), 방문 스냅샷, 자산 store(전역), 오류 sink(전역), `editor`(루트에서 재수출) |
 | 합칠 대상 | `DynamicSky`+`CascadedSun` → three `SunLight`, `OutfitAvatar` → `AvatarRuntime`, WebGL 후처리 → TSL, `PerformancePanel` 자체 측정 → `PerformanceCollector` |
-| 삭제 예정 | 생활 게임 도메인(farming, economy, inventory, items, quests, mail, crafting, events, catalog, town, relations)과 tools·채집 오브젝트(DEL-1), NPC 네트워크 섬·`ops`·샘플 플러그인·deprecated 묶음(DEL-2), GLSL·WebGL 경로(GPU-1) |
+| 삭제 예정 | NPC 네트워크 섬·`ops`·샘플 플러그인·deprecated 묶음(DEL-2), GLSL·WebGL 경로(GPU-1) |
 | 유지(선택 진입점) | `blueprints`, `server-contracts`, `gameplay`(규칙 엔진) |
 
 ## 검증

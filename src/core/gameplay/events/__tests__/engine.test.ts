@@ -30,9 +30,9 @@ describe('GameplayEventEngine', () => {
     const registry = new GameplayEventRegistry();
     let release!: () => void; let signal: AbortSignal | undefined;
     registry.registerAction('custom', (_action, context) => { signal = context.signal; return new Promise<void>(resolve => { release = resolve; }); });
-    const remaining = jest.fn(); registry.registerAction('giveItem', remaining);
+    const remaining = jest.fn(); registry.registerAction('toast', remaining);
     const engine = new GameplayEventEngine({ registry, blueprints: [{ id: 'cancel', name: '', trigger: { type: 'manual', key: 'run' }, actions: [
-      { type: 'custom', key: 'wait' }, { type: 'giveItem', itemId: 'item' },
+      { type: 'custom', key: 'wait' }, { type: 'toast', text: 'reward' },
     ] }] });
     const pending = engine.dispatch({ type: 'manual', key: 'run' });
     engine.suspend(); expect(signal?.aborted).toBe(true); release();

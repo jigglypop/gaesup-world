@@ -1,6 +1,5 @@
 import type { RuntimeValue } from '@core/boilerplate/types';
 
-import type { QuestId, QuestStatus } from '../../quests/types';
 
 export interface NPCPart {
   id: string;
@@ -106,8 +105,6 @@ export type NPCBrainBlueprintCondition =
   | { type: 'perceivedAny' }
   /** A target came into sight since the NPC's previous decision; `actorsOnly` ignores other NPCs. */
   | { type: 'perceivedEntered'; actorsOnly?: boolean }
-  | { type: 'questStatus'; questId: QuestId; status: QuestStatus }
-  | { type: 'friendshipAtLeast'; npcId?: string; score: number }
   | { type: 'memoryEquals'; key: string; value: RuntimeValue };
 
 export type NPCBrainBlueprintTarget =

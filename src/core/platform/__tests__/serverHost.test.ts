@@ -113,6 +113,7 @@ describe('createServerPluginHost', () => {
     expect(host.createPlayerProgress('player-1', {
       worldId: 'world-1',
       savedAt: 20,
+      domains: ['inventory'],
     })).toEqual({
       kind: 'player',
       playerId: 'player-1',

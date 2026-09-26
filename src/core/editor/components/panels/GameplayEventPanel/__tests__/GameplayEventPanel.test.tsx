@@ -87,12 +87,12 @@ test('localized choices preserve event type and execution policy values', () => 
   fireEvent.click(screen.getByRole('button', { name: '편집' }));
   const conditions = screen.getByRole('combobox', { name: '조건 유형' });
   const actions = screen.getByRole('combobox', { name: '동작 유형' });
-  expect(within(conditions).getByRole('option', { name: '아이템 보유' })).toHaveValue('hasItem');
-  expect(within(actions).getByRole('option', { name: '아이템 지급' })).toHaveValue('giveItem');
-  fireEvent.change(conditions, { target: { value: 'hasItem' } });
-  expect(onUpdate.mock.calls.at(-1)?.[0].conditions.at(-1)).toMatchObject({ type: 'hasItem', count: 1 });
-  fireEvent.change(actions, { target: { value: 'giveItem' } });
-  expect(onUpdate.mock.calls.at(-1)?.[0].actions.at(-1)).toMatchObject({ type: 'giveItem', count: 1 });
+  expect(within(conditions).getByRole('option', { name: '상태 값 일치' })).toHaveValue('flagEquals');
+  expect(within(actions).getByRole('option', { name: '대화 표시' })).toHaveValue('showDialog');
+  fireEvent.change(conditions, { target: { value: 'flagEquals' } });
+  expect(onUpdate.mock.calls.at(-1)?.[0].conditions.at(-1)).toMatchObject({ type: 'flagEquals', value: true });
+  fireEvent.change(actions, { target: { value: 'showDialog' } });
+  expect(onUpdate.mock.calls.at(-1)?.[0].actions.at(-1)).toMatchObject({ type: 'showDialog', dialogTreeId: 'dialog.default' });
   fireEvent.change(screen.getByRole('combobox', { name: '실행 방식' }), { target: { value: 'once' } });
   expect(onUpdate.mock.calls.at(-1)?.[0].policy.run).toBe('once');
   const server = screen.getByRole('combobox', { name: '서버 필요' });
@@ -112,10 +112,8 @@ test('keeps numeric-looking toast messages as text', () => {
   }
 });
 
-test('localized notification and quest choices save canonical values', () => {
+test('localized notification choices save canonical values', () => {
   const blueprint = createManualToastEventBlueprint({ id: 'choices', name: '선택 메뉴', triggerKey: 'test', message: '안내' });
-  blueprint.trigger = { type: 'questChanged', questId: 'quest', status: 'active' };
-  blueprint.conditions = [{ type: 'questStatus', questId: 'quest', status: 'available' }];
   const onUpdate = jest.fn();
   render(<GameplayEventPanel blueprints={[blueprint]} onUpdate={onUpdate} />);
   fireEvent.click(screen.getByRole('button', { name: '편집' }));
@@ -123,12 +121,4 @@ test('localized notification and quest choices save canonical values', () => {
   expect(within(kind).getAllByRole('option').map(option => option.textContent)).toEqual(['안내', '성공', '주의', '오류', '보상', '우편']);
   fireEvent.change(kind, { target: { value: 'reward' } });
   expect(onUpdate.mock.calls.at(-1)?.[0].actions[0].kind).toBe('reward');
-  const [triggerStatus, conditionStatus] = screen.getAllByRole('combobox', { name: '상태' });
-  expect(triggerStatus).toHaveValue('active');
-  expect(conditionStatus).toHaveValue('available');
-  expect(within(triggerStatus!).getByRole('option', { name: '완료' })).toHaveValue('completed');
-  fireEvent.change(triggerStatus!, { target: { value: 'completed' } });
-  expect(onUpdate.mock.calls.at(-1)?.[0].trigger.status).toBe('completed');
-  fireEvent.change(conditionStatus!, { target: { value: 'failed' } });
-  expect(onUpdate.mock.calls.at(-1)?.[0].conditions[0].status).toBe('failed');
 });

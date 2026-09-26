@@ -14,7 +14,7 @@
 
 - `pnpm run verify:full` 통과: jest 3,116개, publint, 설치형 ESM/CJS 소비자, 예제 lazy 라우트.
 - 기준 측정(작은 마을, WebGPU, dev): 스크립트 2.3ms/프레임, draw 81, 삼각형 230만(대부분 잔디), 유휴에도 매 프레임 렌더(CPU 15%). 운영 월드 라우트 3,913KB min / 1,311KB gz.
-- 소비자 번들(피어 제외): `createSceneDocument` 하나에 712KB, 최소 월드 6개 이름에 848KB, 전체 1,495KB. 루트 export 1,097개.
+- 소비자 번들(피어 제외, DEL-1 전 측정): `createSceneDocument` 하나에 712KB, 최소 월드 6개 이름에 848KB, 전체 1,495KB. 루트 export는 DEL-1로 1,097개에서 975개가 됐다.
 - 수용 테스트 12개가 `pending`이다. `test/accept/budgets.json`의 미구현 계약을 합격 근거로 세지 않는다.
 
 ## 실행 순서
@@ -23,7 +23,6 @@
 
 | ID | 내용 | 완료 기준 |
 |---|---|---|
-| DEL-1 | 생활 게임 도메인 삭제: farming, economy, inventory, items, quests, mail, crafting, events, catalog, town, relations와 이것만 쓰는 tools, 채집 오브젝트(`TreeObject`·`FishSpot`·`BugSpot`). 대화는 트리·선택지·플래그·`custom`만, gameplay events는 생활 게임 트리거·조건·액션을 빼고 `custom`으로 확장하게 남긴다. NPC 두뇌의 퀘스트·호감도 조건을 뺀다 | 런타임·세이브 도메인·루트 export에서 사라지고 export snapshot 갱신, `verify:full` 통과. 런타임 서브시스템 수를 보고한다 |
 | DEL-2 | 승인된 공개 API 삭제: NPC 네트워크 섬(`NetworkBridge`·`NetworkSystem`·`NPCNetworkManager`·`ConnectionPool`·`networkStateStore`, hook 5개, 패널 2개, `runtime.networkBridge`), `core/ops`, 샘플 플러그인 3개, deprecated 묶음(`usePhysics`, `BuildingBridge`, `WorldContainer` 별칭, `useGaesupContext`·`useCursorState`, 읽히지 않는 `WorldContainerProps`, `onDestory`) | export snapshot·소비자 검증 갱신, `verify:full` 통과. `blueprints`는 유지 |
 | ISO-1 | 런타임별 격리. 자산 카탈로그와 로드 세대(`latestLoad`)를 런타임 소유로, `AvatarProvider` 기본 조회도 런타임 카탈로그로. 오류는 전역 sink 교체 대신 런타임이 소유한 경계(클록, 플러그인 이벤트 버스, 세이브, 상호작용, 캔버스 프레임 스케줄러)가 자기 `onError`로 보고한다 | 같은 asset ID에 다른 메타데이터를 가진 월드 A/B가 각자 결과만 읽고, 한쪽의 느린 로드·해제가 다른 쪽을 바꾸지 않는다. A의 오류는 A의 `onError`로만 가고, 해제 순서와 관계없이 종료된 런타임의 콜백이 다시 불리지 않는다. 두 런타임 해제 뒤 리스너·타이머 누수 0. `S-H08`을 실측으로 |
 | ISO-2 | 방문 스냅샷 원자적 적용. 모든 도메인을 먼저 검증하고, 적용 중 실패하면 바뀐 도메인을 역순으로 되돌린다. 복구 실패는 구조화된 결과로 알린다 | `atomic: true`에서 한 도메인이라도 실패하면 로컬 상태가 적용 전과 같다. 호출자가 성공·실패를 구분하고 실패 뒤 autosave가 멈춰 있지 않다. 두 번째 도메인 예외 주입 테스트 |
@@ -31,6 +30,7 @@
 | UP-1 | upstream 대체. `CascadedSun`·`DynamicSky`를 three r186 `SunLight`(두 백엔드 CSM)와 시간대 연동 하나로, 가로등 라이트 풀은 r185 클러스터(Forward+) 조명으로, 품질 tier에 r184 TAAU/FSR 업스케일. `OutfitAvatar`는 `AvatarRuntime`으로 합친다 | 자체 CSM·라이트 풀 코드 삭제, 같은 장면의 draw·프레임 시간 전후 기록 |
 | LIB-1 | 라이브러리 형태. `preserveModules` 빌드로 트리셰이킹 복구, `GaesupWorld`가 런타임을 만들고 수명을 관리(legacy 경고 0), 루트 진입점에서 에디터 분리, 캔버스·WebGPU·품질·`GaesupWorldContent`를 묶은 부팅 컴포넌트 | import 모양별 소비자 번들 크기 전후, 최소 월드 부팅 코드 줄 수, 콘솔 경고 0 |
 | PERF | 측정 기반 병목 제거. 건물 편집 증분 갱신(`BuildingBatches`, `BlockColliders`), WebGPU 일반 모델 상주 정책, 내비게이션 변경 영역만 갱신, NPC 비가시 시뮬레이션 예산, 장면 전체 순회 제거, 기본 유휴 프레임 정책(`IdleFrameRate`), 잔디 밀도 품질 tier, GPU 시간(`trackTimestamp`)과 성능 HUD | 같은 장면·장치에서 프레임 p50/p95, long task, draw, GPU ms, collider 수를 전후로 남긴다. CPU 미세 측정만으로 FPS 개선을 선언하지 않는다 |
+| GI-1 | 동적 GI(웹판 Lumen-lite). 표준 WebGPU에는 하드웨어 레이트레이싱이 없으므로 Lumen의 소프트웨어 경로처럼 간다. upstream 기반: three `SSGINode`, r184 `LightProbeGrid`, r186 `SunLight`. gw 고유: 건축 격자(4m 셀)를 GPU 3D 복셀 텍스처로 직접 채우고 편집한 셀만 갱신, compute가 프로브에서 복셀을 레이마칭(DDGI 방식)하며 프레임마다 일부 프로브만 갱신. wasm은 정적 GI 굽기와 GLB 소품 SDF 생성(워커). 품질 tier: low 굽기, medium 동적 프로브, high 프로브+SSGI | 작은 마을에서 GI를 켠 WebGPU 프레임의 GPU 시간 증가가 내장 GPU 기준 4ms 이하, 타일 편집 뒤 GI 반영 지연, 켜기 전후 스크린샷 |
 | EX-1 | 예제 minihome: 계단식 마을 꾸미기(건축), 주민 NPC, 방문자 멀티플레이, 성능 HUD, Pretendard UI | 공개 API만 사용, 브라우저 스크린샷, 성능 HUD 수치 |
 
 ## 검증

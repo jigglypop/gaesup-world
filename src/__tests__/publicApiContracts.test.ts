@@ -114,16 +114,17 @@ describe('public entry contracts', () => {
   });
 
   test('두 월드·플러그인·도메인 격리', async () => {
-    const a = createGaesupRuntime({ plugins: [api.createInventoryPlugin(), api.createEconomyPlugin()] });
-    const b = createGaesupRuntime({ plugins: [api.createInventoryPlugin(), api.createEconomyPlugin()] });
+    const a = createGaesupRuntime({ plugins: [api.createNPCPlugin(), api.createWeatherPlugin()] });
+    const b = createGaesupRuntime({ plugins: [api.createNPCPlugin(), api.createWeatherPlugin()] });
     try {
       await a.setup();
       await b.setup();
-      a.inventoryStore.getState().add('fixture', 2);
-      a.walletStore.getState().add(5);
-      expect(a.inventoryStore.getState().countOf('fixture')).toBe(2);
-      expect(b.inventoryStore.getState().countOf('fixture')).toBe(0);
-      expect(a.walletStore.getState().bells).toBe(b.walletStore.getState().bells + 5);
+      a.npcStore.getState().addInstance({ id: 'fixture', templateId: 'fixture', name: 'fixture', position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] });
+      a.weatherStore.getState().setWeather('rain', 0.5, 2);
+      expect(a.npcStore.getState().instances.has('fixture')).toBe(true);
+      expect(b.npcStore.getState().instances.has('fixture')).toBe(false);
+      expect(a.weatherStore.getState().current).toEqual({ day: 2, kind: 'rain', intensity: 0.5 });
+      expect(b.weatherStore.getState().current).toBeNull();
       expect(a.requireService('gaesup.runtime.save-system')).toBe(a.save);
       await a.dispose();
       expect([a.isActive(), b.isActive()]).toEqual([false, true]);
