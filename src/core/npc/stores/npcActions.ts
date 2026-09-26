@@ -1,6 +1,5 @@
 import { DEFAULT_NPC_BEHAVIOR, DEFAULT_NPC_BRAIN } from './npcDefaults';
 import type { NPCStore } from './npcStoreTypes';
-import { createUniqueId } from '../../utils/id';
 import type { NPCAction, NPCBehaviorConfig, NPCInstance } from '../types';
 
 export function getIdleAnimation(instance: NPCInstance): string {
@@ -104,20 +103,8 @@ export function applyNPCAction(state: NPCStore, instanceId: string, action: NPCA
       };
       break;
     case 'speak':
-      next = {
-        ...instance,
-        events: [...(instance.events ?? []), {
-          id: createUniqueId('npc-speak'),
-          type: 'onInteract',
-          action: 'dialogue',
-          payload: {
-            type: 'dialogue',
-            text: action.text,
-            ...(action.duration !== undefined ? { duration: action.duration } : {}),
-          },
-        }],
-      };
-      break;
+      // Speech is transient: NPCSimulation.speak shows it, and nothing about it is stored or saved.
+      return;
     case 'interact':
       next = { ...instance, metadata: { ...instance.metadata, lastInteractionTargetId: action.targetId } };
       break;

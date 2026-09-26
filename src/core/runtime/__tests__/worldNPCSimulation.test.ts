@@ -245,3 +245,37 @@ describe('NPC wandering', () => {
     } finally { await runtime.dispose(); }
   });
 });
+
+describe('NPC speech', () => {
+  test('an NPC that speaks every decision shows it without growing its events or the save, and falls silent after the duration', async () => {
+    const runtime = createGaesupRuntime({ plugins: [createNPCPlugin()] }); await runtime.setup();
+    let talking = true;
+    runtime.npcBrainAdapters.register('scripted', 'greet', () => (talking ? { source: 'scripted', actions: [{ type: 'speak', text: '안녕?', duration: 2 }] } : undefined));
+    try {
+      runtime.npcStore.getState().addInstance({ ...npc(), brain: { mode: 'scripted', policyId: 'greet' }, behavior: { mode: 'idle', speed: 1, waitSeconds: 0.5 }, events: [] });
+      const notify = jest.fn(); const off = runtime.npcStore.subscribe(notify);
+      // 100 decisions at 0.5 s intervals.
+      runtime.clockLoop.clock.stepTicks(30 * 100 + 30);
+      off();
+      expect(notify).not.toHaveBeenCalled();
+      expect(runtime.npcStore.getState().instances.get('one')!.events).toEqual([]);
+      expect(runtime.npcSimulation.getSpeech('one')?.text).toBe('안녕?');
+      expect(JSON.stringify(serializeNPCState(runtime.npcStore))).not.toContain('안녕?');
+      const revision = runtime.npcSimulation.speechRevision;
+      talking = false;
+      runtime.clockLoop.clock.stepTicks(60 * 2 + 1);
+      expect(runtime.npcSimulation.getSpeech('one')).toBeUndefined();
+      expect(runtime.npcSimulation.speechRevision).toBeGreaterThan(revision);
+    } finally { await runtime.dispose(); }
+  });
+
+  test('a speak action sent to the store changes nothing there', async () => {
+    const runtime = createGaesupRuntime(); await runtime.setup();
+    try {
+      runtime.npcStore.getState().addInstance({ ...npc(), events: [] });
+      const before = runtime.npcStore.getState().instances.get('one');
+      runtime.npcStore.getState().executeInstanceAction('one', { type: 'speak', text: 'hi' });
+      expect(runtime.npcStore.getState().instances.get('one')).toBe(before);
+    } finally { await runtime.dispose(); }
+  });
+});

@@ -23,13 +23,10 @@
 
 근거는 2026-09-26 코드 점검이다. 표 순서가 착수 순서다.
 
-공통 원인은 두 가지다.
-- 말하기 같은 일시 상태를 저장 대상인 `instances`에 쓴다.
-- 렌더 경로가 두 벌 있다.
+R3F 쪽 공통 원인은 렌더 경로가 두 벌이라는 점이다.
 
 | ID | 내용 | 근거 | 완료 기준 |
 |---|---|---|---|
-| N-3 | 말하기가 화면에 나오지 않고 저장 데이터만 키움 | `npc/stores/npcActions.ts`의 `applyNPCAction`에서 `speak`는 `instance.events`에 핸들러를 붙이기만 하고 지우지 않는다. 이 이벤트를 실행하는 곳도 말풍선도 없다. `events`는 세이브에 들어가고, 바뀔 때마다 NPC가 다시 렌더링된다 | 말하기는 `NPCSimulation`의 일시 상태(`getSpeech`)로 옮긴다. 테스트: 결정 100회 뒤 `events` 길이가 그대로이고, 저장본에 말하기가 없으며, `duration`이 지나면 말하기가 사라진다 |
 | N-8 | 행동 버그와 플레이어 지각 | ① `lookAt`이 시뮬레이션 pose가 아니라 store의 `position`으로 방향을 잡는다. ② `playAnimation`이 공유 카탈로그 `animations` 항목을 바꾼다. ③ `NPCPerceptionIndex`는 NPC만 보고 플레이어는 보지 않는다. ④ 기본 배회 블루프린트는 퀘스트 `welcome`이 active일 때만 움직인다. ⑤ `NPCSimulation.move`는 waypoint마다 store를 두 번 바꾼다. 블루프린트에는 "대상이 새로 보임" 조건과 "대상 바라보기" 행동이 없다 | 항목별 단위 테스트. 플레이어 같은 외부 대상을 넘기는 API(`setActors`)가 있고, 대상이 시야에 새로 들어온 결정에서만 참인 조건이 있다 |
 | M-1 | minihome 마을 주민 (MH-08) | minihome에는 NPC가 없다. 기능표 `examples/minihome/features.ts`의 MH-08이 `pending`이다 | 두 주민(trainer)이 걷기·대기 애니메이션으로 집 주변을 배회하고, 가구와 물을 피한다. 플레이어가 다가오면 돌아보고 말풍선으로 인사하고, 클릭하면 대사를 말한다. 주민이 모두 멈춰 있으면 다음 결정까지 프레임을 그리지 않는다. 테스트: 주민 모듈 headless 테스트와 `engine.diagnostics().villagers` 값, `pnpm test:minihome:features` 통과 |
 | N-9 | 일과표가 NPC를 움직이지 않음 | `npc/core/NPCScheduler.ts`는 시간대별 위치·활동을 계산해 runtime마다 만들어지지만, `NPCSimulation`이 읽지 않는다 | 활성 슬롯이 바뀌면 NPC가 슬롯 위치로 이동한다. 헤드리스 테스트: 시계를 슬롯 시각으로 옮기면 NPC가 도착한다. minihome 밤 조명에서는 주민이 집으로 돌아간다 |

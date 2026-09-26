@@ -25,18 +25,21 @@ type Pose = {
   revision: number;
 };
 type View = { source: NPCInstance; revision: number; view: NPCInstance };
+/** Speech lasts this long, in seconds, when a speak action names no duration. */
+const DEFAULT_SPEECH_SECONDS = 3;
 /** Points left to walk toward one waypoint of a navigation. */
 type Route = { waypoints: Point[]; index: number; steps: Point[] };
 
-/** Only decisions with actions reach the store; a tick where no NPC acts changes nothing there. */
+/** Only decisions with store actions reach the store; a tick where no NPC acts changes nothing there. */
 function applyDecisions(store: NPCSimulationStore, entries: NPCDecisionEntry[]): void {
-  if (!entries.some((entry) => entry.decision)) return;
+  const stored = entries.filter((entry) => entry.decision?.actions.some((action) => action.type !== 'speak'));
+  if (!stored.length) return;
   const state = store.getState();
   if (state.applyNPCDecisions) {
-    state.applyNPCDecisions(entries);
+    state.applyNPCDecisions(stored);
     return;
   }
-  for (const { instanceId, decision } of entries) if (decision) state.executeInstanceActions(instanceId, decision.actions);
+  for (const { instanceId, decision } of stored) state.executeInstanceActions(instanceId, decision!.actions);
 }
 const simulations = new WeakMap<NPCSimulationStore, NPCSimulation>();
 export function findNPCSimulation(store: NPCSimulationStore): NPCSimulation | undefined { return simulations.get(store); }
@@ -59,6 +62,9 @@ export class NPCSimulation {
   private views = new Map<string, View>();
   private records = new Map<string, NPCDecisionEntry>();
   private recordListeners = new Set<() => void>();
+  private speech = new Map<string, { text: string; until: number }>();
+  private speechChanges = 0;
+  private now = 0;
 
   private movedPoses = 0;
   /** Advances whenever a simulated pose moves; saves use it because moved poses are not in the store. */
@@ -102,7 +108,7 @@ export class NPCSimulation {
     } else {
       this.releaseSystem?.(); this.releaseSystem = undefined;
       this.releaseClock?.(); this.releaseClock = undefined;
-      if (!this.store.getState().instances.size) { this.poses.clear(); this.views.clear(); this.records.clear(); this.perception.refresh(new Map()); }
+      if (!this.store.getState().instances.size) { this.poses.clear(); this.views.clear(); this.records.clear(); this.speech.clear(); this.perception.refresh(new Map()); }
     }
   }
 
@@ -110,7 +116,7 @@ export class NPCSimulation {
     if (!this.dirty) return;
     this.dirty = false;
     const instances = this.store.getState().instances;
-    for (const id of this.poses.keys()) if (!instances.has(id)) { this.poses.delete(id); this.routes.delete(id); this.views.delete(id); this.records.delete(id); }
+    for (const id of this.poses.keys()) if (!instances.has(id)) { this.poses.delete(id); this.routes.delete(id); this.views.delete(id); this.records.delete(id); if (this.speech.delete(id)) this.speechChanges++; }
     for (const instance of instances.values()) {
       let pose = this.poses.get(instance.id);
       if (!pose) {
@@ -142,6 +148,18 @@ export class NPCSimulation {
 
   /** The NPC's last observation and decision. Neither is stored or saved; editors read them here. */
   getRecord(id: string): Readonly<NPCDecisionEntry> | undefined { return this.records.get(id); }
+
+  /** Shows `text` above the NPC for `duration` seconds of simulation time. Speech is never stored or saved. */
+  speak(id: string, text: string, duration = DEFAULT_SPEECH_SECONDS): void {
+    this.speech.set(id, { text, until: this.now + Math.max(0, duration) });
+    this.speechChanges++;
+  }
+
+  /** What the NPC is saying now; `until` is in the clock's elapsed seconds. */
+  getSpeech(id: string): Readonly<{ text: string; until: number }> | undefined { return this.speech.get(id); }
+
+  /** Advances whenever speech starts or ends, so presentation redraws bubbles only then. */
+  get speechRevision(): number { return this.speechChanges; }
 
   subscribeRecords(listener: () => void): () => void {
     this.recordListeners.add(listener);
@@ -189,6 +207,8 @@ export class NPCSimulation {
 
   private update(tick: FixedTick): void {
     if (!this.active) return;
+    this.now = tick.elapsedSeconds;
+    for (const [id, speech] of this.speech) if (speech.until <= this.now) { this.speech.delete(id); this.speechChanges++; }
     this.reconcile();
     const instances = this.store.getState().instances;
     for (const instance of instances.values()) {
@@ -234,7 +254,10 @@ export class NPCSimulation {
       if (this.store.getState().instances.get(entry.instanceId) !== owner) continue;
       if (decision?.actions.length) entry.decision = decision;
     }
-    for (const entry of entries) this.records.set(entry.instanceId, entry);
+    for (const entry of entries) {
+      this.records.set(entry.instanceId, entry);
+      for (const action of entry.decision?.actions ?? []) if (action.type === 'speak') this.speak(entry.instanceId, action.text, action.duration);
+    }
     applyDecisions(this.store, entries);
     for (const listener of this.recordListeners) listener();
   }

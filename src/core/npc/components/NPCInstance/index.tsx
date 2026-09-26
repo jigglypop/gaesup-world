@@ -204,11 +204,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
 
     const payload = event.payload;
     if (event.action === 'dialogue' && payload?.type === 'dialogue') {
-      executeInstanceAction(instance.id, {
-        type: 'speak',
-        text: payload.text,
-        ...(payload.duration !== undefined ? { duration: payload.duration } : {}),
-      });
+      simulation.speak(instance.id, payload.text, payload.duration);
       return;
     }
     if (event.action === 'animation' && payload?.type === 'animation') {
@@ -235,7 +231,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
         },
       });
     }
-  }, [executeInstanceAction, instance.events, instance.id, instance.metadata, updateInstance]);
+  }, [executeInstanceAction, instance.events, instance.id, instance.metadata, simulation, updateInstance]);
 
   // 이벤트 핸들러 바인딩은 hook 이므로 early return 보다 위에서 호출되어야 React 의 hook 순서가 일관된다.
   useEffect(() => {
