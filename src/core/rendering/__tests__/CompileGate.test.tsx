@@ -2,7 +2,7 @@ import { useThree } from '@react-three/fiber';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import * as THREE from 'three';
 
-import { CompileGate, compileSubtreeAsync, setSceneRenderTarget } from '../CompileGate';
+import { CompileGate, compileSceneAsync, compileSubtreeAsync, setSceneRenderTarget } from '../CompileGate';
 
 test('content stays hidden until its async compile resolves, compiled unculled and visible', async () => {
   let finish = () => {};
@@ -59,9 +59,9 @@ test('content compiles for the target a pass draws the scene into, and again if 
   );
   try {
     const gate = renderer.scene.findByProps({ name: 'content' }).instance.parent as THREE.Object3D;
-    setSceneRenderTarget(gl as Parameters<typeof setSceneRenderTarget>[0], { renderTarget: 'scene-pass', mrt: 'outputs', depth: 1 });
+    setSceneRenderTarget(gl as Parameters<typeof setSceneRenderTarget>[0], { renderTarget: 'scene-pass', mrt: null, depth: 1 });
     await ReactThreeTestRenderer.act(async () => { finishes[0]!(); });
-    expect(compiledFor).toEqual([[null, null], ['scene-pass', 'outputs']]);
+    expect(compiledFor).toEqual([[null, null], ['scene-pass', null]]);
     expect([target, mrt]).toEqual([null, null]);
     expect(gate.visible).toBe(false);
     await ReactThreeTestRenderer.act(async () => { finishes[1]!(); });
@@ -106,15 +106,39 @@ test('a subtree compiles at the nesting depth its pass draws at, and for each sh
     root.traverse((object) => { if (!object.visible) hidden.push(object.name || object.type); });
     calls.push({ target, mrt, depth: contexts.get(target, mrt) as number | undefined, override: scene.overrideMaterial, hidden });
   });
-  setSceneRenderTarget(renderer, { renderTarget: 'scene-pass', mrt: 'outputs', depth: 1 });
+  setSceneRenderTarget(renderer, { renderTarget: 'scene-pass', mrt: null, depth: 1 });
   try {
     await compileSubtreeAsync(renderer, root, new THREE.PerspectiveCamera(), scene);
     expect(calls).toEqual([
-      { target: 'scene-pass', mrt: 'outputs', depth: 1, override: null, hidden: [] },
+      { target: 'scene-pass', mrt: null, depth: 1, override: null, hidden: [] },
       { target: 'cascade-0', mrt: null, depth: 2, override: shadowMaterial, hidden: ['flat'] },
     ]);
     expect([target, mrt, scene.overrideMaterial, flat.visible]).toEqual([null, null, null, true]);
   } finally {
     setSceneRenderTarget(renderer, null);
+  }
+});
+
+test('a pass with extra outputs is not compiled ahead: content shows at once and the pass takes over at once', async () => {
+  const compileAsync = jest.fn(() => Promise.resolve());
+  let gl: object = {};
+  function Patch() {
+    gl = Object.assign(useThree((state) => state.gl), { compileAsync });
+    // three builds the shaders on later tasks with the renderer back on the canvas, so they would lack these outputs.
+    setSceneRenderTarget(gl as Parameters<typeof setSceneRenderTarget>[0], { renderTarget: 'scene-pass', mrt: 'outputs', depth: 1 });
+    return null;
+  }
+  const renderer = await ReactThreeTestRenderer.create(
+    <><Patch /><CompileGate><mesh name="content"><boxGeometry /><meshBasicMaterial /></mesh></CompileGate></>,
+  );
+  try {
+    const gate = renderer.scene.findByProps({ name: 'content' }).instance.parent as THREE.Object3D;
+    await ReactThreeTestRenderer.act(async () => { await Promise.resolve(); });
+    expect(gate.visible).toBe(true);
+    expect(compileSceneAsync(gl, new THREE.Scene(), new THREE.PerspectiveCamera())).toBeNull();
+    expect(compileAsync).not.toHaveBeenCalled();
+  } finally {
+    setSceneRenderTarget(gl as Parameters<typeof setSceneRenderTarget>[0], null);
+    await renderer.unmount();
   }
 });

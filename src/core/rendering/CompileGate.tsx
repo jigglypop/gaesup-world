@@ -31,6 +31,13 @@ function canCompileAsync(renderer: unknown): renderer is AsyncCompiler {
   return isGpuBatchRevision() && typeof (renderer as Partial<AsyncCompiler> | null)?.compileAsync === 'function';
 }
 
+/**
+ * Whether content can compile ahead for where the scene is drawn. three builds the shaders on later tasks, reading the
+ * render target and MRT from the renderer, which by then shows the canvas: a pass with extra outputs would get, and keep,
+ * shaders without them, so its content compiles as it first draws.
+ */
+const compilesAhead = (renderer: object) => !sceneTargets.get(renderer)?.mrt;
+
 const canSwitchTargets = (renderer: object): renderer is TargetedRenderer =>
   typeof (renderer as Partial<TargetedRenderer>).setRenderTarget === 'function'
   && typeof (renderer as Partial<TargetedRenderer>).setMRT === 'function';
@@ -121,6 +128,7 @@ function compileShadowsAsync(renderer: AsyncCompiler & TargetedRenderer, root: O
  * target the scene is drawn into and for the shadow cascades, which draw it one render deeper.
  */
 export function compileSubtreeAsync(renderer: AsyncCompiler, root: Object3D, camera: Camera, scene: Scene): Promise<unknown> {
+  if (!compilesAhead(renderer)) return Promise.resolve();
   const culled: Object3D[] = [];
   root.traverse((object) => {
     if (!object.frustumCulled) return;
@@ -144,9 +152,9 @@ export function compileSubtreeAsync(renderer: AsyncCompiler, root: Object3D, cam
   }
 }
 
-/** Compiles the whole scene for where it is drawn and its shadows; null when the renderer cannot compile ahead. */
+/** Compiles the whole scene for where it is drawn and its shadows; null when it cannot compile ahead. */
 export function compileSceneAsync(renderer: unknown, scene: Scene, camera: Camera): Promise<unknown> | null {
-  return canCompileAsync(renderer) ? compileSubtreeAsync(renderer, scene, camera, scene) : null;
+  return canCompileAsync(renderer) && compilesAhead(renderer) ? compileSubtreeAsync(renderer, scene, camera, scene) : null;
 }
 
 /**
