@@ -34,9 +34,10 @@ export class HttpAssetSource implements AssetSource {
   private readonly baseUrl: string;
   private readonly fetcher: FetchLike;
 
-  constructor(baseUrl: string = '/api', fetcher: FetchLike = fetch) {
+  constructor(baseUrl: string = '/api', fetcher?: FetchLike) {
     this.baseUrl = baseUrl;
-    this.fetcher = fetcher;
+    // Looked up per call and called unbound: browsers reject a fetch bound to another object.
+    this.fetcher = fetcher ?? ((input, init) => fetch(input, init));
   }
 
   async listAssets(query?: AssetQuery): Promise<AssetRecord[]> {

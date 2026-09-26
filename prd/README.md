@@ -21,12 +21,6 @@
 
 위에서 아래 순서로 한다.
 
-### SE-8 공개 API 계약
-
-| Slice | 내용 | 완료 기준 |
-|---|---|---|
-| SE-8c | `HttpAssetSource` 기본 fetcher, `useNetworkGroup`·`useNetworkMessage`·`createGroup` 동작 | 계약 테스트 |
-
 ### SE-9 거대 파일 분할
 
 | Slice | 내용 | 완료 기준 |

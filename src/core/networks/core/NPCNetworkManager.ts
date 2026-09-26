@@ -378,12 +378,8 @@ export class NPCNetworkManager {
       
       const node = this.nodes.get(nodeId);
       if (node) {
-        const directMessage: NetworkMessage = {
-          ...message,
-          to: nodeId
-        };
-        
-        this.enqueueMessage(node, directMessage);
+        // Members get the message as sent (`to: 'group'`), which is how group readers recognize it.
+        this.enqueueMessage(node, message);
         successCount++;
       }
     }
@@ -411,12 +407,16 @@ export class NPCNetworkManager {
   }
 
   // 그룹 생성
+  /** Creates a group under `options.id` when given; an id that is already taken returns that group unchanged. */
   createGroup(type: NetworkGroup['type'], options?: {
+    id?: string;
     maxMembers?: number;
     range?: number;
     persistent?: boolean;
   }): NetworkGroup {
-    const groupId = `group_${this.groupIdCounter++}`;
+    const existing = options?.id ? this.groups.get(options.id) : undefined;
+    if (existing) return existing;
+    const groupId = options?.id || `group_${this.groupIdCounter++}`;
     
     const group: NetworkGroup = {
       id: groupId,

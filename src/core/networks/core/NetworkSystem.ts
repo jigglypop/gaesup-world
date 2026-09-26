@@ -313,6 +313,7 @@ export class NetworkSystem {
 
         case 'createGroup':
           const group = this.npcManager.createGroup(command.group.type, {
+            ...(command.group.id ? { id: command.group.id } : {}),
             maxMembers: command.group.maxMembers,
             range: command.group.range,
             persistent: command.group.persistent

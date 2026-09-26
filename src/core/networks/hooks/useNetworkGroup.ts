@@ -1,5 +1,6 @@
 import { useCallback, useRef, useEffect, useState } from 'react';
 
+import { takeNewMessages, type QueueCursor } from './queueCursor';
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
 import { createUniqueId } from '../../utils/id';
 import type { NetworkGroup, NetworkMessage, NetworkPayload } from '../types';
@@ -78,7 +79,7 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
   joinedGroupsRef.current = joinedGroups;
   const joinedGroupIdsRef = useRef<Set<string>>(new Set());
   const lastGroupsSigRef = useRef<string>('');
-  const lastQueueTailIdRef = useRef<string | null>(null);
+  const queueCursor = useRef<QueueCursor>({ tailId: null });
   const MAX_SEEN_IDS = 2000;
   const MAX_GROUP_MESSAGE_HISTORY = 500;
 
@@ -118,7 +119,7 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
           setOwnedGroups(currentJoinedGroups);
 
           // 그룹 멤버십이 바뀌면 메시지 큐를 한 번 전체 스캔 (조인 직후 backlog 처리)
-          lastQueueTailIdRef.current = null;
+          queueCursor.current.tailId = null;
 
           newJoinedGroups.forEach(groupId => {
             const group = groups.find(g => g.id === groupId);
@@ -162,25 +163,8 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
       }
 
       // 메시지 업데이트 (현재 노드 큐 기준)
-      const queue = state.messageQueues.get(nodeId) ?? [];
-      if (queue.length === 0) return;
-
-      const tailId = queue[queue.length - 1]?.id ?? null;
-      const prevTailId = lastQueueTailIdRef.current;
-      if (prevTailId && prevTailId === tailId) return;
-
-      // 새 메시지가 없으면 skip, 새 메시지가 있으면 마지막 처리 지점부터만 처리
-      let startIdx = 0;
-      if (prevTailId) {
-        for (let i = queue.length - 1; i >= 0; i--) {
-          if (queue[i]?.id === prevTailId) {
-            startIdx = i + 1;
-            break;
-          }
-        }
-      }
-      lastQueueTailIdRef.current = tailId;
-      if (startIdx >= queue.length) return;
+      const fresh = takeNewMessages(state.messageQueues.get(nodeId) ?? [], queueCursor.current);
+      if (fresh.length === 0) return;
 
       // 그룹에 속해있지 않으면 group 메시지는 처리할 게 없음
       if (joinedGroupIdsRef.current.size === 0) return;
@@ -188,9 +172,7 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
       setGroupMessages((prev) => {
         const next = new Map(prev);
         const touchedGroups = new Set<string>();
-        for (let i = startIdx; i < queue.length; i++) {
-          const msg = queue[i];
-          if (!msg) continue;
+        for (const msg of fresh) {
           if (msg.to !== 'group' || !msg.groupId) continue;
           if (!joinedGroupIdsRef.current.has(msg.groupId)) continue;
           if (seenMessageIdsRef.current.has(msg.id)) continue;
@@ -234,13 +216,12 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
     groupOptions?: GroupCreateOptions
   ) => {
     if (!isReady) return;
-    void groupId;
-    void initialMembers;
 
     const now = Date.now();
     executeCommand({
       type: 'createGroup',
       group: {
+        id: groupId,
         type: 'party',
         members: new Set<string>(),
         maxMembers: groupOptions?.maxSize ?? 20,
@@ -250,6 +231,10 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
         lastActivity: now,
       },
     });
+    // The creator and the initial members start inside the group.
+    for (const memberId of new Set([npcId, ...initialMembers])) {
+      executeCommand({ type: 'joinGroup', npcId: memberId, groupId });
+    }
   }, [isReady, executeCommand, npcId]);
 
   const joinGroup = useCallback((groupId: string) => {

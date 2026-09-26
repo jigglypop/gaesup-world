@@ -104,7 +104,7 @@ export type NetworkCommand =
   | { type: 'broadcast'; message: Omit<NetworkMessage, 'to'> }
   | { type: 'joinGroup'; npcId: string; groupId: string }
   | { type: 'leaveGroup'; npcId: string; groupId: string }
-  | { type: 'createGroup'; group: Omit<NetworkGroup, 'id'> }
+  | { type: 'createGroup'; group: Omit<NetworkGroup, 'id'> & { id?: string } }
   // Backward-compatible alias (older API used updateConfig/data.config)
   | { type: 'updateConfig'; data: { config: Partial<NetworkConfig> } }
   | { type: 'updateSettings'; settings: Partial<NetworkConfig> }

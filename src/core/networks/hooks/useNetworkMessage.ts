@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { takeNewMessages, type QueueCursor } from './queueCursor';
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
 import { createUniqueId } from '../../utils/id';
 import { NetworkMessage, NetworkPayload } from '../types';
@@ -19,11 +20,17 @@ export interface BroadcastOptions extends MessageSendOptions {
 
 export interface UseNetworkMessageOptions extends UseNetworkBridgeOptions {
   senderId: string;
+  /** Direct and broadcast messages from others; group messages arrive through `useNetworkGroup`. */
   onMessageReceived?: (message: NetworkMessage) => void;
   onMessageSent?: (message: NetworkMessage) => void;
+  /** @deprecated Has no effect; the network does not report delivery failures. */
   onMessageFailed?: (message: NetworkMessage, error: string) => void;
+  /** Drops an incoming message before it reaches `receivedMessages` and `onMessageReceived`. */
   messageFilter?: (message: NetworkMessage) => boolean;
 }
+
+const RECEIVE_POLL_MS = 250;
+const MAX_SEEN_IDS = 2000;
 
 export interface UseNetworkMessageResult {
   // 메시지 전송
@@ -56,9 +63,10 @@ export interface UseNetworkMessageResult {
  * 네트워크 메시지 송수신을 위한 훅
  */
 export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetworkMessageResult {
-  const { senderId, onMessageSent, ...bridgeOptions } = options;
+  const { senderId, onMessageSent, onMessageReceived, messageFilter, ...bridgeOptions } = options;
   const {
     executeCommand,
+    getSystemState,
     isReady
   } = useNetworkBridge(bridgeOptions);
 
@@ -66,6 +74,32 @@ export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetwork
   const [receivedMessages, setReceivedMessages] = useState<NetworkMessage[]>([]);
   const [sentMessages, setSentMessages] = useState<NetworkMessage[]>([]);
   const [pendingMessages, setPendingMessages] = useState<NetworkMessage[]>([]);
+  const receiving = useRef({ onMessageReceived, messageFilter });
+  receiving.current = { onMessageReceived, messageFilter };
+  const queueCursor = useRef<QueueCursor>({ tailId: null });
+  const seenIds = useRef(new Set<string>());
+
+  // Incoming messages land in this sender's node queue.
+  useEffect(() => {
+    if (!isReady) return undefined;
+    const nodeId = `node_${senderId}`;
+    const interval = setInterval(() => {
+      const { onMessageReceived: notify, messageFilter: accepts } = receiving.current;
+      const arrived = takeNewMessages(getSystemState()?.messageQueues.get(nodeId) ?? [], queueCursor.current).filter((message) =>
+        message.to !== 'group' && message.from !== senderId && !seenIds.current.has(message.id) && (accepts?.(message) ?? true));
+      if (arrived.length === 0) return;
+      if (seenIds.current.size > MAX_SEEN_IDS) seenIds.current = new Set(Array.from(seenIds.current).slice(-MAX_SEEN_IDS / 2));
+      for (const message of arrived) {
+        seenIds.current.add(message.id);
+        notify?.(message);
+      }
+      setReceivedMessages((prev) => {
+        const next = [...prev, ...arrived];
+        return next.length > MAX_MESSAGE_HISTORY ? next.slice(-MAX_MESSAGE_HISTORY) : next;
+      });
+    }, RECEIVE_POLL_MS);
+    return () => clearInterval(interval);
+  }, [isReady, senderId, getSystemState]);
 
   const sendMessage = useCallback((
     receiverId: string,
