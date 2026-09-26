@@ -25,4 +25,4 @@
 |---|---|---|
 | P-5 | `frameloop="demand"`, 보조 캔버스 demand | 5초 대기 중 render 515 |
 | P-7 | 정적 장면 그림자 갱신 억제 | P-12 뒤 대기 중 프레임 draw 147 중 그림자 cascade 4개가 약 80이고, 움직임이 없어도 cascade 4장을 매 프레임 다시 그린다 |
-| P-8b | 그림자 pass 파이프라인 사전 컴파일, NPC 모델 게이트, warm-up이 게이트의 비동기 컴파일을 기다리게 측정 보완 | S-B07 동기 컴파일 10프레임, S-B08 warm-up 뒤 program 25~40(새 나무의 메인·그림자 pass, 늦게 드러난 게이트) |
+| P-8c | 그림자 pass 파이프라인 사전 컴파일, warm-up이 게이트의 비동기 컴파일을 기다리게 측정 보완 | S-B07 동기 컴파일 9프레임(새 caster의 그림자 cascade와 늦게 드러난 게이트), S-B08 warm-up 뒤 program 25~40 |

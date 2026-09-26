@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { Suspense, useRef, useEffect, useMemo, useCallback } from 'react';
 
 import { useGLTF } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
@@ -11,6 +11,7 @@ import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
 import { sameNPCInstanceProps } from './memo';
 import { NPCPartMeshProps, NPCInstanceProps } from './types';
 import { useSharedAnimations } from '../../../animation/hooks/useSharedAnimations';
+import { CompileGate } from '../../../rendering/CompileGate';
 import { useSceneToon } from '../../../rendering/useSceneToon';
 import { useWorldPhysicsInterpolation } from '../../../simulation/physicsContext';
 import { useNPCSimulation } from '../../hooks/useNPCSimulation';
@@ -119,12 +120,22 @@ function NPCPartGltfMesh({ part, currentAnimation, cullRadius }: NPCPartMeshProp
   );
 }
 
+/**
+ * A model that is still loading suspends only itself, and it shows once its pipelines are built instead of stalling
+ * the frame that first draws it.
+ */
+function NPCModelGate({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={null}><CompileGate>{children}</CompileGate></Suspense>;
+}
+
 function NPCPartMesh({ part, instanceId, currentAnimation, cullRadius }: NPCPartMeshProps) {
   const hasUrl = !!part.url && part.url.trim() !== '';
   if (!hasUrl) return <NPCPartFallbackMesh part={part} instanceId={instanceId} />;
   return (
     <NPCPartErrorBoundary part={part} instanceId={instanceId} currentAnimation={currentAnimation}>
-      <NPCPartGltfMesh part={part} instanceId={instanceId} currentAnimation={currentAnimation} cullRadius={cullRadius} />
+      <NPCModelGate>
+        <NPCPartGltfMesh part={part} instanceId={instanceId} currentAnimation={currentAnimation} cullRadius={cullRadius} />
+      </NPCModelGate>
     </NPCPartErrorBoundary>
   );
 }
@@ -274,6 +285,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   if (fullModelUrl) {
     const capsule = npcCapsule(volume, instance.scale);
     return (
+      <NPCModelGate>
       <PhysicsEntity
         ref={bindBody}
         url={fullModelUrl}
@@ -307,6 +319,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
           </mesh>
         )}
       </PhysicsEntity>
+      </NPCModelGate>
     );
   }
   
