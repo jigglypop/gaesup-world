@@ -57,6 +57,7 @@ export interface WallConfig {
   rotation: Rotation3D;
   wallGroupId: string;
   materialId?: string;
+  /** The grid edge the wall stands on, named north or west; derived from position and rotation when stored. */
   edge?: EdgeCoord;
   width?: number;
   height?: number;

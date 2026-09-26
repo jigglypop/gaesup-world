@@ -1,3 +1,4 @@
+import type { EdgeCoord } from '../../grid';
 import type { BuildingBlockConfig, BuildingWallKind, TileConfig, WallConfig, WallGroupConfig } from '../types';
 import { TILE_CONSTANTS } from '../types/constants';
 
@@ -40,7 +41,30 @@ export function wallBox(wall: Pick<WallConfig, 'position' | 'rotation'>): Buildi
   };
 }
 
-export const wallKindOf = (wall: Pick<WallConfig, 'wallKind'>, group?: Pick<WallGroupConfig, 'defaultWallKind'>): BuildingWallKind =>
+/**
+ * The grid edge a wall stands on, named one way only: the north side of a cell for a wall along X, the west side
+ * for a wall along Z. Walls facing opposite ways on one line get the same edge.
+ */
+export function wallEdge(wall: Pick<WallConfig, 'position' | 'rotation'>): EdgeCoord {
+  const { center } = wallBox(wall);
+  const cell = (value: number): number => Math.round(value / CELL) || 0;
+  const level = Math.round(wall.position.y / HEIGHT_STEP) || 0;
+  return Math.abs(Math.cos(wall.rotation.y)) > Math.SQRT1_2
+    ? { x: cell(center[0]), z: cell(center[2] + CELL / 2), level, side: 'north' }
+    : { x: cell(center[0] + CELL / 2), z: cell(center[2]), level, side: 'west' };
+}
+
+/**
+ * Odd-size tiles sit on a cell center and even-size tiles on a grid corner, so a tile's edges run along grid lines
+ * and it covers whole cells. Half steps round down: an even tile moved off a cell center keeps the cells it had.
+ */
+export function snapTilePosition<T extends { x: number; z: number }>(position: T, size: number | undefined): T {
+  const offset = cellSpan(size) % 2 === 0 ? CELL / 2 : 0;
+  const snap = (value: number): number => Math.ceil((value - offset) / CELL - 0.5) * CELL + offset;
+  return { ...position, x: snap(position.x), z: snap(position.z) };
+}
+
+export const wallKindOf =(wall: Pick<WallConfig, 'wallKind'>, group?: Pick<WallGroupConfig, 'defaultWallKind'>): BuildingWallKind =>
   wall.wallKind ?? group?.defaultWallKind ?? 'solid';
 
 /** A wall part in the wall's frame: x along the wall from its center, y up from its base, z across it. */

@@ -12,7 +12,7 @@ import type { BuildingBlockConfig, BuildingWallKind, TileConfig, TileGroupConfig
 import { TILE_CONSTANTS } from '../../types/constants';
 import { buildBlockRecord, buildTileGroupRecord, buildWallGroupRecord, type VisibilityRecord } from '../../visibility/core';
 import { boxBoundsXZ, type BoundsXZ } from '../footprint';
-import { buildingCellToWorld, createBlockFootprint, tilePositionToCell } from '../placement';
+import { buildingCellToWorld, createBlockFootprint, placeTileOnGrid, tilePlacementCells, tilePositionToCell } from '../placement';
 
 const NAV = { cellSize: 1, worldMinX: -24, worldMinZ: -24, worldMaxX: 24, worldMaxZ: 24 };
 const CELL = TILE_CONSTANTS.GRID_CELL_SIZE;
@@ -128,13 +128,19 @@ describe.each([1, 2, 3, 4])('a block %i cells wide', (size) => {
 });
 
 describe.each([1, 2, 3, 4])('a tile %i cells wide', (size) => {
-  const tile: TileConfig = { id: 'tile', tileGroupId: 'floors', position: { x: 8, y: 1, z: 4 }, size, rotation: Math.PI / 2 };
+  // As the store keeps it: placed from a cell center, an even tile moves to a grid corner.
+  const tile: TileConfig = placeTileOnGrid({ id: 'tile', tileGroupId: 'floors', position: { x: 8, y: 1, z: 4 }, size, rotation: Math.PI / 2 });
   const group: TileGroupConfig = { id: 'floors', name: 'floors', floorMeshId: 'floor', tiles: [tile] };
 
-  test('renders, collides, raises navigation and stays visible over one box', async () => {
+  test('renders, collides, occupies, raises navigation and stays visible over one box', async () => {
     const [rendered, ...rest] = await renderedBounds({ tileGroups: [group] });
     expect(rest).toHaveLength(0);
     expectSameBounds(colliderBounds(createTileColliders([tile])[0]!), rendered!);
+    const cells = tilePlacementCells(tile).map(buildingCellToWorld);
+    expectSameBounds({
+      minX: Math.min(...cells.map((cell) => cell.x)) - CELL / 2, maxX: Math.max(...cells.map((cell) => cell.x)) + CELL / 2,
+      minZ: Math.min(...cells.map((cell) => cell.z)) - CELL / 2, maxZ: Math.max(...cells.map((cell) => cell.z)) + CELL / 2,
+    }, rendered!);
     expect(navCells((navigation) => applyBuildingNavigationObstacles(navigation, { tileGroups: [group] }), (navigation, x, z) => navigation.sampleHeight(x, z) === 1))
       .toEqual(cellsUnder(rendered!));
     expectRecordCovers(buildTileGroupRecord(group)!, rendered!);

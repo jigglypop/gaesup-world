@@ -173,7 +173,7 @@ describe('building persistence helpers', () => {
           walls: [
             {
               id: 'wall',
-              position: { x: 2, y: 0, z: -2 },
+              position: { x: 0, y: 0, z: -4 },
               rotation: { x: 0, y: 0, z: 0 },
               wallGroupId: 'walls',
             },
@@ -209,10 +209,12 @@ describe('building persistence helpers', () => {
       { x: 2, z: 2, level: 2 },
       { x: 2, z: 3, level: 2 },
     ]);
-    expect(target.spatialIndex.tileMeta.get('tile')).toEqual({ x: 8, y: 2, z: 12, halfSize: 4 });
+    // A 2-cell tile saved on a cell center moves to the grid corner of the cells it already covered.
+    expect(tile?.position).toEqual({ x: 6, y: 2, z: 10 });
+    expect(target.spatialIndex.tileMeta.get('tile')).toEqual({ x: 6, y: 2, z: 10, halfSize: 4 });
     expect(target.spatialIndex.tileCells.get('tile')?.length).toBeGreaterThan(0);
-    expect(wall?.edge).toEqual({ x: 0, z: 0, level: 0, side: 'east' });
-    expect(target.spatialIndex.wallMeta.get('wall')).toEqual({ x: 2, z: -2, rotY: 0 });
+    expect(wall?.edge).toEqual({ x: 0, z: 0, level: 0, side: 'north' });
+    expect(target.spatialIndex.wallMeta.get('wall')).toEqual({ x: 0, z: -4, rotY: 0 });
     expect(target.spatialIndex.wallCells.get('wall')?.length).toBeGreaterThan(0);
     expect(block?.cell).toEqual({ x: 3, z: 3, level: 1 });
   });

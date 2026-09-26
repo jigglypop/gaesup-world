@@ -1,20 +1,16 @@
 import {
   createBlockFootprint,
-  createTileFootprint,
-  indexAabb,
   tilePositionToCell,
-  wallTransformToEdge,
 } from '../model';
 import { BuildingSpatialIndex } from './spatialIndex';
-import { tileWorldSize } from '../model/footprint';
-import { tilePlacementCells } from '../model/placement';
+import { wallEdge } from '../model/footprint';
+import { placeTileOnGrid } from '../model/placement';
 import type {
   BuildingBlockConfig,
   BuildingSerializedState,
   MeshConfig,
   PlacedObject,
   TileCategory,
-  TileConfig,
   TileGroupConfig,
   WallCategory,
   WallConfig,
@@ -22,7 +18,6 @@ import type {
 } from '../types';
 import { createDefaultTileCategories, createDefaultWallCategories } from './defaultCategories';
 import { clonePlainData } from '../../utils/clone';
-import { TILE_CONSTANTS } from '../types/constants';
 
 const SERIALIZED_KEYS = [
   'meshes',
@@ -230,34 +225,12 @@ function applySelectedGroupId(
 }
 
 function hydrateTileGroups(state: BuildingHydrationTarget, groups: TileGroupConfig[]): void {
-  const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
   for (const group of groups) {
     const tiles = group.tiles.map((tile) => {
-      const cell = tile.cell ?? tilePositionToCell(tile.position);
-      const tileWithCell: TileConfig = {
-        ...tile,
-        cell,
-        footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1),
-      };
-      const halfSize = tileWorldSize(tileWithCell) / 2;
-      state.spatialIndex.tileMeta.set(tileWithCell.id, {
-        x: tileWithCell.position.x,
-        z: tileWithCell.position.z,
-        y: tileWithCell.position.y,
-        halfSize,
-      });
-      indexAabb(
-        state.spatialIndex.tileIndex,
-        state.spatialIndex.tileCells,
-        tileWithCell.id,
-        tileWithCell.position.x - halfSize,
-        tileWithCell.position.x + halfSize,
-        tileWithCell.position.z - halfSize,
-        tileWithCell.position.z + halfSize,
-        cellSize,
-      );
-      state.spatialIndex.occupy(tileWithCell.id, tilePlacementCells(tileWithCell));
-      return tileWithCell;
+      // An even tile saved on a cell center moves to the grid corner of the cells it already occupied.
+      const placed = placeTileOnGrid(tile);
+      state.spatialIndex.indexTile(placed);
+      return placed;
     });
     state.tileGroups.set(group.id, { ...group, tiles });
   }
@@ -268,24 +241,10 @@ function hydrateWallGroups(state: BuildingHydrationTarget, groups: WallGroupConf
     const walls = group.walls.map((wall) => {
       const wallWithEdge: WallConfig = {
         ...wall,
-        edge: wall.edge ?? wallTransformToEdge(wall.position, wall.rotation.y),
+        // Derived, so a snapshot written with the old edge naming reads back on the edge the wall stands on.
+        edge: wallEdge(wall),
       };
-      const tol = 0.5;
-      state.spatialIndex.wallMeta.set(wallWithEdge.id, {
-        x: wallWithEdge.position.x,
-        z: wallWithEdge.position.z,
-        rotY: wallWithEdge.rotation.y,
-      });
-      indexAabb(
-        state.spatialIndex.wallIndex,
-        state.spatialIndex.wallCells,
-        wallWithEdge.id,
-        wallWithEdge.position.x - tol,
-        wallWithEdge.position.x + tol,
-        wallWithEdge.position.z - tol,
-        wallWithEdge.position.z + tol,
-        1,
-      );
+      state.spatialIndex.indexWall(wallWithEdge);
       return wallWithEdge;
     });
     state.wallGroups.set(group.id, { ...group, walls });

@@ -1,5 +1,9 @@
 import type { CellCoord } from '../../grid';
-import { pair, type TileMeta, type WallMeta } from '../model';
+import { indexAabb, pair, unindexId, type TileMeta, type WallMeta } from '../model';
+import { tileWorldSize, wallBox } from '../model/footprint';
+import { tilePlacementCells, WALL_INDEX_TOLERANCE } from '../model/placement';
+import type { TileConfig, WallConfig } from '../types';
+import { TILE_CONSTANTS } from '../types/constants';
 
 /**
  * Mutable placement indexes. Immer never drafts class instances, so keeping these maps here instead of in
@@ -16,6 +20,35 @@ export class BuildingSpatialIndex {
   // Placement cells of tiles and blocks bucketed by (x, z) column: what the engine's no-overlap rule tests.
   readonly placementColumns = new Map<number, Set<string>>();
   readonly placementCells = new Map<string, readonly CellCoord[]>();
+
+  /** Indexes a stored tile for support heights and placement; cells are copied so a draft never lands here. */
+  indexTile(tile: TileConfig): void {
+    this.unindexTile(tile.id);
+    const { x, y, z } = tile.position;
+    const halfSize = tileWorldSize(tile) / 2;
+    this.tileMeta.set(tile.id, { x, z, y, halfSize });
+    indexAabb(this.tileIndex, this.tileCells, tile.id, x - halfSize, x + halfSize, z - halfSize, z + halfSize, TILE_CONSTANTS.GRID_CELL_SIZE);
+    this.occupy(tile.id, tilePlacementCells(tile).map(({ x: cx, z: cz, level }) => ({ x: cx, z: cz, level })));
+  }
+
+  unindexTile(id: string): void {
+    unindexId(this.tileIndex, this.tileCells, id);
+    this.tileMeta.delete(id);
+    this.vacate(id);
+  }
+
+  /** Indexes a wall around its center; `hasWallCollision` finds walls on one edge there, facing either way. */
+  indexWall(wall: Pick<WallConfig, 'id' | 'position' | 'rotation'>): void {
+    this.unindexWall(wall.id);
+    const [x, , z] = wallBox(wall).center;
+    this.wallMeta.set(wall.id, { x: wall.position.x, z: wall.position.z, rotY: wall.rotation.y });
+    indexAabb(this.wallIndex, this.wallCells, wall.id, x - WALL_INDEX_TOLERANCE, x + WALL_INDEX_TOLERANCE, z - WALL_INDEX_TOLERANCE, z + WALL_INDEX_TOLERANCE, 1);
+  }
+
+  unindexWall(id: string): void {
+    unindexId(this.wallIndex, this.wallCells, id);
+    this.wallMeta.delete(id);
+  }
 
   occupy(id: string, cells: readonly CellCoord[]): void {
     this.vacate(id);

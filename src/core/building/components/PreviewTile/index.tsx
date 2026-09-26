@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 
 import { tilePositionToCell } from '../../model';
+import { snapTilePosition } from '../../model/footprint';
 import { useBuildingStore } from '../../stores/buildingStore';
 import { TILE_CONSTANTS } from '../../types/constants';
 import './styles.css';
@@ -72,9 +73,11 @@ export function PreviewTile() {
   const color = isOccupied ? '#f3b95f' : '#7dd3fc';
   const previewOpacity = isOccupied ? 0.3 : 0.38;
   const previewEmissive = isOccupied ? 0.08 : 0.12;
+  // Show a tile where the store will put it: even sizes sit on grid corners.
+  const { x, z } = editMode === 'tile' ? snapTilePosition(hoverPosition, currentTileMultiplier) : hoverPosition;
 
   return (
-    <group position={[hoverPosition.x, placementY, hoverPosition.z]} rotation={[0, editMode === 'object' ? currentObjectRotation : currentTileRotation, 0]}>
+    <group position={[x, placementY, z]} rotation={[0, editMode === 'object' ? currentObjectRotation : currentTileRotation, 0]}>
       {editMode === 'tile' && (
         currentTileShape === 'round' ? (
           <mesh position={[0, topHeight > 0.02 ? topHeight / 2 : -0.02, 0]}>

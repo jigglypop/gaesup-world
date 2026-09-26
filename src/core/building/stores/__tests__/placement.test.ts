@@ -458,31 +458,38 @@ describe('buildingStore placement checks', () => {
     expect(s.checkWallPosition(pos, rot.y)).toBe(false);
   });
 
-  test('addWall derives EdgeCoord migration metadata from legacy transform', () => {
+  test('addWall and updateWall derive the edge the wall stands on', () => {
     const s = useBuildingStore.getState();
     const groupId = s.selectedWallGroupId;
     expect(groupId).toBeDefined();
     if (!groupId) return;
 
     const wallId = `edge-wall-${Date.now()}`;
+    const cell = FAR / 4;
+    // Along X on the north side of cell (cell, cell); a stale edge in the input is ignored.
     s.addWall(groupId, {
       id: wallId,
-      position: { x: -2, y: 0, z: -2 },
-      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      position: { x: FAR, y: 0, z: FAR - 4 },
+      rotation: { x: 0, y: 0, z: 0 },
       wallGroupId: groupId,
+      edge: { x: 9, z: 9, level: 0, side: 'south' },
     });
 
     const wall = useBuildingStore.getState().wallGroups.get(groupId)?.walls.find((entry) => entry.id === wallId);
-    expect(wall?.edge).toEqual({ x: 0, z: 0, level: 0, side: 'north' });
+    expect(wall?.edge).toEqual({ x: cell, z: cell, level: 0, side: 'north' });
 
+    // Along Z on the east side of that cell, which is the west side of the next one.
     s.updateWall(groupId, wallId, {
-      position: { x: 2, y: 0, z: -2 },
-      rotation: { x: 0, y: 0, z: 0 },
+      position: { x: FAR, y: 0, z: FAR },
+      rotation: { x: 0, y: Math.PI / 2, z: 0 },
     });
     const updated = useBuildingStore.getState().wallGroups.get(groupId)?.walls.find((entry) => entry.id === wallId);
-    expect(updated?.edge).toEqual({ x: 0, z: 0, level: 0, side: 'east' });
+    expect(updated?.edge).toEqual({ x: cell + 1, z: cell, level: 0, side: 'west' });
+    // The same line placed from its other end is taken.
+    expect(s.checkWallPosition({ x: FAR + 4, y: 0, z: FAR }, Math.PI * 1.5)).toBe(true);
 
     s.removeWall(groupId, wallId);
+    expect(s.checkWallPosition({ x: FAR + 4, y: 0, z: FAR }, Math.PI * 1.5)).toBe(false);
   });
 
   test('serialize and hydrate preserve blocks and rebuild placement indexes', () => {

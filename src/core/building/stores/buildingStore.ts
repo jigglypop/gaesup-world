@@ -9,15 +9,13 @@ import {
   createBlockFootprint,
   getBuildingSupportHeight,
   hasWallCollision,
-  indexAabb,
   snapBuildingPosition,
   createTileFootprint,
   tilePositionToCell,
   unindexId,
-  wallTransformToEdge,
 } from '../model';
-import { tileWorldSize } from '../model/footprint';
-import { blockPlacementCells, tilePlacementCells } from '../model/placement';
+import { snapTilePosition, wallEdge } from '../model/footprint';
+import { blockPlacementCells, placeTileOnGrid, tilePlacementCells } from '../model/placement';
 import {
   BuildingSystemState,
   MeshConfig,
@@ -620,31 +618,9 @@ export function createBuildingStore() {
         const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
 
         const addTileToState = (group: TileGroupConfig, tile: TileConfig): void => {
-          const cell = tile.cell ?? tilePositionToCell(tile.position);
-          const tileWithCell: TileConfig = {
-            ...tile,
-            cell,
-            footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1),
-          };
-          group.tiles.push(tileWithCell);
-          const hs = tileWorldSize(tile) / 2;
-          state.spatialIndex.tileMeta.set(tileWithCell.id, {
-            x: tileWithCell.position.x,
-            z: tileWithCell.position.z,
-            y: tileWithCell.position.y,
-            halfSize: hs,
-          });
-          indexAabb(
-            state.spatialIndex.tileIndex,
-            state.spatialIndex.tileCells,
-            tileWithCell.id,
-            tileWithCell.position.x - hs,
-            tileWithCell.position.x + hs,
-            tileWithCell.position.z - hs,
-            tileWithCell.position.z + hs,
-            cellSize,
-          );
-          state.spatialIndex.occupy(tileWithCell.id, tilePlacementCells(tileWithCell));
+          const placed = placeTileOnGrid(tile);
+          group.tiles.push(placed);
+          state.spatialIndex.indexTile(placed);
         };
 
         if (oakFloorGroup && marbleFloorGroup) {
@@ -792,26 +768,10 @@ export function createBuildingStore() {
             ...wall,
             ...(materialId ? { materialId } : {}),
             wallKind,
-            edge: wall.edge ?? wallTransformToEdge(wall.position, wall.rotation.y),
+            edge: wallEdge(wall),
           };
           group.walls.push(wallWithEdge);
-
-          const tol = 0.5;
-          state.spatialIndex.wallMeta.set(wallWithEdge.id, {
-            x: wallWithEdge.position.x,
-            z: wallWithEdge.position.z,
-            rotY: wallWithEdge.rotation.y,
-          });
-          indexAabb(
-            state.spatialIndex.wallIndex,
-            state.spatialIndex.wallCells,
-            wallWithEdge.id,
-            wallWithEdge.position.x - tol,
-            wallWithEdge.position.x + tol,
-            wallWithEdge.position.z - tol,
-            wallWithEdge.position.z + tol,
-            1,
-          );
+          state.spatialIndex.indexWall(wallWithEdge);
         }
       }),
 
@@ -823,34 +783,10 @@ export function createBuildingStore() {
           if (wallIndex !== -1) {
             const wall = group.walls[wallIndex];
             if (wall) {
-              const shouldReindex =
-                updates.position !== undefined || updates.rotation !== undefined;
-              if (shouldReindex) {
-                unindexId(state.spatialIndex.wallIndex, state.spatialIndex.wallCells, wallId);
-                state.spatialIndex.wallMeta.delete(wallId);
-              }
               Object.assign(wall, updates);
               if (updates.position !== undefined || updates.rotation !== undefined) {
-                wall.edge = updates.edge ?? wallTransformToEdge(wall.position, wall.rotation.y);
-              }
-
-              if (shouldReindex) {
-                const tol = 0.5;
-                state.spatialIndex.wallMeta.set(wall.id, {
-                  x: wall.position.x,
-                  z: wall.position.z,
-                  rotY: wall.rotation.y,
-                });
-                indexAabb(
-                  state.spatialIndex.wallIndex,
-                  state.spatialIndex.wallCells,
-                  wall.id,
-                  wall.position.x - tol,
-                  wall.position.x + tol,
-                  wall.position.z - tol,
-                  wall.position.z + tol,
-                  1,
-                );
+                wall.edge = wallEdge(wall);
+                state.spatialIndex.indexWall(wall);
               }
             }
           }
@@ -892,8 +828,7 @@ export function createBuildingStore() {
       set((state) => {
         const group = state.wallGroups.get(groupId);
         if (group) {
-          unindexId(state.spatialIndex.wallIndex, state.spatialIndex.wallCells, wallId);
-          state.spatialIndex.wallMeta.delete(wallId);
+          state.spatialIndex.unindexWall(wallId);
           group.walls = group.walls.filter((w) => w.id !== wallId);
           if (state.selectedWallId === wallId) state.selectedWallId = null;
         }
@@ -919,9 +854,7 @@ export function createBuildingStore() {
         const group = state.tileGroups.get(id);
         if (group) {
           for (const tile of group.tiles) {
-            unindexId(state.spatialIndex.tileIndex, state.spatialIndex.tileCells, tile.id);
-            state.spatialIndex.tileMeta.delete(tile.id);
-            state.spatialIndex.vacate(tile.id);
+            state.spatialIndex.unindexTile(tile.id);
           }
         }
         state.tileGroups.delete(id);
@@ -934,37 +867,15 @@ export function createBuildingStore() {
           const objectType = tile.objectType ?? state.selectedTileObjectType;
           const objectConfig = tile.objectConfig
             ?? defaultTileObjectConfig(objectType, state.currentTerrainColor, state.currentTerrainAccentColor);
-          const cell = tile.cell ?? tilePositionToCell(tile.position);
           const materialId = tile.materialId ?? state.currentTileMaterialId;
-          const tileWithObject: TileConfig = {
+          const tileWithObject = placeTileOnGrid({
             ...tile,
-            cell,
-            footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1),
             ...(materialId ? { materialId } : {}),
             objectType,
             ...(objectConfig ? { objectConfig } : {}),
-          };
-          group.tiles.push(tileWithObject);
-
-          const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-          const halfSize = tileWorldSize(tileWithObject) / 2;
-          state.spatialIndex.tileMeta.set(tileWithObject.id, {
-            x: tileWithObject.position.x,
-            z: tileWithObject.position.z,
-            y: tileWithObject.position.y,
-            halfSize,
           });
-          indexAabb(
-            state.spatialIndex.tileIndex,
-            state.spatialIndex.tileCells,
-            tileWithObject.id,
-            tileWithObject.position.x - halfSize,
-            tileWithObject.position.x + halfSize,
-            tileWithObject.position.z - halfSize,
-            tileWithObject.position.z + halfSize,
-            cellSize,
-          );
-          state.spatialIndex.occupy(tileWithObject.id, tilePlacementCells(tileWithObject));
+          group.tiles.push(tileWithObject);
+          state.spatialIndex.indexTile(tileWithObject);
         }
       }),
 
@@ -976,45 +887,19 @@ export function createBuildingStore() {
           if (tileIndex !== -1) {
             const tile = group.tiles[tileIndex];
             if (tile) {
-              const shouldReindex = updates.position !== undefined || updates.size !== undefined;
-              if (shouldReindex) {
-                unindexId(state.spatialIndex.tileIndex, state.spatialIndex.tileCells, tileId);
-                state.spatialIndex.tileMeta.delete(tileId);
-              }
               Object.assign(tile, updates);
-              // Occupancy keeps plain footprints; reading one back through the draft could store a revoked proxy.
-              let footprint = updates.footprint;
-              if (
-                updates.position !== undefined ||
-                updates.size !== undefined ||
-                updates.cell !== undefined
-              ) {
-                const cell = updates.cell ?? tilePositionToCell(tile.position);
-                tile.cell = cell;
-                footprint ??= createTileFootprint(cell, tile.size || 1);
-                tile.footprint = footprint;
-              }
-              if (footprint) state.spatialIndex.occupy(tileId, footprint);
-
-              if (shouldReindex) {
-                const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-                const halfSize = tileWorldSize(tile) / 2;
-                state.spatialIndex.tileMeta.set(tile.id, {
-                  x: tile.position.x,
-                  z: tile.position.z,
-                  y: tile.position.y,
-                  halfSize,
+              if (updates.position !== undefined || updates.size !== undefined || updates.cell !== undefined || updates.footprint !== undefined) {
+                // Derived fields follow the new position unless the update sets them.
+                const { cell: _cell, footprint: _footprint, ...rest } = tile;
+                void _cell;
+                void _footprint;
+                const placed = placeTileOnGrid({
+                  ...rest,
+                  ...(updates.cell ? { cell: updates.cell } : {}),
+                  ...(updates.footprint ? { footprint: updates.footprint } : {}),
                 });
-                indexAabb(
-                  state.spatialIndex.tileIndex,
-                  state.spatialIndex.tileCells,
-                  tile.id,
-                  tile.position.x - halfSize,
-                  tile.position.x + halfSize,
-                  tile.position.z - halfSize,
-                  tile.position.z + halfSize,
-                  cellSize,
-                );
+                Object.assign(tile, { position: placed.position, cell: placed.cell, footprint: placed.footprint });
+                state.spatialIndex.indexTile(placed);
               }
             }
           }
@@ -1028,9 +913,7 @@ export function createBuildingStore() {
           const tiles = group.tiles.filter((t) => t.id !== tileId);
           // A tile that lives in another group keeps its index entries.
           if (tiles.length !== group.tiles.length) {
-            unindexId(state.spatialIndex.tileIndex, state.spatialIndex.tileCells, tileId);
-            state.spatialIndex.tileMeta.delete(tileId);
-            state.spatialIndex.vacate(tileId);
+            state.spatialIndex.unindexTile(tileId);
           }
           group.tiles = tiles;
           if (state.selectedTileId === tileId) state.selectedTileId = null;
@@ -1308,7 +1191,7 @@ export function createBuildingStore() {
     // and block into a placement engine; walls sit on edges and never share a cell key.
     checkTilePosition: (position) => {
       const { currentTileMultiplier, spatialIndex } = get();
-      const cells = createTileFootprint(tilePositionToCell(position), currentTileMultiplier);
+      const cells = createTileFootprint(tilePositionToCell(snapTilePosition(position, currentTileMultiplier)), currentTileMultiplier);
       return spatialIndex.isOccupied(cells, '__candidate_tile__');
     },
 

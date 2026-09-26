@@ -25,7 +25,6 @@
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| SE-4c | 짝수 크기 타일 점유, 반대 방향 벽 겹침 판정, `WallConfig.edge` 좌표계 | 재현 테스트 |
 | SE-4d | `addTileGroup`·`updateTileGroup`의 지지높이 인덱스 갱신, `updateTile`·`updateWall`·`removeWall`의 인덱스 원자성 | 인덱스와 store 일관성 테스트 |
 
 ### SE-5 모드 원본 단일화

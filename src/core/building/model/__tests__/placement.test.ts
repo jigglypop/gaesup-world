@@ -1,4 +1,5 @@
 import { createNoOverlapRule, createPlacementEngine } from '../../../placement';
+import { wallBox } from '../footprint';
 import {
   buildingCellToWorld,
   blockToPlacementEntry,
@@ -160,8 +161,8 @@ describe('building placement model helpers', () => {
     });
     const wallEntry = wallToPlacementEntry({
       id: 'wall-1',
-      position: { x: -2, y: 0, z: -2 },
-      rotation: { x: 0, y: Math.PI / 2, z: 0 },
+      position: { x: 0, y: 0, z: -4 },
+      rotation: { x: 0, y: 0, z: 0 },
       wallGroupId: 'walls',
     });
 
@@ -192,7 +193,7 @@ describe('building placement model helpers', () => {
         kind: 'edge',
         coords: [{ kind: 'edge', edge: { x: 0, z: 0, level: 0, side: 'north' } }],
       },
-      rotation: Math.PI / 2,
+      rotation: 0,
     });
   });
 
@@ -238,7 +239,7 @@ describe('building placement model helpers', () => {
       id: 'walls',
       name: 'Walls',
       walls: [
-        { id: 'wall-1', position: { x: -2, y: 0, z: -2 }, rotation: { x: 0, y: Math.PI / 2, z: 0 }, wallGroupId: 'walls' },
+        { id: 'wall-1', position: { x: 0, y: 0, z: -4 }, rotation: { x: 0, y: 0, z: 0 }, wallGroupId: 'walls' },
       ],
     };
 
@@ -281,7 +282,7 @@ describe('building placement model helpers', () => {
       id: 'walls',
       name: 'Walls',
       walls: [
-        { id: 'wall-1', position: { x: -2, y: 0, z: -2 }, rotation: { x: 0, y: Math.PI / 2, z: 0 }, wallGroupId: 'walls' },
+        { id: 'wall-1', position: { x: 0, y: 0, z: -4 }, rotation: { x: 0, y: 0, z: 0 }, wallGroupId: 'walls' },
       ],
     };
 
@@ -382,54 +383,34 @@ describe('building placement model helpers', () => {
     expect(normalizeQuarterTurnRotation(Math.PI * 2)).toBe(0);
   });
 
-  it('converts edge coordinates to legacy wall transforms', () => {
-    expect(edgeSideToWallRotation('north')).toBe(Math.PI / 2);
-    expect(edgeSideToWallRotation('east')).toBe(0);
+  it('places a wall on the edge it names: north and south run along X, east and west along Z', () => {
+    expect(edgeSideToWallRotation('north')).toBe(0);
+    expect(edgeSideToWallRotation('east')).toBe(Math.PI / 2);
     expect(edgeKey({ x: 0, z: 0, level: 0, side: 'north' })).toBe('0:0:0:north');
 
-    expect(edgeToWallTransform({ x: 0, z: 0, level: 0, side: 'north' })).toEqual({
-      position: { x: -2, y: 0, z: -2 },
-      rotationY: Math.PI / 2,
-    });
-    expect(edgeToWallTransform({ x: 0, z: 0, level: 0, side: 'east' })).toEqual({
-      position: { x: 2, y: 0, z: -2 },
-      rotationY: 0,
-    });
-    expect(edgeToWallTransform({ x: 0, z: 0, level: 0, side: 'south' })).toEqual({
-      position: { x: -2, y: 0, z: 2 },
-      rotationY: Math.PI / 2,
-    });
-    expect(edgeToWallTransform({ x: 0, z: 0, level: 0, side: 'west' })).toEqual({
-      position: { x: -2, y: 0, z: -2 },
-      rotationY: 0,
-    });
+    // Cell (0, 0) spans -2..2 on both axes; each wall is centered on that side of it.
+    for (const [side, center] of [['north', [0, -2]], ['east', [2, 0]], ['south', [0, 2]], ['west', [-2, 0]]] as const) {
+      const { position, rotationY } = edgeToWallTransform({ x: 0, z: 0, level: 0, side });
+      const box = wallBox({ position, rotation: { x: 0, y: rotationY, z: 0 } });
+      expect([box.center[0], box.center[2]]).toEqual(center);
+      expect(Math.abs(Math.cos(rotationY))).toBeCloseTo(side === 'north' || side === 'south' ? 1 : 0);
+    }
   });
 
-  it('infers edge coordinates from legacy wall transforms', () => {
-    expect(wallTransformToEdge({ x: -2, y: 0, z: -2 }, Math.PI / 2)).toEqual({
-      x: 0,
-      z: 0,
-      level: 0,
-      side: 'north',
-    });
-    expect(wallTransformToEdge({ x: 2, y: 0, z: -2 }, 0)).toEqual({
-      x: 0,
-      z: 0,
-      level: 0,
-      side: 'east',
-    });
-    expect(wallTransformToEdge({ x: -2, y: 0, z: 2 }, Math.PI / 2)).toEqual({
-      x: 0,
-      z: 0,
-      level: 0,
-      side: 'south',
-    });
-    expect(wallTransformToEdge({ x: -2, y: 0, z: -2 }, 0)).toEqual({
-      x: 0,
-      z: 0,
-      level: 0,
-      side: 'west',
-    });
+  it('names each edge one way, so walls facing opposite ways on one line share it', () => {
+    for (const side of ['north', 'east', 'south', 'west'] as const) {
+      const edge = { x: 1, z: -2, level: 0, side };
+      const { position, rotationY } = edgeToWallTransform(edge);
+      const canonical = wallTransformToEdge(position, rotationY);
+      expect(canonical).toEqual(
+        side === 'south' ? { ...edge, z: edge.z + 1, side: 'north' }
+          : side === 'east' ? { ...edge, x: edge.x + 1, side: 'west' }
+            : edge,
+      );
+      // The same line from the other side: the pivot moves to the far end and the wall turns around.
+      const flipped = { x: position.x + Math.sin(rotationY) * 4, y: 0, z: position.z + Math.cos(rotationY) * 4 };
+      expect(wallTransformToEdge(flipped, rotationY + Math.PI)).toEqual(canonical);
+    }
   });
 
   it('creates deterministic spatial index keys for signed coordinates', () => {
@@ -500,17 +481,21 @@ describe('building placement model helpers', () => {
     expect(getBuildingSupportHeight(tileIndex, tileMeta, blocks, { x: 0, y: 0, z: 4 }, 1)).toBe(3);
   });
 
-  it('detects wall collisions by position and rotation', () => {
+  it('detects a wall standing where another wall stands, facing either way', () => {
     const index = new Map<number, Set<string>>();
     const cells = new Map<string, number[]>();
     const meta = new Map<string, WallMeta>();
 
+    // Pivot (0, 0) turned a quarter: the wall runs along Z centered at (2, 0), where walls are indexed.
     meta.set('wall', { x: 0, z: 0, rotY: Math.PI / 2 });
-    indexAabb(index, cells, 'wall', -0.5, 0.5, -0.5, 0.5, 1);
+    indexAabb(index, cells, 'wall', 1.5, 2.5, -0.5, 0.5, 1);
 
     expect(hasWallCollision(index, meta, { x: 0, y: 0, z: 0 }, Math.PI / 2)).toBe(true);
+    // The same wall placed from its other end, facing the other way.
+    expect(hasWallCollision(index, meta, { x: 4, y: 0, z: 0 }, Math.PI * 1.5)).toBe(true);
     expect(hasWallCollision(index, meta, { x: 1, y: 0, z: 0 }, Math.PI / 2)).toBe(false);
-    expect(hasWallCollision(index, meta, { x: 0, y: 0, z: 0 }, 0)).toBe(false);
+    // Crossing it at the same center along X.
+    expect(hasWallCollision(index, meta, { x: 2, y: 0, z: -2 }, 0)).toBe(false);
   });
 
   it('checks raw tile overlap with tolerance', () => {

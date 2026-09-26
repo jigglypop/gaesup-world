@@ -2,10 +2,9 @@ import type { CellCoord } from '../../../grid';
 import {
   blockToPlacementEntry,
   createBuildingPlacementEngine,
-  createTileFootprint,
-  tilePositionToCell,
   tileToPlacementEntry,
 } from '../../model';
+import { placeTileOnGrid } from '../../model/placement';
 import type { BuildingBlockConfig, Position3D } from '../../types';
 import { createBuildingStore } from '../buildingStore';
 
@@ -27,12 +26,9 @@ function engineOracle(state: State) {
   const occupied = (entry: ReturnType<typeof tileToPlacementEntry>) =>
     !engine.canPlace({ subject: entry.subject, coord: entry.coord, footprint: entry.footprint }).ok;
   return {
-    tile: (position: Position3D, size: number) => {
-      const cell = tilePositionToCell(position);
-      return occupied(tileToPlacementEntry({
-        id: '__candidate_tile__', tileGroupId: 'candidate', position, size, cell, footprint: createTileFootprint(cell, size),
-      }));
-    },
+    // The candidate is the tile as the store would keep it.
+    tile: (position: Position3D, size: number) =>
+      occupied(tileToPlacementEntry(placeTileOnGrid({ id: '__candidate_tile__', tileGroupId: 'candidate', position, size }))),
     block: (position: Position3D, size: BlockSize) =>
       occupied(blockToPlacementEntry({ id: '__candidate_block__', position, size })),
   };
