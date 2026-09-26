@@ -1,6 +1,7 @@
 import type { NPCBrainDecision, NPCInstance, NPCObservation } from '../types';
 import type { NPCBrainAdapter, NPCBrainAdapterContext, NPCBrainAdapterRegistry } from './brain';
 import { isNPCPolicyResponse } from './validatePolicy';
+import { createWanderTarget } from './wander';
 
 export type ReinforcementAdapterConfig = {
   /** Policy server URL. Empty (the default) sends nothing and NPCs use the scripted fallback. */
@@ -47,11 +48,8 @@ function fallback(instance: NPCInstance, observation: NPCObservation): NPCBrainD
     }] };
   }
   if (behavior.mode === 'wander') {
-    const seed = observation.timestamp * 1.7 + observation.instanceId.length * 13.37;
-    const angle = (Math.sin(seed) * 0.5 + 0.5) * Math.PI * 2;
-    const distance = Math.max(0.5, behavior.wanderRadius ?? 4) * (0.35 + (Math.cos(seed * 0.73) * 0.5 + 0.5) * 0.65);
     return { source: 'reinforcement', reason: 'fallback wander', actions: [{
-      type: 'moveTo', target: [observation.position[0] + Math.cos(angle) * distance, observation.position[1], observation.position[2] + Math.sin(angle) * distance], speed: behavior.speed,
+      type: 'moveTo', target: createWanderTarget(observation, behavior.wanderRadius ?? 4), speed: behavior.speed,
       ...(behavior.moveAnimation ? { animationId: behavior.moveAnimation } : {}),
     }] };
   }

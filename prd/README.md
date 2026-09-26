@@ -23,14 +23,12 @@
 
 근거는 2026-09-26 코드 점검이다. 표 순서가 착수 순서다.
 
-공통 원인은 세 가지다.
+공통 원인은 두 가지다.
 - 관측, 결정, 말하기 같은 일시 상태를 저장 대상인 `instances`에 쓴다.
-- 같은 계산(배회 목표)이 세 벌 있다.
 - 렌더 경로가 두 벌 있다.
 
 | ID | 내용 | 근거 | 완료 기준 |
 |---|---|---|---|
-| N-2 | 배회하는 NPC들이 같은 방향으로 함께 움직임 | `createWanderTarget`의 seed는 `timestamp`와 `instanceId.length`만 쓰는데, id가 UUID라 길이가 모두 같다. 게다가 모든 NPC가 `nextDecision: 0`으로 시작하고 간격도 같아 같은 tick에 결정한다. 목표를 현재 위치 기준으로 잡아 기준점 없이 멀어진다. 같은 계산이 `npc/core/brain.ts`, `npc/core/blueprint.ts`, `npc/core/reinforcement.ts` 세 곳에 있다 | 세 곳을 한 함수로 합친다. 목표는 기준점(`behavior.home`, 없으면 처음 위치) 주변으로 잡는다. 테스트: 길이가 같은 id 10개가 같은 tick에 서로 다른 목표를 받는다. NPC 30명의 결정이 한 fixed tick에 4명을 넘지 않는다. 결정 1,000회 뒤에도 기준점에서 `wanderRadius` 안에 있다 |
 | N-4 | 아무것도 안 하는 NPC가 결정 tick마다 store와 세이브를 바꿈 | 결정할 행동이 없어도 `NPCSimulation.update`가 모든 NPC를 `applyNPCDecisions`로 넘긴다. 이 함수가 `lastObservation`을 쓰면서 immer가 `instances` Map을 통째로 복사하고, 그 결과 `npc/plugin.ts`의 save revision이 바뀌어 autosave가 카탈로그까지 직렬화한다. `snapshotInstances`도 결정 tick마다 전체를 복사한다 | 관측·결정 기록은 `NPCSimulation` 안에 두고 store와 세이브에서 뺀다. 테스트: idle NPC 30명을 60초 돌리는 동안 npcStore 알림 0, save revision 불변 |
 | N-5 | 경로를 찾을 때마다 격자 전체를 새로 만듦 | `navigation/NavigationSystem.ts`의 `findPath`는 호출마다 `createTraversalGrid`로 격자 전체를 다시 만들고, 칸마다 좌표 배열을 할당한다. 쿼리당 반지름 없이 0.14ms, 반지름 0.24면 1.51ms다 | 격자를 footprint별로 캐시하고 격자가 바뀌면 무효화한다. 막힌 칸이 없으면 건너뛴다. 테스트: 같은 footprint로 100회 쿼리해도 격자 생성은 1회이고, 칸을 바꾸면 1회 더 생성한다 |
 | N-3 | 말하기가 화면에 나오지 않고 저장 데이터만 키움 | `npc/stores/npcActions.ts`의 `applyNPCAction`에서 `speak`는 `instance.events`에 핸들러를 붙이기만 하고 지우지 않는다. 이 이벤트를 실행하는 곳도 말풍선도 없다. `events`는 세이브에 들어가고, 바뀔 때마다 NPC가 다시 렌더링된다 | 말하기는 `NPCSimulation`의 일시 상태(`getSpeech`)로 옮긴다. 테스트: 결정 100회 뒤 `events` 길이가 그대로이고, 저장본에 말하기가 없으며, `duration`이 지나면 말하기가 사라진다 |

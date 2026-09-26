@@ -41,14 +41,16 @@ test('distance budget crosses multiple 3D waypoints in one tick', async () => {
   } finally { await runtime.dispose(); }
 });
 
-test('one observation publication handles a whole decision batch', async () => {
+test('each decision tick publishes its whole batch of observations once', async () => {
   const runtime = createGaesupRuntime(); await runtime.setup();
   try {
     for (let i = 0; i < 100; i++) runtime.npcStore.getState().addInstance({ ...npc(String(i)), brain: { mode: 'scripted' } });
-    const notify = jest.fn(); const off = runtime.npcStore.subscribe(notify);
-    runtime.clockLoop.clock.stepTicks(60);
-    expect(notify).toHaveBeenCalledTimes(1);
-    expect(Array.from(runtime.npcStore.getState().instances.values()).every(instance => instance.lastObservation?.timestamp === 1 / 60)).toBe(true);
+    const ticks: number[] = []; const off = runtime.npcStore.subscribe(() => ticks.push(runtime.clockLoop.clock.tick));
+    // A 1 s interval puts every first decision within 62 ticks, spread over them rather than on one.
+    runtime.clockLoop.clock.stepTicks(62);
+    expect(Array.from(runtime.npcStore.getState().instances.values()).every(instance => instance.lastObservation)).toBe(true);
+    expect(new Set(ticks).size).toBe(ticks.length);
+    expect(ticks.length).toBeGreaterThan(30);
     off();
   } finally { await runtime.dispose(); }
 });
@@ -65,9 +67,12 @@ test('AI uses live positions at a fixed cadence even when its memory changes', a
     runtime.npcStore.getState().setNavigation('one', [[20, 0, 0]], 3);
     runtime.clockLoop.clock.stepTicks(60);
     expect(observations).toHaveLength(2);
-    expect(observations[0]!.position[0]).toBeCloseTo(0.05);
-    expect(observations[1]!.position[0]).toBeCloseTo(1.55);
-    expect(observations[0]!.position[0]).toBeCloseTo(0.05); // No alias to the moving pose buffer.
+    const [first, second] = observations as [NPCObservation, NPCObservation];
+    const firstX = first.position[0];
+    expect(second.timestamp - first.timestamp).toBeCloseTo(0.5);
+    expect(firstX).toBeCloseTo(first.timestamp * 3);
+    expect(second.position[0] - firstX).toBeCloseTo(1.5);
+    expect(first.position[0]).toBe(firstX); // No alias to the moving pose buffer.
   } finally { await runtime.dispose(); }
 });
 
@@ -109,7 +114,7 @@ test('save restore blocks reentrant simulation and resumes the restored live pos
   } finally { off(); await runtime.dispose(); }
 });
 
-test('a decision tick with actions for many NPCs is one store update', async () => {
+test('each decision tick with actions for many NPCs is one store update', async () => {
   const runtime = createGaesupRuntime(); await runtime.setup();
   runtime.npcBrainAdapters.register('scripted', 'look', ({ observation }) => ({
     source: 'scripted',
@@ -119,10 +124,10 @@ test('a decision tick with actions for many NPCs is one store update', async () 
     for (let i = 0; i < 50; i++) {
       runtime.npcStore.getState().addInstance({ ...npc(String(i)), brain: { mode: 'scripted', policyId: 'look' } });
     }
-    const notify = jest.fn(); const off = runtime.npcStore.subscribe(notify);
-    runtime.clockLoop.clock.stepTicks(60);
+    const ticks: number[] = []; const off = runtime.npcStore.subscribe(() => ticks.push(runtime.clockLoop.clock.tick));
+    runtime.clockLoop.clock.stepTicks(62);
     off();
-    expect(notify).toHaveBeenCalledTimes(1);
+    expect(new Set(ticks).size).toBe(ticks.length);
     const instance = runtime.npcStore.getState().instances.get('7')!;
     expect(instance.lastDecision?.actions).toHaveLength(2);
     expect(instance.rotation[1]).toBeCloseTo(Math.PI / 4);
@@ -193,6 +198,47 @@ describe('NPC routes on the navigation grid', () => {
       runtime.clockLoop.clock.stepTicks(60);
       expect(at()).toEqual([0, 0, 0]);
       expect(runtime.npcStore.getState().instances.get('one')!.navigation?.state).toBe('arrived');
+    } finally { await runtime.dispose(); }
+  });
+});
+
+describe('NPC wandering', () => {
+  test('30 NPCs sharing a decision interval spread their decisions across ticks', async () => {
+    const runtime = createGaesupRuntime(); await runtime.setup();
+    const perTick = new Map<number, number>();
+    runtime.npcBrainAdapters.register('scripted', 'count', ({ observation }) => {
+      perTick.set(observation.timestamp, (perTick.get(observation.timestamp) ?? 0) + 1);
+      return undefined;
+    });
+    try {
+      for (let i = 0; i < 30; i++) runtime.npcStore.getState().addInstance({ ...npc(`npc-${i}`), brain: { mode: 'scripted', policyId: 'count' } });
+      runtime.clockLoop.clock.stepTicks(120);
+      expect([...perTick.values()].reduce((sum, count) => sum + count, 0)).toBeGreaterThanOrEqual(30);
+      expect(Math.max(...perTick.values())).toBeLessThanOrEqual(4);
+    } finally { await runtime.dispose(); }
+  });
+
+  test.each([
+    ['its home', [8, 0, -4] as [number, number, number]],
+    ['where it was placed', undefined],
+  ])('a wandering NPC stays around %s after 1,000 decisions', async (_, home) => {
+    const runtime = createGaesupRuntime(); await runtime.setup();
+    const center = home ?? [0, 0, 0];
+    try {
+      runtime.npcStore.getState().addInstance({
+        ...npc(), brain: { mode: 'scripted' },
+        behavior: { mode: 'wander', speed: 30, wanderRadius: 3, waitSeconds: 0.5, ...(home ? { home } : {}) },
+      });
+      // Walking in from the placement point takes under a second at this speed.
+      runtime.clockLoop.clock.stepTicks(120);
+      let farthest = 0;
+      for (let decision = 0; decision < 1000; decision++) {
+        runtime.clockLoop.clock.stepTicks(30);
+        const [x, , z] = runtime.npcSimulation.getPose('one')!.position;
+        farthest = Math.max(farthest, Math.hypot(x - center[0], z - center[2]));
+      }
+      expect(farthest).toBeLessThanOrEqual(3 + 1e-6);
+      expect(farthest).toBeGreaterThan(1);
     } finally { await runtime.dispose(); }
   });
 });

@@ -3,6 +3,7 @@ import { Euler, Quaternion } from 'three';
 import type { NPCBrainConditionStores } from './blueprint';
 import { resolveNPCBrainDecision, type NPCBrainAdapterRegistry } from './brain';
 import { NPCPerceptionIndex } from './NPCPerceptionIndex';
+import { npcDecisionPhase } from './wander';
 import type { NavigationSystem } from '../../navigation/NavigationSystem';
 import { createNPCNavigationRoute } from '../../navigation/NPCNavigationAdapter';
 import type { AnimationClockLoop } from '../../simulation/AnimationClockLoop';
@@ -14,6 +15,9 @@ type Point = [number, number, number];
 type Pose = {
   position: Point; rotation: Point;
   sourcePosition: Point; sourceRotation: Point;
+  /** Where the NPC was placed; wandering without `behavior.home` stays around it. */
+  home: Point;
+  /** Next decision time; negative until the first decision is placed at the NPC's phase of its interval. */
   nextDecision: number;
   /** Kinematic bodies keep their last target, so they are written only after the pose changes. */
   moved: boolean;
@@ -107,11 +111,11 @@ export class NPCSimulation {
     for (const instance of instances.values()) {
       let pose = this.poses.get(instance.id);
       if (!pose) {
-        pose = { position: [...instance.position], rotation: [...instance.rotation], sourcePosition: instance.position, sourceRotation: instance.rotation, nextDecision: 0, moved: true };
+        pose = { position: [...instance.position], rotation: [...instance.rotation], sourcePosition: instance.position, sourceRotation: instance.rotation, home: [...instance.position], nextDecision: -1, moved: true };
         this.poses.set(instance.id, pose);
       }
       if (pose.sourcePosition !== instance.position) {
-        pose.position = [...instance.position]; pose.sourcePosition = instance.position; pose.nextDecision = 0; pose.moved = true;
+        pose.position = [...instance.position]; pose.home = [...instance.position]; pose.sourcePosition = instance.position; pose.nextDecision = -1; pose.moved = true;
         this.routes.delete(instance.id);
       }
       if (pose.sourceRotation !== instance.rotation) { pose.rotation = [...instance.rotation]; pose.sourceRotation = instance.rotation; pose.moved = true; }
@@ -182,10 +186,15 @@ export class NPCSimulation {
     const entries: NPCDecisionEntry[] = [];
     for (const instance of this.store.getState().instances.values()) {
       const pose = this.poses.get(instance.id);
-      if (!pose || (instance.brain?.mode ?? 'none') === 'none' || tick.elapsedSeconds + 1e-9 < pose.nextDecision) continue;
-      pose.nextDecision = tick.elapsedSeconds + Math.max(0.5, instance.behavior?.waitSeconds ?? 1);
+      if (!pose || (instance.brain?.mode ?? 'none') === 'none') continue;
+      const interval = Math.max(0.5, instance.behavior?.waitSeconds ?? 1);
+      if (pose.nextDecision < 0) pose.nextDecision = tick.elapsedSeconds + interval * npcDecisionPhase(instance.id);
+      if (tick.elapsedSeconds + 1e-9 < pose.nextDecision) continue;
+      pose.nextDecision = tick.elapsedSeconds + interval;
       if (!observed) { observed = this.snapshotInstances(); this.perception.refresh(observed); }
-      entries.push({ instanceId: instance.id, observation: this.perception.observe(observed.get(instance.id)!, tick.elapsedSeconds) });
+      const observation = this.perception.observe(observed.get(instance.id)!, tick.elapsedSeconds);
+      observation.home = instance.behavior?.home ?? pose.home;
+      entries.push({ instanceId: instance.id, observation });
     }
     if (!observed) return;
     for (const entry of entries) {

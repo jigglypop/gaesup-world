@@ -13,6 +13,7 @@ import type {
   NPCObservation,
   NPCPerceptionConfig,
 } from '../types';
+import { createWanderTarget } from './wander';
 
 const MAX_BLUEPRINT_STEPS = 32;
 /** Read-only condition sources. Structural so quest and friendship stores satisfy it without Layer 1 importing them. */
@@ -195,23 +196,11 @@ function resolveTarget(target: NPCBrainBlueprintTarget, observation: NPCObservat
   }
 }
 
-function createWanderTarget(observation: NPCObservation, radius: number): [number, number, number] {
-  const seed = observation.timestamp * 1.7 + observation.instanceId.length * 13.37;
-  const angle = (Math.sin(seed) * 0.5 + 0.5) * Math.PI * 2;
-  const distance = radius * (0.35 + (Math.cos(seed * 0.73) * 0.5 + 0.5) * 0.65);
-  return [
-    observation.position[0] + Math.cos(angle) * distance,
-    observation.position[1],
-    observation.position[2] + Math.sin(angle) * distance,
-  ];
-}
-
 function compileAction(node: Extract<NPCBrainBlueprintNode, { type: 'action' }>, observation: NPCObservation): NPCAction | undefined {
   if (node.action.type === 'wander') {
-    const radius = Math.max(0.5, node.action.radius ?? 4);
     return {
       type: 'moveTo',
-      target: createWanderTarget(observation, radius),
+      target: createWanderTarget(observation, node.action.radius ?? 4),
       ...(node.action.speed !== undefined ? { speed: node.action.speed } : {}),
     };
   }

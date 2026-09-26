@@ -81,6 +81,8 @@ export interface NPCBehaviorConfig {
   loop?: boolean;
   waypoints?: [number, number, number][];
   wanderRadius?: number;
+  /** Wandering stays within `wanderRadius` of this point; without it, of where the NPC was placed. */
+  home?: [number, number, number];
   waitSeconds?: number;
   idleAnimation?: string;
   moveAnimation?: string;
@@ -178,6 +180,8 @@ export interface NPCObservation {
   brainMode: NPCBrainMode;
   perceptionEnabled: boolean;
   perceived: NPCObservationTarget[];
+  /** The point wandering stays around. */
+  home?: [number, number, number];
   memory?: Record<string, RuntimeValue>;
 }
 

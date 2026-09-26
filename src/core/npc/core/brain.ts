@@ -9,6 +9,7 @@ import type {
 } from '../types';
 import { compileNPCBrainBlueprint, getNPCBrainBlueprint, type NPCBrainConditionStores } from './blueprint';
 import { attachReinforcementAdapter, legacyReinforcementClient } from './reinforcement';
+import { createWanderTarget } from './wander';
 
 type AdapterKey = `${NPCBrainMode}:${string}`;
 
@@ -21,17 +22,6 @@ function getDistanceSquared(a: [number, number, number], b: [number, number, num
   const dy = a[1] - b[1];
   const dz = a[2] - b[2];
   return dx * dx + dy * dy + dz * dz;
-}
-
-function createWanderTarget(observation: NPCObservation, radius: number): [number, number, number] {
-  const seed = observation.timestamp * 1.7 + observation.instanceId.length * 13.37;
-  const angle = (Math.sin(seed) * 0.5 + 0.5) * Math.PI * 2;
-  const distance = radius * (0.35 + (Math.cos(seed * 0.73) * 0.5 + 0.5) * 0.65);
-  return [
-    observation.position[0] + Math.cos(angle) * distance,
-    observation.position[1],
-    observation.position[2] + Math.sin(angle) * distance,
-  ];
 }
 
 export type NPCBrainAdapterContext = {
@@ -166,13 +156,12 @@ function resolveScriptedDecision(instance: NPCInstance, observation: NPCObservat
   }
 
   if (behavior.mode === 'wander') {
-    const radius = Math.max(0.5, behavior.wanderRadius ?? 4);
     return {
       source: 'scripted',
       reason: 'wander behavior',
       actions: [{
         type: 'moveTo',
-        target: createWanderTarget(observation, radius),
+        target: createWanderTarget(observation, behavior.wanderRadius ?? 4),
         speed: behavior.speed,
         ...(behavior.moveAnimation ? { animationId: behavior.moveAnimation } : {}),
       }],
