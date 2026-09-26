@@ -284,7 +284,6 @@ interface NPCStore extends NPCSystemState {
   setSelectedInstance: (id: string) => void;
   setSelectedClothingSet: (id: string) => void;
   setSelectedClothingCategory: (id: string) => void;
-  setEditMode: (editMode: boolean) => void;
   
   // Helper functions
   createInstanceFromTemplate: (templateId: string, position: [number, number, number]) => void;
@@ -361,7 +360,6 @@ function buildNPCStore(legacyBlueprintRegistry = false, invalidateBrainRequests:
     clothingCategories: new Map(),
     animations: new Map(),
     brainBlueprints: new Map(),
-    editMode: false,
     previewAccessories: {},
 
     initializeDefaults: () => set((state) => {
@@ -776,10 +774,6 @@ function buildNPCStore(legacyBlueprintRegistry = false, invalidateBrainRequests:
       } else {
         delete state.selectedClothingSetId;
       }
-    }),
-
-    setEditMode: (editMode) => set((state) => {
-      state.editMode = editMode;
     }),
 
     createInstanceFromTemplate: (templateId, position) => {

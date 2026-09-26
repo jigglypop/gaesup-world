@@ -25,7 +25,6 @@
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| SE-5b | `editorSlice.playMode`, `ScriptPlayModeSource`, `buildingStore` editMode, `npcStore.editMode`, `createEditorPlayModeController`를 모드 원본 하나로. 나머지는 이 값을 읽는 adapter | 모드 원본 1, 기존 테스트 통과 |
 | SE-5c | 플레이어가 없을 때 "플레이어"가 다른 엔티티로 넘어가지 않게(`MotionBridge.getPlayerEntityId` fallback 제거, 비활성 엔티티 등록 제외) | 편집 모드 중 플레이어 조회 null 테스트 |
 
 ### SE-6 중복 구현 정리

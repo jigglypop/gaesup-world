@@ -23,7 +23,6 @@ export type NPCSerializedState = {
   clothingCategories: ClothingCategory[];
   animations: NPCAnimation[];
   brainBlueprints: NPCBrainBlueprint[];
-  editMode: boolean;
 };
 
 export interface NPCPluginOptions {
@@ -48,7 +47,6 @@ export function serializeNPCState(store: NPCStoreApi = useNPCStore): NPCSerializ
     clothingCategories: Array.from(state.clothingCategories.values(), clonePlainData),
     animations: Array.from(state.animations.values(), clonePlainData),
     brainBlueprints: Array.from(state.brainBlueprints.values(), clonePlainData),
-    editMode: state.editMode,
   };
 }
 
@@ -67,8 +65,8 @@ function prepareCollection<T extends { id: string }>(entries: T[]): Map<string, 
 function prepareNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined, store: NPCStoreApi = useNPCStore): () => void {
   if (data === null || data === undefined) return () => {};
   const snapshot = Array.isArray(data) ? { instances: data } : data;
-  if (typeof snapshot !== 'object' || (snapshot.version !== undefined && snapshot.version !== 1)
-    || (snapshot.editMode !== undefined && typeof snapshot.editMode !== 'boolean')) {
+  // Older saves carry an `editMode` flag; the building edit mode is the one source now, so it is not read.
+  if (typeof snapshot !== 'object' || (snapshot.version !== undefined && snapshot.version !== 1)) {
     throw new TypeError('Invalid NPC snapshot');
   }
   const prepared: Partial<NPCSystemState> = {
@@ -79,7 +77,6 @@ function prepareNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | nul
     ...(snapshot.animations === undefined ? {} : { animations: prepareCollection(snapshot.animations) }),
     ...(snapshot.brainBlueprints === undefined ? {} : { brainBlueprints: prepareCollection(snapshot.brainBlueprints) }),
     ...(snapshot.instances === undefined ? {} : { instances: prepareCollection(snapshot.instances) }),
-    ...(snapshot.editMode === undefined ? {} : { editMode: snapshot.editMode }),
   };
   for (const instance of prepared.instances?.values() ?? []) {
     if (typeof instance.templateId !== 'string' || !instance.templateId.trim() || typeof instance.name !== 'string'
@@ -119,12 +116,12 @@ export function createNPCPlugin(options: NPCPluginOptions = {}): GaesupPlugin {
         revision: createIdentityRevision(() => {
           const state = store.getState();
           return [state.templates, state.instances, state.categories, state.clothingSets, state.clothingCategories,
-            state.animations, state.brainBlueprints, state.editMode, findNPCSimulation(store)?.poseRevision ?? 0];
+            state.animations, state.brainBlueprints, findNPCSimulation(store)?.poseRevision ?? 0];
         }),
         // The saved fields as constructed; the simulation drops poses of instances that leave the store.
         reset: () => {
-          const { templates, instances, categories, clothingSets, clothingCategories, animations, brainBlueprints, editMode } = store.getInitialState();
-          store.setState({ templates, instances, categories, clothingSets, clothingCategories, animations, brainBlueprints, editMode, initialized: false });
+          const { templates, instances, categories, clothingSets, clothingCategories, animations, brainBlueprints } = store.getInitialState();
+          store.setState({ templates, instances, categories, clothingSets, clothingCategories, animations, brainBlueprints, initialized: false });
         },
       }, pluginId);
       ctx.services.register(storeServiceId, {

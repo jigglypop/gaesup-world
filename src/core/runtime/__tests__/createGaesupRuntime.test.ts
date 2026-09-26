@@ -126,7 +126,7 @@ describe('createGaesupRuntime', () => {
   });
 
   it.each([
-    { version: 2 }, { editMode: 'yes' }, { instances: {} },
+    { version: 2 }, { instances: {} },
     { animations: [{ id: 'same' }, { id: 'same' }] },
     { instances: [{ id: 'npc', templateId: 'custom', name: '주민', position: [0, NaN, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }] },
   ])('rejects malformed NPC snapshots before applying wallet: %j', async (npc) => {

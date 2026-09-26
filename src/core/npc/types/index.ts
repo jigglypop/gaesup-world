@@ -272,5 +272,4 @@ export interface NPCSystemState {
   selectedClothingSetId?: string;
   selectedClothingCategoryId?: string;
   selectedInstanceId?: string;
-  editMode: boolean;
 } 

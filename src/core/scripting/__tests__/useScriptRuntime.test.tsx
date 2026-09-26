@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 
+import { createEditorPlayModeController } from '../../editor/playMode';
 import { frameScheduler } from '../../runtime/frame';
 import { SCENE_COMPONENT_TYPES } from '../../scene-object/components';
 import { createSceneDocumentController } from '../../scene-object/controller';
@@ -75,6 +76,28 @@ describe('useScriptRuntime play mode', () => {
 
       act(() => playMode.set('edit'));
       expect(calls).toEqual(['start', 'update', 'destroy']);
+      expect(view.result.current.getInstanceCount()).toBe(0);
+      view.unmount();
+    } finally {
+      unregister();
+    }
+  });
+
+  test('the editor play mode controller is the one source scripts follow', async () => {
+    const unregister = registerScript(defineScript({ id: 'test.editor-play', props: {}, create: () => ({}) }));
+    const controller = createSceneDocumentController(createSceneDocument({
+      id: 'scene',
+      objects: [{ id: 'target', name: 'Target', components: [createSceneComponent({
+        id: 'script', type: SCENE_COMPONENT_TYPES.script, data: { scriptId: 'test.editor-play', props: {} },
+      })] }],
+    }));
+    const playMode = createEditorPlayModeController({ createSnapshot: () => null, restoreSnapshot: () => undefined });
+    try {
+      const view = renderHook(() => useScriptRuntime({ controller, playMode }));
+      expect(view.result.current.getInstanceCount()).toBe(0);
+      await act(() => playMode.enter());
+      expect(view.result.current.getInstanceCount()).toBe(1);
+      await act(() => playMode.exit());
       expect(view.result.current.getInstanceCount()).toBe(0);
       view.unmount();
     } finally {
