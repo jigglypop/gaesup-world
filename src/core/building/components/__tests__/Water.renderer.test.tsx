@@ -3,6 +3,7 @@ import { type ReactNode } from 'react';
 import { useThree } from '@react-three/fiber';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import * as THREE from 'three';
+import { Water } from 'three-stdlib';
 
 import { createToonWaterMaterial } from '../../../rendering/tsl/toonWater';
 import Ocean from '../mesh/water';
@@ -83,4 +84,14 @@ test('a removed suspended surface does not create a material when loading finish
   await renderer.unmount();
   expect(dispose).toHaveBeenCalledTimes(1);
   factory.mockImplementation(createMaterial);
+});
+
+test('WebGPU draws realistic water with the node-safe fallback, never the WebGL-only mirror Water', async () => {
+  const renderer = await ReactThreeTestRenderer.create(<RendererMode nodes><Ocean toon={false} /></RendererMode>);
+  await renderer.advanceFrames(3, 1 / 30);
+  expect(renderer.scene.findAll((node) => node.instance instanceof Water)).toHaveLength(0);
+  const surfaces = renderer.scene.findAll((node) => node.instance instanceof THREE.Mesh
+    && node.instance.material instanceof THREE.MeshPhysicalMaterial && node.instance.material.normalMap !== null);
+  expect(surfaces.map((node) => (node.instance as THREE.Mesh).visible)).toEqual([true]);
+  await renderer.unmount();
 });

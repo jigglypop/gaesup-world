@@ -111,6 +111,8 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
   extendWater();
   const useToon = toon ?? getDefaultToonMode();
   const useNodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
+  // three-stdlib's mirror Water renders through WebGL-only APIs; node renderers draw the fallback surface instead.
+  const useMirrorWater = !useToon && !useNodes;
   const waterRef = useRef<Water | null>(null);
   const toonMatRef = useRef<THREE.ShaderMaterial | null>(null);
   const toonMeshRef = useRef<THREE.Mesh | null>(null);
@@ -258,7 +260,9 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
   }, [shallowMaterial]);
 
   useSharedFrame(WATER_FRAME, (delta, elapsedSeconds, three) => {
-    const target = useToon ? (toonMeshRef.current as THREE.Object3D | null) : (waterRef.current as THREE.Object3D | null);
+    const target = useToon
+      ? (toonMeshRef.current as THREE.Object3D | null)
+      : ((waterRef.current ?? fallbackMeshRef.current) as THREE.Object3D | null);
     if (!target) return;
 
     const water = waterRef.current as THREE.Object3D | null;
@@ -302,7 +306,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
       const u = toonMatRef.current?.uniforms?.['uTime'];
       if (u) u.value = elapsedSeconds;
     } else {
-      const useHighQualityWater = highQualityRef.current;
+      const useHighQualityWater = useMirrorWater && highQualityRef.current;
       if (water) water.visible = useHighQualityWater;
       if (fallback) fallback.visible = !useHighQualityWater;
       if (!useHighQualityWater) return;
@@ -381,20 +385,22 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
         </Suspense>
       ) : (
         <>
-          <water
-            ref={waterRef}
-            args={[geom, config]}
-            rotation-x={-Math.PI / 2}
-            position={[waterOffsetX, 0.1, waterOffsetZ]}
-            frustumCulled
-          />
+          {useMirrorWater && (
+            <water
+              ref={waterRef}
+              args={[geom, config]}
+              rotation-x={-Math.PI / 2}
+              position={[waterOffsetX, 0.1, waterOffsetZ]}
+              frustumCulled
+            />
+          )}
           <mesh
             ref={fallbackMeshRef}
             geometry={geom}
             material={fallbackMaterial}
             rotation-x={-Math.PI / 2}
             position={[waterOffsetX, 0.095, waterOffsetZ]}
-            visible={false}
+            visible={!useMirrorWater}
             frustumCulled
           />
         </>
