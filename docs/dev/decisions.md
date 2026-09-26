@@ -80,6 +80,20 @@
 ### 세션 전 작업 커밋 (`191699a2`)
 - 작업 트리에 있던 `IdleFrameRate`(입력이 없으면 낮은 fps로 그림)와 `NPCSimulation`의 `setNavigation`·`face`·`nextEventAt`을 테스트가 통과하는 상태로 커밋했다. `IdleFrameRate`는 아직 월드에 기본 장착되지 않는다(PERF).
 
+### 초켓몬스터 기법 이식 범위 (CK, 2026-09-27)
+- 배경: 사용자가 만든 게임 [choketmonster](https://github.com/jigglypop/choketmonster)는 gw 1.1.0에서 `GaesupWorld`, `createCameraPlugin`, `createGaesupRuntime`, `GrassDriver`·`useGrassManager`만 쓰고 렌더러·그림자·LOD·지형·잔디·조명·UI를 앱 코드로 직접 만들었다. 같은 인물 GLB를 쓰는 minihome이 더 느리고 거칠어 보인 이유가 이것이다. 효과가 확인된 기법을 코어로 옮긴다(PRD CK-1~CK-12). 참조 사본은 저장소 루트 `chocketmon/`(git·lint 제외)이고 스크립트와 커밋 기록은 GitHub 저장소에 있다.
+- 조사 근거(minihome, RTX 50 WebGPU, 1600×900@1.5, high): 프레임 4.23ms, draw 219, 그중 해 그림자(2048px cascade 4장을 매 프레임)가 draw 159개·프레임의 70%. `WebGPURenderer`는 draw 하나에 CPU 18–22µs라 draw 수가 프레임 시간을 정한다. ck는 512px 한 장을 초당 15번만 갱신한다.
+- 옮기는 것: 그림자 갱신 주기와 근거리 전용 캐스터(CK-1), 하늘 IBL·수입 재질 정규화(ck `shadeFigure`)·접지 그림자(CK-2), 글래스 UI·로딩 진행·Pretendard 자체 제공(CK-3), clone 해제·모델 캐시 한 벌·장치 손실 복구(CK-4), 월드 좌표 지면·경계 페더·절차 흙길(CK-5), 바람 잔디와 잔디 예산(CK-6), 물가 필드·물 LOD(CK-7), 반복 GLB 인스턴싱·산포(CK-8), NPC 연출(T자 복귀 제거, 전환 규칙, 제스처, 시선, 가시 상한)(CK-9), 적응형 DPR·GPU 시간(CK-10), 인물 에셋 도구(최적화 preset, UV dilation, idle 이식, 리그 검사, Tripo 생성)(CK-11), 실내 조명 구역(CK-12).
+- 빼는 것:
+  - 포켓몬 규칙·데이터·캠페인·전투·교배·랭크·교환, 커넥톰 두뇌, Rust 서버와 AWS 배포: 장르 로직이다.
+  - 종별 오토리그(`johto-rig.ts`), 절차 보행 클립, 발 접지, 종별 클립 등급: 포켓몬 모델 전용이다. 사람형 리깅은 CK-11의 Tripo가 오프라인으로 한다.
+  - 높이장 지형 청크 LOD·LRU·스커트: gw 월드는 4m 타일 격자다. 연속 지형의 느낌은 타일 샘플러 위의 지면·물가·잔디 필드로 낸다(CK-5~7).
+  - ck 필드의 안개 제거와 시계 UI 제거: 게임 연출 선택이다. gw는 안개를 유지한다.
+  - `detailSurface`·`detailCanopy`, `normalizeStandardMaterial`의 바람·캐노피 옵션: ck에서도 호출하는 곳이 없다.
+  - 저장 중 렌더 정지, 0.1초 스냅샷 폴링: 앱 정책이고, 폴링은 ck 자체 PRD가 비용으로 지목했다.
+  - ck CSS 전체(254KB, 3D 위 배경 블러 32곳): 디자인 토큰과 구성만 가져온다.
+- 공개 API: 추가만 한다. 삭제가 필요해 보이는 것(물 `shore` prop, 잔디 `joints`·`bladeDiffuseUrl`·`bladeAlphaUrl`)은 동작을 대체해도 prop은 받아 둔다. 동작이 바뀌는 것(`GLTFAssetCache` LRU 보존, `MaterialManager` 기본 거칠기, 유리 기본값)은 CHANGELOG에 적는다.
+
 ## 보류하거나 되돌린 것
 
 - **GPU-1(WebGPU 전면)**: WebGL 전용 공개 export(`ColorGrade`, `LutOverlay`, `ToonOutlines`, `Outlined`, LUT 도우미)와 GLSL 경로 삭제를 사용자가 보류했다(2026-09-27). 다시 요청할 때까지 착수하지 않는다.
