@@ -25,7 +25,6 @@
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| SE-8a | `GaesupController`가 타입에 있는 prop을 모두 전달(animatorController, groundContactFilter, 충돌 콜백, name 등), `PhysicsEntity`의 `scale`·배열 rotation | prop 전달 계약 테스트 |
 | SE-8b | MotionBridge 명령: `turn` 구현, `move`는 설정값 사용, `jump`는 jumpForce 사용 | 명령 계약 테스트 |
 | SE-8c | `HttpAssetSource` 기본 fetcher, `useNetworkGroup`·`useNetworkMessage`·`createGroup` 동작 | 계약 테스트 |
 

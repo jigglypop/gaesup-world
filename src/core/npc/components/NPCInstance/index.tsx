@@ -134,8 +134,6 @@ const DEFAULT_NPC_VOLUME = {
   radius: 0.32,
   interactionRadius: 1.6,
 } as const;
-const UNIT_SCALE = [1, 1, 1] as const;
-
 /** The body capsule of a volume drawn at `scale`; the talk range stays in world meters. */
 function npcCapsule(volume: { height: number; radius: number; interactionRadius: number }, scale: readonly [number, number, number]) {
   const radius = volume.radius * Math.max(scale[0], scale[2]);
@@ -274,8 +272,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   const fullModelUrl = template.fullModelUrl || instance.metadata?.modelUrl;
 
   if (fullModelUrl) {
-    // PhysicsEntity draws the full model unscaled, so its capsule stays unscaled too.
-    const capsule = npcCapsule(volume, UNIT_SCALE);
+    const capsule = npcCapsule(volume, instance.scale);
     return (
       <PhysicsEntity
         ref={bindBody}
@@ -285,6 +282,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
         name={`npc-${instance.id}`}
         position={pose?.position ?? instance.position}
         rotation={pose?.rotation ?? instance.rotation}
+        scale={instance.scale}
         rigidbodyType={bodyType}
         colliderSize={{ height: capsule.height, radius: capsule.radius }}
         currentAnimation={instance.currentAnimation || 'idle'}

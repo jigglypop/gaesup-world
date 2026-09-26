@@ -34,6 +34,21 @@ const EMPTY_GLTF_DATA_URI =
     }),
   );
 
+const UNIT_SCALE: THREE.Vector3Tuple = [1, 1, 1];
+
+/** Bodies stay upright, so only the yaw of a Euler or `[x, y, z]` rotation turns them. */
+function yawOf(rotation: PhysicsEntityProps['rotation']): number {
+  if (rotation instanceof THREE.Euler) return rotation.y;
+  return Array.isArray(rotation) ? rotation[1] : 0;
+}
+
+/** The drawn model's scale; the derived collider follows it, an explicit `colliderSize` stays in world units. */
+function scaleOf(scale: PhysicsEntityProps['scale']): THREE.Vector3Tuple | undefined {
+  if (scale === undefined) return undefined;
+  if (typeof scale === 'number') return [scale, scale, scale];
+  return Array.isArray(scale) ? scale : [scale.x, scale.y, scale.z];
+}
+
 function resolveAnimationKey(
   actions: Record<string, THREE.AnimationAction | null>,
   requested: string,
@@ -135,7 +150,9 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     // Imported rigs may root at Group/Bone rather than Object3D. Keep the full
     // hierarchy mounted so every joint and animation track has a live target.
     const objectNode = clone;
-    const safeRotationY = props.rotation instanceof THREE.Euler ? props.rotation.y : 0;
+    const rotationY = yawOf(props.rotation);
+    const scale = scaleOf(props.scale);
+    const [scaleX, scaleY, scaleZ] = scale ?? UNIT_SCALE;
     const outerGroupProps = props.outerGroupRef ? { ref: props.outerGroupRef } : {};
     const innerGroupProps = props.innerGroupRef ? { ref: props.innerGroupRef } : {};
     const rigidBodyBehavior = props.isActive
@@ -151,19 +168,19 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
           y: halfHeight + radius,
         };
       }
-      const width = Math.max(size.x, 0.1);
-      const depth = Math.max(size.z, 0.1);
+      const width = Math.max(size.x * scaleX, 0.1);
+      const depth = Math.max(size.z * scaleZ, 0.1);
       const bodyRadius =
         props.componentType === 'character'
           ? Math.max(0.18, Math.min(width, depth) * 0.35)
           : Math.max(0.2, width * 1.2);
-      const bodyHalfHeight = Math.max(0.05, size.y * 0.5 - bodyRadius);
+      const bodyHalfHeight = Math.max(0.05, size.y * scaleY * 0.5 - bodyRadius);
       return {
         halfHeight: bodyHalfHeight,
         radius: bodyRadius,
         y: bodyHalfHeight + bodyRadius,
       };
-    }, [props.colliderSize, props.componentType, size.x, size.y, size.z]);
+    }, [props.colliderSize, props.componentType, size.x, size.y, size.z, scaleX, scaleY, scaleZ]);
 
     useEffect(() => {
       if (!props.currentAnimation) return;
@@ -185,7 +202,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
           ref={rigidBodyRef}
           {...(props.name ? { name: props.name } : {})}
           position={props.position}
-          rotation={euler().set(0, safeRotationY, 0)}
+          rotation={euler().set(0, rotationY, 0)}
           userData={props.userData}
           type={props.rigidbodyType || (props.isActive ? 'dynamic' : 'fixed')}
           {...(props.sensor !== undefined ? { sensor: props.sensor } : {})}
@@ -202,7 +219,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
             />
           )}
           {props.colliderChildren}
-          <group ref={interpolatedVisual}>
+          <group ref={interpolatedVisual} {...(scale ? { scale } : {})}>
           <InnerGroupRef
             animationRef={animationRef}
             nodes={nodes}

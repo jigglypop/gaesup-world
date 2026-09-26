@@ -36,12 +36,22 @@ export function EntityController({ props, children }: EntityControllerProps) {
   if (mode.type === 'airplane' && !urls.airplaneUrl) return null;
   const { canRide, isRiding } = gameStates;
   const getEntityProps = () => {
-    const rigidBodyRef = props.rigidBodyRef ?? refs.rigidBodyRef;
-    const outerGroupRef = props.outerGroupRef ?? refs.outerGroupRef;
-    const innerGroupRef = props.innerGroupRef ?? refs.innerGroupRef;
-    const colliderRef = props.colliderRef ?? refs.colliderRef;
+    // Every prop the caller set reaches the entity; the controller owns activation, riding state and model URLs.
+    const {
+      enableKeyboard: _enableKeyboard,
+      rigidBodyRef = refs.rigidBodyRef,
+      outerGroupRef = refs.outerGroupRef,
+      innerGroupRef = refs.innerGroupRef,
+      colliderRef = refs.colliderRef,
+      parts,
+      baseColor,
+      excludeBaseNodes,
+      ...passThrough
+    } = props;
+    void _enableKeyboard;
 
     const baseProps = {
+      ...passThrough,
       isActive: true,
       componentType: mode.type,
       enableRiding: canRide,
@@ -51,29 +61,11 @@ export function EntityController({ props, children }: EntityControllerProps) {
       outerGroupRef,
       innerGroupRef,
       colliderRef,
-      parts: (props.parts || [])
+      parts: (parts || [])
         .filter((part): part is { url: string; color?: string } => !!part.url)
         .map((part) => ({ ...part, url: part.url })),
-      ...(props.onAnimate ? { onAnimate: props.onAnimate } : {}),
-      ...(props.onFrame ? { onFrame: props.onFrame } : {}),
-      ...(props.onReady ? { onReady: props.onReady } : {}),
-      ...(props.onDestroy ? { onDestroy: props.onDestroy } : {}),
-      ...(props.onDestory ? { onDestory: props.onDestory } : {}),
-      ...(typeof props.baseColor === 'string' && props.baseColor.trim().length > 0
-        ? { baseColor: props.baseColor }
-        : {}),
-      ...(Array.isArray(props.excludeBaseNodes) && props.excludeBaseNodes.length > 0
-        ? { excludeBaseNodes: props.excludeBaseNodes }
-        : {}),
-      ...(props.rigidBodyProps ? { rigidBodyProps: props.rigidBodyProps } : {}),
-      ...(props.controllerOptions ? { controllerOptions: props.controllerOptions } : {}),
-      ...(props.groundRay ? { groundRay: props.groundRay } : {}),
-      ...(props.colliderSize ? { colliderSize: props.colliderSize } : {}),
-      ...(props.position ? { position: props.position } : {}),
-      ...(props.rotation ? { rotation: props.rotation } : {}),
-      ...(props.scale ? { scale: props.scale } : {}),
-      ...(props.modelHierarchy !== undefined ? { modelHierarchy: props.modelHierarchy } : {}),
-      ...(props.modelYawOffset !== undefined ? { modelYawOffset: props.modelYawOffset } : {}),
+      ...(typeof baseColor === 'string' && baseColor.trim().length > 0 ? { baseColor } : {}),
+      ...(Array.isArray(excludeBaseNodes) && excludeBaseNodes.length > 0 ? { excludeBaseNodes } : {}),
     };
 
     const ridingUrl = isRiding && mode.type !== 'character' ? urls.ridingUrl : undefined;
