@@ -1,14 +1,9 @@
 import type { RuntimeValue } from '@/core/boilerplate/types';
+import { reportError } from '@/core/utils/reportError';
 import { withTimeout } from '@/core/utils/timeout';
 
 import { DEFAULT_MAX_SLOTS_PER_WORLD, selectExpiredWorldSlots } from './slots';
-import { 
-  SaveData, 
-  WorldSaveData, 
-  SaveLoadOptions, 
-  SaveLoadResult,
-  SaveMetadata
-} from './types';
+import { SaveData, SaveLoadOptions, SaveLoadResult, SaveMetadata, WorldSaveData } from './types';
 
 const SAVE_VERSION = '1.0.0';
 const STORAGE_KEY_PREFIX = 'gaesup_world_save_';
@@ -162,7 +157,7 @@ export class SaveLoadManager {
     try {
       storage = this.getStorage();
     } catch (error) {
-      console.error('Failed to list saves:', error);
+      reportError(error, { source: 'save:list' });
       return saves;
     }
 
@@ -181,7 +176,7 @@ export class SaveLoadManager {
             });
           }
         } catch (error) {
-          console.error(`Failed to parse save: ${key}`, error);
+          reportError(error, { source: 'save:list', label: key });
         }
       }
     }
@@ -195,7 +190,7 @@ export class SaveLoadManager {
       this.getStorage().removeItem(storageKey);
       return true;
     } catch (error) {
-      console.error('Failed to delete save:', error);
+      reportError(error, { source: 'save:delete', label: saveId });
       return false;
     }
   }

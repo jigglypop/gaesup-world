@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 
+import { reportError } from '../../utils/reportError';
 import { shouldRunEditorAutosave, type EditorSaveStatus } from '../saveState';
 
 export interface UseEditorAutosaveOptions {
@@ -16,9 +17,9 @@ export function useEditorAutosave({ status, onAutosave, enabled = true }: UseEdi
 
     const delay = Math.max(0, status.nextAutosaveAt - Date.now());
     const timeout = window.setTimeout(() => {
-      if (shouldRunEditorAutosave(status)) {
-        void onAutosave();
-      }
+      if (!shouldRunEditorAutosave(status)) return;
+      // Sync throws and rejections alike reach the error sink instead of escaping the timer.
+      void Promise.resolve().then(onAutosave).catch((error: unknown) => reportError(error, { source: 'save:editor-autosave' }));
     }, delay);
 
     return () => window.clearTimeout(timeout);

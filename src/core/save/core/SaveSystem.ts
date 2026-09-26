@@ -1,5 +1,5 @@
 import { clonePlainData } from '../../utils/clone';
-import { logger } from '../../utils/logger';
+import { reportError } from '../../utils/reportError';
 import { IndexedDBAdapter } from '../adapters/IndexedDBAdapter';
 import { LocalStorageAdapter } from '../adapters/LocalStorageAdapter';
 import { NamespacedSaveAdapter } from '../adapters/NamespacedSaveAdapter';
@@ -345,11 +345,12 @@ export class SaveSystem {
   }
 
   private reportDiagnostic(diagnostic: SaveDiagnostic): void {
+    reportError(diagnostic.error, { source: `save:${diagnostic.phase}`, label: `${diagnostic.slot}/${diagnostic.key}` });
     for (const listener of this.diagnosticListeners) {
       try {
         listener(diagnostic);
       } catch (error) {
-        logger.error('Save diagnostic listener failed', error instanceof Error ? error : String(error));
+        reportError(error, { source: 'save:diagnostic-listener' });
       }
     }
   }

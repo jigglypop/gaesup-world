@@ -2,6 +2,7 @@ import { StateCreator } from 'zustand';
 
 import type { SaveBlob, SaveSystem } from '../../save';
 import { isRecord } from '../../utils/guards';
+import { reportError } from '../../utils/reportError';
 import { SaveLoadManager } from '../persistence/SaveLoadManager';
 import {
   DEFAULT_WORLD_SAVE_ENVIRONMENT,
@@ -428,6 +429,7 @@ export function createPersistenceSliceWithOptions(
       void listSaveSystemSaves(saveSystem)
         .then((saves) => set({ saves }))
         .catch((error: unknown) => {
+          reportError(error, { source: 'save:list' });
           set({ lastError: error instanceof Error ? error.message : 'Failed to list saves' });
         });
       return;
@@ -448,6 +450,7 @@ export function createPersistenceSliceWithOptions(
             ...(get().currentSaveId === saveId ? { currentSaveId: null } : {}),
           });
         } catch (error) {
+          reportError(error, { source: 'save:delete', label: saveId });
           set({ lastError: error instanceof Error ? error.message : 'Failed to delete save' });
         }
       })();

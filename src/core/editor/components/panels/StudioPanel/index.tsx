@@ -18,7 +18,7 @@ import {
 } from '../../../../npc';
 import { useGaesupRuntime } from '../../../../runtime';
 import { getSaveSystem } from '../../../../save';
-import { logger } from '../../../../utils/logger';
+import { reportError } from '../../../../utils/reportError';
 import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
 
@@ -111,7 +111,7 @@ export function StudioPanel({
     try {
       await task();
     } catch (error: unknown) {
-      logger.error('Studio operation failed', error instanceof Error ? error : String(error));
+      reportError(error, { source: 'editor:studio', label });
       setStatus({ kind: 'error', message: `${label}에 실패했습니다. 다시 시도해 주세요.` });
     } finally {
       pending.current = false;
@@ -173,7 +173,7 @@ export function StudioPanel({
     try {
       setSlots(await saveSystem.list());
     } catch (error: unknown) {
-      logger.error('Saved world but could not refresh slots', error instanceof Error ? error : String(error));
+      reportError(error, { source: 'editor:studio', label: 'refresh slots' });
       setStatus({ kind: 'error', message: `슬롯 "${slot}"에 저장했지만 목록을 갱신하지 못했습니다.` });
     }
   }, [onSaveWorld, saveSystem, slot]);

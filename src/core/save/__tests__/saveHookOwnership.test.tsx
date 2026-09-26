@@ -2,7 +2,7 @@ import { act, render, renderHook } from '@testing-library/react';
 
 import { GaesupRuntimeProvider } from '../../runtime/context';
 import { createGaesupRuntime } from '../../runtime/createGaesupRuntime';
-import { logger } from '../../utils/logger';
+import { setErrorSink } from '../../utils/reportError';
 import { getSaveSystem, SaveSystem } from '../core/SaveSystem';
 import { useAutoSave, useLoadOnMount, type AutoSaveOptions } from '../hooks/useAutoSave';
 import type { SaveBlob } from '../types';
@@ -70,26 +70,26 @@ test('a read still completes for another consumer after its first owner leaves',
 });
 
 test('callback failure is isolated from other consumers and does not block automatic saves', async () => {
-  const f = fixture(); const report = jest.spyOn(logger, 'error').mockImplementation(() => {}); const notify = jest.fn();
+  const f = fixture(); const report = jest.fn(); const releaseReport = setErrorSink(report); const notify = jest.fn();
   const a = renderHook(() => { useLoadOnMount(undefined, () => { throw new Error('callback'); }, f.system); useAutoSave({ saveSystem: f.system }); });
   const b = renderHook(() => useLoadOnMount(undefined, notify, f.system));
   try { await settle(); expect(notify).toHaveBeenCalledWith(true); unload(); await settle(); expect(f.adapter.write).toHaveBeenCalledTimes(1); expect(report).toHaveBeenCalledTimes(1); }
-  finally { a.unmount(); b.unmount(); report.mockRestore(); }
+  finally { a.unmount(); b.unmount(); releaseReport(); }
 });
 
 test('initial read failures suspend auto writes and a fresh mount can retry', async () => {
-  const f = fixture(); f.adapter.read.mockRejectedValueOnce(new Error('read')); const report = jest.spyOn(logger, 'error').mockImplementation(() => {});
+  const f = fixture(); f.adapter.read.mockRejectedValueOnce(new Error('read')); const report = jest.fn(); const releaseReport = setErrorSink(report);
   const mount = () => renderHook(() => { useLoadOnMount(undefined, undefined, f.system); useAutoSave({ saveSystem: f.system }); });
   const a = mount(); const b = mount(); await settle(); unload(); await settle();
   expect(f.adapter.read).toHaveBeenCalledTimes(1); expect(f.adapter.write).not.toHaveBeenCalled(); expect(report).toHaveBeenCalledTimes(1);
   a.unmount(); b.unmount(); const c = mount();
   try { await settle(); unload(); await settle(); expect(f.value).toBe(7); expect(f.adapter.read).toHaveBeenCalledTimes(2); expect(f.adapter.write).toHaveBeenCalledTimes(1); }
-  finally { c.unmount(); report.mockRestore(); }
+  finally { c.unmount(); releaseReport(); }
 });
 
 test.each([false, true])('event bursts serialize at most one current and one latest snapshot, including write failure: %s', async fail => {
   const f = fixture(); const gate = deferred<void>(); f.adapter.write.mockReturnValueOnce(gate.promise);
-  const report = jest.spyOn(logger, 'error').mockImplementation(() => {});
+  const report = jest.fn(); const releaseReport = setErrorSink(report);
   const a = renderHook(() => useAutoSave({ saveSystem: f.system })); const b = renderHook(() => useAutoSave({ saveSystem: f.system, slot: 'owned' }));
   try {
     for (let i = 0; i < 6; i++) { f.value = i + 1; unload(); }
@@ -98,7 +98,7 @@ test.each([false, true])('event bursts serialize at most one current and one lat
     expect(f.adapter.write).toHaveBeenCalledTimes(2); expect(f.serialize).toHaveBeenCalledTimes(2);
     expect(f.adapter.write.mock.calls.map(([, saved]) => saved.domains['counter'])).toEqual([1, 6]);
     expect(report).toHaveBeenCalledTimes(fail ? 1 : 0);
-  } finally { a.unmount(); b.unmount(); report.mockRestore(); }
+  } finally { a.unmount(); b.unmount(); releaseReport(); }
 });
 
 test('in-flight writes survive final release without a queued followup; a remount shares the existing writer', async () => {
