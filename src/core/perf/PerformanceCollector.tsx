@@ -1,6 +1,6 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
-import { useThree } from '@react-three/fiber';
+import { addAfterEffect, useThree } from '@react-three/fiber';
 
 import { readRendererStats } from './rendererStats';
 import { FRAME_PHASES, useCanvasFrameScheduler, useEngineFrame, type FramePhase } from '../runtime/frame';
@@ -18,12 +18,12 @@ export function PerformanceCollector() {
   const setFramePhases = useGaesupStore((s) => s.setFramePhases);
   const scheduler = useCanvasFrameScheduler();
   const elapsed = useRef(0);
+  const sampleDue = useRef(false);
 
-  useEngineFrame('snapshot', (delta) => {
-    elapsed.current += delta;
-    if (elapsed.current < SAMPLE_INTERVAL_SECONDS) return;
-    elapsed.current = 0;
-
+  // WebGPU resets its counters before the frame callbacks run, so the renderer is read once the frame has rendered.
+  useEffect(() => addAfterEffect(() => {
+    if (!sampleDue.current) return;
+    sampleDue.current = false;
     const stats = readRendererStats(gl.info);
     setPerformance({
       render: {
@@ -41,6 +41,13 @@ export function PerformanceCollector() {
         allocatedBytesEstimate: stats.allocatedBytesEstimate,
       },
     });
+  }), [gl, setPerformance]);
+
+  useEngineFrame('snapshot', (delta) => {
+    elapsed.current += delta;
+    if (elapsed.current < SAMPLE_INTERVAL_SECONDS) return;
+    elapsed.current = 0;
+    sampleDue.current = true;
     if (!scheduler.isMetricsEnabled()) return;
     const timings = {} as Record<FramePhase, number>;
     for (const phase of FRAME_PHASES) {

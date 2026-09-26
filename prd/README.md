@@ -21,12 +21,6 @@
 
 위에서 아래 순서로 한다.
 
-### SE-7 관측 가능성
-
-| Slice | 내용 | 완료 기준 |
-|---|---|---|
-| SE-7c | `PerformanceCollector`가 WebGPU에서 draw·삼각형을 0으로 읽는 문제 | WebGPU 경로 값 검증 테스트 |
-
 ### SE-8 공개 API 계약
 
 | Slice | 내용 | 완료 기준 |
