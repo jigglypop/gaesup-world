@@ -112,6 +112,11 @@ export function usePlayerPosition(
     if (entityId) return entityId;
     return bridge.getPlayerEntityId() ?? undefined;
   };
+  // The player's body keeps its rotation locked; the facing the controls turn lives in the active state.
+  const copyRotation = (bridge: MotionBridge, targetEntityId: string, rotation: THREE.Euler): void => {
+    const facing = targetEntityId === bridge.getPlayerEntityId() ? activeState?.euler : undefined;
+    resultRef.current!.rotation.copy(facing ?? rotation);
+  };
 
   useEffect(() => {
     bridgeRef.current = worldMotionBridge;
@@ -131,7 +136,7 @@ export function usePlayerPosition(
       const result = resultRef.current!;
       result.position.copy(snapshot.position);
       result.velocity.copy(snapshot.velocity);
-      result.rotation.copy(snapshot.rotation);
+      copyRotation(bridge, targetEntityId, snapshot.rotation);
       result.isMoving = snapshot.isMoving;
       result.isGrounded = snapshot.isGrounded;
       result.speed = snapshot.speed;
@@ -162,7 +167,7 @@ export function usePlayerPosition(
         if (snapshot) {
           result.position.copy(snapshot.position);
           result.velocity.copy(snapshot.velocity);
-          result.rotation.copy(snapshot.rotation);
+          copyRotation(bridge, targetEntityId, snapshot.rotation);
           result.isMoving = snapshot.isMoving;
           result.isGrounded = snapshot.isGrounded;
           result.speed = snapshot.speed;

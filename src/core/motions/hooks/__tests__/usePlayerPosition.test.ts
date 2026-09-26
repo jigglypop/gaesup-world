@@ -6,6 +6,7 @@ import { frameScheduler } from '@core/runtime/frame';
 
 import type { MotionBridge } from '../../bridge/MotionBridge';
 import { usePlayerPosition } from '../usePlayerPosition';
+import { getGlobalStateManager } from '../useStateSystem';
 import { useWorldMotionBridge } from '../useWorldMotionBridge';
 
 jest.mock('../useWorldMotionBridge', () => ({ useWorldMotionBridge: jest.fn() }));
@@ -76,4 +77,18 @@ test('reactive consumer는 bridge snapshot이 실제로 바뀔 때만 다시 렌
   act(() => { value.isMoving = true; listener!(value, 'player'); });
   expect(renders).toBe(initial + 3);
   view.unmount();
+});
+
+test('the player faces where the controls turned it, not along its rotation-locked body', () => {
+  createBridge();
+  const activeState = getGlobalStateManager().getActiveState();
+  activeState.euler.set(0, 1.2, 0);
+  const player = renderHook(() => usePlayerPosition({ reactive: false }));
+  const other = renderHook(() => usePlayerPosition({ reactive: false, entityId: 'npc' }));
+  frameScheduler.tick(1 / 60, 16);
+  expect(player.result.current.rotation.y).toBeCloseTo(1.2);
+  expect(other.result.current.rotation.y).toBe(0);
+  player.unmount();
+  other.unmount();
+  activeState.euler.set(0, 0, 0);
 });

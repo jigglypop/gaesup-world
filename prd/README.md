@@ -23,7 +23,6 @@
 
 | ID | 결함 | 위치 |
 |---|---|---|
-| D-4 | 도구 방향·부착물이 잠긴 body 회전을 읽어 항상 +Z | `MotionBridge` snapshot, `usePlayerPosition` |
 | D-5 | authority 라우터가 `verifyActor` 없이 임의 actor 명령을 실행, 검증 함수에 세션 인자가 없음 | `networks/adapter/authority` |
 | D-6 | visit 채널이 발신자가 적은 hostId를 믿어 VisitLeave·VisitSnapshot 사칭 가능 | `networks/visit` |
 | D-7 | 이벤트 패널 "실행"이 runtime 이벤트를 시드로 교체하고 실제 보상을 지급 | `editor/components/panels/GameplayEventPanel` |
