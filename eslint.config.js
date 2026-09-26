@@ -24,6 +24,7 @@ export default tseslint.config(
       '**/.tmp/**',
       '.artifacts/**',
       '.claude/**',
+      'chocketmon/**',
     ],
   },
   ...tseslint.configs.recommended,

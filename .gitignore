@@ -1,5 +1,7 @@
 # Logs
 .asset-work/
+# Reference copy of the choketmonster game, read while porting its techniques
+chocketmon/
 logs
 *.log
 npm-debug.log*
