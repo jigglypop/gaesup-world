@@ -202,10 +202,11 @@ export function createNPCInstanceActions(set: NPCSet, get: NPCGet, { invalidateB
       if (instance && waypoints.length > 0) state.instances.set(instanceId, withNavigation(instance, waypoints, speed));
     }),
 
-    advanceNavigation: (instanceId) => set((state) => {
-      const instance = state.instances.get(instanceId);
-      if (!instance?.navigation || instance.navigation.state !== 'moving') return;
-      const nav = instance.navigation;
+    advanceNavigation: (instanceId, position) => set((state) => {
+      const current = state.instances.get(instanceId);
+      if (!current?.navigation || current.navigation.state !== 'moving') return;
+      const instance = position ? { ...current, position } : current;
+      const nav = current.navigation;
       const nextIndex = nav.currentIndex + 1;
       if (nextIndex >= nav.waypoints.length) {
         state.instances.set(instanceId, {

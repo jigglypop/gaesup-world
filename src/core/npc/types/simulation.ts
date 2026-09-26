@@ -19,8 +19,8 @@ export interface NPCSimulationStore {
   getState(): {
     instances: Map<string, NPCInstance>;
     brainBlueprints: Map<string, NPCBrainBlueprint>;
-    updateNavigationPosition(id: string, position: Point): void;
-    advanceNavigation(id: string): void;
+    /** Moves to the next waypoint and records where the NPC stands, in one update. */
+    advanceNavigation(id: string, position: Point): void;
     executeInstanceActions(id: string, actions: NPCAction[]): void;
     /** Applies the actions of a whole decision tick in one update; stores without it get per-NPC updates. */
     applyNPCDecisions?(entries: ReadonlyArray<NPCDecisionEntry>): void;

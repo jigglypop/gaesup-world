@@ -166,6 +166,11 @@ export function applyAgentBehaviorBlueprint(
   );
 }
 
+/** Perceived targets are sorted nearest first, so this is the nearest newly seen one. */
+function enteredTarget(observation: NPCObservation, actorsOnly = false) {
+  return observation.perceived.find((target) => observation.entered?.includes(target.instanceId) && (!actorsOnly || target.actor));
+}
+
 function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NPCObservation, stores: NPCBrainConditionStores): boolean {
   switch (condition.type) {
     case 'always':
@@ -174,6 +179,8 @@ function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NP
       return observation.navigationState !== 'moving';
     case 'perceivedAny':
       return observation.perceived.length > 0;
+    case 'perceivedEntered':
+      return enteredTarget(observation, condition.actorsOnly) !== undefined;
     case 'questStatus':
       return stores.questStore.getState().statusOf(condition.questId) === condition.status;
     case 'friendshipAtLeast': {
@@ -193,6 +200,8 @@ function resolveTarget(target: NPCBrainBlueprintTarget, observation: NPCObservat
       return observation.position;
     case 'nearestPerceived':
       return observation.perceived[0]?.position;
+    case 'entered':
+      return enteredTarget(observation, target.actorsOnly)?.position;
   }
 }
 
@@ -205,6 +214,10 @@ function compileAction(node: Extract<NPCBrainBlueprintNode, { type: 'action' }>,
     };
   }
 
+  if (node.action.type === 'lookAtTarget') {
+    const target = resolveTarget(node.action.target, observation);
+    return target ? { type: 'lookAt', target } : undefined;
+  }
   if (node.action.type !== 'moveToTarget') return node.action;
   const target = resolveTarget(node.action.target, observation);
   if (!target) return undefined;

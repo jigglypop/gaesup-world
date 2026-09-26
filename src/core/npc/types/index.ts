@@ -104,6 +104,8 @@ export type NPCBrainBlueprintCondition =
   | { type: 'always' }
   | { type: 'navigationIdle' }
   | { type: 'perceivedAny' }
+  /** A target came into sight since the NPC's previous decision; `actorsOnly` ignores other NPCs. */
+  | { type: 'perceivedEntered'; actorsOnly?: boolean }
   | { type: 'questStatus'; questId: QuestId; status: QuestStatus }
   | { type: 'friendshipAtLeast'; npcId?: string; score: number }
   | { type: 'memoryEquals'; key: string; value: RuntimeValue };
@@ -111,12 +113,14 @@ export type NPCBrainBlueprintCondition =
 export type NPCBrainBlueprintTarget =
   | { type: 'point'; value: [number, number, number] }
   | { type: 'self' }
-  | { type: 'nearestPerceived' };
+  | { type: 'nearestPerceived' }
+  /** The nearest target that came into sight since the previous decision. */
+  | { type: 'entered'; actorsOnly?: boolean };
 
 export type NPCBrainBlueprintNode =
   | { id: string; type: 'start'; label?: string }
   | { id: string; type: 'condition'; label?: string; condition: NPCBrainBlueprintCondition }
-  | { id: string; type: 'action'; label?: string; action: NPCAction | { type: 'moveToTarget'; target: NPCBrainBlueprintTarget; speed?: number; animationId?: string } };
+  | { id: string; type: 'action'; label?: string; action: NPCAction | { type: 'moveToTarget'; target: NPCBrainBlueprintTarget; speed?: number; animationId?: string } | { type: 'lookAtTarget'; target: NPCBrainBlueprintTarget } };
 
 export interface NPCBrainBlueprintEdge {
   id: string;
@@ -166,6 +170,8 @@ export interface NPCObservationTarget {
   position: [number, number, number];
   distance: number;
   brainMode: NPCBrainMode;
+  /** Set for a non-NPC actor, such as the player, given to `NPCSimulation.setActor`. */
+  actor?: boolean;
 }
 
 export interface NPCObservation {
@@ -182,6 +188,8 @@ export interface NPCObservation {
   perceived: NPCObservationTarget[];
   /** The point wandering stays around. */
   home?: [number, number, number];
+  /** Ids perceived now that were not perceived at this NPC's previous decision. */
+  entered?: string[];
   memory?: Record<string, RuntimeValue>;
 }
 

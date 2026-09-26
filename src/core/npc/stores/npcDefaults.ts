@@ -116,13 +116,11 @@ export function seedNPCDefaults(state: Draft<NPCStore>, legacyBlueprintRegistry:
     nodes: [
       { id: 'start', type: 'start', label: '시작' },
       { id: 'idle-check', type: 'condition', label: '이동 대기 중', condition: { type: 'navigationIdle' } },
-      { id: 'quest-check', type: 'condition', label: '진행 중인 퀘스트', condition: { type: 'questStatus', questId: 'welcome', status: 'active' } },
       { id: 'wander', type: 'action', label: '돌아다니기', action: { type: 'wander', radius: 4, speed: 2.2, waitSeconds: 1.5 } },
     ],
     edges: [
       { id: 'start-idle', source: 'start', target: 'idle-check', branch: 'next' },
-      { id: 'idle-quest', source: 'idle-check', target: 'quest-check', branch: 'true' },
-      { id: 'quest-wander', source: 'quest-check', target: 'wander', branch: 'true' },
+      { id: 'idle-wander', source: 'idle-check', target: 'wander', branch: 'true' },
     ],
   };
   const greetBlueprint: NPCBrainBlueprint = {

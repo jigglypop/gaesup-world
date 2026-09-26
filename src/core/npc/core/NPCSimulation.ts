@@ -8,7 +8,7 @@ import type { NavigationSystem } from '../../navigation/NavigationSystem';
 import { createNPCNavigationRoute } from '../../navigation/NPCNavigationAdapter';
 import type { AnimationClockLoop } from '../../simulation/AnimationClockLoop';
 import type { FixedTick } from '../../simulation/FixedStepClock';
-import type { NPCDecisionEntry, NPCInstance } from '../types';
+import type { NPCAction, NPCDecisionEntry, NPCInstance } from '../types';
 import type { NPCBodyPort, NPCSimulationStore } from '../types/simulation';
 
 type Point = [number, number, number];
@@ -30,9 +30,16 @@ const DEFAULT_SPEECH_SECONDS = 3;
 /** Points left to walk toward one waypoint of a navigation. */
 type Route = { waypoints: Point[]; index: number; steps: Point[] };
 
-/** Only decisions with store actions reach the store; a tick where no NPC acts changes nothing there. */
+/** Actions the simulation applies itself: speech is transient and a turn uses the live pose, not the stored one. */
+const SIMULATION_ACTIONS: ReadonlySet<NPCAction['type']> = new Set(['speak', 'lookAt']);
+
+/** Only store actions reach the store; a tick where no NPC acts on it changes nothing there. */
 function applyDecisions(store: NPCSimulationStore, entries: NPCDecisionEntry[]): void {
-  const stored = entries.filter((entry) => entry.decision?.actions.some((action) => action.type !== 'speak'));
+  const stored: NPCDecisionEntry[] = [];
+  for (const entry of entries) {
+    const actions = entry.decision?.actions.filter((action) => !SIMULATION_ACTIONS.has(action.type));
+    if (actions?.length) stored.push({ ...entry, decision: { ...entry.decision!, actions } });
+  }
   if (!stored.length) return;
   const state = store.getState();
   if (state.applyNPCDecisions) {
@@ -65,6 +72,8 @@ export class NPCSimulation {
   private speech = new Map<string, { text: string; until: number }>();
   private speechChanges = 0;
   private now = 0;
+  /** Non-NPC targets NPCs perceive, such as the player; never decided for, stored or saved. */
+  private actors = new Map<string, NPCInstance>();
 
   private movedPoses = 0;
   /** Advances whenever a simulated pose moves; saves use it because moved poses are not in the store. */
@@ -146,6 +155,15 @@ export class NPCSimulation {
     }));
   }
 
+  /** Adds or moves an actor NPCs can see, such as the player. Its id must not be an NPC id. */
+  setActor(id: string, name: string, position: readonly [number, number, number]): void {
+    const current = this.actors.get(id);
+    if (current && current.name === name && current.position[0] === position[0] && current.position[1] === position[1] && current.position[2] === position[2]) return;
+    this.actors.set(id, { id, templateId: 'actor', name, position: [position[0], position[1], position[2]], rotation: [0, 0, 0], scale: [1, 1, 1] });
+  }
+
+  removeActor(id: string): void { this.actors.delete(id); }
+
   /** The NPC's last observation and decision. Neither is stored or saved; editors read them here. */
   getRecord(id: string): Readonly<NPCDecisionEntry> | undefined { return this.records.get(id); }
 
@@ -179,6 +197,7 @@ export class NPCSimulation {
       }
       view.set(instance.id, entry.view);
     }
+    for (const actor of this.actors.values()) if (!view.has(actor.id)) view.set(actor.id, actor);
     return view;
   }
 
@@ -241,6 +260,12 @@ export class NPCSimulation {
       if (!observed) { observed = this.perceptionView(); this.perception.refresh(observed); }
       const observation = this.perception.observe(observed.get(instance.id)!, tick.elapsedSeconds);
       observation.home = instance.behavior?.home ?? pose.home;
+      const previous = this.records.get(instance.id)?.observation.perceived;
+      observation.entered = [];
+      for (const target of observation.perceived) {
+        if (this.actors.has(target.instanceId)) target.actor = true;
+        if (!previous?.some((seen) => seen.instanceId === target.instanceId)) observation.entered.push(target.instanceId);
+      }
       entries.push({ instanceId: instance.id, observation });
     }
     if (!observed) return;
@@ -256,10 +281,22 @@ export class NPCSimulation {
     }
     for (const entry of entries) {
       this.records.set(entry.instanceId, entry);
-      for (const action of entry.decision?.actions ?? []) if (action.type === 'speak') this.speak(entry.instanceId, action.text, action.duration);
+      for (const action of entry.decision?.actions ?? []) {
+        if (action.type === 'speak') this.speak(entry.instanceId, action.text, action.duration);
+        else if (action.type === 'lookAt') this.turnToward(entry.instanceId, action.target);
+      }
     }
     applyDecisions(this.store, entries);
     for (const listener of this.recordListeners) listener();
+  }
+
+  private turnToward(id: string, target: readonly [number, number, number]): void {
+    const pose = this.poses.get(id);
+    if (!pose) return;
+    const dx = target[0] - pose.position[0], dz = target[2] - pose.position[2];
+    if (Math.hypot(dx, dz) <= 1e-9) return;
+    pose.rotation[1] = Math.atan2(dx, dz);
+    pose.moved = true;
   }
 
   /**
@@ -307,10 +344,8 @@ export class NPCSimulation {
         if (remaining === 0 && steps.length > 0) return;
       }
       this.routes.delete(instance.id);
-      const state = this.store.getState();
-      state.updateNavigationPosition(instance.id, [...pose.position]);
+      this.store.getState().advanceNavigation(instance.id, [...pose.position]);
       pose.sourcePosition = this.store.getState().instances.get(instance.id)!.position;
-      state.advanceNavigation(instance.id);
       if (remaining === 0) break;
     }
   }

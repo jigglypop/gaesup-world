@@ -86,7 +86,8 @@ export interface NPCStore extends NPCSystemState {
 
   // Navigation
   setNavigation: (instanceId: string, waypoints: [number, number, number][], speed?: number) => void;
-  advanceNavigation: (instanceId: string) => void;
+  /** Moves to the next waypoint; `position`, when given, is where the NPC stands, in the same update. */
+  advanceNavigation: (instanceId: string, position?: [number, number, number]) => void;
   clearNavigation: (instanceId: string) => void;
   updateNavigationPosition: (instanceId: string, position: [number, number, number]) => void;
 }

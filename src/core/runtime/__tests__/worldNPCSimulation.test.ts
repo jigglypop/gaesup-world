@@ -133,7 +133,8 @@ test('each decision tick with actions for many NPCs is one store update', async 
     expect(new Set(ticks).size).toBe(ticks.length);
     const instance = runtime.npcStore.getState().instances.get('7')!;
     expect(runtime.npcSimulation.getRecord('7')?.decision?.actions).toHaveLength(2);
-    expect(instance.rotation[1]).toBeCloseTo(Math.PI / 4);
+    expect(instance.rotation[1]).toBe(0);
+    expect(runtime.npcSimulation.getPose('7')!.rotation[1]).toBeCloseTo(Math.PI / 4);
     expect(instance.brain?.memory?.['seen']).toBeDefined();
   } finally { await runtime.dispose(); }
 });
@@ -276,6 +277,78 @@ describe('NPC speech', () => {
       const before = runtime.npcStore.getState().instances.get('one');
       runtime.npcStore.getState().executeInstanceAction('one', { type: 'speak', text: 'hi' });
       expect(runtime.npcStore.getState().instances.get('one')).toBe(before);
+    } finally { await runtime.dispose(); }
+  });
+});
+
+describe('NPC behavior fixes', () => {
+  test('lookAt turns from where the NPC stands, not from its last stored waypoint', async () => {
+    const runtime = createGaesupRuntime(); await runtime.setup();
+    let stopAt: number | undefined;
+    runtime.npcBrainAdapters.register('scripted', 'stop', ({ observation }) => {
+      if (stopAt !== undefined) return undefined;
+      stopAt = observation.position[0];
+      return { source: 'scripted', actions: [{ type: 'idle' }, { type: 'lookAt', target: [observation.position[0], 0, 5] }] };
+    });
+    try {
+      runtime.npcStore.getState().addInstance({ ...npc(), brain: { mode: 'scripted', policyId: 'stop' } });
+      runtime.npcStore.getState().setNavigation('one', [[30, 0, 0]], 5);
+      runtime.clockLoop.clock.stepTicks(90);
+      expect(stopAt).toBeGreaterThan(0);
+      expect(runtime.npcStore.getState().instances.get('one')!.position[0]).toBe(0);
+      expect(runtime.npcSimulation.getPose('one')!.rotation[1]).toBeCloseTo(0);
+    } finally { await runtime.dispose(); }
+  });
+
+  test('playAnimation changes only the NPC, not the shared, saved animation catalog', async () => {
+    const runtime = createGaesupRuntime(); await runtime.setup();
+    try {
+      runtime.npcStore.getState().initializeDefaults();
+      runtime.npcStore.getState().addInstance(npc());
+      const walk = runtime.npcStore.getState().animations.get('walk');
+      runtime.npcStore.getState().executeInstanceAction('one', { type: 'playAnimation', animationId: 'walk', loop: false, speed: 3 });
+      expect(runtime.npcStore.getState().animations.get('walk')).toBe(walk);
+      expect(runtime.npcStore.getState().instances.get('one')!.currentAnimation).toBe('walk');
+    } finally { await runtime.dispose(); }
+  });
+
+  test('NPCs perceive the player as an actor and see it enter only once per approach', async () => {
+    const runtime = createGaesupRuntime(); await runtime.setup();
+    const seen: NPCObservation[] = [];
+    runtime.npcBrainAdapters.register('scripted', 'watch', ({ observation }) => { seen.push(observation); return undefined; });
+    try {
+      runtime.npcStore.getState().addInstance({ ...npc(), brain: { mode: 'scripted', policyId: 'watch' }, perception: { enabled: true, sightRadius: 8, hearingRadius: 4 } });
+      runtime.npcSimulation.setActor('player', '나', [3, 0, 0]);
+      runtime.clockLoop.clock.stepTicks(130);
+      expect(seen.length).toBeGreaterThanOrEqual(2);
+      expect(seen[0]!.perceived).toEqual([expect.objectContaining({ instanceId: 'player', actor: true, distance: 3 })]);
+      expect(seen[0]!.entered).toEqual(['player']);
+      expect(seen[1]!.entered).toEqual([]);
+      runtime.npcSimulation.setActor('player', '나', [30, 0, 0]);
+      runtime.clockLoop.clock.stepTicks(60);
+      runtime.npcSimulation.setActor('player', '나', [2, 0, 0]);
+      seen.length = 0;
+      runtime.clockLoop.clock.stepTicks(60);
+      expect(seen[0]!.entered).toEqual(['player']);
+      runtime.npcSimulation.removeActor('player');
+      seen.length = 0;
+      runtime.clockLoop.clock.stepTicks(60);
+      expect(seen[0]!.perceived).toEqual([]);
+    } finally { await runtime.dispose(); }
+  });
+
+  test('reaching each waypoint is one store update', async () => {
+    const runtime = createGaesupRuntime(); await runtime.setup();
+    try {
+      runtime.npcStore.getState().addInstance(npc());
+      runtime.npcStore.getState().setNavigation('one', [[1, 0, 0], [2, 0, 0], [3, 0, 0]], 3);
+      const notify = jest.fn(); const off = runtime.npcStore.subscribe(notify);
+      runtime.clockLoop.clock.stepTicks(120);
+      off();
+      expect(notify).toHaveBeenCalledTimes(3);
+      const arrived = runtime.npcStore.getState().instances.get('one')!;
+      expect(arrived.navigation?.state).toBe('arrived');
+      expect(arrived.position[0]).toBeCloseTo(3);
     } finally { await runtime.dispose(); }
   });
 });

@@ -1,6 +1,7 @@
 import { useQuestStore } from '../../../quests/stores/questStore';
 import { useFriendshipStore } from '../../../relations/stores/friendshipStore';
-import type { NPCInstance } from '../../types';
+import { createNPCStore } from '../../stores/npcStore';
+import type { NPCBrainBlueprint, NPCInstance, NPCObservation } from '../../types';
 import {
   applyAgentBehaviorBlueprint,
   applyNPCBehaviorBlueprint,
@@ -218,5 +219,48 @@ describe('NPC behavior blueprint helpers', () => {
     });
     release();
     expect(actions).toEqual([{ type: 'idle' }]);
+  });
+});
+
+describe('entered targets', () => {
+  const observation = (entered: string[]): NPCObservation => ({
+    instanceId: 'villager', templateId: 't', timestamp: 1, position: [0, 0, 0], rotation: [0, 0, 0], currentAnimation: 'idle',
+    navigationState: 'none', behaviorMode: 'idle', brainMode: 'scripted', perceptionEnabled: true, entered,
+    perceived: [
+      { instanceId: 'neighbor', name: 'n', position: [1, 0, 0], distance: 1, brainMode: 'scripted' },
+      { instanceId: 'player', name: 'p', position: [0, 0, 3], distance: 3, brainMode: 'none', actor: true },
+    ],
+  });
+  const greet: NPCBrainBlueprint = {
+    id: 'greet', name: 'greet',
+    nodes: [
+      { id: 'start', type: 'start' },
+      { id: 'new', type: 'condition', condition: { type: 'perceivedEntered', actorsOnly: true } },
+      { id: 'face', type: 'action', action: { type: 'lookAtTarget', target: { type: 'entered', actorsOnly: true } } },
+      { id: 'hi', type: 'action', action: { type: 'speak', text: '안녕!' } },
+    ],
+    edges: [
+      { id: 'a', source: 'start', target: 'new' },
+      { id: 'b', source: 'new', target: 'face', branch: 'true' },
+      { id: 'c', source: 'face', target: 'hi' },
+    ],
+  };
+
+  it('greets an actor that just came into sight, facing it rather than a nearer NPC', () => {
+    expect(compileNPCBrainBlueprint(greet, observation(['neighbor', 'player']), conditionStores)).toEqual([
+      { type: 'lookAt', target: [0, 0, 3] },
+      { type: 'speak', text: '안녕!' },
+    ]);
+  });
+
+  it('ignores an NPC that came into sight and an actor that was already seen', () => {
+    expect(compileNPCBrainBlueprint(greet, observation(['neighbor']), conditionStores)).toEqual([]);
+    expect(compileNPCBrainBlueprint(greet, observation([]), conditionStores)).toEqual([]);
+  });
+
+  it('the default wander blueprint walks whenever the NPC is idle, with no quest involved', () => {
+    const store = createNPCStore(); store.getState().initializeDefaults();
+    const wander = store.getState().brainBlueprints.get('npc-blueprint-wander')!;
+    expect(compileNPCBrainBlueprint(wander, observation([]), conditionStores)).toEqual([expect.objectContaining({ type: 'moveTo' })]);
   });
 });

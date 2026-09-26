@@ -81,14 +81,7 @@ export function applyNPCAction(state: NPCStore, instanceId: string, action: NPCA
       });
       break;
     case 'playAnimation': {
-      const animation = state.animations.get(action.animationId);
-      if (animation) {
-        state.animations.set(action.animationId, {
-          ...animation,
-          ...(action.loop !== undefined ? { loop: action.loop } : {}),
-          ...(action.speed !== undefined ? { speed: action.speed } : {}),
-        });
-      }
+      // The catalog entry is shared by every NPC and saved, so one NPC's action does not rewrite it.
       next = { ...instance, currentAnimation: action.animationId };
       break;
     }
