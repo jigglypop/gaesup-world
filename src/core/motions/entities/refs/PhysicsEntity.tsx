@@ -110,9 +110,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       ...(props.onReady ? { onReady: props.onReady } : {}),
       ...(props.onFrame ? { onFrame: props.onFrame } : {}),
       ...(props.onAnimate ? { onAnimate: props.onAnimate } : {}),
-      ...(props.onDestroy || props.onDestory
-        ? { onDestroy: props.onDestroy ?? props.onDestory }
-        : {}),
+      ...(props.onDestroy ? { onDestroy: props.onDestroy } : {}),
       actions,
       isActive: props.isActive,
       ...(props.animatorController ? { animatorController: props.animatorController } : {}),

@@ -58,7 +58,7 @@
 | 코어 | `rendering`, `perf`, `runtime`, `simulation`, `motions`, `camera`, `input`, `interactions`, `navigation`, `npc`, `building`, `save`, `assets`, `plugins`, `scene`, `scene-object`, `world`, `time`, `weather`, `dialog`, `ui` |
 | 고쳐서 유지 | `runtime`(서브시스템 즉시 생성, 수명 목록 중복), `networks`(서버 없는 클라이언트, 1,006줄 `PlayerNetworkManager`), 방문 스냅샷, 자산 store(전역), 오류 sink(전역), `editor`(루트에서 재수출) |
 | 합칠 대상 | `DynamicSky`+`CascadedSun` → three `SunLight`, `OutfitAvatar` → `AvatarRuntime`, WebGL 후처리 → TSL, `PerformancePanel` 자체 측정 → `PerformanceCollector` |
-| 삭제 예정 | NPC 네트워크 섬·`ops`·샘플 플러그인·deprecated 묶음(DEL-2), GLSL·WebGL 경로(GPU-1) |
+| 삭제 예정 | GLSL·WebGL 경로(GPU-1), `World` 별칭(`GaesupWorld`와 같은 컴포넌트) |
 | 유지(선택 진입점) | `blueprints`, `server-contracts`, `gameplay`(규칙 엔진) |
 
 ## 검증

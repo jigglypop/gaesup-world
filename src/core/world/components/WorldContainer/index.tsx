@@ -36,7 +36,6 @@ function WorldContent({ children, showGrid, showAxes }: { children?: ReactNode; 
 
 /**
  * Applies world-related configuration into the shared stores and renders children unchanged.
- * Prefer this name for new code; `WorldContainer` remains as a backward-compatible alias.
  */
 export function WorldConfigProvider(props: WorldContainerProps) {
   return <GaesupRuntimeProvider runtime={props.runtime} revision={props.runtimeRevision}><WorldConfiguration {...props} /></GaesupRuntimeProvider>;
@@ -133,11 +132,6 @@ function WorldConfiguration(props: WorldContainerProps) {
   return props.children;
 }
 
-/**
- * @deprecated Use `WorldConfigProvider` for clearer semantics.
- */
-export const WorldContainer = WorldConfigProvider;
-
 export function GaesupWorldContent({ children, showGrid, showAxes, postProcessing, performance, quality }: {
   children?: ReactNode;
   showGrid?: boolean;
@@ -181,4 +175,3 @@ function ProfiledPostProcessing({ props }: { props: WorldPostProcessingProps }) 
   return <WorldPostProcessing {...props} {...(quality ? { quality } : {})} />;
 }
 
-export default WorldContainer;

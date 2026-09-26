@@ -13,7 +13,7 @@ import { Clicker } from '../../interactions/components/Clicker';
 import { ControllerWrapper as GaesupController } from '../../interactions/components/ControllerWrapper';
 import { GroundClicker } from '../../interactions/components/GroundClicker';
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
-import { GaesupWorldContent, WorldContainer as GaesupWorld } from '../../world/components/WorldContainer';
+import { GaesupWorldContent, WorldConfigProvider as GaesupWorld } from '../../world/components/WorldContainer';
 import { WorldPhysics } from '../../world/components/WorldPhysics';
 import { PlayerState, MultiplayerConfig } from '../types';
 

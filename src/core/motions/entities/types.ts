@@ -51,8 +51,6 @@ export type PhysicsEntityProps = {
   onReady ? : () => void;
   onFrame ? : () => void;
   onDestroy ? : () => void;
-  /** @deprecated Use onDestroy. */
-  onDestory ? : () => void;
   onAnimate ? : () => void;
   url: string;
   name ? : string;

@@ -1664,10 +1664,6 @@ async function main() {
     const api = kind === 'esm' ? await import('gaesup-world') : require('gaesup-world');
     const runtime = api.createGaesupRuntime(); await runtime.setup();
     try {
-      const network = runtime.networkBridge; network.ensureMainEngine();
-      const system = network.getEngine('main').system;
-      runtime.clockLoop.clock.stepTicks(60);
-      if (system.updateRevision !== 30) throw new Error(kind + ': owned network clock cadence failed');
       runtime.npcStore.getState().addInstance({ id: 'headless-npc', templateId: 'lab', name: 'NPC', position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] });
       runtime.npcStore.getState().setNavigation('headless-npc', [[20, 0, 0]], 3);
       runtime.clockLoop.clock.stepTicks(60);

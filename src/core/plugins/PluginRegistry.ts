@@ -384,13 +384,11 @@ export class PluginRegistry implements PluginRegistryApi {
   private removePluginExtensions(pluginId: string): void {
     this.context.grid.removeByPlugin(pluginId);
     this.context.placement.removeByPlugin(pluginId);
-    this.context.catalog.removeByPlugin(pluginId);
     this.context.assets.removeByPlugin(pluginId);
     this.context.rendering.removeByPlugin(pluginId);
     this.context.input.removeByPlugin(pluginId);
     this.context.interactions.removeByPlugin(pluginId);
     this.context.npc.removeByPlugin(pluginId);
-    this.context.quests.removeByPlugin(pluginId);
     this.context.blueprints.removeByPlugin(pluginId);
     this.context.editor.removeByPlugin(pluginId);
     this.context.save.removeByPlugin(pluginId);

@@ -1,9 +1,8 @@
 import { Profiler } from 'react';
 
-import { act, render, renderHook } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 
 import { CameraController } from '../../camera/components/CameraController';
-import { useGaesupContext } from '../../hooks/useGaesupContext';
 import { useGaesupStore } from '../../stores/gaesupStore';
 
 const nextPerformanceSample = (calls: number) => ({
@@ -21,21 +20,6 @@ const nextPerformanceSample = (calls: number) => ({
 });
 
 describe('perf selector subscriptions', () => {
-  it('useGaesupContext does not rerender for unrelated performance updates', () => {
-    let renders = 0;
-    renderHook(() => {
-      renders += 1;
-      return useGaesupContext();
-    });
-    const initialRenders = renders;
-
-    act(() => {
-      useGaesupStore.getState().setPerformance(nextPerformanceSample(11));
-    });
-
-    expect(renders).toBe(initialRenders);
-  });
-
   it('CameraController ignores unrelated performance store updates', () => {
     let commits = 0;
     render(

@@ -48,13 +48,11 @@ declare const extensionMapBrand: unique symbol;
 
 export interface GridExtensionMap { readonly [extensionMapBrand]?: never; }
 export interface PlacementExtensionMap { readonly [extensionMapBrand]?: never; }
-export interface CatalogExtensionMap { readonly [extensionMapBrand]?: never; }
 export interface AssetExtensionMap { readonly [extensionMapBrand]?: never; }
 export interface RenderingExtensionMap { readonly [extensionMapBrand]?: never; }
 export interface InputExtensionMap { readonly [extensionMapBrand]?: never; }
 export interface InteractionExtensionMap { readonly [extensionMapBrand]?: never; }
 export interface NPCExtensionMap { readonly [extensionMapBrand]?: never; }
-export interface QuestExtensionMap { readonly [extensionMapBrand]?: never; }
 export interface BlueprintExtensionMap { readonly [extensionMapBrand]?: never; }
 export interface EditorExtensionMap { readonly [extensionMapBrand]?: never; }
 export interface SaveExtensionMap { readonly [extensionMapBrand]?: never; }
@@ -90,13 +88,11 @@ export interface ExtensionRegistry<TValue = unknown, TMap extends object = Recor
 export interface PluginExtensionRegistries {
   grid: ExtensionRegistry<unknown, GridExtensionMap>;
   placement: ExtensionRegistry<unknown, PlacementExtensionMap>;
-  catalog: ExtensionRegistry<unknown, CatalogExtensionMap>;
   assets: ExtensionRegistry<unknown, AssetExtensionMap>;
   rendering: ExtensionRegistry<unknown, RenderingExtensionMap>;
   input: ExtensionRegistry<unknown, InputExtensionMap>;
   interactions: ExtensionRegistry<unknown, InteractionExtensionMap>;
   npc: ExtensionRegistry<unknown, NPCExtensionMap>;
-  quests: ExtensionRegistry<unknown, QuestExtensionMap>;
   blueprints: ExtensionRegistry<unknown, BlueprintExtensionMap>;
   editor: ExtensionRegistry<unknown, EditorExtensionMap>;
   save: ExtensionRegistry<unknown, SaveExtensionMap>;

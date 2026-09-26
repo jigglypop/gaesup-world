@@ -14,11 +14,6 @@ export {
   PluginVersionMismatchError,
 } from './PluginRegistry';
 export { createPluginContext, createPluginLogger } from './createPluginContext';
-export {
-  createCozyLifeSamplePlugin,
-  createHighGraphicsSamplePlugin,
-  createShooterKitSamplePlugin,
-} from './samples';
 export { createStoreDomainPlugin } from './storeDomainPlugin';
 export { defineService, runtimeStoreServiceKey, type ServiceKey } from './serviceKey';
 export { defineGaesupPlugin } from './template';
@@ -51,7 +46,6 @@ export type {
   EventUnsubscribe,
   AssetExtensionMap,
   BlueprintExtensionMap,
-  CatalogExtensionMap,
   ComponentExtensionMap,
   EditorExtensionMap,
   ExtensionRegistry,
@@ -75,7 +69,6 @@ export type {
   PluginRegistryApi,
   PluginRuntime,
   PluginStatus,
-  QuestExtensionMap,
   RenderingExtensionMap,
   RegistryEntry,
   SaveExtensionMap,

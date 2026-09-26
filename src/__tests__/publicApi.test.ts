@@ -286,7 +286,6 @@ describe('public package API', () => {
     const source = readRootEntry();
 
     expect(root).toHaveProperty('WorldConfigProvider');
-    expect(root).toHaveProperty('WorldContainer');
     expect(source).toContain("export * from './core/editor'");
   });
 
@@ -333,9 +332,6 @@ describe('public package API', () => {
       'defineGaesupPlugin',
       'validateGaesupPlugin',
       'assertValidGaesupPlugin',
-      'createCozyLifeSamplePlugin',
-      'createHighGraphicsSamplePlugin',
-      'createShooterKitSamplePlugin',
       'CONTENT_SCHEMA_VERSION',
       'createContentBundleFromSaveSystem',
       'validateContentBundle',

@@ -25,7 +25,6 @@ import type { MotionsRuntime } from '../motions/plugin';
 import type { ClickNavigationRoute } from '../navigation/ClickNavigationRoute';
 import type { NavigationObstacleRegistry } from '../navigation/NavigationObstacleRegistry';
 import type { NavigationSystem, NavigationConfig } from '../navigation/NavigationSystem';
-import type { NetworkBridge } from '../networks/bridge/NetworkBridge';
 import type { NPCBrainAdapterRegistry } from '../npc/core/brain';
 import type { SchedulerRegistry } from '../npc/core/NPCScheduler';
 import type { NPCSimulation } from '../npc/core/NPCSimulation';
@@ -110,7 +109,6 @@ export type GaesupRuntime = {
   readonly motions: MotionsRuntime;
   readonly motionBridge: MotionBridge;
   readonly animationBridge: AnimationBridge;
-  readonly networkBridge: NetworkBridge;
   isActive: () => boolean;
   getLifecycleRevision: () => number;
   subscribeLifecycle: (listener: () => void) => () => void;

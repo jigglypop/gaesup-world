@@ -11,7 +11,6 @@ export * from './ui';
 export * from './utils';
 export * from './world';
 export * from './networks';
-export * from './ops';
 export * from './time';
 export * from './save';
 export * from './dialog';
@@ -186,9 +185,9 @@ export * from './building';
 export * from './npc';
 
 export { WorldProps as GaeSupProps } from './world/components/WorldProps';
-export { WorldContainer as GaesupWorld } from './world/components/WorldContainer';
+export { WorldConfigProvider as GaesupWorld } from './world/components/WorldContainer';
 export { GaesupWorldContent } from './world/components/WorldContainer';
-export { WorldConfigProvider, WorldContainer } from './world/components/WorldContainer';
+export { WorldConfigProvider } from './world/components/WorldContainer';
 export { ControllerWrapper as GaesupController } from './interactions/components/ControllerWrapper';
 
 export { createRenderer, createLegacyRenderer, isWebGPUAvailable } from './rendering/webgpu';

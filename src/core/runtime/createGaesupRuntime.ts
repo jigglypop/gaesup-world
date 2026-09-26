@@ -34,7 +34,6 @@ import { RUNTIME_OWNED_MOTIONS_SERVICE_ID, type MotionsRuntime } from '../motion
 import { createClickNavigationRoute } from '../navigation/ClickNavigationRoute';
 import { createNavigationObstacleRegistry } from '../navigation/NavigationObstacleRegistry';
 import { NavigationSystem } from '../navigation/NavigationSystem';
-import { NetworkBridge } from '../networks/bridge/NetworkBridge';
 import { createNPCBrainAdapterRegistry } from '../npc/core/brain';
 import { createNPCScheduler } from '../npc/core/NPCScheduler';
 import { NPCSimulation } from '../npc/core/NPCSimulation';
@@ -158,7 +157,6 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   let motions: MotionsRuntime | undefined;
   let motionBridge: MotionBridge | undefined;
   let animationBridge: AnimationBridge | undefined;
-  let networkBridge: NetworkBridge | undefined;
   let inputExtension: InputBackendExtension | undefined;
   let unsubscribeInputExtensions: (() => void) | undefined;
   const refreshInputBackend = () => {
@@ -320,8 +318,6 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
     if (oldMotionBridge) await attempt(() => oldMotionBridge.dispose());
     const oldAnimationBridge = animationBridge; animationBridge = undefined;
     if (oldAnimationBridge) await attempt(() => oldAnimationBridge.dispose());
-    const oldNetworkBridge = networkBridge; networkBridge = undefined;
-    if (oldNetworkBridge) await attempt(() => oldNetworkBridge.dispose());
 
     const unregisterDiagnostics = unregisterSaveDiagnostics;
     unregisterSaveDiagnostics = undefined;
@@ -486,7 +482,6 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
     get motions() { return getMotions(); },
     get motionBridge() { return motionBridge ??= new MotionBridge(); },
     get animationBridge() { return animationBridge ??= new AnimationBridge(); },
-    get networkBridge() { return networkBridge ??= NetworkBridge.forClock(clockLoop.clock); },
     isActive: () => lifecycleState === 'active',
     getLifecycleRevision: () => lifecycleRevision,
     subscribeLifecycle: listener => { lifecycleListeners.add(listener); return () => { lifecycleListeners.delete(listener); }; },

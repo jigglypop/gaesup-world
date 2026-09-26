@@ -1,9 +1,9 @@
 {
-  "interfaceDeclarations": 454,
-  "consoleCalls": 23,
+  "interfaceDeclarations": 411,
+  "consoleCalls": 21,
   "anyUsages": 0,
   "rawUseFrame": 2,
-  "oversizedComponents": 41,
-  "oversizedModules": 11,
+  "oversizedComponents": 39,
+  "oversizedModules": 10,
   "decorators": 0
 }

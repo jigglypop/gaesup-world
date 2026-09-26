@@ -30,7 +30,6 @@ export * from './render/upload';
 export * from './visibility/store';
 export * from './types';
 export * from './hooks/useBuildingEditor';
-export * from './bridge/BuildingBridge';
 
 export { default as Sakura, SakuraBatch } from './components/mesh/sakura';
 export type { SakuraTreeEntry } from './components/mesh/sakura';

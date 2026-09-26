@@ -23,7 +23,6 @@
 
 | ID | 내용 | 완료 기준 |
 |---|---|---|
-| DEL-2 | 승인된 공개 API 삭제: NPC 네트워크 섬(`NetworkBridge`·`NetworkSystem`·`NPCNetworkManager`·`ConnectionPool`·`networkStateStore`, hook 5개, 패널 2개, `runtime.networkBridge`), `core/ops`, 샘플 플러그인 3개, deprecated 묶음(`usePhysics`, `BuildingBridge`, `WorldContainer` 별칭, `useGaesupContext`·`useCursorState`, 읽히지 않는 `WorldContainerProps`, `onDestory`) | export snapshot·소비자 검증 갱신, `verify:full` 통과. `blueprints`는 유지 |
 | ISO-1 | 런타임별 격리. 자산 카탈로그와 로드 세대(`latestLoad`)를 런타임 소유로, `AvatarProvider` 기본 조회도 런타임 카탈로그로. 오류는 전역 sink 교체 대신 런타임이 소유한 경계(클록, 플러그인 이벤트 버스, 세이브, 상호작용, 캔버스 프레임 스케줄러)가 자기 `onError`로 보고한다 | 같은 asset ID에 다른 메타데이터를 가진 월드 A/B가 각자 결과만 읽고, 한쪽의 느린 로드·해제가 다른 쪽을 바꾸지 않는다. A의 오류는 A의 `onError`로만 가고, 해제 순서와 관계없이 종료된 런타임의 콜백이 다시 불리지 않는다. 두 런타임 해제 뒤 리스너·타이머 누수 0. `S-H08`을 실측으로 |
 | ISO-2 | 방문 스냅샷 원자적 적용. 모든 도메인을 먼저 검증하고, 적용 중 실패하면 바뀐 도메인을 역순으로 되돌린다. 복구 실패는 구조화된 결과로 알린다 | `atomic: true`에서 한 도메인이라도 실패하면 로컬 상태가 적용 전과 같다. 호출자가 성공·실패를 구분하고 실패 뒤 autosave가 멈춰 있지 않다. 두 번째 도메인 예외 주입 테스트 |
 | GPU-1 | WebGPU 전면. `createRenderer`는 `WebGPURenderer`만 만들고, `WebGLRenderer`·GLSL(`shaderMaterial`)·WebGL 그림자 깊이 재질·`@react-three/postprocessing` 경로(불, 깃발, 잔디, 벚꽃, 눈, 물, 날씨, `ColorGrade`, `LutOverlay`, `ToonOutlines`)를 지운다. 필요한 효과는 TSL로 옮긴다. `postprocessing`·`@react-three/postprocessing` 의존성을 뺀다 | `rendererKind(...) === 'webgl'` 분기 0, GLSL 소스 0, 브라우저에서 WebGPU와 WebGL2 fallback 둘 다 그린다. 설치형 소비자 검증 통과 |
