@@ -7,6 +7,7 @@ import {
   parseRemoteModelUrl,
   PeerRateLimiter,
 } from './remoteInputLimits';
+import { createUniqueId } from '../../utils/id';
 import { NetworkPayload, PlayerState } from '../types';
 
 type PlayerNetworkLogLevel = 'none' | 'error' | 'warn' | 'info' | 'debug';
@@ -119,7 +120,6 @@ export class PlayerNetworkManager {
   private enableAck: boolean;
   private reliableTimeoutMs: number;
   private reliableRetryCount: number;
-  private ackIdCounter: number = 1;
   private pendingAcks: Map<
     string,
     { raw: string; messageType: string; retriesLeft: number; timer: ReturnType<typeof setTimeout> | null }
@@ -788,16 +788,11 @@ export class PlayerNetworkManager {
     return true;
   }
 
-  private nextAckId(): string {
-    const n = this.ackIdCounter++;
-    return `ack_${Date.now()}_${n}`;
-  }
-
   private sendReliable(payload: { type: string; [k: string]: NetworkPayload }): void {
     const ws = this.ws;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
-    const ackId = this.nextAckId();
+    const ackId = createUniqueId('ack');
     const messageType = String(payload.type ?? 'Unknown');
     const raw = JSON.stringify({ ...payload, ackId });
 

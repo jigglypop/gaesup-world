@@ -8,6 +8,7 @@ import type {
   NPCBrainMode,
   NPCInstance as NPCInstanceData,
 } from '../../../../../npc/types';
+import { createUniqueId } from '../../../../../utils/id';
 import { FieldRow } from '../../../fields';
 import { BrainFlow } from '../flow';
 import {
@@ -355,7 +356,7 @@ export function NPCBrainSection({
   const recoverOrphanNode = (targetNodeId: string) => {
     if (!selectedBlueprint || !primaryStartNode) return;
     const nextEdge: NPCBrainBlueprintEdge = {
-      id: `${primaryStartNode.id}-${targetNodeId}-${Date.now()}`,
+      id: createUniqueId(`${primaryStartNode.id}-${targetNodeId}`),
       source: primaryStartNode.id,
       target: targetNodeId,
       branch: 'next',
@@ -384,7 +385,7 @@ export function NPCBrainSection({
       );
       if (integrityError) continue;
       nextEdges.push({
-        id: `${primaryStartNode.id}-${orphanNodeId}-${Date.now()}-${recoveredCount}`,
+        id: createUniqueId(`${primaryStartNode.id}-${orphanNodeId}`),
         source: primaryStartNode.id,
         target: orphanNodeId,
         branch: 'next',
@@ -412,7 +413,7 @@ export function NPCBrainSection({
     );
     if (!fallbackTarget) return;
     const newEdge: NPCBrainBlueprintEdge = {
-      id: `${selectedNodeId}-${fallbackTarget.id}-${Date.now()}`,
+      id: createUniqueId(`${selectedNodeId}-${fallbackTarget.id}`),
       source: selectedNodeId,
       target: fallbackTarget.id,
       branch: 'next',
@@ -467,7 +468,7 @@ export function NPCBrainSection({
       return;
     }
     const newEdge: NPCBrainBlueprintEdge = {
-      id: `${conditionNodeId}-${branch}-${targetCandidate.id}-${Date.now()}`,
+      id: createUniqueId(`${conditionNodeId}-${branch}-${targetCandidate.id}`),
       source: conditionNodeId,
       target: targetCandidate.id,
       branch,
@@ -512,7 +513,7 @@ export function NPCBrainSection({
       );
       if (integrityError) continue;
       nextEdges.push({
-        id: `${conditionNodeId}-${branch}-${targetCandidate.id}-${Date.now()}-${addedCount}`,
+        id: createUniqueId(`${conditionNodeId}-${branch}-${targetCandidate.id}`),
         source: conditionNodeId,
         target: targetCandidate.id,
         branch,

@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { BridgeFactory } from '../../core/boilerplate';
 import { useGaesupRuntime } from '../../core/runtime/runtimeContext';
 import { useGaesupStore } from '../../core/stores/gaesupStore';
+import { createUniqueId } from '../../core/utils/id';
 import { logger } from '../../core/utils/logger';
 import { WorldBridge } from '../../core/world/bridge/WorldBridge';
 import type { WorldView } from '../../core/world/core/WorldViews';
@@ -59,7 +60,7 @@ export function useSpawnFromBlueprint(view?: WorldView) {
         return null;
       }
 
-      const entityId = `${blueprint.type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const entityId = createUniqueId(blueprint.type);
       const position = options.position || [0, 0, 0];
       const rotation = options.rotation || [0, 0, 0];
       const scale = options.scale || [1, 1, 1];

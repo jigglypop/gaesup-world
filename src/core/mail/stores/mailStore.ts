@@ -7,6 +7,7 @@ import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { lazyScopedStore } from '../../stores/scopedStore';
 import { notify } from '../../ui/components/Toast/toastStore';
 import { isAmount, isCount, isId, isRecord } from '../../utils/guards';
+import { createUniqueId } from '../../utils/id';
 import type { MailAttachment, MailMessage, MailSerialized } from '../types';
 
 type State = {
@@ -54,14 +55,12 @@ const copyMessage = (m: MailMessage): MailMessage => ({ ...m, ...(m.attachments 
 
 
 export function createMailStore(inventoryStore: InventoryStore, walletStore: WalletStore) {
-  let _seq = 0;
-  function genId(): string { return `mail_${Date.now().toString(36)}_${(++_seq).toString(36)}`; }
   const PENDING_CLAIMS = new Set<string>();
   return create<State>((set, get) => ({
   messages: [],
 
   send: (msg) => {
-    const id = msg.id ?? genId();
+    const id = msg.id ?? createUniqueId('mail');
     if (get().messages.some((message) => message.id === id)) return id;
     const next: MailMessage = {
       id,

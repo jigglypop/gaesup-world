@@ -4,6 +4,7 @@ import type {
   GameplayEventCondition,
   GameplayEventTrigger,
 } from './types';
+import { createUniqueId } from '../../utils/id';
 
 export const GAMEPLAY_EVENT_TRIGGER_TYPES = [
   'manual',
@@ -134,7 +135,7 @@ export const createManualToastEventBlueprint = ({
   triggerKey: string;
   message: string;
 }): GameplayEventBlueprint => {
-  const safeId = id.trim() || `event-${Date.now()}`;
+  const safeId = id.trim() || createUniqueId('event');
   const flagKey = safeId.trim() || 'manualEvent';
 
   return {

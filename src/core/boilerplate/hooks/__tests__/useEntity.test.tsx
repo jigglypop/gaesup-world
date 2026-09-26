@@ -73,18 +73,15 @@ describe('useEntity ownership key', () => {
 
   test('keeps an auto-generated entity ID shared by motion and physics across rerenders', () => {
     const rigidBodyRef: RefObject<RapierRigidBody> = { current: null! };
-    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
-    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.25);
     const { rerender } = renderHook(
       ({ isActive }: { isActive: boolean }) => useEntity({ rigidBodyRef, isActive }),
       { initialProps: { isActive: false } },
     );
 
-    const initialEntityId = 'entity-1700000000000-0.25';
+    const initialEntityId = mockUseMotionSetup.mock.calls[0]![0];
+    expect(initialEntityId).toMatch(/^entity-/);
     expectOwnershipKey(initialEntityId);
 
-    nowSpy.mockReturnValue(1_800_000_000_000);
-    randomSpy.mockReturnValue(0.75);
     rerender({ isActive: true });
 
     expectOwnershipKey(initialEntityId);

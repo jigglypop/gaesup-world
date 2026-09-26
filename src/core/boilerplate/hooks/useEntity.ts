@@ -1,4 +1,4 @@
-import { useRef, RefObject } from 'react';
+import { useState, RefObject } from 'react';
 
 import type { RapierCollider, RapierRigidBody } from '@react-three/rapier';
 import type { Group } from 'three';
@@ -13,6 +13,7 @@ import {
   usePhysicsBridge,
   type UsePhysicsBridgeOptions,
 } from '@core/motions/hooks/usePhysicsBridge';
+import { createUniqueId } from '@core/utils/id';
 import { useGaesupStore } from '@stores/gaesupStore';
 
 import {
@@ -54,9 +55,7 @@ export function useEntity(options: UseEntityOptions) {
     animatorController,
   } = options;
 
-  const entityId = useRef<string>(
-    id || `entity-${Date.now()}-${Math.random()}`,
-  ).current;
+  const [entityId] = useState(() => id || createUniqueId('entity'));
 
   const activeMode = useGaesupStore((state) => state.mode);
   const modeType = activeMode?.type ?? 'character';

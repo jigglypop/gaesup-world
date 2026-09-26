@@ -3,6 +3,7 @@ import type { Vector3 } from 'three';
 import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
 import type { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
 import type { BaseMetrics, BaseState, SystemUpdateArgs } from '@/core/boilerplate/types';
+import { createUniqueId } from '@/core/utils/id';
 import { logger } from '@/core/utils/logger';
 
 import type {
@@ -106,7 +107,7 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
   }
 
   addAction(action: Omit<AutomationAction, 'id' | 'timestamp'>): string {
-    const id = `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = createUniqueId('action');
     const fullAction: AutomationAction = {
       ...action,
       id,

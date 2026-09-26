@@ -647,8 +647,8 @@ export function BuildingUI({
                     <button
                       onClick={() => {
                         if (customName) {
-                          const newId = `custom-tile-${Date.now()}`;
-                          const newMeshId = `custom-floor-mesh-${Date.now()}`;
+                          const newId = createBuildingScopeId('custom-tile');
+                          const newMeshId = createCustomMeshId('custom-floor-mesh');
 
                           // Create new mesh
                           addMesh({
@@ -1454,8 +1454,8 @@ export function BuildingUI({
                     <button
                       onClick={() => {
                         if (customName) {
-                          const newId = `custom-wall-${Date.now()}`;
-                          const newMeshId = `custom-mesh-${Date.now()}`;
+                          const newId = createBuildingScopeId('custom-wall');
+                          const newMeshId = createCustomMeshId('custom-mesh');
 
                           // Create new mesh
                           addMesh({

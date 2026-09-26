@@ -35,7 +35,7 @@ describe('BuildingBridge 테스트', () => {
     // 각 테스트 전에 mock 초기화
     jest.clearAllMocks();
     
-    // Date.now() 모킹 (ID 생성 테스트용)
+    // 같은 시각에 만든 id도 겹치지 않는지 보려고 시각을 고정한다
     jest.spyOn(Date, 'now').mockReturnValue(1234567890);
   });
 
@@ -150,7 +150,7 @@ describe('BuildingBridge 테스트', () => {
 
       const result = BuildingBridge.convertLegacyWall(legacyWall);
 
-      expect(result.id).toBe('wall-1234567890');
+      expect(result.id).toMatch(/^wall-/);
       expect(result.wallGroupId).toBe('default');
     });
 
@@ -205,7 +205,7 @@ describe('BuildingBridge 테스트', () => {
 
       const result = BuildingBridge.convertLegacyTile(legacyTile);
 
-      expect(result.id).toBe('tile-1234567890');
+      expect(result.id).toMatch(/^tile-/);
       expect(result.tileGroupId).toBe('default');
     });
 
@@ -266,7 +266,7 @@ describe('BuildingBridge 테스트', () => {
       const result = BuildingBridge.convertLegacyMesh(legacyMesh);
 
       expect(result).toEqual({
-        id: 'mesh-1234567890',
+        id: expect.stringMatching(/^mesh-/),
         color: '#ffffff',
         material: 'STANDARD',
         mapTextureUrl: undefined,
@@ -420,15 +420,17 @@ describe('BuildingBridge 테스트', () => {
       expect(typeof result.z).toBe('number');
     });
 
-    test('생성된 ID가 올바른 형식이어야 함', () => {
+    test('id 없는 레거시 벽을 같은 시각에 여러 개 변환해도 id가 겹치지 않아야 함', () => {
       const legacyWall: LegacyWall = {
         position: [0, 0, 0],
         rotation: [0, 0, 0]
       };
 
-      const result = BuildingBridge.convertLegacyWall(legacyWall);
+      const first = BuildingBridge.convertLegacyWall(legacyWall);
+      const second = BuildingBridge.convertLegacyWall(legacyWall);
 
-      expect(result.id).toMatch(/^wall-\d+$/);
+      expect(first.id).toMatch(/^wall-/);
+      expect(second.id).not.toBe(first.id);
     });
 
     test('메시 변환 시 재질 타입이 제한되어야 함', () => {

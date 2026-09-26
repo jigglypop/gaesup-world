@@ -6,6 +6,7 @@ import { useClicker } from '@hooks/useClicker';
 
 import { WorldPropsType } from './types';
 import { MinimapSystem } from '../../../ui/core';
+import { createUniqueId } from '../../../utils/id';
 
 export function WorldProps({ 
   type = 'normal', 
@@ -17,7 +18,7 @@ export function WorldProps({
 }: WorldPropsType) {
   const groupRef = useRef<THREE.Group>(null);
   const clickerStates = useClicker();
-  const markerId = useMemo(() => `world-prop-${Date.now()}-${Math.random()}`, []);
+  const markerId = useMemo(() => createUniqueId('world-prop'), []);
   
   // Reusable THREE.js objects
   const vectorsRef = useRef({

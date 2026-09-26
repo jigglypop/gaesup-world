@@ -1,6 +1,7 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
+import { createUniqueId } from '../../utils/id';
 import { NetworkMessage, NetworkPayload } from '../types';
 
 export interface MessageSendOptions {
@@ -66,8 +67,6 @@ export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetwork
   const [sentMessages, setSentMessages] = useState<NetworkMessage[]>([]);
   const [pendingMessages, setPendingMessages] = useState<NetworkMessage[]>([]);
 
-  const messageCounterRef = useRef<number>(0);
-
   const sendMessage = useCallback((
     receiverId: string,
     content: NetworkPayload,
@@ -76,7 +75,7 @@ export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetwork
   ): string => {
     if (!isReady) return '';
 
-    const messageId = `${senderId}-${++messageCounterRef.current}-${Date.now()}`;
+    const messageId = createUniqueId(senderId);
     const timestamp = Date.now();
 
     const message: NetworkMessage = {
@@ -112,7 +111,7 @@ export function useNetworkMessage(options: UseNetworkMessageOptions): UseNetwork
   ): string => {
     if (!isReady) return '';
 
-    const messageId = `${senderId}-broadcast-${++messageCounterRef.current}-${Date.now()}`;
+    const messageId = createUniqueId(`${senderId}-broadcast`);
     const timestamp = Date.now();
 
     const message: Omit<NetworkMessage, 'to'> = {

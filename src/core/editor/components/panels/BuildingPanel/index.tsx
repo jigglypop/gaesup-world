@@ -37,6 +37,7 @@ import {
   type BuildingSystemState,
 } from '../../../../building/types';
 import { useNPCStoreApi } from '../../../../npc/stores/npcStore';
+import { createUniqueId } from '../../../../utils/id';
 import { FieldColor, FieldRow } from '../../fields';
 import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
@@ -372,7 +373,7 @@ const CustomTileSection = React.memo(function CustomTileSection({ objectUrls }: 
       objectUrls.current.push(textureUrl);
       const nextName = file.name.replace(/\.[^.]+$/, '').trim();
       const asset: AssetRecord = {
-        id: `custom-tile-texture-${Date.now()}`,
+        id: createUniqueId('custom-tile-texture'),
         name: nextName || '사용자 지정 타일 텍스처',
         kind: 'tile',
         metadata: { textureUrl },

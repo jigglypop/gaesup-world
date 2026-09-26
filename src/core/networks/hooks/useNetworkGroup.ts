@@ -1,6 +1,7 @@
 import { useCallback, useRef, useEffect, useState } from 'react';
 
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
+import { createUniqueId } from '../../utils/id';
 import type { NetworkGroup, NetworkMessage, NetworkPayload } from '../types';
 
 export interface GroupCreateOptions {
@@ -71,7 +72,6 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
   const [availableGroups, setAvailableGroups] = useState<NetworkGroup[]>([]);
   const [groupMessages, setGroupMessages] = useState<Map<string, NetworkMessage[]>>(new Map());
 
-  const messageCounterRef = useRef<number>(0);
   const groupMembersRef = useRef<Map<string, Set<string>>>(new Map());
   const seenMessageIdsRef = useRef<Set<string>>(new Set());
   const joinedGroupsRef = useRef<string[]>([]);
@@ -279,7 +279,7 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
   ): string => {
     if (!isReady || !joinedGroups.includes(groupId)) return '';
 
-    const messageId = `${npcId}-group-${++messageCounterRef.current}-${Date.now()}`;
+    const messageId = createUniqueId(`${npcId}-group`);
     const timestamp = Date.now();
 
     const message: NetworkMessage = {
@@ -307,7 +307,7 @@ export function useNetworkGroup(options: UseNetworkGroupOptions): UseNetworkGrou
 
     // 그룹 초대는 시스템 메시지로 처리
     const message: NetworkMessage = {
-      id: `invite-${Date.now()}`,
+      id: createUniqueId('invite'),
       from: npcId,
       to: targetNpcId,
       type: 'system',

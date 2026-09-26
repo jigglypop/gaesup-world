@@ -13,6 +13,7 @@ import {
   useGaesupRuntimeRevision,
 } from '../../../runtime';
 import { useEngineFrame } from '../../../runtime/frame';
+import { createUniqueId } from '../../../utils/id';
 
 export type TeleportDropEffectProps = {
   enabled?: boolean;
@@ -75,7 +76,7 @@ function createEffect(
   particleCount: number,
 ): TeleportEffectInstance | null {
   if (payload.effect === undefined) return null;
-  const id = payload.effect.id ?? `teleport-effect-${Date.now().toString(36)}`;
+  const id = payload.effect.id ?? createUniqueId('teleport-effect');
   return {
     id,
     startedAt: performance.now(),

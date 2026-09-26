@@ -4,6 +4,7 @@ import './styles.css';
 import { BlueprintType, BlueprintCategory, type BlueprintFieldValue } from './types';
 import { convertBlueprintToItem } from './utils';
 import { blueprintRegistry, AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint } from '../../../';
+import { createUniqueId } from '../../../../core/utils/id';
 import { useSpawnFromBlueprint } from '../../../hooks/useSpawnFromBlueprint';
 import type { BlueprintRecord, BlueprintValue } from '../../../types';
 import { BLUEPRINT_FIELD_LABELS, BLUEPRINT_TAG_LABELS, BLUEPRINT_TYPE_LABELS } from '../../BlueprintEditor/defaults';
@@ -160,7 +161,7 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
     let newBlueprint: AnyBlueprint;
     
     const baseProps = {
-      id: `custom_${selectedCategory}_${Date.now()}`,
+      id: createUniqueId(`custom-${selectedCategory}`),
       name: `새 ${blueprintCategories.find((category) => category.type === selectedCategory)?.name}`,
       version: '1.0.0',
       tags: ['custom'],

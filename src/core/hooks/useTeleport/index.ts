@@ -13,6 +13,7 @@ import {
   useGaesupRuntime,
   useGaesupRuntimeRevision,
 } from '../../runtime';
+import { createUniqueId } from '../../utils/id';
 
 export interface TeleportResult {
   teleport: (position: Vector3, rotation?: Euler, options?: TeleportOptions) => void;
@@ -26,10 +27,6 @@ export type TeleportOptions = {
     durationMs?: number;
   };
 };
-
-function createTeleportEffectId(): string {
-  return `teleport-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
 
 export function useTeleport(): TeleportResult {
   const { activeState, updateActiveState } = useStateSystem();
@@ -68,7 +65,7 @@ export function useTeleport(): TeleportResult {
       ...(shouldEmitEffect
         ? {
             effect: {
-              id: createTeleportEffectId(),
+              id: createUniqueId('teleport'),
               kind: effectOptions.kind ?? (dropHeight > 0 ? 'drop' : 'instant'),
               dropHeight,
               durationMs: effectOptions.durationMs ?? 900,

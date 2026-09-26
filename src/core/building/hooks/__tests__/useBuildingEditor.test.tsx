@@ -355,7 +355,7 @@ describe('useBuildingEditor 훅 테스트', () => {
       act(() => { result.current.placeWall(); });
 
       expect(mockAddWall).toHaveBeenCalledWith('test-wall-group', expect.objectContaining({
-        id: expect.stringMatching(/^wall-\d+-\d+$/),
+        id: expect.stringMatching(/^wall-/),
         position: hoverPosition,
         rotation: { x: 0, y: Math.PI / 2, z: 0 },
         wallGroupId: 'test-wall-group',
@@ -440,7 +440,7 @@ describe('useBuildingEditor 훅 테스트', () => {
       act(() => { result.current.placeTile(); });
 
       expect(mockAddTile).toHaveBeenCalledWith('test-tile-group', expect.objectContaining({
-        id: expect.stringMatching(/^tile-\d+-\d+$/),
+        id: expect.stringMatching(/^tile-/),
         position: expect.objectContaining({ x: 8, z: 12 }),
         tileGroupId: 'test-tile-group',
         size: 2,
@@ -546,7 +546,7 @@ describe('useBuildingEditor 훅 테스트', () => {
 
       expect(mockGetSupportHeightAt).toHaveBeenCalledWith(hoverPosition);
       expect(mockAddBlock).toHaveBeenCalledWith(expect.objectContaining({
-        id: expect.stringMatching(/^block-\d+-\d+$/),
+        id: expect.stringMatching(/^block-/),
         position: expect.objectContaining({ x: 8, y: 2, z: 12 }),
         size: { x: 2, y: 1, z: 2 },
         materialId: 'default-block',

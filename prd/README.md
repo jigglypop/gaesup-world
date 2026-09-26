@@ -25,7 +25,6 @@
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| SE-6a | id 생성을 `createUniqueId` 하나로(`Date.now()` 기반 약 25곳) | 문자열 id에 `Date.now()` 0 |
 | SE-6b | WebGPU 판정 하나(8종), renderer 팩토리 하나(`rendering/webgpu`, `next/backend`) | 판정 함수 1 |
 | SE-6c | `NetworkConfig` 기본값 하나(3벌), 효과 없는 필드 `@deprecated` | 기본값 정의 1 |
 | SE-6d | pub/sub 하나(`mitt`, `InMemoryEventBus`, `ToolEventBus`) | `mitt` 의존성 0 |

@@ -780,7 +780,8 @@ function buildNPCStore(legacyBlueprintRegistry = false, invalidateBrainRequests:
       const template = get().templates.get(templateId);
       if (!template) return;
 
-      const instanceId = `npc-${Date.now()}`;
+      const instanceId = createUniqueId('npc');
+      const templateCount = [...get().instances.values()].filter((entry) => entry.templateId === templateId).length;
       const selectedClothingSetId = get().selectedClothingSetId || template.defaultClothingSet;
       
       // Create custom parts from preview accessories
@@ -803,7 +804,7 @@ function buildNPCStore(legacyBlueprintRegistry = false, invalidateBrainRequests:
       const instance: NPCInstance = {
         id: instanceId,
         templateId,
-        name: `${template.name} ${Date.now()}`,
+        name: `${template.name} ${templateCount + 1}`,
         position,
         rotation: [0, 0, 0],
         scale: [DEFAULT_NPC_SCALE, DEFAULT_NPC_SCALE, DEFAULT_NPC_SCALE],

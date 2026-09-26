@@ -1,3 +1,4 @@
+import { createUniqueId } from '@/core/utils/id';
 import { reportError } from '@/core/utils/reportError';
 
 import { Position3D, Rotation3D, WallConfig, TileConfig, MeshConfig } from '../types';
@@ -60,7 +61,7 @@ export class BuildingBridge {
 
   static convertLegacyWall(legacyWall: LegacyWall): WallConfig {
     return convertLegacy('convertLegacyWall', () => ({
-      id: legacyWall.id || `wall-${Date.now()}`,
+      id: legacyWall.id || createUniqueId('wall'),
       position: this.convertLegacyPosition(legacyWall.position),
       rotation: this.convertLegacyRotation(legacyWall.rotation),
       wallGroupId: legacyWall.wall_parent_id || 'default',
@@ -72,7 +73,7 @@ export class BuildingBridge {
 
   static convertLegacyTile(legacyTile: LegacyTile): TileConfig {
     return convertLegacy('convertLegacyTile', () => ({
-      id: legacyTile.id || `tile-${Date.now()}`,
+      id: legacyTile.id || createUniqueId('tile'),
       position: this.convertLegacyPosition(legacyTile.position),
       tileGroupId: legacyTile.tile_parent_id || 'default',
       size: 4,
@@ -82,7 +83,7 @@ export class BuildingBridge {
   static convertLegacyMesh(legacyMesh: LegacyMesh): MeshConfig {
     return convertLegacy('convertLegacyMesh', () => {
       const mesh: MeshConfig = {
-        id: legacyMesh.id || `mesh-${Date.now()}`,
+        id: legacyMesh.id || createUniqueId('mesh'),
         color: legacyMesh.color || '#ffffff',
         material: legacyMesh.material === 'GLASS' ? 'GLASS' : 'STANDARD',
         roughness: legacyMesh.roughness ?? 0.5,

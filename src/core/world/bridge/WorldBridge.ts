@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import { CoreBridge } from '@core/boilerplate';
+import { createUniqueId } from '@core/utils/id';
 
 import { WorldCommand, WorldSnapshot, WorldBridgeState } from './types';
 import { WorldSystem, WorldObject, InteractionEvent } from '../core/WorldSystem';
@@ -71,7 +72,7 @@ export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, Wo
       case 'addObject':
         // Allow callers to supply an id (so state-layer APIs can return the real id).
         const { id: providedId, ...rest } = command.data;
-        const objectId = typeof providedId === 'string' && providedId.length > 0 ? providedId : this.generateId();
+        const objectId = typeof providedId === 'string' && providedId.length > 0 ? providedId : createUniqueId('world');
         const worldObject: WorldObject = { ...rest, id: objectId };
         system.addObject(worldObject);
         break;
@@ -155,7 +156,7 @@ export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, Wo
   addObject(id: string, object: Omit<WorldObject, 'id'> & { id?: string }): string {
     if (!this.enabled || !this.getEngine(id)) return '';
     const providedId = object.id;
-    const objectId = typeof providedId === 'string' && providedId.length > 0 ? providedId : this.generateId();
+    const objectId = typeof providedId === 'string' && providedId.length > 0 ? providedId : createUniqueId('world');
     this.execute(id, { type: 'addObject', data: { ...object, id: objectId } });
     return objectId;
   }
@@ -211,9 +212,5 @@ export class WorldBridge extends CoreBridge<WorldSystemEntity, WorldSnapshot, Wo
     if (!entity) return null;
     const result = entity.system.raycast(origin, direction);
     return result?.object || null;
-  }
-
-  private generateId(): string {
-    return `world_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 }

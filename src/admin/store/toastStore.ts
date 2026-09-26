@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { lazyStore } from '../../core/stores/lazyStore';
+import { createUniqueId } from '../../core/utils/id';
 
 interface ToastItem {
   id: string;
@@ -20,7 +21,7 @@ export const useToast = lazyStore(() => create<ToastState>((set, get) => ({
   toasts: [],
   timers: new Map(),
   addToast: (toast) => {
-    const id = Date.now().toString();
+    const id = createUniqueId('toast');
     const newToast = { ...toast, id };
     set((state) => ({ toasts: [...state.toasts, newToast] }));
 

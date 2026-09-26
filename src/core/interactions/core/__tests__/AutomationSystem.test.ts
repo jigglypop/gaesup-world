@@ -44,7 +44,7 @@ describe('AutomationSystem', () => {
     it('액션을 큐에 추가하고 ID를 반환해야 합니다', () => {
       const id = system.addAction({ type: 'move', target: new Vector3(10, 0, 10) });
       expect(typeof id).toBe('string');
-      expect(id).toMatch(/^action_/);
+      expect(id).toMatch(/^action-/);
       expect(system.getState().queue.actions).toHaveLength(1);
     });
 

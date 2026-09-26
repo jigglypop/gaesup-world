@@ -3,6 +3,7 @@ import { useCallback, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { createUniqueId } from '../../utils/id';
 import { getDefaultBuildingObject } from '../catalog';
 import { tileWorldSize } from '../model/footprint';
 import { useBuildingStore, useBuildingStoreApi } from '../stores/buildingStore';
@@ -12,7 +13,6 @@ import { TILE_CONSTANTS } from '../types/constants';
 const _vec2 = new THREE.Vector2();
 const _groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const _intersection = new THREE.Vector3();
-let _idSeq = 0;
 
 function sanitizeMaterialIdPart(value: string): string {
   return value.replace(/[^a-zA-Z0-9_-]/g, '');
@@ -154,7 +154,7 @@ export function useBuildingEditor() {
     if (checkWallPosition(hoverPosition, currentWallRotation)) return;
     const rotation: Rotation3D = { x: 0, y: currentWallRotation, z: 0 };
     addWall(groupId, {
-      id: `wall-${++_idSeq}-${Date.now()}`,
+      id: createUniqueId('wall'),
       position: hoverPosition,
       rotation,
       wallGroupId: groupId,
@@ -191,7 +191,7 @@ export function useBuildingEditor() {
     const placement = { ...hoverPosition, y: baseY };
     if (checkTilePosition(placement)) return;
     addTile(groupId, {
-      id: `tile-${++_idSeq}-${Date.now()}`,
+      id: createUniqueId('tile'),
       position: placement,
       tileGroupId: groupId,
       size: currentTileMultiplier,
@@ -231,7 +231,7 @@ export function useBuildingEditor() {
       addMesh(terrainBlockMaterial);
     }
     const block = {
-      id: `block-${++_idSeq}-${Date.now()}`,
+      id: createUniqueId('block'),
       position: placement,
       size: { x: sizeXZ, y: 1, z: sizeXZ },
       materialId: terrainBlockMaterial?.id ?? 'default-block',
@@ -334,7 +334,7 @@ export function useBuildingEditor() {
               : undefined;
 
     addObject({
-      id: `obj-${++_idSeq}-${Date.now()}`,
+      id: createUniqueId('obj'),
       type: selectedPlacedObjectType,
       position: {
         ...hoverPosition,

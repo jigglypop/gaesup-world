@@ -6,6 +6,7 @@ import type {
   NPCBrainBlueprintNode,
   NPCBehaviorConfig,
 } from '../../../../npc/types';
+import { createUniqueId } from '../../../../utils/id';
 
 const NPC_BRAIN_LABELS: Readonly<Record<string, string>> = {
   none: '사용 안 함', scripted: '스크립트', llm: '언어 모델', reinforcement: '강화 학습',
@@ -44,14 +45,10 @@ export function createScopedColorMeshConfig(id: string, color: string, base?: Me
   };
 }
 
-export function createNPCBlueprintNodeId(type: string): string {
-  return `${type}-${Date.now()}`;
-}
-
 export function createNPCConditionNode(kind: 'navigationIdle' | 'questStatus' | 'friendshipAtLeast'): NPCBrainBlueprintNode {
   if (kind === 'questStatus') {
     return {
-      id: createNPCBlueprintNodeId('condition-quest'),
+      id: createUniqueId('condition-quest'),
       type: 'condition',
       label: '퀘스트 진행 중',
       condition: { type: 'questStatus', questId: 'welcome', status: 'active' },
@@ -59,14 +56,14 @@ export function createNPCConditionNode(kind: 'navigationIdle' | 'questStatus' | 
   }
   if (kind === 'friendshipAtLeast') {
     return {
-      id: createNPCBlueprintNodeId('condition-friendship'),
+      id: createUniqueId('condition-friendship'),
       type: 'condition',
       label: '친밀도 조건',
       condition: { type: 'friendshipAtLeast', score: 150 },
     };
   }
   return {
-    id: createNPCBlueprintNodeId('condition-idle'),
+    id: createUniqueId('condition-idle'),
     type: 'condition',
     label: '이동 대기',
     condition: { type: 'navigationIdle' },
@@ -79,14 +76,14 @@ export function createNPCActionNode(
 ): NPCBrainBlueprintNode {
   if (kind === 'speak') {
     return {
-      id: createNPCBlueprintNodeId('speak'),
+      id: createUniqueId('speak'),
       type: 'action',
       label: '말하기',
       action: { type: 'speak', text: '안녕?', duration: 2 },
     };
   }
   return {
-    id: createNPCBlueprintNodeId('wander'),
+    id: createUniqueId('wander'),
     type: 'action',
     label: '배회',
     action: {
@@ -213,7 +210,7 @@ export function cloneNPCBlueprintForInstance(
 ): NPCBrainBlueprint {
   return {
     ...blueprint,
-    id: `npc-custom-${instanceId}-${Date.now()}`,
+    id: createUniqueId(`npc-custom-${instanceId}`),
     name: `${blueprint.name} 사본`,
     description: blueprint.description ? `${blueprint.description} ${instanceId} 전용 사본.` : `${instanceId} 전용 사본.`,
     nodes: blueprint.nodes.map((node) => ({ ...node })),

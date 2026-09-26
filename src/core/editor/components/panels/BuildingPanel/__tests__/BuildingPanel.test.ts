@@ -1,6 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import type { NPCBrainBlueprint } from '../../../../../npc/types';
+import {
+  appendNPCBlueprintNode,
+  appendNPCConditionNodeWithBranchTemplate,
+  createNPCActionNode,
+  createNPCConditionNode,
+} from '../helpers';
 import { createPlacementAssetScopeId, createScopedColorMeshConfig } from '../index';
 
 const BUILDING_PANEL_ENTRY = path.resolve(__dirname, '../index.tsx');
@@ -28,6 +35,22 @@ describe('BuildingPanel asset material scoping', () => {
       material: 'STANDARD',
       materialParams: { roughness: 0.5, color: '#ffcc88' },
     });
+  });
+});
+
+describe('NPC brain presets', () => {
+  test('the quest dialogue preset adds its nodes with distinct ids in one click', () => {
+    jest.spyOn(Date, 'now').mockReturnValue(1);
+    const blueprint: NPCBrainBlueprint = { id: 'brain', name: 'brain', nodes: [{ id: 'start', type: 'start' }], edges: [] };
+    const preset = appendNPCBlueprintNode(
+      appendNPCConditionNodeWithBranchTemplate(blueprint, createNPCConditionNode('questStatus')),
+      createNPCActionNode('speak', undefined),
+    );
+    jest.restoreAllMocks();
+
+    const ids = preset.nodes.map((node) => node.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(preset.edges.filter((edge) => edge.source === edge.target)).toEqual([]);
   });
 });
 
