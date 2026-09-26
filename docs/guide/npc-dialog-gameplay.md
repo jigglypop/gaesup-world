@@ -397,9 +397,22 @@ function NPCTalkTarget({ npcId, label, treeId }: { npcId: string; label: string;
 
 정책(`policy`): `run: 'once' | 'repeat'`(기본 반복), `cooldownMs`, `requiresServer`.
 
+### 영역 트리거: `GameplayArea`
+
+플레이어가 상자 영역에 들어서면 `enterArea` 트리거가 간다. 언리얼의 TriggerBox와 같은 역할이며, 런타임이 있는 월드에서만 동작한다.
+
+```tsx
+import { GameplayArea } from 'gaesup-world';
+
+export const Plaza = () => <GameplayArea id="plaza" center={[0, 1, 0]} size={[12, 4, 12]} />;
+```
+
+- `center`와 `size`(전체 크기)는 월드 미터다. 런타임이 고정 틱마다 플레이어 위치를 검사해, 들어온 순간 한 번 보낸다. 나갔다가 다시 들어오면 다시 보낸다.
+- 코드로는 `runtime.gameplayAreas.register({ id, center, size })`가 해제 함수를 돌려준다. React 없이 쓰려면 `createGameplayAreas(onEnter)`(`gaesup-world/gameplay`)로 직접 만든다.
+
 ### 실행과 결과
 
-- **엔진은 트리거를 스스로 만들지 않는다.** 상호작용·영역 진입·시각 변화 때 게임 코드가 `dispatch(trigger)`를 부른다. 결과는 `Promise<GameplayEventExecution[]>`이고 항목마다 `{ blueprintId, actionCount, skipped? }`다.
+- **런타임이 보내는 트리거**: 상호작용 대상이 발동하면(`activateCurrent`) `{ type: 'interaction', targetId: 대상 id, action: 'interact' }`, 플레이어가 영역에 들어서면 `{ type: 'enterArea', areaId }`(고정 틱마다 검사, 머무는 동안은 한 번), 게임 시각이 바뀌면 `{ type: 'timeChanged', hour }`. `manual`·`custom`과 그 밖의 상황은 게임 코드가 `runtime.gameplayEvents.dispatch(trigger)`로 보낸다. 결과는 `Promise<GameplayEventExecution[]>`이고 항목마다 `{ blueprintId, actionCount, skipped? }`다.
 - 블루프린트는 배열 순서대로 본다. `enabled: false`와 트리거가 안 맞는 것은 건너뛰고, 정책에 걸리면 `skipped`에 `already-executed` · `cooldown` · `requires-server` · `in-flight`, 조건이 거짓이면 `condition:<type>`, 실행이 취소되면 `cancelled`가 들어간다.
 - `requiresServer: true`는 이 엔진에서 항상 `requires-server`로 건너뛴다. 서버 실행 경로는 게임이 서버 명령 권한 라우터로 만든다([save-network.md](save-network.md#서버-계약-gaesup-worldserver-contracts)).
 - 조건은 순서대로 모두 참이어야 하고, 처리기가 없는 조건은 거짓이다. 액션은 순서대로 실행하고 처리기가 없는 액션은 건너뛴다(개수에 안 셈). 끝나면 `state.executedAt[id]`에 실행을 시작한 시각(`now()`, 기본 `Date.now()`)을 적는다. `in-flight`는 `once`·`cooldownMs` 규칙이 아직 끝나지 않은 실행과 겹칠 때만 나온다.
@@ -449,7 +462,7 @@ registry.registerAction<CustomAction>('custom', async (action, context) => {
 - `createManualToastEventBlueprint({ id, name, triggerKey, message })`: `manual` 트리거로 성공 토스트와 `setFlag <id> = true`, 정책 `repeat`.
 - `SEED_GAMEPLAY_EVENTS`: 예시 하나(`manual` 키 `world.ready` → 토스트 + `gameplayReady` 플래그, `once`).
 - 에디터 UI용: `GAMEPLAY_EVENT_TRIGGER_TYPES`, `GAMEPLAY_EVENT_CONDITION_TYPES`, `GAMEPLAY_EVENT_ACTION_TYPES`, `createGameplayEvent{Trigger,Condition,Action}Template(type)`.
-- `GameplayEventPanel`(`gaesup-world/editor`)은 제어 컴포넌트다. `blueprints`(기본 `SEED_GAMEPLAY_EVENTS`)와 `onCreate`·`onUpdate`·`onDelete`·`onRun`을 주면 목록을 편집하고, 엔진에 넣는 일(`setBlueprints`)은 앱이 한다. `onRun`이 없으면 시험 실행은 `preview`만 한다. 에디터 셸의 기본 `gameplay-events` 패널은 콜백 없이 올라가므로, 쓰려면 `EditorLayout`의 `panels`에 같은 id로 콜백을 준 패널을 넣어 덮어쓴다.
+- `GameplayEventPanel`(`gaesup-world/editor`)은 제어 컴포넌트다. `blueprints`(기본 `SEED_GAMEPLAY_EVENTS`)와 `onCreate`·`onUpdate`·`onDelete`·`onRun`을 주면 목록을 편집하고, 엔진에 넣는 일(`setBlueprints`)은 앱이 한다. `onRun`이 없으면 시험 실행은 `preview`만 한다. 에디터 셸의 기본 `gameplay-events` 패널은 가장 가까운 월드의 엔진에 묶여, 만들고 고치고 지운 이벤트가 그 엔진의 블루프린트가 된다(시험 실행은 미리보기).
 
 ## 게임 규칙을 붙이는 방법
 
@@ -466,7 +479,6 @@ registry.registerAction<CustomAction>('custom', async (action, context) => {
 
 - NPC 말하기를 말풍선으로 그리지 않는다(위 예시처럼 직접 그린다).
 - NPC가 상호작용 대상을 스스로 등록하지 않고, 플레이어를 actor로 자동 등록하지 않는다.
-- 규칙 엔진은 트리거를 스스로 만들지 않는다(영역 진입·시각 변화 연결 없음).
 - 지각은 거리만 본다(`fieldOfView`, `hearingRadius` 미사용).
 - 렌더 경로가 두 벌이다(`fullModelUrl` 단일 모델과 부위 조립). 일과표(`useNpcSchedule`, `getNPCScheduler`)는 시각에 맞는 칸을 계산할 뿐 시뮬레이션을 움직이지 않는다.
 - `initializeDefaults()`가 두뇌 없는 인스턴스에 `reinforcement` 두뇌를 붙인다.

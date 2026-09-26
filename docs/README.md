@@ -14,16 +14,16 @@ gaesup-world는 React Three Fiber 위에서 도는 **웹판 Unity/Unreal**이다
 ## 현재 상태 (2026-09-27, `main` 2fcfcece)
 
 - `pnpm run verify:full` 통과: 타입체크 3종, lint(경고 0), 계층·진입점·품질 래칫, jest 2,639개, 빌드, publint, 메모리 테스트, 설치형 ESM/CJS 소비자, 예제 lazy 라우트.
-- 코드: `src` 비테스트 94,917줄. 이번 정리 전(`f2b077d1`) 108,683줄에서 12.7% 줄었다. 루트 export는 1,097개에서 950개가 됐다(ISO-1이 런타임 범위 API 4개를 더했다).
+- 코드: `src` 비테스트 94,917줄. 이번 정리 전(`f2b077d1`) 108,683줄에서 12.7% 줄었다. 루트 export는 1,097개에서 952개가 됐다(ISO-1이 런타임 범위 API 4개, DEAD-1이 영역 트리거 2개를 더했다).
 - 예제 `examples/minihome`: 공개 API만 쓰는 최소 마을(12×12 타일 평지, 연못, 길, 오두막 벽, 나무·벚꽃·모닥불·깃발, 플레이어, 배회 NPC 2명). WebGPU에서 60fps로 그린다.
 - 알려진 큰 문제:
   1. 라이브러리 빌드가 모듈을 큰 청크로 합쳐 트리셰이킹이 약하다. 함수 하나만 가져와도 수백 KB가 딸려 온다(PRD LIB-1).
   2. `GaesupWorld`만 쓰면 모듈 전역(legacy) store로 돌고 개발 모드 경고가 7개 난다(LIB-1).
   3. WebGPU가 없으면 `WebGPURenderer`의 WebGL2 백엔드가 아니라 classic `WebGLRenderer`와 GLSL 경로로 그린다. WebGL 전용 후처리(`@react-three/postprocessing`)가 루트 진입점에 정적으로 묶여 WebGPU만 쓰는 앱도 그 패키지를 설치해야 한다(GPU-1).
-  4. 편집 UI와 타입에는 있지만 아무 일도 하지 않는 설정이 있다: 건축 안개·지면·물 설정, `cameraOption`·`urls` 일부 필드, `Teleport` props 등(DEAD-1). NPC는 말풍선을 그리지 않고 일과표가 움직이지 않는다(NPC-1).
+  4. 타입에는 있지만 아무 일도 하지 않는 설정이 남아 있다: 벽 크기, `waterScale`, `cameraOption` 일부 필드, `Teleport` props 등(DEAD-1). NPC는 말풍선을 그리지 않고 일과표가 움직이지 않는다(NPC-1).
   5. 동적 GI가 없다(GI-1).
   6. 유휴 상태에서도 매 프레임을 그리고(CPU 약 15%), 잔디가 삼각형 230만 개를 만든다(PERF).
-- 다음 작업: PRD 순서대로 DEAD-1 → GPU-1 → UP-1 → LIB-1 → PERF → NPC-1 → GI-1 → EX-1.
+- 다음 작업: PRD 순서대로 DEAD-1(남은 삭제) → UP-1 → LIB-1 → PERF → NPC-1 → GI-1 → EX-1. GPU-1은 보류.
 
 ## 문서 지도
 

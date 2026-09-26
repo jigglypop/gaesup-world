@@ -17,7 +17,6 @@ import {
   BlockPanel,
   CameraPanel,
   CharacterAssetPanel,
-  GameplayEventPanel,
   HierarchyPanel,
   InspectorPanel,
   MotionPanel,
@@ -29,6 +28,7 @@ import {
   TilePanel,
   VehiclePanel,
   WallPanel,
+  WorldGameplayEventPanel,
   WorldPanel,
 } from '../panels';
 import { SaveStatusIndicator } from '../SaveStatusIndicator';
@@ -229,7 +229,7 @@ export const EditorLayout: FC<EditorLayoutProps> = ({
       {
         id: 'gameplay-events',
         title: '게임 이벤트',
-        component: <GameplayEventPanel />,
+        component: <WorldGameplayEventPanel />,
         defaultSide: 'right',
       },
       {

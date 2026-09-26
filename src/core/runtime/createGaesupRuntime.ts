@@ -18,9 +18,11 @@ import { createCameraCinematicPlayer } from '../camera/cinematic';
 import { CHARACTER_STORE_SERVICE, createCharacterStore } from '../character/stores/characterStore';
 import { createDialogRegistry } from '../dialog/registry/DialogRegistry';
 import { DIALOG_STORE_SERVICE, createDialogStore } from '../dialog/stores/dialogStore';
+import { createGameplayAreas } from '../gameplay/events/areas';
 import { createStoreGameplayEventServices } from '../gameplay/events/clientServices';
 import { GameplayEventEngine } from '../gameplay/events/engine';
 import { createDefaultGameplayEventRegistry } from '../gameplay/events/registry';
+import type { GameplayTriggerEvent } from '../gameplay/events/types';
 import { WorldGamepadInput } from '../input/WorldGamepadInput';
 import { WorldInputActions } from '../input/WorldInputActions';
 import { WorldInputBackend } from '../input/WorldInputBackend';
@@ -89,11 +91,17 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   const gameplayEventRegistry = createDefaultGameplayEventRegistry(createStoreGameplayEventServices({ dialogStore, emit: (name, payload) => plugins.context.events.emit(name, payload) }));
   const gameplayEvents = new GameplayEventEngine({ registry: gameplayEventRegistry });
   gameplayEvents.suspend();
+  // The engine's own triggers: interacting with a target, entering an area, a new game hour.
+  const dispatchTrigger = (trigger: GameplayTriggerEvent): void => {
+    gameplayEvents.dispatch(trigger).catch((error: unknown) => reportRuntimeError(error, { source: 'gameplay:trigger', label: trigger.type }));
+  };
+  const gameplayAreas = createGameplayAreas((areaId) => dispatchTrigger({ type: 'enterArea', areaId }));
+  let stopGameplayTriggers: (() => void) | undefined;
   const inputScope = createWorldInputScope();
   inputScope.suspend();
   const inputAdapter = new WorldInputBackend();
   const inputActions = new WorldInputActions(inputAdapter, inputScope, false);
-  const interactablesStore = createInteractablesStore(false);
+  const interactablesStore = createInteractablesStore(false, (entry) => dispatchTrigger({ type: 'interaction', targetId: entry.id, action: 'interact' }));
   const inputExtensionId = options.inputExtensionId ?? DEFAULT_INTERACTION_INPUT_EXTENSION_ID;
   const store = createGaesupStore(inputAdapter, reportRuntimeError);
   const cinematics = createCameraCinematicPlayer({ store, characterStore, sceneStore, dialogStore }, false);
@@ -274,6 +282,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
     worldViews.suspend();
     grassManager.suspend();
     clockLoop.suspend(); gameplayEvents.suspend(); inputScope.suspend();
+    stopGameplayTriggers?.(); stopGameplayTriggers = undefined; gameplayAreas.reset();
     sceneStore.getState().suspendTransitions(); roomVisibilityStore.getState().reset();
     audioEngine.suspendPlayback(); audioStore.getState().stopBgm();
     let firstError: unknown;
@@ -437,6 +446,13 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
       unsubscribeGamepadState = store.subscribe(() => gamepad.refresh());
       unsubscribeGamepadEditor = buildingStore.subscribe(() => gamepad.refresh());
       gamepad.resume();
+      const removeAreaSystem = clockLoop.clock.addSystem({
+        id: 'gameplay-areas', phase: 'postSimulation', update: () => gameplayAreas.update(stateManager.getActiveState().position),
+      });
+      const removeHourListener = timeStore.getState().addListener((event) => {
+        if (event.kind === 'newHour') dispatchTrigger({ type: 'timeChanged', hour: event.time.hour });
+      });
+      stopGameplayTriggers = () => { removeAreaSystem(); removeHourListener(); };
       clockLoop.resume();
       publishLifecycle();
     } catch (error) {
@@ -480,7 +496,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
     worldId, reportError: reportRuntimeError, assetStore, dialogRegistry, store, timeStore, clockLoop, stats, inputScope, inputActions, gamepad, interactablesStore, cinematics, navigation, clickNavigation, stateManager, inputAdapter, grassManager, worldBridge, worldObjectStore, worldViews,
     weatherStore, dialogStore,
     audioEngine, audioStore, characterStore, sceneStore, roomVisibilityStore,
-    gameplayEventRegistry, gameplayEvents,
+    gameplayEventRegistry, gameplayEvents, gameplayAreas,
     buildingStore, npcStore, npcScheduler, npcSimulation, npcBrainAdapters, npcReinforcement, buildingRenderStore, buildingCullingStore, buildingVisibilityStore, navigationObstacles,
     get motions() { return getMotions(); },
     get motionBridge() { return motionBridge ??= new MotionBridge(); },

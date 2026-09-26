@@ -5,24 +5,34 @@ import { useGaesupStore } from '@stores/gaesupStore';
 import { createKeyboardOwnership } from './ownership';
 import { useBuildingStore } from '../../building/stores/buildingStore';
 import type { CameraOptionType } from '../../camera/core/types';
+import { createDefaultInputActions, DEFAULT_INPUT_ACTIONS } from '../../input/actions/defaults';
 import { useWorldInputScope } from '../../input/useWorldInputScope';
 import type { KeyboardState } from '../../interactions/bridge';
 import { useInputBackend } from '../../interactions/hooks';
 import { logger } from '../../utils/logger';
 
-const KEY_MAPPING: Record<string, string> = {
-  KeyW: 'forward',
-  KeyA: 'leftward',
-  KeyS: 'backward',
-  KeyD: 'rightward',
-  ShiftLeft: 'shift',
-  Space: 'space',
-  KeyZ: 'keyZ',
-  KeyR: 'keyR',
-  KeyF: 'keyF',
-  KeyE: 'keyE',
-  Escape: 'escape',
+type KeyboardKey = keyof KeyboardState;
+const MOVE_KEYS: Record<string, KeyboardKey> = { 'y:1': 'forward', 'y:-1': 'backward', 'x:1': 'rightward', 'x:-1': 'leftward' };
+const BUTTON_KEYS: Record<string, KeyboardKey> = {
+  [DEFAULT_INPUT_ACTIONS.jump]: 'space', [DEFAULT_INPUT_ACTIONS.run]: 'shift', [DEFAULT_INPUT_ACTIONS.interact]: 'keyE',
 };
+
+/** Keyboard codes come from the default input actions, the one binding table (arrows, both Shifts); the rest are controller shortcuts. */
+function createKeyMapping(): Record<string, KeyboardKey> {
+  const mapping: Record<string, KeyboardKey> = { KeyZ: 'keyZ', KeyR: 'keyR', KeyF: 'keyF', Escape: 'escape' };
+  for (const action of createDefaultInputActions()) {
+    for (const binding of action.bindings) {
+      if (binding.device !== 'keyboard') continue;
+      const key = action.name === DEFAULT_INPUT_ACTIONS.move
+        ? MOVE_KEYS[`${binding.axis}:${Math.sign(binding.scale ?? 1)}`]
+        : BUTTON_KEYS[action.name];
+      if (key) mapping[binding.code] = key;
+    }
+  }
+  return mapping;
+}
+
+const KEY_MAPPING = createKeyMapping();
 
 export const useKeyboard = (
   enableDiagonal = true,

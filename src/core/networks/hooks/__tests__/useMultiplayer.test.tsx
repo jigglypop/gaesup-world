@@ -244,3 +244,14 @@ test('manual reconnect resumes position updates with the same rigid body ref', (
     jest.useRealTimers();
   }
 });
+
+test("connect()'s characterUrl is the model this connection announces, over the hook option", () => {
+  jest.clearAllMocks();
+  const view = renderHook(() => useMultiplayer({ config: defaultMultiplayerConfig, characterUrl: '/hook.glb' }));
+  try {
+    act(() => view.result.current.connect({ roomId: 'room', playerName: 'player', playerColor: '#fff', characterUrl: '/chosen.glb' }));
+    expect(jest.mocked(PlayerNetworkManager).mock.calls.at(-1)?.[0].modelUrl).toBe('/chosen.glb');
+    act(() => view.result.current.connect({ roomId: 'room', playerName: 'player', playerColor: '#fff' }));
+    expect(jest.mocked(PlayerNetworkManager).mock.calls.at(-1)?.[0].modelUrl).toBe('/hook.glb');
+  } finally { view.unmount(); }
+});

@@ -22,7 +22,10 @@ const WorldPostProcessing = lazy(() =>
 );
 
 /** Each URL field with its legacy short alias; the full name wins when both are set. */
-const URL_ALIASES = [['characterUrl', 'character'], ['vehicleUrl', 'vehicle'], ['airplaneUrl', 'airplane']] as const;
+const URL_KEYS = ['characterUrl', 'vehicleUrl', 'airplaneUrl', 'wheelUrl', 'ridingUrl'] as const;
+const URL_ALIASES: Partial<Record<(typeof URL_KEYS)[number], 'character' | 'vehicle' | 'airplane'>> = {
+  characterUrl: 'character', vehicleUrl: 'vehicle', airplaneUrl: 'airplane',
+};
 
 function WorldContent({ children, showGrid, showAxes }: { children?: ReactNode; showGrid?: boolean; showAxes?: boolean }) {
   return (
@@ -51,8 +54,9 @@ function WorldConfiguration(props: WorldContainerProps) {
     const urls = props.urls;
     if (!urls) return null;
     const mapped: Partial<UrlsState> = {};
-    for (const [key, alias] of URL_ALIASES) {
-      const url = urls[key] !== undefined ? urls[key] : urls[alias];
+    for (const key of URL_KEYS) {
+      const alias = URL_ALIASES[key];
+      const url = urls[key] ?? (alias ? urls[alias] : undefined);
       if (url !== undefined) mapped[key] = url;
     }
     return Object.keys(mapped).length > 0 ? mapped : null;
@@ -67,28 +71,15 @@ function WorldConfiguration(props: WorldContainerProps) {
     if (!option) return null;
 
     const distance = option.distance ?? 15;
-    const nextOption: Partial<CameraOptionType> = {};
-    if (option.xDistance !== undefined) {
-      nextOption.xDistance = option.xDistance;
-    } else if (option.type === 'topDown') {
-      nextOption.xDistance = 0;
-    } else if (option.type !== 'firstPerson') {
-      nextOption.xDistance = distance;
-    }
-
-    if (option.yDistance !== undefined) {
-      nextOption.yDistance = option.yDistance;
-    } else {
-      nextOption.yDistance = option.height ?? (option.type === 'topDown' ? distance : 8);
-    }
-
-    if (option.zDistance !== undefined) {
-      nextOption.zDistance = option.zDistance;
-    } else if (option.type === 'topDown') {
-      nextOption.zDistance = 0;
-    } else if (option.type !== 'firstPerson') {
-      nextOption.zDistance = distance;
-    }
+    const topDown = option.type === 'topDown';
+    // First person reads these as eye offsets from the feet, not as an orbit around the character.
+    const firstPerson = option.type === 'firstPerson';
+    const nextOption: Partial<CameraOptionType> = {
+      xDistance: option.xDistance ?? (topDown || firstPerson ? 0 : distance),
+      yDistance: option.yDistance ?? option.height
+        ?? (topDown ? distance : firstPerson ? CAMERA_DEFAULTS.FIRST_PERSON_EYE_HEIGHT : CAMERA_DEFAULTS.Y_DISTANCE),
+      zDistance: option.zDistance ?? (topDown ? 0 : firstPerson ? CAMERA_DEFAULTS.FIRST_PERSON_FORWARD : distance),
+    };
 
     if (option.fov !== undefined) nextOption.fov = option.fov;
     nextOption.zoom = option.zoom ?? CAMERA_DEFAULTS.ZOOM;

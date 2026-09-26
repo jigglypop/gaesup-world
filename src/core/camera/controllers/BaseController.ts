@@ -128,6 +128,7 @@ export abstract class BaseController implements ICameraController {
       targetPosition = this.calculateTargetPosition(props, state);
       lookAtTarget = this.calculateLookAt(props, state);
     }
+    if (cameraOption.bounds) cameraUtils.clampPosition(targetPosition, cameraOption.bounds);
     const focusLerpSpeed = cameraOption.focusLerpSpeed || 10.0;
     const positionSmoothing = cameraOption.focus
       ? focusLerpSpeed

@@ -282,10 +282,10 @@ export const cameraUtils = {
 
   clampPosition: (position: THREE.Vector3, bounds?: CameraBounds): THREE.Vector3 => {
     if (bounds) {
-      position.y = cameraUtils.clampValue(
-        position.y,
-        bounds.minY ?? -Infinity,
-        bounds.maxY ?? Infinity,
+      position.set(
+        cameraUtils.clampValue(position.x, bounds.minX ?? -Infinity, bounds.maxX ?? Infinity),
+        cameraUtils.clampValue(position.y, bounds.minY ?? -Infinity, bounds.maxY ?? Infinity),
+        cameraUtils.clampValue(position.z, bounds.minZ ?? -Infinity, bounds.maxZ ?? Infinity),
       );
     }
     return position;

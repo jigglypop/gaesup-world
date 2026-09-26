@@ -91,6 +91,8 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
   const connectionInfoRef = useRef<{
     playerName: string;
     playerColor: string;
+    /** `connect()`'s model, which wins over the hook option for this connection. */
+    characterUrl?: string;
   } | null>(null);
 
   // 매니저들
@@ -172,8 +174,10 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
     // 연결 정보 저장
     connectionInfoRef.current = {
       playerName: connectionOptions.playerName,
-      playerColor: connectionOptions.playerColor
+      playerColor: connectionOptions.playerColor,
+      ...(connectionOptions.characterUrl ? { characterUrl: connectionOptions.characterUrl } : {}),
     };
+    const modelUrl = connectionOptions.characterUrl || characterUrlRef.current;
 
     setState(prev => ({ 
       ...prev, 
@@ -188,7 +192,7 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
       roomId: connectionOptions.roomId,
       playerName: connectionOptions.playerName,
       playerColor: connectionOptions.playerColor,
-      ...(characterUrlRef.current ? { modelUrl: characterUrlRef.current } : {}),
+      ...(modelUrl ? { modelUrl } : {}),
       reconnectAttempts: effectiveConfig.websocket.reconnectAttempts,
       reconnectDelay: effectiveConfig.websocket.reconnectDelay,
       pingInterval: effectiveConfig.websocket.pingInterval,
@@ -360,14 +364,14 @@ export function useMultiplayer(options: UseMultiplayerOptions): UseMultiplayerRe
       if (!trackingPlayerRef.current?.current) return;
       if (!connectionInfoRef.current) return;
 
-      const { playerName, playerColor } = connectionInfoRef.current;
+      const { playerName, playerColor, characterUrl: connectedUrl } = connectionInfoRef.current;
       const type = modeTypeRef.current;
       const localAnimation = animationStateRef.current?.[type]?.current ?? 'idle';
       const updateData = positionTrackerRef.current.trackPosition(
         trackingPlayerRef.current,
         playerName,
         playerColor,
-        characterUrl,
+        connectedUrl || characterUrl,
         localAnimation,
       );
 

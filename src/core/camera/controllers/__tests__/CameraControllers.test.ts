@@ -105,6 +105,15 @@ const runControllerFrames = (
 };
 
 describe('BaseController', () => {
+  it('bounds keep the camera target inside the box, and nothing limits it without them', () => {
+    const bounded = runControllerFrames(new TestController(), 400, 0.05, createConfig({ bounds: { minX: -2, minY: 2, maxY: 5, minZ: -4 } }));
+    expect(bounded.camera.position.x).toBeCloseTo(-2, 1);
+    expect(bounded.camera.position.y).toBeCloseTo(5, 1);
+    expect(bounded.camera.position.z).toBeCloseTo(-4, 1);
+    const free = runControllerFrames(new TestController(), 400, 0.05, createConfig());
+    expect(free.camera.position.toArray().map((value) => Math.round(value))).toEqual([-15, 9, -15]);
+  });
+
   it('smoothing.position 값이 클수록 목표 위치에 더 빨리 접근해야 합니다', () => {
     const controller = new TestController();
     const slowProps = createProps();

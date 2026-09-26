@@ -13,9 +13,10 @@ export function GroundClicker({ clickerOptions }: GroundClickerProps) {
   const { onClick } = useClicker(clickerOptions);
   
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
-    // Modifier clicks are reserved for tools layered behind this plane
-    // (e.g. <TeleportOnClick modifierKey="altKey" />) — let them pass through.
+    // Only the primary button moves: right and middle drags orbit the camera. Modifier clicks are reserved for tools
+    // layered behind this plane (e.g. <TeleportOnClick modifierKey="altKey" />) — let them pass through.
     if (
+      event.nativeEvent.button !== 0 ||
       event.nativeEvent.altKey ||
       event.nativeEvent.ctrlKey ||
       event.nativeEvent.metaKey ||

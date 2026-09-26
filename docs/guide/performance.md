@@ -217,7 +217,7 @@ export function customLoop(draw: (time: number) => void) {
 
 ## 번들 크기
 
-- 라이브러리 빌드가 모듈을 큰 청크로 합쳐 트리셰이킹이 약하다. 함수 하나만 가져와도 수백 KB가 딸려 온다. 루트 진입점은 값 export가 950개이고 에디터도 다시 내보낸다(PRD LIB-1이 `preserveModules` 빌드와 에디터 분리를 한다).
+- 라이브러리 빌드가 모듈을 큰 청크로 합쳐 트리셰이킹이 약하다. 함수 하나만 가져와도 수백 KB가 딸려 온다. 루트 진입점은 값 export가 952개이고 에디터도 다시 내보낸다(PRD LIB-1이 `preserveModules` 빌드와 에디터 분리를 한다).
 - 지금 할 수 있는 것: 월드 화면을 `React.lazy`로 늦게 불러 첫 UI 청크에서 three와 엔진을 뺀다(예제 `examples/main.tsx` 방식). 후처리는 켜기 전까지 내려받지 않는다.
 
 ## 기준선

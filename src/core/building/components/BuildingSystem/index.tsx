@@ -5,6 +5,7 @@ import type { Group } from 'three';
 import { BuildingSystemProps } from './types';
 import { NPCPreview } from '../../../npc/components/NPCPreview';
 import { CompileGate } from '../../../rendering/CompileGate';
+import { DynamicFog } from '../../../rendering/fog/DynamicFog';
 import { GpuBatchBridge } from '../../../rendering/GpuBatchBridge';
 import { WeatherEffect } from '../../../weather';
 import { useBuildingStore } from '../../stores/buildingStore';
@@ -25,11 +26,16 @@ import ModelObject from '../mesh/model';
 import { LampLightPool, LampRegistry, LampRegistryContext } from '../mesh/model/lampPool';
 import { SakuraBatch, type SakuraTreeEntry } from '../mesh/sakura';
 import { Snow } from '../mesh/snow';
+import Ocean from '../mesh/water';
 import { PreviewBlock } from '../PreviewBlock';
 import { PreviewTile } from '../PreviewTile';
 import { PreviewWall } from '../PreviewWall';
 import { TileSystem } from '../TileSystem';
 import { WallSystem } from '../WallSystem';
+
+/** The ocean around an island world: below the ground tiles, wide enough to meet the fog, following the camera. */
+const OCEAN_SIZE = 480;
+const OCEAN_LEVEL = -0.3;
 
 type ObjectBuckets = {
   sakura: SakuraTreeEntry[];
@@ -116,6 +122,9 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   const gridSize = useBuildingStore((s) => s.gridSize);
   const showSnow = useBuildingStore((s) => s.showSnow);
   const weatherEffect = useBuildingStore((s) => s.weatherEffect);
+  const showFog = useBuildingStore((s) => s.showFog);
+  const fogColor = useBuildingStore((s) => s.fogColor);
+  const worldSurface = useBuildingStore((s) => s.worldSurface);
   const objects = useBuildingStore((s) => s.objects);
   const visibilityReady = useBuildingVisibilityStore((s) => !gpuResident && s.initialized);
   const visibleWallGroupIds = useBuildingVisibilityStore((s) => s.visibleWallGroupIds);
@@ -268,6 +277,10 @@ export const BuildingSystem = React.memo(function BuildingSystem({
           <WeatherEffect kind={weatherEffect} count={weatherEffect === 'storm' ? 1800 : 1200} />
         )}
         {showSnow && weatherEffect !== 'snow' && <Snow gpu />}
+        {showFog && <DynamicFog color={fogColor} />}
+        {worldSurface === 'water' && (
+          <group position={[0, OCEAN_LEVEL, 0]}><Ocean size={OCEAN_SIZE} followCamera /></group>
+        )}
       </group>
       </LampRegistryContext.Provider>
     </Suspense>

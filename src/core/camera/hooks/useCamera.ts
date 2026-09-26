@@ -128,6 +128,9 @@ export function useCamera(enableMouse = true) {
         : { focusTarget: undefined }),
       ...(opt?.focusDistance !== undefined ? { focusDistance: opt.focusDistance } : {}),
       ...(opt?.focusLerpSpeed !== undefined ? { focusLerpSpeed: opt.focusLerpSpeed } : {}),
+      // Always written, so clearing either option in the store clears it here too.
+      bounds: opt?.bounds ? { ...opt.bounds } : undefined,
+      fixedPosition: opt?.fixedPosition?.clone(),
     });
   }, [updateConfig]);
   

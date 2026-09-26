@@ -183,7 +183,7 @@ export function ShadowAware() {
 
 - 밤에는 색을 어둡게 하고 거리를 줄인다(near×0.45, far×0.55). 새벽·해질녘에는 색을 물들인다. 비·폭풍·눈은 색을 바꾸고 거리를 더 줄인다.
 - 내려가면 마운트 전의 `scene.fog`로 되돌린다.
-- 건축 데이터의 `showFog`·`fogColor`는 저장·편집만 되고 지금 그리는 곳이 없다. 안개는 `DynamicFog`나 `scene.fog`로 켠다.
+- 건축 데이터의 `showFog`를 켜면 `BuildingController`가 `fogColor`를 기본 색으로 `DynamicFog`를 올린다. 이때 따로 `DynamicFog`를 두지 않는다(둘이 `scene.fog`를 다툰다). `worldSurface: 'water'`는 월드 둘레에 카메라를 따라가는 바다(480m 판)를 깐다.
 
 ```tsx
 import { DynamicFog, DynamicSky } from 'gaesup-world';
@@ -345,7 +345,7 @@ export function Scenery() {
 - `ColorGrade`·`LutOverlay`·`ToonOutlines`와 GLSL 재질 경로가 남아 있다(GPU-1).
 - 해가 `CascadedSun`·`DynamicSky` 두 벌이다(UP-1). `DynamicSky`에는 cascade 그림자가 없다.
 - 잔디 밀도는 월드 `quality`를 직접 따르지 않는다. 품질 tier별 잔디 밀도는 PRD PERF 항목이다.
-- 건축 데이터의 `showFog`·`fogColor`는 그려지지 않는다. 깃발 컴포넌트는 export되지 않는다.
+- 깃발 컴포넌트는 export되지 않는다.
 - GPU 시간(timestamp query)을 재는 곳이 없다(PERF).
 
 ## 관련 문서

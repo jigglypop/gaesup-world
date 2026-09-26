@@ -12,6 +12,7 @@ import type { CameraCinematicPlayer } from '../camera/cinematic';
 import type { CharacterStore } from '../character/stores/characterStore';
 import type { DialogRegistry } from '../dialog/registry/DialogRegistry';
 import type { DialogStore } from '../dialog/stores/dialogStore';
+import type { GameplayAreas } from '../gameplay/events/areas';
 import type { GameplayEventEngine } from '../gameplay/events/engine';
 import type { GameplayEventRegistry } from '../gameplay/events/registry';
 import type { InputAdapter } from '../input/core';
@@ -94,6 +95,8 @@ export type GaesupRuntime = {
   roomVisibilityStore: RoomVisibilityStore;
   gameplayEventRegistry: GameplayEventRegistry;
   gameplayEvents: GameplayEventEngine;
+  /** Trigger boxes checked against the player every fixed tick; entering one dispatches `enterArea`. */
+  gameplayAreas: GameplayAreas;
   buildingStore: BuildingStoreApi;
   npcStore: NPCStoreApi;
   npcScheduler: SchedulerRegistry;

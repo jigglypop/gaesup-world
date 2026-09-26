@@ -157,7 +157,8 @@ export interface CameraSystemConfig {
     y: number;
     z: number;
   };
-  bounds?: CameraBounds; // optional로 변경
+  /** World-space box the camera target stays in; no limit when absent. */
+  bounds?: CameraBounds | undefined;
   enableCollision: boolean;
   collisionMargin?: number;
   collisionTargets?: CameraCollisionTargets;
@@ -177,7 +178,7 @@ export interface CameraSystemConfig {
   xDistance?: number;
   yDistance?: number;
   zDistance?: number;
-  fixedPosition?: THREE.Vector3;
+  fixedPosition?: THREE.Vector3 | undefined;
   fixedLookAt?: THREE.Vector3;
 }
 

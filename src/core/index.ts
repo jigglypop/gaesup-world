@@ -4,6 +4,7 @@ export * from './error';
 export * from './hooks';
 export * from './grid';
 export * from './gameplay';
+export { GameplayArea } from './gameplay/GameplayArea';
 export * from './interactions';
 export * from './motions';
 export * from './stores';

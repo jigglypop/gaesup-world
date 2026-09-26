@@ -31,10 +31,6 @@ export const createCameraOptionSlice: StateCreator<CameraOptionSlice, [], [], Ca
     fov: CAMERA_DEFAULTS.FOV,
     minFov: CAMERA_DEFAULTS.MIN_FOV,
     maxFov: CAMERA_DEFAULTS.MAX_FOV,
-    bounds: {
-      minY: CAMERA_DEFAULTS.BOUNDS.MIN_Y,
-      maxY: CAMERA_DEFAULTS.BOUNDS.MAX_Y,
-    },
     modeSettings: {},
   },
   setCameraOption: (update) =>

@@ -42,7 +42,8 @@ export type InteractablesState = {
   getStats: () => { active: boolean; scans: number; visited: number };
 };
 
-export function createInteractablesStore(active = true) {
+/** `onActivated` hears every successful activation; a runtime turns it into the rule engine's `interaction` trigger. */
+export function createInteractablesStore(active = true, onActivated?: (entry: InteractableEntry) => void) {
   let enabled = active; let lastScan = -Infinity; let scans = 0; let visited = 0;
   let trackedPosition: THREE.Vector3 | undefined;
   return create<InteractablesState>((set, get) => ({
@@ -86,7 +87,7 @@ export function createInteractablesStore(active = true) {
     if (!e) return false;
     const distance = trackedPosition ? (e.getPosition?.() ?? e.position).distanceTo(trackedPosition) : cur.distance;
     if (!Number.isFinite(distance) || distance > e.range || e.range < 0) { get().setCurrent(null); return false; }
-    e.onActivate(); return true;
+    e.onActivate(); onActivated?.(e); return true;
   },
   track: (position, elapsedMs, throttleMs = 80) => {
     if (!enabled || !Number.isFinite(elapsedMs)) return;

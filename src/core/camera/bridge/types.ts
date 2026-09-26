@@ -1,5 +1,7 @@
+import type * as THREE from 'three';
+
 import type { TypedEventBus } from '../../plugins/EventBus';
-import type { CameraCollisionTargets } from '../core/types';
+import type { CameraBounds, CameraCollisionTargets } from '../core/types';
 
 export type CameraEventValue = object | string | number | boolean | null | undefined;
 
@@ -32,6 +34,10 @@ export interface CameraSystemConfig {
   offset?: { x: number; y: number; z: number } | undefined;
   /** `undefined` clears a previously configured look-at target. */
   lookAt?: { x: number; y: number; z: number } | undefined;
+  /** World-space box the camera target stays in; `undefined` removes the limit. */
+  bounds?: CameraBounds | undefined;
+  /** Where the fixed camera stands; `undefined` falls back to its default. */
+  fixedPosition?: THREE.Vector3 | undefined;
   damping?: number;
   enableDamping?: boolean;
 }

@@ -9,6 +9,7 @@ export function cloneCameraSystemConfig(config: CameraSystemConfig): CameraSyste
     ...(config.focusTarget ? { focusTarget: { ...config.focusTarget } } : {}),
     ...(config.offset ? { offset: { ...config.offset } } : {}),
     ...(config.lookAt ? { lookAt: { ...config.lookAt } } : {}),
+    ...(config.bounds ? { bounds: { ...config.bounds } } : {}),
   };
 }
 

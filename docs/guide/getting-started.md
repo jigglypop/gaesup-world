@@ -48,7 +48,7 @@ corepack pnpm dev
 - `pnpm dev`는 Vite 개발 서버를 `http://127.0.0.1:5174/`에 띄우고 브라우저를 연다(`vite.config.ts`의 `server.host`·`port`·`open`). 5174가 차 있으면 Vite가 다음 포트를 쓴다.
 - `index.html` → `examples/main.tsx`가 `examples/minihome/Minihome.tsx`를 `React.lazy`로 연다. 첫 UI 청크에 three가 들어가지 않는다.
 - 예제의 `gaesup-world` import는 tsconfig `paths`(Vite `resolve.tsconfigPaths`)로 `src/`를 가리킨다. 엔진 소스를 고치면 바로 반영된다.
-- 조작: WASD 이동, 왼쪽 Shift 달리기, Space 점프(`src/core/hooks/useKeyboard/index.ts`의 `KEY_MAPPING`). 방향키는 캐릭터를 움직이지 않는다.
+- 조작: WASD나 방향키로 이동, Shift 달리기, Space 점프. 키는 기본 입력 액션 표(`createDefaultInputActions`)에서 온다.
 - 빌드된 패키지로 예제를 돌려 보려면 환경 변수 `GAESUP_PACKAGE_ROOT`에 패키지 루트를 주고 `pnpm dev`를 실행한다. `vite.config.ts`가 `gaesup-world` 진입점을 그 설치본의 `exports`로 바꾼다.
 
 예제 `examples/minihome`은 12×12 타일 마을(잔디, 연못과 모래, 길, 오두막 벽 네 개, 나무·벚꽃·모닥불·깃발), 플레이어, 배회하는 NPC 두 명으로 이루어져 있다. 공개 API만 쓴다.
@@ -120,7 +120,7 @@ export function World() {
 4. `PhysicsEntity`가 drei `useGLTF`로 GLB를 불러온다. 로딩 중에는 가장 가까운 `Suspense`가 받는다.
 
 - 나중에 모델을 바꾸려면 새 `urls`로 다시 렌더하거나, 월드 안 컴포넌트에서 `const setUrls = useGaesupStore((s) => s.setUrls)`로 받아 `setUrls({ characterUrl })`를 부른다.
-- `WorldConfigProvider`가 store에 넣는 것은 `characterUrl`·`vehicleUrl`·`airplaneUrl`(별칭 `character`·`vehicle`·`airplane`) 세 개뿐이다. `wheelUrl`·`ridingUrl`·`terrain`·`skybox`는 타입(`WorldAssetUrls`)에 있지만 적용되지 않는다. 앞의 둘은 `setUrls`로 직접 넣는다.
+- `WorldConfigProvider`는 store의 URL 다섯 개(`characterUrl`·`vehicleUrl`·`airplaneUrl`·`wheelUrl`·`ridingUrl`, 앞의 셋은 별칭 `character`·`vehicle`·`airplane`)를 넣는다. `terrain`·`skybox`는 타입(`WorldAssetUrls`)에만 있고 적용되지 않는다.
 - `urls`·`cameraOption`·`mode`는 객체가 바뀔 때마다 다시 적용된다. 부모가 자주 렌더된다면 모듈 상수나 `useMemo`로 고정한다. `cameraOption`을 다시 적용하면 초점과, `zoom`을 주지 않았다면 줌도 기본값으로 돌아간다.
 - 기본 애니메이터는 `idle`·`walk`·`run`·`jump`·`fall`·`ride` 이름의 클립을 찾는다(`src/core/animation/core/animator/defaultCharacterAnimator.ts`). 예제 모델 `trainer_green.glb`에는 `idle`·`walk`·`run`만 있다.
 

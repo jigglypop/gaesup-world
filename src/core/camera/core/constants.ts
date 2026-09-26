@@ -18,6 +18,9 @@ export const CAMERA_DEFAULTS = {
   X_DISTANCE: 15,
   Y_DISTANCE: 8,
   Z_DISTANCE: 15,
+  /** First person: eye height above the character's feet and how far ahead of the body the eye sits. */
+  FIRST_PERSON_EYE_HEIGHT: 2,
+  FIRST_PERSON_FORWARD: 0.45,
   ZOOM: 1,
   ENABLE_ZOOM: true,
   ZOOM_SPEED: 0.001,
@@ -36,8 +39,4 @@ export const CAMERA_DEFAULTS = {
   FOV: 75,
   MIN_FOV: 10,
   MAX_FOV: 120,
-  BOUNDS: {
-    MIN_Y: 2,
-    MAX_Y: 50,
-  },
 } as const; 

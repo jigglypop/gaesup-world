@@ -71,7 +71,7 @@ export { BlockPanel } from './BlockPanel';
 export { ObjectPanel } from './ObjectPanel';
 export { NPCPanel } from './NPCPanel';
 export { CharacterAssetPanel } from './CharacterAssetPanel';
-export { GameplayEventPanel } from './GameplayEventPanel';
+export { GameplayEventPanel, WorldGameplayEventPanel } from './GameplayEventPanel';
 export { CinematicPanel } from './CinematicPanel';
 export type { CinematicPanelProps } from './CinematicPanel';
 export { StudioPanel } from './StudioPanel';

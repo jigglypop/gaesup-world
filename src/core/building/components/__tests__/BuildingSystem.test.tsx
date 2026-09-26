@@ -115,6 +115,15 @@ jest.mock('../mesh/snow', () => ({
   Snow: () => <group name="snow" />,
 }));
 
+jest.mock('../mesh/water', () => ({
+  __esModule: true,
+  default: ({ size }: { size: number }) => <group name={`ocean-${size}`} />,
+}));
+
+jest.mock('../../../rendering/fog/DynamicFog', () => ({
+  DynamicFog: ({ color }: { color: string }) => <group name={`fog-${color}`} />,
+}));
+
 const expectSceneHasName = (renderer: TestRenderer, name: string) => {
   expect(renderer.scene.findByProps({ name })).toBeDefined();
 };
@@ -635,5 +644,21 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
   });
 
   describe('indirect draw execution MVP', () => {
+  });
+
+  test('the fog toggle and the ocean surface change what the world draws', async () => {
+    mockStore({ showFog: true, fogColor: '#123456', worldSurface: 'water' });
+    const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+    try {
+      expectSceneHasName(renderer, 'fog-#123456');
+      expectSceneHasName(renderer, 'ocean-480');
+      mockStore({ showFog: false, worldSurface: 'ground' });
+      // The component is memoized and the mocked store has no subscription: a new prop forces the re-render.
+      await renderer.update(<BuildingSystem onTileClick={jest.fn()} />);
+      expectSceneMissingName(renderer, 'fog-#123456');
+      expectSceneMissingName(renderer, 'ocean-480');
+    } finally {
+      await renderer.unmount();
+    }
   });
 });

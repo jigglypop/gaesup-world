@@ -83,7 +83,8 @@ setPhysics({ walkSpeed: 6, runSpeed: 12, jumpSpeed: 12 });
 | 입력 | 반영 |
 |---|---|
 | `urls.characterUrl` / `vehicleUrl` / `airplaneUrl` | 그대로. 짧은 별칭 `character`·`vehicle`·`airplane`도 받는다(정식 이름이 우선) |
-| `urls.wheelUrl`, `ridingUrl`, `terrain`, `skybox` | `GaesupWorld`가 store에 넣지 않는다. 필요하면 `useGaesupStore((s) => s.setUrls)`로 넣는다. `wheelUrl`은 저장만 되고 그리는 코드가 없다 |
+| `urls.wheelUrl`, `ridingUrl` | `GaesupWorld`가 store에 넣는다. `ridingUrl`은 탈것에 탄 캐릭터 모델이다. `wheelUrl`은 저장만 되고 그리는 코드가 없다 |
+| `urls.terrain`, `skybox` | 타입에만 있고 적용되지 않는다 |
 | `mode` | `{ type: 'character' \| 'vehicle' \| 'airplane', controller?: 'keyboard' \| 'clicker' \| 'gamepad', control?: CameraType }`. 기본은 `character` / `keyboard` / `thirdPerson` |
 
 `mode.type`을 처음부터 `vehicle`이나 `airplane`으로 두면 그 모델을 직접 조종한다. `cameraOption`·`mode` 객체는 참조가 바뀔 때마다 store에 다시 적용된다. 부모가 다시 그려질 때마다 새 객체 리터럴을 넘기면 그때마다 카메라 설정이 초기화되고 휠 줌도 `zoom` 값으로 돌아가므로, 모듈 상수나 `useMemo`로 고정한다.
@@ -188,9 +189,14 @@ function useCameraMode() {
 - `requestCameraCloseUp(target, { focusDistance?, focusLerpSpeed?, fov?, enableCollision?, rememberPrevious? }, storeApi?)`는 이전 설정을 기억하고 클로즈업하며, 되돌리는 함수를 돌려준다. `restoreCameraCloseUp(storeApi?)`로도 되돌린다. `storeApi`를 생략하면 legacy 전역 store를 쓰므로 런타임 월드에서는 `useGaesupStoreApi()` 결과를 넘긴다.
 - `playCameraCinematic`, `createCameraCinematicPlayer`는 클로즈업·돌리·궤도·흔들기·페이드·대화 등 비트 목록을 재생한다. 런타임 월드는 `runtime.cinematics`를 쓴다(`src/core/camera/cinematic.ts`).
 
+### `fixedPosition`과 `bounds`
+
+- `fixedPosition`: `fixed` 모드 카메라가 서는 곳이다. `setCameraOption({ fixedPosition: new Vector3(...) })`로 바꾸고, 지우면 기본 위치로 돌아간다.
+- `bounds`(`minX`·`maxX`·`minY`·`maxY`·`minZ`·`maxZ`, 모두 선택): 카메라 목표 위치를 이 상자 안으로 제한한다. 기본값은 없다(제한 없음).
+
 ### 반영되지 않는 `cameraOption` 필드
 
-`CameraOption` 타입에는 있지만 지금 카메라 계산에 쓰이지 않는다: `offset`, `target`, `maxDistance`, `position`, `fixedPosition`, `rotation`, `isoAngle`, `bounds`, `minFov`, `maxFov`, `modeSettings`, `mode`, `focusDuration`, store의 `distance`. 그래서 `fixed` 모드 위치는 바꿀 수 없다.
+`CameraOption` 타입에는 있지만 지금 카메라 계산에 쓰이지 않는다: `offset`, `target`, `maxDistance`, `position`, `rotation`, `isoAngle`, `minFov`, `maxFov`, `modeSettings`, `mode`, `focusDuration`, store의 `distance`(PRD DEAD-1).
 
 ## 입력
 
@@ -204,7 +210,7 @@ function useCameraMode() {
 
 | 입력 | 동작 | 조건·출처 |
 |---|---|---|
-| W A S D | 이동(차량은 전후·조향) | `useKeyboard`. **방향키는 캐릭터를 움직이지 않는다** |
+| W A S D, 방향키 | 이동(차량은 전후·조향) | `useKeyboard`. 키는 기본 입력 액션 표에서 온다 |
 | 왼쪽 Shift | 달리기(비행기는 가속) | 오른쪽 Shift는 이동에 매핑되지 않는다 |
 | Space | 점프(차량은 제동) | |
 | F | 탈것 타기·내리기 | `Rideable`이 있을 때 |
@@ -270,7 +276,7 @@ const runtime = createGaesupRuntime({ gamepad: { deadzone: 0.2, bindings: { Y: '
    | `run` | button | 왼쪽·오른쪽 Shift | `button:10`(왼쪽 스틱 누름) | `button:run` |
    | `interact` | button | E | `button:2`(West) | `button:interact` |
 
-   이 맵은 캐릭터 컨트롤러에 연결되어 있지 않다. 방향키가 여기에는 있지만 캐릭터는 움직이지 않는 이유다. 터치 바인딩은 `useInputActions`의 장치 상태를 채우는 코드가 없어 지금은 동작하지 않는다. `InputRecorder`/`InputReplay`로 프레임을 녹화·재생하고, `inputActionsFromProjectSettings(bindings, kinds?)`로 프로젝트 설정의 바인딩을 정의로 바꾼다.
+   조작 캐릭터(`useKeyboard`)는 이 표의 키보드 바인딩에서 이동·점프·달리기·상호작용 키를 가져온다. 그래서 방향키와 오른쪽 Shift도 캐릭터를 움직인다. 프로젝트 설정의 입력 바인딩으로 다시 묶는 것은 아직 연결되지 않았다(PRD DEAD-1). 터치 바인딩은 `useInputActions`의 장치 상태를 채우는 코드가 없어 지금은 동작하지 않는다. `InputRecorder`/`InputReplay`로 프레임을 녹화·재생하고, `inputActionsFromProjectSettings(bindings, kinds?)`로 프로젝트 설정의 바인딩을 정의로 바꾼다.
 
 ### 오버레이와 여러 월드
 
@@ -349,14 +355,12 @@ useInteractablesStoreApi().getState().register({ id, kind: 'npc', label, key: 'e
 
 ## 알려진 제한
 
-- 방향키와 오른쪽 Shift는 캐릭터를 움직이지 않는다. `useInputActions` 기본 정의와 조작 캐릭터의 키 매핑이 따로 있다.
+- 프로젝트 설정의 입력 바인딩(`moveForward` 등)은 조작 캐릭터에 연결되지 않는다.
 - 실물 게임패드는 런타임 월드에서만 동작한다.
-- `fixed` 카메라 위치, `offset`·`target`·`bounds` 같은 `cameraOption` 필드가 반영되지 않는다. `smoothing: 0`은 카메라를 멈춘다.
-- `firstPerson`을 `GaesupWorld`에서 거리 없이 켜면 눈 높이가 8m다.
+- `offset`·`target` 등 일부 `cameraOption` 필드가 반영되지 않는다(위 표). `smoothing: 0`은 카메라를 멈춘다.
 - `InteractionTracker`를 따로 올려야 상호작용이 동작한다. NPC는 상호작용 대상을 스스로 등록하지 않는다.
 - 탈것은 예제·브라우저 검증 경로가 없고, 바퀴 모델(`wheelUrl`)을 그리지 않는다.
 - 터치 기본 버튼에 상호작용 키가 없다.
-- `clickToMove`를 켜면 카메라 궤도용 우클릭·가운데 버튼 누름도 이동 목표를 찍는다(`GroundClicker`가 버튼을 구분하지 않는다, 코드 기준).
 
 ## 관련 문서
 

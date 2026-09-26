@@ -1,3 +1,5 @@
+export { createGameplayAreas } from './areas';
+export type { GameplayAreaConfig, GameplayAreas } from './areas';
 export { GameplayEventEngine } from './engine';
 export type { GameplayEventEngineOptions } from './engine';
 export { commitGameplayEffect } from './execution';

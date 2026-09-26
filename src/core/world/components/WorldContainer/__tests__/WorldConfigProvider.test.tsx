@@ -76,4 +76,18 @@ describe('WorldConfigProvider', () => {
 
     unmount();
   });
+
+  it('puts a first-person eye at head height on the body instead of an orbit distance away', () => {
+    const { unmount } = render(<WorldConfigProvider cameraOption={{ type: 'thirdPerson', distance: 15 }} />);
+    unmount();
+    const view = render(<WorldConfigProvider cameraOption={{ type: 'firstPerson' }} />);
+    expect(useGaesupStore.getState().cameraOption).toMatchObject({ xDistance: 0, yDistance: 2, zDistance: 0.45 });
+    view.unmount();
+  });
+
+  it('applies every URL the world store keeps, riding and wheel models included', () => {
+    const view = render(<WorldConfigProvider urls={{ character: 'c.glb', ridingUrl: 'r.glb', wheelUrl: 'w.glb' }} />);
+    expect(useGaesupStore.getState().urls).toMatchObject({ characterUrl: 'c.glb', ridingUrl: 'r.glb', wheelUrl: 'w.glb' });
+    view.unmount();
+  });
 });

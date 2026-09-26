@@ -24,6 +24,8 @@ afterEach(() => jest.useRealTimers());
 
 test.each([30, 60, 144])('controls, physics and publish run in order at %i Hz', async rate => {
   const runtime = createGaesupRuntime(); await runtime.setup();
+  // The runtime's own systems (game time, gameplay areas) stay; everything the world added must go.
+  const ownSystems = runtime.clockLoop.clock.systemCount;
   const order: string[] = [];
   mockStep.mockImplementation(delta => { expect(delta).toBe(1 / 60); order.push('physics'); });
   function Controls() { useWorldPhysicsStep((_, delta) => { expect(delta).toBe(1 / 60); order.push('controls'); }); return null; }
@@ -34,7 +36,7 @@ test.each([30, 60, 144])('controls, physics and publish run in order at %i Hz', 
     for (let i = 0; i < rate; i++) runtime.clockLoop.clock.advance(1 / rate);
     expect(mockStep).toHaveBeenCalledTimes(60);
     expect(order).toEqual(Array.from({ length: 60 }, () => ['controls', 'physics', 'publish']).flat());
-    view.unmount(); off(); expect(runtime.clockLoop.clock.systemCount).toBe(1);
+    view.unmount(); off(); expect(runtime.clockLoop.clock.systemCount).toBe(ownSystems);
     expect(runtime.clockLoop.consumerCount).toBe(0); expect(jest.getTimerCount()).toBe(0);
   } finally { view.unmount(); off(); await runtime.dispose(); }
 });

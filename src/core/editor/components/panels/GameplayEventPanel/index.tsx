@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   GAMEPLAY_EVENT_ACTION_TYPES,
@@ -538,5 +538,28 @@ export function GameplayEventPanel({
       </section>
       {children}
     </div>
+  );
+}
+
+/**
+ * The panel bound to the nearest world's rule engine: created, edited and deleted events change its live blueprints.
+ * Test runs stay previews. Without a runtime the list lives only in this panel.
+ */
+export function WorldGameplayEventPanel(props: EditorPanelBaseProps) {
+  const engine = useGaesupRuntime()?.gameplayEvents;
+  const [blueprints, setBlueprints] = useState<GameplayEventBlueprint[]>(() => engine?.getBlueprints() ?? []);
+  useEffect(() => setBlueprints(engine?.getBlueprints() ?? []), [engine]);
+  const commit = (next: GameplayEventBlueprint[]) => {
+    engine?.setBlueprints(next);
+    setBlueprints(next);
+  };
+  return (
+    <GameplayEventPanel
+      {...props}
+      blueprints={blueprints}
+      onCreate={(blueprint) => commit([...blueprints.filter((entry) => entry.id !== blueprint.id), blueprint])}
+      onUpdate={(blueprint) => commit(blueprints.map((entry) => (entry.id === blueprint.id ? blueprint : entry)))}
+      onDelete={(id) => commit(blueprints.filter((entry) => entry.id !== id))}
+    />
   );
 }

@@ -115,19 +115,19 @@ npm 스크립트 전체와 검증 체인은 [verification.md](verification.md)�
 
 | subpath | 소스 | ESM / CJS 산출물 | 내용 | 런타임 export 수 |
 |---|---|---|---|---:|
-| `.` | `src/index.ts` | `dist/index.js` / `.cjs` | `core/editor` 전체 + `src/core/index.ts` 전체 + 타입 `NPCInstanceData` | 950 |
+| `.` | `src/index.ts` | `dist/index.js` / `.cjs` | `core/editor` 전체 + `src/core/index.ts` 전체 + 타입 `NPCInstanceData` | 952 |
 | `./avatar` | `src/avatar.ts` | `dist/avatar.*` | 모듈형 아바타(`AvatarRuntime`, `Avatar`, `createAvatarStore`, 매니페스트, 스켈레톤) | 18 |
 | `./blueprints` | `src/blueprints/index.ts` | `dist/blueprints.*` | 캐릭터·탈것 청사진, `BlueprintFactory`, `BlueprintSpawner`, hook | 19 |
 | `./blueprints/editor` | `src/blueprints/editor.ts` | `dist/blueprints-editor.*` | `BlueprintEditor`, `BlueprintPreview`, `BlueprintPanel` | 3 |
 | `./runtime` | `src/runtime.ts` | `dist/runtime.*` | `core/runtime` + `core/world` + `core/save` | 73 |
 | `./editor` | `src/editor.ts` | `dist/editor.*` | `core/editor` + `core/building` + `core/content` | 220 |
 | `./building` | `src/building.ts` | `dist/building.*` | `core/building` | 142 |
-| `./gameplay` | `src/gameplay.ts` | `dist/gameplay.*` | `core/gameplay` | 17 |
+| `./gameplay` | `src/gameplay.ts` | `dist/gameplay.*` | `core/gameplay` | 18 |
 | `./navigation` | `src/navigation.ts` | `dist/navigation.*` | `core/navigation` | 11 |
 | `./assets` | `src/assets.ts` | `dist/assets.*` | `core/assets` + `core/assets/production` | 25 |
 | `./network` | `src/network.ts` | `dist/network.*` | `core/networks` | 27 |
 | `./plugins` | `src/plugins.ts` | `dist/plugins.*` | `core/plugins` | 22 |
-| `./server-contracts` | `src/server-contracts.ts` | `dist/server-contracts.*` | `core/content` + `core/gameplay/server` + `core/networks/adapter` + `core/platform`. 런타임에 React·Zustand·R3F를 끌어오면 안 된다(`check:entries`) | 40 |
+| `./server-contracts` | `src/server-contracts.ts` | `dist/server-contracts.*` | `core/content` + `core/gameplay/server` + `core/networks/adapter` + `core/platform`. 런타임에 React·Zustand·R3F를 끌어오면 안 된다(`check:entries`) | 41 |
 | `./postprocessing` | `src/postprocessing.ts` | `dist/postprocessing.*` | `ColorGrade`, `LutOverlay`, cube LUT 함수 4개, `ToonOutlines`, `Outlined`, `WorldPostProcessing` | 9 |
 | `./style.css` | `src/core/editor/styles/theme.css`(tsconfig alias) | `dist/index.css` | 에디터·UI 스타일 | — |
 

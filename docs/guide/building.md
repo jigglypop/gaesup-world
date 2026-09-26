@@ -65,8 +65,8 @@
 | `blocks` | `BuildingBlockConfig[]` | 복셀형 상자 |
 | `objects` | `PlacedObject[]` | 나무·깃발·불·간판·모델 |
 | `showSnow`, `weatherEffect` | `boolean`, `'none' \| 'snow' \| 'rain' \| 'storm' \| 'wind'` | 건축에 붙은 날씨 효과(그린다) |
-| `showFog`, `fogColor` | `boolean`, `string` | 저장·편집만 된다. 지금 그리는 컴포넌트가 없다 |
-| `worldSurface` | `'ground' \| 'water'` | 저장·편집만 된다. 지금 그리는 컴포넌트가 없다 |
+| `showFog`, `fogColor` | `boolean`, `string` | 켜면 `fogColor`를 기본 색으로 시간·날씨를 따르는 안개(`DynamicFog`)를 그린다 |
+| `worldSurface` | `'ground' \| 'water'` | `water`면 월드 둘레에 카메라를 따라가는 바다를 깐다(섬 월드) |
 | `wallCategories`, `tileCategories` | 선택 | 에디터 분류. 없으면 현재 분류를 유지한다 |
 
 ### `MeshConfig`
@@ -293,7 +293,7 @@ getSaveSystem().register({
 - 배치 오브젝트는 에디터에서 선택하거나 지울 수 없다. `removeObject(id)`로만 지운다.
 - `add*` 액션은 겹침을 검사하지 않는다.
 - `hydrate`는 부분 병합이 아니라 전체 교체다.
-- `showFog`, `fogColor`, `worldSurface`, `objectConfig.waterScale`, 벽의 `width`·`height`·`depth`는 저장되지만 그려지지 않는다.
+- `objectConfig.waterScale`, 벽의 `width`·`height`·`depth`는 저장되지만 그려지지 않는다(PRD DEAD-1).
 - 오브젝트에는 물리 콜라이더가 없다.
 - `BuildingController`가 `NPCSystem`까지 올린다. NPC만 쓰려면 `NPCSystem`을 직접 올릴 수 있지만 둘을 함께 올리면 NPC가 두 번 그려진다.
 - 편집 한 번에 보이는 그룹 전체를 다시 분류하고(PRD PERF), 불·깃발·잔디 등에 GLSL·TSL 두 경로가 남아 있다(PRD GPU-1).

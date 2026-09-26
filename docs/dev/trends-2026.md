@@ -61,7 +61,7 @@
 
 - text/image→3D 도구(Meshy 등)가 PBR 텍스처와 자동 리깅까지 한 번에 만든다. 대부분 리토폴로지·UV 정리가 필요하다.
 - AI가 게임 로직을 쓰는 "vibe coding"이 퍼졌다. three.js는 AI 도구용 `llms.txt` 문서를 낸다. 오래된 코드로 학습한 모델은 deprecated API(`Clock`, `PostProcessing`)를 제안하는 문제가 있다.
-- gw 대응: `scripts/assets`의 Meshy·Blender·meshopt 파이프라인을 유지한다. 공개 API를 줄이면(루트 export 950개) AI와 사람 모두 쓰기 쉬워진다. `docs/`를 기계가 읽기 쉬운 형태로 유지한다.
+- gw 대응: `scripts/assets`의 Meshy·Blender·meshopt 파이프라인을 유지한다. 공개 API를 줄이면(루트 export 952개) AI와 사람 모두 쓰기 쉬워진다. `docs/`를 기계가 읽기 쉬운 형태로 유지한다.
 
 ## 8. 에디터·UGC·XR
 
