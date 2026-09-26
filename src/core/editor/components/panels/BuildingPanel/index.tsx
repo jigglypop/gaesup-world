@@ -42,7 +42,7 @@ import { FieldColor, FieldRow } from '../../fields';
 import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
 
-export { createPlacementAssetScopeId, createScopedColorMeshConfig } from './helpers';
+export { createScopedColorMeshConfig, lookMeshId } from './helpers';
 
 export type BuildingPanelSlot =
   | 'header'

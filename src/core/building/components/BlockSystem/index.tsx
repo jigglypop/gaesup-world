@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import * as THREE from 'three';
 
@@ -35,7 +35,7 @@ export function BlockSystem({
   onBlockClick,
   colliders = true,
 }: BlockSystemProps) {
-  const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
+  const [materialManager] = useState(() => new MaterialManager());
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const geometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
   const editItems = useMemo(() => (isEditMode ? blocks.map(blockEditItem) : NO_EDIT_ITEMS), [blocks, isEditMode]);
@@ -54,20 +54,19 @@ export function BlockSystem({
       byMaterial.set(key, list);
     }
 
-    const manager = materialManagerRef.current;
     return Array.from(byMaterial.entries()).map(([key, batchBlocks]) => ({
       key,
       blocks: batchBlocks,
-      material: manager.getMaterial(meshes.get(key) ?? { ...DEFAULT_BLOCK_MESH, id: key }),
+      material: materialManager.getMaterial(meshes.get(key) ?? { ...DEFAULT_BLOCK_MESH, id: key }),
     }));
-  }, [blocks, meshes]);
+  }, [blocks, materialManager, meshes]);
 
   useEffect(() => {
     return () => {
-      materialManagerRef.current.dispose();
+      materialManager.dispose();
       geometry.dispose();
     };
-  }, [geometry]);
+  }, [geometry, materialManager]);
 
   return (
     <>

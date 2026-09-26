@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 
 import * as THREE from 'three';
 
@@ -17,6 +17,7 @@ export { getWallMaterialKey };
 
 const EMPTY_COLLIDER_BOXES: readonly BuildingColliderBox[] = [];
 const NO_EDIT_ITEMS: EditOverlayItem[] = [];
+const NO_BATCHES: WallBatch[] = [];
 const DEFAULT_GLASS_MESH: MeshConfig = {
   id: 'default-window-glass',
   color: '#9ed8ff',
@@ -125,7 +126,8 @@ function WallModule({
   );
 }
 
-export function WallSystem({
+/** Memoized: a building re-render for another group, a selection or a new mesh leaves unchanged groups alone. */
+export const WallSystem = memo(function WallSystem({
   wallGroup,
   wallGroups,
   meshes,
@@ -135,13 +137,13 @@ export function WallSystem({
   colliders = true,
   batches: renderBatches = true,
 }: WallSystemProps) {
-  const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
+  const [materialManager] = useState(() => new MaterialManager());
 
   const geometry = useMemo(createWallGeometry, []);
 
   const batches = useMemo(
-    () => buildWallBatches(wallGroup, wallGroups ?? new Map([[wallGroup.id, wallGroup]]), meshes, materialManagerRef.current),
-    [wallGroup, wallGroups, meshes],
+    () => (renderBatches ? buildWallBatches(wallGroup, wallGroups ?? new Map([[wallGroup.id, wallGroup]]), meshes, materialManager) : NO_BATCHES),
+    [materialManager, renderBatches, wallGroup, wallGroups, meshes],
   );
   const moduleWallGroups = wallGroups ?? new Map([[wallGroup.id, wallGroup]]);
   const moduleWalls = useMemo(
@@ -151,7 +153,7 @@ export function WallSystem({
 
   useEffect(() => {
     return () => {
-      materialManagerRef.current.dispose();
+      materialManager.dispose();
       geometry.dispose();
     };
   }, [geometry]);
@@ -186,10 +188,10 @@ export function WallSystem({
           wallGroup={wallGroup}
           wallGroups={moduleWallGroups}
           meshes={meshes}
-          manager={materialManagerRef.current}
+          manager={materialManager}
           {...(onWallClick ? { onWallClick } : {})}
         />
       ))}
     </>
   );
-}
+});

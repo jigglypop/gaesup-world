@@ -4,6 +4,7 @@ import * as THREE from 'three';
 
 import { getDefaultToonMode, getToonGradient } from '../../../rendering/toon';
 import { MaterialManager } from '../../core/MaterialManager';
+import { sameItems, useReusedByKey } from '../../hooks/useReusedByKey';
 import { wallKindOf } from '../../model/footprint';
 import type { MeshConfig, TileGroupConfig, WallGroupConfig } from '../../types';
 import { BoxTileBatchMesh, getBoxTileBatchKey, isRaisedTile, type BoxTileBatch } from '../TileSystem/batch';
@@ -18,6 +19,10 @@ export type BuildingBatchesProps = {
   meshes: Map<string, MeshConfig>;
   onWallClick?: (wallId: string) => void;
 };
+
+const sameTileBatch = (a: BoxTileBatch, b: BoxTileBatch) =>
+  a.material === b.material && a.castShadow === b.castShadow && sameItems(a.tiles, b.tiles);
+const sameWallBatch = (a: WallBatch, b: WallBatch) => sameItems(a.materials, b.materials) && sameItems(a.walls, b.walls);
 
 /**
  * World-level instanced batches. Every box tile and solid wall that resolves to the same materials is one
@@ -46,7 +51,8 @@ export const BuildingBatches = memo(function BuildingBatches({
   }, [resources]);
   useEffect(() => () => manager.dispose(), [manager]);
 
-  const tileBatches = useMemo(() => {
+  // Every edit regroups the world; batches it left alone stay the same objects and keep their instance matrices.
+  const tileBatches = useReusedByKey(useMemo(() => {
     const byMaterial = new Map<string, BoxTileBatch>();
     for (const group of tileGroups) {
       for (const tile of group.tiles) {
@@ -63,9 +69,9 @@ export const BuildingBatches = memo(function BuildingBatches({
       }
     }
     return [...byMaterial.values()];
-  }, [manager, meshes, resources, tileGroups]);
+  }, [manager, meshes, resources, tileGroups]), sameTileBatch);
 
-  const wallBatches = useMemo(() => {
+  const wallBatches = useReusedByKey(useMemo(() => {
     const byMaterials = new Map<string, WallBatch>();
     for (const group of wallGroups) {
       for (const wall of group.walls) {
@@ -81,7 +87,7 @@ export const BuildingBatches = memo(function BuildingBatches({
       }
     }
     return [...byMaterials.values()];
-  }, [manager, meshes, wallGroupMap, wallGroups]);
+  }, [manager, meshes, wallGroupMap, wallGroups]), sameWallBatch);
 
   return (
     <>

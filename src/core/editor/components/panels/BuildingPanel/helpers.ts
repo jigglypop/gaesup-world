@@ -1,5 +1,4 @@
 import type { AssetRecord } from '../../../../assets';
-import { createBuildingScopeId } from '../../../../building/id';
 import type { MeshConfig } from '../../../../building/types';
 import type {
   NPCBrainBlueprint,
@@ -27,7 +26,16 @@ export function getNPCBrainLabel(value: string): string {
 export const isBuildingMaterialAsset = (asset: AssetRecord) =>
   asset.kind === 'material' || asset.kind === 'wall' || asset.kind === 'tile';
 
-export const createPlacementAssetScopeId = createBuildingScopeId;
+/**
+ * An id derived from the mesh's content: picking the same look again names the same mesh, so it adds no mesh,
+ * material or batch, while a different look never rewrites a mesh that placed tiles already use.
+ */
+export function lookMeshId(scope: string, look: MeshConfig): string {
+  const text = JSON.stringify({ ...look, id: '' });
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index++) hash = Math.imul(hash ^ text.charCodeAt(index), 0x01000193);
+  return `${scope}-${(hash >>> 0).toString(36)}`;
+}
 
 export function createScopedColorMeshConfig(id: string, color: string, base?: MeshConfig): MeshConfig {
   const { mapTextureUrl: _mapTextureUrl, textureUrl: _textureUrl, materialParams, ...baseWithoutTexture } = base ?? {};

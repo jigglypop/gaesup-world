@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import * as THREE from 'three';
 
@@ -25,6 +25,7 @@ type TileLike = TileSystemProps['tileGroup']['tiles'][number];
 
 const EMPTY_COLLIDER_BOXES: readonly BuildingColliderBox[] = [];
 const NO_EDIT_ITEMS: EditOverlayItem[] = [];
+const NO_BATCHES: BoxTileBatch[] = [];
 
 const WATER_LOD = { near: 25, far: 90, strength: 4 } as const;
 
@@ -142,16 +143,18 @@ function StairTileMesh({
   );
 }
 
-export function TileSystem({ 
-  tileGroup, 
-  meshes, 
+/** Memoized: a building re-render for another group, a selection or a new mesh it does not use leaves it alone. */
+export const TileSystem = memo(function TileSystem({
+  tileGroup,
+  meshes,
   isEditMode = false,
   selectedTileId = null,
   onTileClick,
   colliders = true,
   batches = true,
 }: TileSystemProps) {
-  const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
+  const [materialManager] = useState(() => new MaterialManager());
+  const floorMesh = meshes.get(tileGroup.floorMeshId);
   const localMaterialRef = useRef<THREE.Material | null>(null);
 
   const boxTiles = useMemo(
@@ -172,8 +175,6 @@ export function TileSystem({
   );
 
   const defaultMaterial = useMemo(() => {
-    const manager = materialManagerRef.current;
-    const floorMesh = meshes.get(tileGroup.floorMeshId);
     if (!floorMesh) {
       // Dispose the previous local material, when present, before creating a new one.
       localMaterialRef.current?.dispose();
@@ -186,22 +187,23 @@ export function TileSystem({
     // If we switch from local -> managed material, ensure we don't leak the local one.
     localMaterialRef.current?.dispose();
     localMaterialRef.current = null;
-    return manager.getMaterial(floorMesh);
-  }, [tileGroup.floorMeshId, meshes]);
+    return materialManager.getMaterial(floorMesh);
+  }, [floorMesh, materialManager]);
 
   const materialById = useMemo(() => {
-    const manager = materialManagerRef.current;
     const materials = new Map<string, THREE.Material>();
     materials.set(tileGroup.floorMeshId, defaultMaterial);
     for (const tile of tileGroup.tiles) {
       if (!tile.materialId || materials.has(tile.materialId)) continue;
       const mesh = meshes.get(tile.materialId);
-      materials.set(tile.materialId, mesh ? manager.getMaterial(mesh) : defaultMaterial);
+      materials.set(tile.materialId, mesh ? materialManager.getMaterial(mesh) : defaultMaterial);
     }
     return materials;
-  }, [defaultMaterial, meshes, tileGroup.floorMeshId, tileGroup.tiles]);
+  }, [defaultMaterial, materialManager, meshes, tileGroup.floorMeshId, tileGroup.tiles]);
 
+  // Inside BuildingSystem the world-level batches draw box tiles; a group builds its own only when it draws them.
   const boxTileBatches = useMemo<BoxTileBatch[]>(() => {
+    if (!batches) return NO_BATCHES;
     const byKey = new Map<string, BoxTileBatch>();
     for (const tile of boxTiles) {
       const materialId = getTileMaterialId(tile, tileGroup.floorMeshId);
@@ -215,12 +217,11 @@ export function TileSystem({
       batch.tiles.push(tile);
     }
     return [...byKey.values()];
-  }, [boxTiles, defaultMaterial, materialById, tileGroup.floorMeshId]);
+  }, [batches, boxTiles, defaultMaterial, materialById, tileGroup.floorMeshId]);
 
-  const terrainColor = useMemo(() => {
-    const floorMesh = meshes.get(tileGroup.floorMeshId);
-    return new THREE.Color(floorMesh?.color || '#8a806f');
-  }, [tileGroup.floorMeshId, meshes]);
+  // Keyed by the color alone, so adding or editing another mesh does not rebuild the terrain sides.
+  const floorColor = floorMesh?.color;
+  const terrainColor = useMemo(() => new THREE.Color(floorColor || '#8a806f'), [floorColor]);
 
   const support = useMemo(() => createTileSupport(tileGroup.tiles), [tileGroup.tiles]);
   const terrain = useMemo(
@@ -405,12 +406,12 @@ export function TileSystem({
 
   useEffect(() => {
     return () => {
-      materialManagerRef.current.dispose();
+      materialManager.dispose();
       localMaterialRef.current?.dispose();
       localMaterialRef.current = null;
       baseGeometry.dispose();
     };
-  }, [baseGeometry]);
+  }, [baseGeometry, materialManager]);
 
   useEffect(() => {
     return () => {
@@ -528,4 +529,4 @@ export function TileSystem({
       </>
     </WorldProps>
   );
-} 
+}); 

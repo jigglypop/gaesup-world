@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { createBuildingStore } from '../../../../../building/stores/buildingStore';
 import type { NPCBrainBlueprint } from '../../../../../npc/types';
 import {
   appendNPCBlueprintNode,
@@ -8,18 +9,27 @@ import {
   createNPCActionNode,
   createNPCConditionNode,
 } from '../helpers';
-import { createPlacementAssetScopeId, createScopedColorMeshConfig } from '../index';
+import { createScopedColorMeshConfig } from '../index';
+import { applyColorToTile } from '../state';
 
 const BUILDING_PANEL_ENTRY = path.resolve(__dirname, '../index.tsx');
 
 describe('BuildingPanel asset material scoping', () => {
-  test('creates a fresh placement scope for each wall asset application', () => {
-    const first = createPlacementAssetScopeId('placement-wall');
-    const second = createPlacementAssetScopeId('placement-wall');
-
-    expect(first).toMatch(/^placement-wall-/);
-    expect(second).toMatch(/^placement-wall-/);
-    expect(first).not.toBe(second);
+  test('picking a placement color again reuses its mesh; only a new look adds one', () => {
+    const store = createBuildingStore();
+    store.getState().addMesh({ id: 'floor', color: '#777777' });
+    store.setState({ tileGroups: new Map([['g', { id: 'g', name: 'g', floorMeshId: 'floor', tiles: [] }]]), selectedTileGroupId: 'g', selectedTileId: null });
+    const count = () => store.getState().meshes.size;
+    const before = count();
+    applyColorToTile(store, '#ff0000');
+    const red = store.getState().currentTileMaterialId;
+    applyColorToTile(store, '#ff0000');
+    expect(count()).toBe(before + 1);
+    applyColorToTile(store, '#0000ff');
+    applyColorToTile(store, '#ff0000');
+    expect(count()).toBe(before + 2);
+    expect(store.getState().currentTileMaterialId).toBe(red);
+    expect(store.getState().meshes.get('floor')).toEqual({ id: 'floor', color: '#777777' });
   });
 
   test('creates a scoped color mesh without mutating shared texture fields', () => {

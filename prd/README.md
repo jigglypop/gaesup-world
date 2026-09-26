@@ -23,7 +23,7 @@
 
 | ID | 내용 | 근거 |
 |---|---|---|
-| P-2 | `TileSystem`·`WallSystem` memo, `MaterialManager` 지연 생성, 색 선택 mesh id 재사용 | 편집·선택마다 전 그룹 재렌더와 월드 재빌드 |
 | P-5 | `frameloop="demand"`, 보조 캔버스 demand | 5초 대기 중 render 515 |
 | P-7 | 정적 장면 그림자 갱신 억제 | 프레임 draw 2,157(그림자 cascade 포함). 편집 모드 진입 시 cascade draw 약 1,330 → 3,880(메인 카메라는 20) |
 | P-8 | 후처리 pass 컨텍스트로 사전 컴파일, 모델 로드 시 동기 컴파일 제거 | warm-up 뒤 program 38, 동기 컴파일 5프레임 |
+| P-11 | 타일 편집 한 번에 React commit 한 번 | S-B05 편집당 commit 3(렌더 작업은 P-2에서 편집한 그룹·배치로 줄임) |

@@ -2,11 +2,11 @@ import { useMemo } from 'react';
 
 import { useShallow } from 'zustand/react/shallow';
 
-import { createPlacementAssetScopeId, createScopedColorMeshConfig, isBuildingMaterialAsset } from './helpers';
+import { createScopedColorMeshConfig, isBuildingMaterialAsset, lookMeshId } from './helpers';
 import type { AssetRecord } from '../../../../assets';
 import { createScopedAssetMeshConfig, createScopedBuildingMeshId, useAssetStore } from '../../../../assets';
 import { useBuildingStore, type BuildingStoreApi } from '../../../../building/stores/buildingStore';
-import type { TileConfig, TileGroupConfig, WallConfig, WallGroupConfig } from '../../../../building/types';
+import type { MeshConfig, TileConfig, TileGroupConfig, WallConfig, WallGroupConfig } from '../../../../building/types';
 
 type BuildingState = ReturnType<BuildingStoreApi['getState']>;
 
@@ -73,6 +73,14 @@ export function useBuildingAssets(): AssetRecord[] {
   );
 }
 
+/** The placement mesh for a look, added once; the same look picked again reuses it and changes nothing. */
+function placementMesh(store: BuildingStoreApi, scope: string, look: MeshConfig): string {
+  const id = lookMeshId(scope, look);
+  const state = store.getState();
+  if (!state.meshes.has(id)) state.addMesh({ ...look, id });
+  return id;
+}
+
 function upsertScopedMesh(
   store: BuildingStoreApi,
   sourceMeshId: string | undefined,
@@ -98,7 +106,7 @@ export function applyAssetToWall(store: BuildingStoreApi, asset: AssetRecord): v
     return;
   }
   state.setCurrentWallMaterialId(
-    upsertScopedMesh(store, group.frontMeshId, createPlacementAssetScopeId('placement-wall'), 'wall', asset),
+    placementMesh(store, 'placement-wall', createScopedAssetMeshConfig('', asset, group.frontMeshId ? state.meshes.get(group.frontMeshId) : undefined)),
   );
 }
 
@@ -112,7 +120,7 @@ export function applyAssetToTile(store: BuildingStoreApi, asset: AssetRecord): v
     return;
   }
   state.setCurrentTileMaterialId(
-    upsertScopedMesh(store, group.floorMeshId, createPlacementAssetScopeId('placement-tile'), 'tile', asset),
+    placementMesh(store, 'placement-tile', createScopedAssetMeshConfig('', asset, state.meshes.get(group.floorMeshId))),
   );
 }
 
@@ -129,9 +137,8 @@ export function applyColorToTile(store: BuildingStoreApi, color: string): void {
     state.updateTile(group.id, selectedTileId, { materialId: meshId });
     return;
   }
-  const meshId = createScopedBuildingMeshId(createPlacementAssetScopeId('placement-tile-color'), 'tile', color);
-  state.addMesh(createScopedColorMeshConfig(meshId, color, meshes.get(state.currentTileMaterialId ?? group.floorMeshId)));
-  state.setCurrentTileMaterialId(meshId);
+  const look = createScopedColorMeshConfig('', color, meshes.get(state.currentTileMaterialId ?? group.floorMeshId));
+  state.setCurrentTileMaterialId(placementMesh(store, 'placement-tile-color', look));
 }
 
 export function applyTerrainColors(store: BuildingStoreApi, color: string, accentColor: string): void {
