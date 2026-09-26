@@ -1,5 +1,5 @@
 import { clonePlainData } from '../../utils/clone';
-import { reportError } from '../../utils/reportError';
+import { reportError, type ErrorReporter } from '../../utils/reportError';
 import { IndexedDBAdapter } from '../adapters/IndexedDBAdapter';
 import { LocalStorageAdapter } from '../adapters/LocalStorageAdapter';
 import { NamespacedSaveAdapter } from '../adapters/NamespacedSaveAdapter';
@@ -35,9 +35,12 @@ export class SaveSystem {
   // Each slot's domains from its last skipUnchanged write, valid only for the binding generation that wrote them.
   private savedDomains = new Map<string, Map<string, SavedDomain>>();
   private bindingGeneration = 0;
+  /** Where this system and the save hooks using it report failures. */
+  readonly reportError: ErrorReporter;
 
   constructor(opts: SaveSystemOptions) {
     this.adapter = opts.adapter;
+    this.reportError = opts.report ?? reportError;
     this.currentVersion = opts.currentVersion ?? 1;
     this.migrations = opts.migrations ?? {};
     this.defaultSlot = opts.defaultSlot ?? 'main';
@@ -345,12 +348,12 @@ export class SaveSystem {
   }
 
   private reportDiagnostic(diagnostic: SaveDiagnostic): void {
-    reportError(diagnostic.error, { source: `save:${diagnostic.phase}`, label: `${diagnostic.slot}/${diagnostic.key}` });
+    this.reportError(diagnostic.error, { source: `save:${diagnostic.phase}`, label: `${diagnostic.slot}/${diagnostic.key}` });
     for (const listener of this.diagnosticListeners) {
       try {
         listener(diagnostic);
       } catch (error) {
-        reportError(error, { source: 'save:diagnostic-listener' });
+        this.reportError(error, { source: 'save:diagnostic-listener' });
       }
     }
   }
@@ -375,11 +378,16 @@ export class DuplicateSaveDomainBindingError extends Error {
 
 let _instance: SaveSystem | null = null;
 
-export function createDefaultSaveSystem(options: { namespace?: string } = {}): SaveSystem {
+export function createDefaultSaveSystem(options: { namespace?: string; report?: ErrorReporter } = {}): SaveSystem {
   const adapter: SaveAdapter = (typeof indexedDB !== 'undefined')
     ? new IndexedDBAdapter()
     : new LocalStorageAdapter();
-  return new SaveSystem({ adapter: options.namespace === undefined ? adapter : new NamespacedSaveAdapter(adapter, options.namespace), defaultSlot: 'main', currentVersion: 1 });
+  return new SaveSystem({
+    adapter: options.namespace === undefined ? adapter : new NamespacedSaveAdapter(adapter, options.namespace),
+    defaultSlot: 'main',
+    currentVersion: 1,
+    ...(options.report ? { report: options.report } : {}),
+  });
 }
 
 export function getSaveSystem(): SaveSystem {

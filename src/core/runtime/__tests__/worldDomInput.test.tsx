@@ -1,7 +1,6 @@
 import { act, fireEvent, render } from '@testing-library/react';
 
 import { DialogBox } from '../../dialog/components/DialogBox';
-import { getDialogRegistry } from '../../dialog/registry/DialogRegistry';
 import { useEditorShortcuts } from '../../editor/hooks/useEditorShortcuts';
 import { useKeyboard } from '../../hooks/useKeyboard';
 import { TouchControls } from '../../input/touch/components/TouchControls';
@@ -12,8 +11,9 @@ import { createGaesupRuntime } from '../createGaesupRuntime';
 jest.mock('../../wasm/loader', () => ({ loadCoreWasm: jest.fn(async () => null) }));
 
 test('an overlay outside the canvas owns focus and Escape closes only its world', async () => {
-  getDialogRegistry().register({ id: 'overlay', startId: 'hello', nodes: { hello: { id: 'hello', text: 'Hello' } } });
+  const tree = { id: 'overlay', startId: 'hello', nodes: { hello: { id: 'hello', text: 'Hello' } } };
   const a = createGaesupRuntime(); const b = createGaesupRuntime(); await a.setup(); await b.setup();
+  a.dialogRegistry.register(tree); b.dialogRegistry.register(tree);
   a.dialogStore.getState().start('overlay'); b.dialogStore.getState().start('overlay');
   const view = render(<><GaesupRuntimeProvider runtime={a}><div data-testid="overlay-a"><DialogBox /></div></GaesupRuntimeProvider><GaesupRuntimeProvider runtime={b}><div data-testid="overlay-b"><DialogBox /></div></GaesupRuntimeProvider></>);
   try {

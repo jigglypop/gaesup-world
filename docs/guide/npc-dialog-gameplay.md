@@ -10,7 +10,7 @@ NPC 데이터(템플릿·인스턴스), 행동과 두뇌, 고정 틱 시뮬레�
 | `NPCSystem` | `BuildingController`가 올린다 | NPC 렌더, 거리 LOD, 편집 클릭, 건축 장애물을 내비게이션에 넣기 |
 | `NPCSimulation` | `runtime.npcSimulation` | 이동·결정·말하기. 고정 틱(60Hz)에서 돈다 |
 | 두뇌 어댑터 | `runtime.npcBrainAdapters`, `registerNPCBrainAdapter` | `scripted` 외 두뇌의 결정 |
-| 대화 | `getDialogRegistry()`, `useDialogStore`, `<DialogBox />` | 대화 트리와 실행 |
+| 대화 | `runtime.dialogRegistry`(legacy는 `getDialogRegistry()`), `useDialogRegistry()`, `useDialogStore`, `<DialogBox />` | 대화 트리와 실행 |
 | 규칙 엔진 | `runtime.gameplayEvents`, `gaesup-world/gameplay` | 트리거→조건→액션 |
 
 NPC·대화 API는 루트 `gaesup-world`에만 있다. 런타임 없이(legacy) 쓰면 시뮬레이션이 `NPCSystem` 안에서 만들어지고, 그 객체를 꺼내는 공개 API가 없어 `speak`·`setActor`·`getPose`를 쓸 수 없다. 이 문서의 시뮬레이션 기능은 `createGaesupRuntime()` 월드를 전제로 한다([world-runtime.md](world-runtime.md)).
@@ -278,7 +278,7 @@ function NPCSpeech({ id }: { id: string }) {
 ### 데이터
 
 ```ts
-import { getDialogRegistry, type DialogTree } from 'gaesup-world';
+import { createGaesupRuntime, getDialogRegistry, type DialogTree } from 'gaesup-world';
 
 const hello: DialogTree = {
   id: 'luru.hello',
@@ -293,8 +293,15 @@ const hello: DialogTree = {
     thanks: { id: 'thanks', speaker: '루루', text: '고마워!' },
   },
 };
+
+// 런타임을 쓰는 월드: 그 월드의 대화 store가 이 레지스트리에서 트리를 찾는다
+const runtime = createGaesupRuntime({ worldId: 'village' });
+runtime.dialogRegistry.register(hello);
+// 런타임 없이(legacy) 쓰는 월드: 페이지 레지스트리
 getDialogRegistry().register(hello);
 ```
+
+- 레지스트리는 월드마다 따로다. 한 월드에 등록한 트리는 다른 월드에서 보이지 않는다. 컴포넌트에서는 `useDialogRegistry()`가 가장 가까운 월드의 레지스트리를 돌려준다.
 
 - `DialogNode`: `{ id, speaker?, text, choices?, next?, effects? }`. `next`가 없거나 `null`이면 대화가 끝난다.
 - `DialogChoice`: `{ text, next?, effects?, condition? }`.

@@ -1,4 +1,4 @@
-import { createErrorReportState, reportThrottled, type ErrorReportState } from '../utils/reportError';
+import { createErrorReportState, reportError, reportThrottled, type ErrorReporter, type ErrorReportState } from '../utils/reportError';
 
 export const SIMULATION_PHASES = ['commands', 'simulation', 'physics', 'postSimulation', 'publish'] as const;
 export type SimulationPhase = typeof SIMULATION_PHASES[number];
@@ -20,8 +20,10 @@ export class FixedStepClock {
   private tickNumber = 0;
   private droppedSeconds = 0;
   private readonly context: FixedTick;
+  private readonly report: ErrorReporter;
 
-  constructor(options: { tickRate?: number; maxSubSteps?: number; maxFrameSeconds?: number } = {}) {
+  constructor(options: { tickRate?: number; maxSubSteps?: number; maxFrameSeconds?: number; report?: ErrorReporter } = {}) {
+    this.report = options.report ?? reportError;
     const rate = options.tickRate ?? 60;
     this.maxSubSteps = options.maxSubSteps ?? 8;
     this.maxFrameSeconds = options.maxFrameSeconds ?? 0.25;
@@ -113,7 +115,7 @@ export class FixedStepClock {
         entry.system.update(context);
       } catch (error) {
         // One failing system must not stop the tick or the rAF loop driving it.
-        reportThrottled(entry.errors, context.elapsedSeconds * 1000, error, { source: `clock:${entry.system.phase}`, label: entry.system.id });
+        reportThrottled(entry.errors, context.elapsedSeconds * 1000, error, { source: `clock:${entry.system.phase}`, label: entry.system.id }, this.report);
       }
     }
   }

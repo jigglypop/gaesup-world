@@ -22,6 +22,7 @@ import {
   createInteractionSliceWithServices,
 } from '../interactions/stores/slices';
 import { createWorldInteractions } from '../interactions/stores/worldInteractions';
+import type { ErrorReporter } from '../utils/reportError';
 import { createWorldSlice } from '../world/stores/slices/worldStates/slice';
 
 /** Redux devtools serializes THREE-heavy state on every update; opt in with `globalThis.__GAESUP_DEVTOOLS__ = true`. */
@@ -47,8 +48,8 @@ function buildGaesupStore(interactions = createInteractionSlice) {
   );
 }
 
-export function createGaesupStore(inputBackend: InputBackend = createMemoryInputBackend()) {
-  const interactions = createWorldInteractions(inputBackend);
+export function createGaesupStore(inputBackend: InputBackend = createMemoryInputBackend(), report?: ErrorReporter) {
+  const interactions = createWorldInteractions(inputBackend, report);
   const store = buildGaesupStore(createInteractionSliceWithServices(interactions.services));
   interactions.activate();
   return Object.assign(store, {

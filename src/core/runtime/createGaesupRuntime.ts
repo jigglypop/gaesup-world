@@ -1,5 +1,3 @@
-import { AnimationBridge } from '../animation/bridge/AnimationBridge';
-import { useAssetStore } from '../assets';
 import {
   DEFAULT_RUNTIME_SAVE_DIAGNOSTICS_SERVICE_ID,
   RUNTIME_SAVE_BINDING_REJECTED_EVENT,
@@ -7,6 +5,8 @@ import {
   createRuntimeSaveDiagnostics,
 } from './saveDiagnostics';
 import type { GaesupRuntime, GaesupRuntimeOptions, RuntimeDomainBinding } from './types';
+import { AnimationBridge } from '../animation/bridge/AnimationBridge';
+import { createAssetStore } from '../assets/stores/assetStore';
 import { createAudioEngine } from '../audio/core/AudioEngine';
 import { AUDIO_STORE_SERVICE, createAudioStore } from '../audio/stores/audioStore';
 import { createGrassManager } from '../building/components/mesh/grass/manager';
@@ -16,6 +16,7 @@ import { BUILDING_STORE_SERVICE, createBuildingStore } from '../building/stores/
 import { createBuildingVisibilityStore } from '../building/visibility/store';
 import { createCameraCinematicPlayer } from '../camera/cinematic';
 import { CHARACTER_STORE_SERVICE, createCharacterStore } from '../character/stores/characterStore';
+import { createDialogRegistry } from '../dialog/registry/DialogRegistry';
 import { DIALOG_STORE_SERVICE, createDialogStore } from '../dialog/stores/dialogStore';
 import { createStoreGameplayEventServices } from '../gameplay/events/clientServices';
 import { GameplayEventEngine } from '../gameplay/events/engine';
@@ -42,14 +43,14 @@ import { NPC_STORE_SERVICE, createNPCStore } from '../npc/stores/npcStore';
 import { createPluginLogger, createPluginRegistry, filterPluginsForRuntime } from '../plugins';
 import type { ServiceKey } from '../plugins/serviceKey';
 import { DuplicateSaveDomainBindingError, SaveSystem, createDefaultSaveSystem } from '../save';
-import type { DomainBinding, SaveSystemOptions, SerializedDomainValue } from '../save';
+import type { DomainBinding, SerializedDomainValue } from '../save';
 import { createRoomVisibilityStore } from '../scene/stores/roomVisibilityStore';
 import { SCENE_STORE_SERVICE, createSceneStore } from '../scene/stores/sceneStore';
 import { createGaesupStore, RUNTIME_GAESUP_STORE_SERVICE_ID } from '../stores/gaesupStore';
 import { getTimeClock, RUNTIME_TIME_STORE_SERVICE_ID } from '../time/core/timeClock';
 import { createTimeStore } from '../time/stores/timeStore';
 import { createUniqueId } from '../utils/id';
-import { setErrorSink } from '../utils/reportError';
+import { deliverError, reportError, type ErrorReporter } from '../utils/reportError';
 import { WEATHER_STORE_SERVICE, createWeatherStore } from '../weather/stores/weatherStore';
 import { WorldViews } from '../world/core/WorldViews';
 import { createWorldObjectStore } from '../world/stores/worldObjectStore';
@@ -67,9 +68,17 @@ function isRuntimeDomainBinding(value: unknown): value is RuntimeDomainBinding {
 export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupRuntime {
   const worldId = options.worldId ?? createUniqueId();
   if (!worldId.trim()) throw new TypeError('Runtime worldId must not be empty');
+  let lifecycleState: 'inactive' | 'setting-up' | 'active' | 'disposing' = 'inactive';
+  // The boundaries this runtime owns report here: to `onError` from setup until dispose completes, else the page default.
+  const reportRuntimeError: ErrorReporter = (error, context) => {
+    if (options.onError && lifecycleState !== 'inactive') deliverError(options.onError, error, context);
+    else reportError(error, context);
+  };
+  const assetStore = createAssetStore();
   const timeStore = createTimeStore();
   const weatherStore = createWeatherStore();
-  const dialogStore = createDialogStore();
+  const dialogRegistry = createDialogRegistry();
+  const dialogStore = createDialogStore(dialogRegistry);
   const audioEngine = createAudioEngine({ canPlay: () => !save.isRestoring() });
   const audioStore = createAudioStore(audioEngine);
   audioEngine.suspendPlayback();
@@ -86,7 +95,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   const inputActions = new WorldInputActions(inputAdapter, inputScope, false);
   const interactablesStore = createInteractablesStore(false);
   const inputExtensionId = options.inputExtensionId ?? DEFAULT_INTERACTION_INPUT_EXTENSION_ID;
-  const store = createGaesupStore(inputAdapter);
+  const store = createGaesupStore(inputAdapter, reportRuntimeError);
   const cinematics = createCameraCinematicPlayer({ store, characterStore, sceneStore, dialogStore }, false);
   const buildingStore = createBuildingStore();
   const gamepad = new WorldGamepadInput(inputAdapter, inputScope, () => store.getState().mode?.controller === 'gamepad' && store.getState().interaction?.isActive !== false && !buildingStore.getState().isInEditMode(), options.gamepad === false ? { enabled: false } : options.gamepad, undefined, () => {
@@ -123,20 +132,20 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
       isMoving: stateManager.getGameStates().isMoving, isGrounded: stateManager.getActiveState().isGround }),
   });
   grassManager.suspend();
-  const clockLoop = getTimeClock(timeStore);
+  const clockLoop = getTimeClock(timeStore, reportRuntimeError);
   clockLoop.suspend();
   const stats = new EngineStats();
   stats.source('fixedTicks', () => clockLoop.clock.tick);
   stats.source('clockSystems', () => clockLoop.clock.systemCount, 'gauge');
   const npcSimulation = new NPCSimulation(npcStore, clockLoop, { adapters: npcBrainAdapters, scoped: true, navigation });
   const runtimeLogger = createPluginLogger(options.logger);
-  const plugins = createPluginRegistry(options.logger ? { logger: options.logger } : {});
+  const plugins = createPluginRegistry({ ...(options.logger ? { logger: options.logger } : {}), report: reportRuntimeError });
   const pluginRuntime = options.pluginRuntime ?? 'client';
   const save =
     options.saveSystem ??
     (options.saveOptions
-      ? new SaveSystem(createRuntimeSaveOptions(options.saveOptions))
-      : createDefaultSaveSystem({ namespace: worldId }));
+      ? new SaveSystem({ report: reportRuntimeError, ...options.saveOptions })
+      : createDefaultSaveSystem({ namespace: worldId, report: reportRuntimeError }));
   const saveDiagnostics = createRuntimeSaveDiagnostics(options.saveDiagnostics);
   const optionSaveBindings = [...(options.saveBindings ?? [])];
   const unregisterSaveBindings = new Map<string, () => void>();
@@ -150,7 +159,6 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   let ownsWorldStoreService = false;
   let ownsMotionsService = false;
   const ownedDomainServiceIds = new Set<string>();
-  let lifecycleState: 'inactive' | 'setting-up' | 'active' | 'disposing' = 'inactive';
   let lifecycleQueue = Promise.resolve();
   let lifecycleRevision = 0;
   const lifecycleListeners = new Set<() => void>();
@@ -236,7 +244,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   const loadAssets = async () => {
     const source = options.assets?.source;
     if (!source) return;
-    await useAssetStore.getState().loadAssets(source);
+    await assetStore.getState().loadAssets(source);
   };
 
   const activateSaveDiagnostics = (): void => {
@@ -360,13 +368,10 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
     ownedDomainServiceIds.add(key);
   };
 
-  let releaseErrorSink: (() => void) | undefined;
-
   const setup = async (): Promise<void> => {
     if (lifecycleState === 'active') return;
     lifecycleState = 'setting-up';
     try {
-      if (options.onError && !releaseErrorSink) releaseErrorSink = setErrorSink(options.onError);
       store.activateInteractions();
       worldObjectStore.getState().activateWorldBridge();
       plugins.context.services.register(RUNTIME_TIME_STORE_SERVICE_ID, timeStore, 'gaesup.runtime');
@@ -436,14 +441,12 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
       publishLifecycle();
     } catch (error) {
       await deactivateGeneration(true);
-      releaseErrorSink?.(); releaseErrorSink = undefined;
       lifecycleState = 'inactive';
       throw error;
     }
   };
 
   const dispose = async (): Promise<void> => {
-    releaseErrorSink?.(); releaseErrorSink = undefined;
     stopGamepad();
     cinematics.suspend();
     inputActions.suspend(); interactablesStore.getState().suspend();
@@ -474,7 +477,7 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   };
 
   return {
-    worldId, store, timeStore, clockLoop, stats, inputScope, inputActions, gamepad, interactablesStore, cinematics, navigation, clickNavigation, stateManager, inputAdapter, grassManager, worldBridge, worldObjectStore, worldViews,
+    worldId, reportError: reportRuntimeError, assetStore, dialogRegistry, store, timeStore, clockLoop, stats, inputScope, inputActions, gamepad, interactablesStore, cinematics, navigation, clickNavigation, stateManager, inputAdapter, grassManager, worldBridge, worldObjectStore, worldViews,
     weatherStore, dialogStore,
     audioEngine, audioStore, characterStore, sceneStore, roomVisibilityStore,
     gameplayEventRegistry, gameplayEvents,
@@ -503,11 +506,5 @@ type CleanupResult =
       failed: true;
       error: unknown;
     };
-
-function createRuntimeSaveOptions(options: SaveSystemOptions): SaveSystemOptions {
-  return {
-    ...options,
-  };
-}
 
 export { shouldSetupPluginForRuntime } from '../plugins';

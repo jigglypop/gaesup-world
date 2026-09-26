@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 import { logger } from '@/core/utils/logger';
-import { reportError } from '@/core/utils/reportError';
+import { reportError, type ErrorReporter } from '@/core/utils/reportError';
 
 import type {
   AutomationAction,
@@ -31,6 +31,8 @@ export interface InteractionBridgeOptions {
   inputBackend?: InputBackend;
   /** The caller disposes supplied automation engines. */
   automationSystem?: AutomationSystem;
+  /** Receives command failures; defaults to the page reporter. */
+  report?: ErrorReporter;
 }
 
 export class InteractionBridge {
@@ -54,6 +56,7 @@ export class InteractionBridge {
   private inputBackend: InputBackend;
   private automationSystem: AutomationSystem;
   private readonly ownsAutomationSystem: boolean;
+  private readonly report: ErrorReporter;
   private state: BridgeState;
   private eventSubscribers: Map<string, Array<(event: BridgeEvent) => void>>;
   private eventQueue: BridgeEvent[];
@@ -68,6 +71,7 @@ export class InteractionBridge {
   private hoveredInteractableIds: Set<string>;
 
   constructor(options: InteractionBridgeOptions = {}) {
+    this.report = options.report ?? reportError;
     this.interactionSystem = options.interactionSystem ?? resolveDefaultInteractionSystem();
     this.inputBackend = options.inputBackend ?? createInteractionInputAdapter(this.interactionSystem);
     this.automationSystem = options.automationSystem ?? new AutomationSystem();
@@ -222,7 +226,7 @@ export class InteractionBridge {
           break;
       }
     } catch (error) {
-      reportError(error, { source: 'command:interaction', label: `${command.type}.${command.action}` });
+      this.report(error, { source: 'command:interaction', label: `${command.type}.${command.action}` });
     }
   }
 

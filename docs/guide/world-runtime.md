@@ -68,16 +68,16 @@ createGaesupRuntime()              월드 하나의 store·시계·입력·NPC �
 | `saveOptions` | 없음 | `saveSystem`이 없을 때 이 옵션으로 `SaveSystem`을 만든다. 둘 다 없으면 IndexedDB(없으면 localStorage)를 `worldId`로 namespace한 기본 저장소, 기본 슬롯 `main` |
 | `saveBindings` | `[]` | `setup()`에서 저장 시스템에 등록할 도메인 바인딩(`DomainBinding`) |
 | `saveDiagnostics` | 기본 | 저장 진단 서비스 옵션 |
-| `assets` | 없음 | `{ source, loadOnCreate }`. `loadOnCreate`면 `setup()`이 `loadAssets()`를 기다린다(자산 store는 아직 페이지 전역이다) |
+| `assets` | 없음 | `{ source, loadOnCreate }`. `loadOnCreate`면 `setup()`이 `loadAssets()`로 이 런타임의 `assetStore`를 채울 때까지 기다린다 |
 | `logger` | 출력 없음 | 플러그인(`ctx.logger`)과 런타임 경고(저장 진단, 거부된 저장 바인딩, 플러그인 capability 진단)를 받을 `PluginLogger` 일부(`debug`·`info`·`warn`·`error`). 주지 않으면 모두 버려진다 |
-| `onError` | `console.error` | 활성 상태일 때 프레임·시계·명령 경계에서 잡힌 엔진 오류를 받는다. `(error, { source, label, suppressed }) => void` |
+| `onError` | `console.error` | 이 런타임이 가진 경계(시계, 이 런타임 아래 캔버스의 프레임 콜백, 플러그인 이벤트, 저장, 상호작용 명령)에서 잡힌 오류를 `setup()`부터 `dispose()`가 끝날 때까지 받는다. 다른 월드의 오류는 오지 않는다. `(error, { source, label, suppressed }) => void` |
 
 ### 런타임이 가진 것
 
 | 묶음 | 필드 |
 |---|---|
 | 월드 store | `store`(모드, URL, 카메라 옵션, 성능 수치, 상호작용), `worldObjectStore`, `worldBridge`, `worldViews` |
-| 도메인 store | `buildingStore`, `npcStore`, `timeStore`, `weatherStore`, `dialogStore`, `characterStore`, `sceneStore`, `roomVisibilityStore`, `interactablesStore`, `audioStore`·`audioEngine` |
+| 도메인 store | `buildingStore`, `npcStore`, `timeStore`, `weatherStore`, `dialogStore`·`dialogRegistry`, `assetStore`, `characterStore`, `sceneStore`, `roomVisibilityStore`, `interactablesStore`, `audioStore`·`audioEngine` |
 | 건축 렌더 상태 | `buildingRenderStore`, `buildingCullingStore`, `buildingVisibilityStore`, `grassManager` |
 | NPC | `npcScheduler`, `npcSimulation`, `npcBrainAdapters`, `npcReinforcement` |
 | 시간·시뮬레이션 | `clockLoop`(`AnimationClockLoop`, 안에 60Hz `FixedStepClock`), `stateManager`, `motions`·`motionBridge`·`animationBridge`(처음 읽을 때 만든다) |
@@ -85,19 +85,18 @@ createGaesupRuntime()              월드 하나의 store·시계·입력·NPC �
 | 길찾기 | `navigation`(`NavigationSystem`), `clickNavigation`, `navigationObstacles` |
 | 게임플레이·연출 | `gameplayEventRegistry`, `gameplayEvents`, `cinematics` |
 | 확장·저장 | `plugins`(`PluginRegistry`), `pluginRuntime`, `getService()`·`requireService()`, `save`(`SaveSystem`), `saveDiagnostics`, `loadAssets()` |
-| 진단 | `worldId`, `stats`(`EngineStats`: `frames`, `fixedTicks`, `clockSystems`) |
+| 진단 | `worldId`, `stats`(`EngineStats`: `frames`, `fixedTicks`, `clockSystems`), `reportError(error, context)`(이 런타임의 `onError` 경로로 보고) |
 | 수명 | `setup()`, `dispose()`, `isActive()`, `getLifecycleRevision()`, `subscribeLifecycle(listener)` |
 
 ### 수명: `setup()`과 `dispose()`
 
 `setup()`이 하는 일, 순서대로:
 
-1. `onError`가 있으면 오류 sink로 건다.
-2. 월드 상호작용과 월드 브리지를 켜고, 자기 store들을 플러그인 서비스로 등록한다(`BUILDING_STORE_SERVICE`, `NPC_STORE_SERVICE`, `RUNTIME_TIME_STORE_SERVICE_ID`, `RUNTIME_GAESUP_STORE_SERVICE_ID` 등).
-3. 저장 진단, 저장 시스템 서비스, `saveBindings`를 등록한다. `assets.loadOnCreate`면 자산을 불러온다.
-4. `plugins.setupAll()`로 플러그인을 의존성 순서대로 설치하고, 플러그인이 올린 저장 바인딩을 등록한다.
-5. 입력 백엔드를 연결하고 게임플레이 이벤트, 장면 전환, 오디오, 입력, 잔디, NPC 시뮬레이션, 게임패드, 시계를 재개한다.
-6. lifecycle revision을 올린다. `GaesupRuntimeProvider` 아래 트리가 다시 렌더되어 물리·시계가 돌기 시작한다.
+1. 월드 상호작용과 월드 브리지를 켜고, 자기 store들을 플러그인 서비스로 등록한다(`BUILDING_STORE_SERVICE`, `NPC_STORE_SERVICE`, `RUNTIME_TIME_STORE_SERVICE_ID`, `RUNTIME_GAESUP_STORE_SERVICE_ID` 등).
+2. 저장 진단, 저장 시스템 서비스, `saveBindings`를 등록한다. `assets.loadOnCreate`면 자산을 불러온다.
+3. `plugins.setupAll()`로 플러그인을 의존성 순서대로 설치하고, 플러그인이 올린 저장 바인딩을 등록한다.
+4. 입력 백엔드를 연결하고 게임플레이 이벤트, 장면 전환, 오디오, 입력, 잔디, NPC 시뮬레이션, 게임패드, 시계를 재개한다.
+5. lifecycle revision을 올린다. `GaesupRuntimeProvider` 아래 트리가 다시 렌더되어 물리·시계가 돌기 시작한다.
 
 - 중간에 실패하면 그때까지 한 일을 되돌리고 비활성 상태로 돌아간 뒤 예외를 다시 던진다.
 - `dispose()`는 모두 멈추고 플러그인을 설치 역순으로 해제하고 서비스·저장 바인딩을 지운다. 도메인 store의 데이터(건축, NPC, 시간 등)는 남고, 파생 상태(건축 렌더·컬링·가시성 store, 열린 대화, 클릭 이동 경로)는 비우며 내비게이션은 해제한다.
@@ -164,6 +163,8 @@ export const runtime = createGaesupRuntime({
 | `useTimeStore`, `useTimeStoreApi` | `timeStore` |
 | `useWeatherStore`, `useWeatherStoreApi` | `weatherStore` |
 | `useDialogStore`, `useDialogStoreApi` | `dialogStore` |
+| `useDialogRegistry`(정적 API 없음, 없으면 `getDialogRegistry()`) | `dialogRegistry` |
+| `useAssetStore`, `useAssetStoreApi` | `assetStore` |
 | `useCharacterStore`, `useCharacterStoreApi` | `characterStore` |
 | `useSceneStore`, `useSceneStoreApi` | `sceneStore` |
 | `useRoomVisibilityStore`, `useRoomVisibilityStoreApi` | `roomVisibilityStore` |
@@ -172,7 +173,7 @@ export const runtime = createGaesupRuntime({
 | `useBuildingVisibilityStore`, `useBuildingRenderStateStore`, `useBuildingGpuCullingStore` (+`Api`) | `buildingVisibilityStore`, `buildingRenderStore`, `buildingCullingStore` |
 | `useWorldObjectStore`, `useWorldObjectStoreApi` | `worldObjectStore`(같은 규칙이지만 정적 API가 없다) |
 
-런타임과 상관없이 페이지 전역인 store: `usePerfStore`(품질 profile), `useAssetStore`(자산 카탈로그), `useI18nStore`, `useEditorStore`, `useToastStore`, `useUIConfigStore`.
+런타임과 상관없이 페이지 전역인 store: `usePerfStore`(품질 profile), `useI18nStore`, `useEditorStore`, `useToastStore`, `useUIConfigStore`.
 
 ## 월드 안에서 store 읽고 쓰기
 
@@ -253,7 +254,7 @@ export function TwoRooms() {
 
 | 월드마다 따로 | 페이지 전역(공유) |
 |---|---|
-| 모든 도메인 store, 월드 store, 60Hz 시계와 게임 시간, NPC 시뮬레이션, 내비게이션, 입력 상태, 플러그인 레지스트리, 저장 시스템(namespace = `worldId`), 캔버스별 `FrameScheduler` | 품질 profile(`usePerfStore`), 자산 카탈로그(`useAssetStore`), 기본 툰 모드(`setDefaultToonMode`), WASM 모듈, 캔버스 밖 `useEngineFrame`용 전역 `frameScheduler`, 오류 sink(아래 제한 참고) |
+| 모든 도메인 store, 월드 store, 자산 카탈로그와 대화 레지스트리, 60Hz 시계와 게임 시간, NPC 시뮬레이션, 내비게이션, 입력 상태, 플러그인 레지스트리, 저장 시스템(namespace = `worldId`), 오류 보고(`onError`), 캔버스별 `FrameScheduler` | 품질 profile(`usePerfStore`), glTF 캐시, 기본 툰 모드(`setDefaultToonMode`), WASM 모듈, 캔버스 밖 `useEngineFrame`용 전역 `frameScheduler`, 런타임 밖 경계의 오류 보고(console) |
 
 키보드 입력은 한 월드로만 간다. 엔진 카메라가 각 캔버스 DOM을 그 월드의 입력 표면으로 자동 등록하므로, 캔버스를 누르거나 포커스하면 그 월드가 입력을 받는다. 캔버스 옆 DOM(HUD, 버튼)도 같은 월드 입력으로 묶으려면 `WorldInputSurface`로 감싼다. 활성 월드가 둘 이상일 때 아직 아무 표면도 고르지 않았거나 표면 밖을 누른 뒤라면 키 입력은 어느 월드로도 가지 않는다. 입력 창(`input`, `textarea`, contenteditable)에 포커스가 있으면 월드는 키를 받지 않는다(`src/core/input/WorldInputScope.ts`).
 
@@ -437,7 +438,7 @@ export function createFlagsPlugin() {
 ## 현재 제한
 
 - `GaesupWorld`는 런타임을 스스로 만들지 않는다. `runtime`을 주지 않으면 모든 store가 legacy 전역 store로 돌고 개발 모드 경고가 난다. `GaesupWorld`가 런타임을 만들고 수명을 관리하게 바꾸는 일이 PRD LIB-1에 있다.
-- `onError`는 전역 오류 sink를 바꾸는 방식이다. 두 런타임이 모두 `onError`를 주면 나중에 `setup()`한 쪽이 모든 월드의 오류를 받고, A·B 순으로 setup한 뒤 A·B 순으로 dispose하면 이미 끝난 A의 `onError`가 다시 걸린다. 자산 카탈로그도 페이지 전역이라 같은 asset id를 두 월드가 다르게 쓰면 섞인다(PRD ISO-1).
+- 직접 만든 `saveSystem`을 넘기면 그 저장 시스템의 오류는 `onError`가 아니라 만들 때 준 `report`(없으면 console)로 간다. `new SaveSystem({ adapter, report: (error, context) => ... })`로 연결한다.
 - `urls`의 `wheelUrl`·`ridingUrl`·`terrain`·`skybox`는 적용되지 않는다.
 - 고정 스텝 주기(60Hz)는 설정할 수 없다.
 

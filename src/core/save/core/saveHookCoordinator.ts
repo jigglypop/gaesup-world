@@ -1,7 +1,5 @@
 import { isAutoSaveSuspended } from './autoSaveSuspension';
 import type { SaveSystem } from './SaveSystem';
-import { reportError } from '../../utils/reportError';
-
 
 type AutoSaveOwner = {
   intervalMs: number;
@@ -103,7 +101,7 @@ class SaveHookCoordinator {
       if (this.initialLoad !== load || load.controller.signal.aborted) return;
       // Keep autosave suspended after a read/restore failure until these owners leave.
       load.state = 'failed';
-      reportError(error, { source: 'save:load', label: this.slot });
+      this.system.reportError(error, { source: 'save:load', label: this.slot });
     });
   }
 
@@ -111,7 +109,7 @@ class SaveHookCoordinator {
     if (this.initialLoad !== load || load.state !== 'loaded' || !load.owners.has(owner) || owner.delivered) return;
     owner.delivered = true;
     try { owner.notify(load.result); }
-    catch (error) { reportError(error, { source: 'save:load-callback', label: this.slot }); }
+    catch (error) { this.system.reportError(error, { source: 'save:load-callback', label: this.slot }); }
   }
 
   private canSave(): boolean {
@@ -126,7 +124,7 @@ class SaveHookCoordinator {
     this.saving = true;
     // Unchanged domains make every trigger, including beforeunload, a no-op after the hidden-page save.
     void this.system.save(this.slot, { skipUnchanged: true }).catch((error: unknown) => {
-      reportError(error, { source: 'save:autosave', label: this.slot });
+      this.system.reportError(error, { source: 'save:autosave', label: this.slot });
     }).finally(() => {
       this.saving = false;
       const pending = this.pendingSave;

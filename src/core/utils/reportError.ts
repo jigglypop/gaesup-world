@@ -11,6 +11,8 @@ export type ErrorReportContext = {
 };
 
 export type ErrorSink = (error: Error, context: ErrorReportContext) => void;
+/** What a boundary calls with whatever it caught; a runtime hands its own to the boundaries it owns. */
+export type ErrorReporter = (error: unknown, context: ErrorReportContext) => void;
 
 export const ERROR_REPORT_INTERVAL_MS = 1000;
 
@@ -23,7 +25,7 @@ const silentSink: ErrorSink = () => undefined;
 
 let sink: ErrorSink = readNodeEnv() === 'test' ? silentSink : consoleSink;
 
-/** Replaces the error sink (for example `runtime.onError`); the returned function restores the previous one. */
+/** Replaces the page default sink, which only boundaries no runtime owns use; the returned function restores it. */
 export function setErrorSink(next: ErrorSink): () => void {
   const previous = sink;
   sink = next;
@@ -32,21 +34,31 @@ export function setErrorSink(next: ErrorSink): () => void {
   };
 }
 
-export function reportError(error: unknown, context: ErrorReportContext): void {
+/** Delivers to `target`; a sink that throws is reported to the console instead of escaping the boundary. */
+export function deliverError(target: ErrorSink, error: unknown, context: ErrorReportContext): void {
   const normalized = error instanceof Error ? error : new Error(String(error));
   try {
-    sink(normalized, context);
+    target(normalized, context);
   } catch (sinkError) {
     consoleSink(sinkError instanceof Error ? sinkError : new Error(String(sinkError)), { source: 'error-sink' });
   }
 }
+
+/** The page default reporter. */
+export const reportError: ErrorReporter = (error, context) => deliverError(sink, error, context);
 
 /** Per-callback rate limit: the first error and then at most one report per interval, counting what was skipped. */
 export type ErrorReportState = { lastReportMs: number; suppressed: number };
 
 export const createErrorReportState = (): ErrorReportState => ({ lastReportMs: Number.NEGATIVE_INFINITY, suppressed: 0 });
 
-export function reportThrottled(state: ErrorReportState, nowMs: number, error: unknown, context: ErrorReportContext): void {
+export function reportThrottled(
+  state: ErrorReportState,
+  nowMs: number,
+  error: unknown,
+  context: ErrorReportContext,
+  report: ErrorReporter = reportError,
+): void {
   if (nowMs >= state.lastReportMs && nowMs - state.lastReportMs < ERROR_REPORT_INTERVAL_MS) {
     state.suppressed++;
     return;
@@ -54,5 +66,5 @@ export function reportThrottled(state: ErrorReportState, nowMs: number, error: u
   const suppressed = state.suppressed;
   state.lastReportMs = nowMs;
   state.suppressed = 0;
-  reportError(error, suppressed > 0 ? { ...context, suppressed } : context);
+  report(error, suppressed > 0 ? { ...context, suppressed } : context);
 }

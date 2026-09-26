@@ -61,25 +61,25 @@
 | `gamepad` | 게임패드 옵션, `false`면 끈다 |
 | `plugins`, `pluginRuntime` | 플러그인 목록과 대상(`client` 기본, `server`, `editor`). `filterPluginsForRuntime`로 거른다 |
 | `saveSystem`, `saveOptions`, `saveBindings`, `saveDiagnostics` | SaveSystem 주입 또는 옵션, 추가 도메인 바인딩, 진단 보관 개수(기본 50) |
-| `assets` | `{ source, loadOnCreate }`. `loadOnCreate`면 setup 중에 전역 자산 store로 불러온다 |
+| `assets` | `{ source, loadOnCreate }`. `loadOnCreate`면 setup 중에 이 런타임의 `assetStore`로 불러온다 |
 | `logger` | 플러그인·런타임 logger(기본 no-op) |
-| `onError` | 프레임·시계·명령 경계에서 잡힌 오류를 받는다. 지금은 전역 오류 sink를 교체하는 방식이다(ISO-1) |
+| `onError` | 이 런타임이 가진 경계(시계, 이 런타임 아래 캔버스의 프레임 콜백, 플러그인 이벤트, 저장, 상호작용 명령)에서 잡힌 오류를 setup부터 dispose 완료까지 받는다. 경계들은 생성할 때 `runtime.reportError`를 받는다 |
 
 ### 만드는 것
 
-호출 한 번에 객체 40개를 즉시 만든다(런타임 필드 39개 + 내부 `runtimeLogger`). `motions`, `motionBridge`, `animationBridge` 3개만 getter가 처음 읽힐 때 만든다. 합해 43개다.
+호출 한 번에 객체 42개를 즉시 만든다(런타임 필드 41개 + 내부 `runtimeLogger`). `motions`, `motionBridge`, `animationBridge` 3개만 getter가 처음 읽힐 때 만든다. 합해 45개다. 오류 보고 함수 `reportError`는 객체가 아니라 closure이고, 시계·플러그인 이벤트 버스·저장 시스템·월드 store(상호작용 브리지)를 만들 때 넘긴다.
 
 ```text
 createGaesupRuntime(options) → GaesupRuntime
 │
-├─ 즉시 생성 40
-│  ├─ 상태 16 ────── store(월드) · timeStore · weatherStore · dialogStore · audioStore · characterStore
+├─ 즉시 생성 42
+│  ├─ 상태 17 ────── store(월드) · assetStore · timeStore · weatherStore · dialogStore · audioStore · characterStore
 │  │                 sceneStore · roomVisibilityStore · interactablesStore · buildingStore
 │  │                 buildingRenderStore · buildingCullingStore · buildingVisibilityStore · npcStore
 │  │                 worldObjectStore · worldBridge(worldObjectStore가 만든 WorldBridge)
 │  ├─ 시간·통계 2 ── clockLoop = getTimeClock(timeStore) : AnimationClockLoop(FixedStepClock 60Hz) · stats(EngineStats)
 │  ├─ 입력 4 ─────── inputAdapter(WorldInputBackend) · inputScope · inputActions · gamepad
-│  ├─ 게임플레이 3 ─ gameplayEventRegistry · gameplayEvents(GameplayEventEngine) · cinematics
+│  ├─ 게임플레이 4 ─ gameplayEventRegistry · gameplayEvents(GameplayEventEngine) · cinematics · dialogRegistry
 │  ├─ NPC 4 ─────── npcSimulation(npcStore, clockLoop, 어댑터, navigation) · npcScheduler
 │  │                 npcBrainAdapters · npcReinforcement
 │  ├─ 내비게이션 3 ─ navigation(NavigationSystem) · navigationObstacles · clickNavigation
@@ -114,23 +114,22 @@ createGaesupRuntime(options) → GaesupRuntime
 `setup()`과 `dispose()`는 `enqueueLifecycle` 프라미스 체인으로 직렬화된다. 동시에 불러도 순서대로 돈다.
 
 1. 이미 `active`면 끝. 상태를 `setting-up`으로.
-2. `options.onError`가 있으면 `setErrorSink(onError)`(`src/core/utils/reportError.ts`).
-3. `store.activateInteractions()`, `worldObjectStore.activateWorldBridge()`.
-4. 위 서비스 24개 등록. SaveSystem 진단을 구독해 `runtimeLogger.warn`과 이벤트 `runtime:saveDiagnostic`으로 보낸다.
-5. `options.saveBindings` 등록.
-6. `assets.loadOnCreate`면 `loadAssets()` → 전역 `useAssetStore.getState().loadAssets(source)`.
-7. `plugins.setupAll()`(아래 [플러그인](#플러그인)).
-8. 플러그인이 `ctx.save`에 올린 도메인 바인딩을 SaveSystem에 등록하고, `plugins.onLifecycle`로 나중에 setup·dispose되는 플러그인의 바인딩도 따라간다. 이미 있는 key와 겹치면 거부하고 이벤트 `runtime:saveBindingRejected`를 낸다.
-9. `gameplay-events` 세이브 바인딩 등록.
-10. restore guard 등록(아래).
-11. 입력 백엔드 선택: `plugins.context.input`에서 `inputExtensionId` 확장을 찾아 `createAdapter()`로 `inputAdapter`를 활성화하고 input registry 변경을 구독한다.
-12. 상태 `active`. 게임플레이 이벤트, 장면 전환, 오디오, inputScope, 잔디, worldViews, NPC 어댑터·강화학습·시뮬레이션, interactables, inputActions, cinematics, 게임패드를 재개하고 `clockLoop.resume()`, 마지막에 `publishLifecycle()`로 revision을 올린다.
-13. 어느 단계든 실패하면 `deactivateGeneration(true)`로 되돌리고(setup에 실패한 플러그인도 dispose), 오류 sink를 풀고, `inactive`로 둔 채 오류를 다시 던진다.
+2. `store.activateInteractions()`, `worldObjectStore.activateWorldBridge()`.
+3. 위 서비스 24개 등록. SaveSystem 진단을 구독해 `runtimeLogger.warn`과 이벤트 `runtime:saveDiagnostic`으로 보낸다.
+4. `options.saveBindings` 등록.
+5. `assets.loadOnCreate`면 `loadAssets()` → `assetStore.getState().loadAssets(source)`.
+6. `plugins.setupAll()`(아래 [플러그인](#플러그인)).
+7. 플러그인이 `ctx.save`에 올린 도메인 바인딩을 SaveSystem에 등록하고, `plugins.onLifecycle`로 나중에 setup·dispose되는 플러그인의 바인딩도 따라간다. 이미 있는 key와 겹치면 거부하고 이벤트 `runtime:saveBindingRejected`를 낸다.
+8. `gameplay-events` 세이브 바인딩 등록.
+9. restore guard 등록(아래).
+10. 입력 백엔드 선택: `plugins.context.input`에서 `inputExtensionId` 확장을 찾아 `createAdapter()`로 `inputAdapter`를 활성화하고 input registry 변경을 구독한다.
+11. 상태 `active`. 게임플레이 이벤트, 장면 전환, 오디오, inputScope, 잔디, worldViews, NPC 어댑터·강화학습·시뮬레이션, interactables, inputActions, cinematics, 게임패드를 재개하고 `clockLoop.resume()`, 마지막에 `publishLifecycle()`로 revision을 올린다.
+12. 어느 단계든 실패하면 `deactivateGeneration(true)`로 되돌리고(setup에 실패한 플러그인도 dispose), `inactive`로 둔 채 오류를 다시 던진다.
 
 ### dispose 순서
 
 1. `dispose()`는 큐에 넣기 전에 `save.cancelPendingLoads()`를 부른다.
-2. 오류 sink 해제, 게임패드·cinematics·입력·interactables·NPC 3종·worldViews·worldBridge·잔디·시계·게임플레이 이벤트·inputScope·장면 전환 정지, 방 가시성 reset, 오디오 정지.
+2. 게임패드·cinematics·입력·interactables·NPC 3종·worldViews·worldBridge·잔디·시계·게임플레이 이벤트·inputScope·장면 전환 정지, 방 가시성 reset, 오디오 정지.
 3. `active`였으면 상태 `disposing`, `publishLifecycle()`.
 4. `deactivateGeneration(false)`: restore guard 해제 → `audioEngine.dispose()` → world bridge 비활성 → 클릭 이동 요청 무효화·경로 비우기 → `plugins.disposeAll()`(setup 역순) → 아직 `ready`인 플러그인 개별 dispose → 플러그인 수명 구독 해제 → `navigation.dispose()` → 대화 닫기 → 건축 render·culling·visibility store reset → `store.disposeInteractions()` → motions의 physicsBridge, motionBridge, animationBridge dispose → 진단 구독 해제 → 모든 세이브 바인딩 해제 → 소유 서비스 제거. 단계마다 오류를 잡아 두고 전부 돈 뒤 첫 오류를 던진다.
 5. 상태 `inactive`. 같은 런타임을 다시 `setup()`할 수 있다(`src/core/runtime/__tests__/createGaesupRuntime.test.ts`의 setup → dispose → setup).
@@ -329,25 +328,22 @@ WebGL 전용 경로(GPU-1에서 지울 대상):
 
 | 전역 | 위치 | 영향 |
 |---|---|---|
-| 오류 sink | `src/core/utils/reportError.ts`의 `sink` | `onError`가 교체한다(ISO-1) |
-| 자산 카탈로그와 로드 세대 | `src/core/assets/stores/assetStore.ts`의 `useAssetStore`, `latestLoad` | `runtime.loadAssets()`와 `AvatarProvider`(`src/avatar/react.tsx`)가 쓴다(ISO-1) |
+| 페이지 기본 오류 보고 | `src/core/utils/reportError.ts`의 `reportError`·`sink` | 런타임이 없는 경계와, setup 전·dispose 뒤의 런타임 보고가 쓴다. `setErrorSink`는 이 기본값만 바꾼다 |
 | glTF 캐시 | `src/core/assets/GLTFAssetCache.ts`의 `gltfAssetCache` | 모델 캐시 공유 |
 | 자동 저장 중지 카운터 | `src/core/save/core/autoSaveSuspension.ts` | 방문 중 중지가 모든 월드에 걸린다 |
 | legacy store | `lazyScopedStore`의 정적 API, `lazyStore` 6개 | [store 범위](#store-범위) |
 | 전역 프레임 스케줄러 | `frameScheduler`(`src/core/runtime/frame/FrameScheduler.ts`) | 캔버스 밖 등록과 `createFrameDriver` 기본값 |
-| 싱글턴 | `NavigationSystem.getInstance()`, `InteractionSystem.getInstance()`, `MinimapSystem.getInstance()`, `getSaveSystem()`, `getAudioEngine()`, `getDialogRegistry()`, `getGameplayEventRegistry()`, `getNPCScheduler()`, `getGlobalStateManager()`, `getGlobalAnimationBridge()`, `BridgeFactory` 캐시, 기본 NPC 두뇌 어댑터(`registerNPCBrainAdapter`), `usePhysicsBridge`의 fallback motions 런타임 | legacy 경로의 기본값 |
+| 싱글턴 | `NavigationSystem.getInstance()`, `InteractionSystem.getInstance()`, `MinimapSystem.getInstance()`, `getSaveSystem()`, `getAudioEngine()`, `getDialogRegistry()`(런타임은 자기 `dialogRegistry`), `getGameplayEventRegistry()`, `getNPCScheduler()`, `getGlobalStateManager()`, `getGlobalAnimationBridge()`, `BridgeFactory` 캐시, 기본 NPC 두뇌 어댑터(`registerNPCBrainAdapter`), `usePhysicsBridge`의 fallback motions 런타임 | legacy 경로의 기본값 |
 
 ## 복잡도 핫스팟
 
 ### 구조
 
-1. **런타임이 모든 것을 즉시 만든다.** 월드마다 43개(즉시 40 + lazy 3)를 만들고, 정지·재개 목록을 `setup()`, `dispose()`, `deactivateGeneration()` 세 곳에 손으로 적는다. 서브시스템 하나를 더하면 세 곳과 타입, 서비스 등록을 함께 고쳐야 한다.
+1. **런타임이 모든 것을 즉시 만든다.** 월드마다 45개(즉시 42 + lazy 3)를 만들고, 정지·재개 목록을 `setup()`, `dispose()`, `deactivateGeneration()` 세 곳에 손으로 적는다. 서브시스템 하나를 더하면 세 곳과 타입, 서비스 등록을 함께 고쳐야 한다.
 2. **기본 경로가 legacy다.** `GaesupWorld`가 런타임을 만들지 않고 라이브러리·예제에 `createGaesupRuntime` 호출이 없어, `GaesupWorld`만 쓰는 소비자는 legacy 전역 store로 돌고 개발 모드 경고를 받는다. 정적 store API는 런타임 아래에서도 legacy를 가리킨다(LIB-1).
-3. **전역 오류 sink(ISO-1).** `setErrorSink`는 이전 sink를 기억했다가 자기 sink가 아직 현재일 때만 되돌린다. 런타임 A와 B가 차례로 setup하고 A, B 순으로 dispose하면, A의 해제는 아무것도 안 하고 B의 해제가 sink를 A의 `onError`로 되돌린다. 종료된 A의 콜백이 이후 오류를 받는다.
-4. **전역 자산 store(ISO-1).** 카탈로그와 로드 세대 토큰 `latestLoad`가 모듈 전역이라, 한 월드의 나중 로드가 다른 월드의 로드 결과 적용을 막고 같은 asset ID의 메타데이터가 섞인다.
-5. **방문 적용의 원자성(ISO-2).** 위 [네트워크](#네트워크) 참조.
-6. **렌더링 두 벌(GPU-1)과 해·아바타 두 벌(UP-1).** 위 [렌더링](#렌더링) 표.
-7. **루트 진입점이 에디터를 통째로 재수출한다(LIB-1).** `src/index.ts`의 `export * from './core/editor'`.
+3. **방문 적용의 원자성(ISO-2).** 위 [네트워크](#네트워크) 참조.
+4. **렌더링 두 벌(GPU-1)과 해·아바타 두 벌(UP-1).** 위 [렌더링](#렌더링) 표.
+5. **루트 진입점이 에디터를 통째로 재수출한다(LIB-1).** `src/index.ts`의 `export * from './core/editor'`.
 
 ### 큰 파일
 

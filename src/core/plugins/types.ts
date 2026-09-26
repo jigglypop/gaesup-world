@@ -1,4 +1,5 @@
 import type { ServiceKey } from './serviceKey';
+import type { ErrorReporter } from '../utils/reportError';
 
 export type PluginRuntime = 'client' | 'server' | 'both' | 'editor';
 
@@ -161,6 +162,8 @@ export interface PluginRegistryApi {
 
 export interface PluginContextOptions {
   logger?: Partial<PluginLogger>;
+  /** Receives errors thrown by event handlers; defaults to the page reporter. */
+  report?: ErrorReporter;
   exclusiveCapabilities?: string[];
   capabilityConflicts?: Record<string, string[]>;
   requiredCapabilities?: string[];

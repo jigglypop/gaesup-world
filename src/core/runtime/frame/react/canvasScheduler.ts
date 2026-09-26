@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useLayoutEffect, type Context } f
 import { context as fiberContext, type RootState, type RootStore } from '@react-three/fiber';
 
 import { getFrameTimeMs } from '../../../boilerplate/hooks/frameTime';
+import { useGaesupRuntime } from '../../runtimeContext';
 import { FrameScheduler, frameScheduler, POST_PHYSICS_PHASE_INDEX } from '../FrameScheduler';
 import { FRAME_PHASES } from '../types';
 import { FRAME_PRE_PHYSICS_PRIORITY, FRAME_SCHEDULER_PRIORITY } from './priorities';
@@ -16,12 +17,14 @@ const implicitHosts = new WeakMap<FrameScheduler, ImplicitHost>();
 
 export const useFrameRegistrationEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
+/** One scheduler per canvas; it reports callback failures to the runtime the canvas was first rendered under. */
 export function useCanvasFrameScheduler(): FrameScheduler {
   const store = useRootStore();
+  const runtime = useGaesupRuntime();
   if (!store) return frameScheduler;
   let scheduler = canvasSchedulers.get(store);
   if (!scheduler) {
-    scheduler = new FrameScheduler();
+    scheduler = new FrameScheduler(runtime?.reportError);
     canvasSchedulers.set(store, scheduler);
   }
   return scheduler;

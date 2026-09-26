@@ -54,6 +54,12 @@
 - 라이브러리 빌드가 Vite 기본값대로 `public/` 전체를 `dist`에 복사하던 것을 `wasm/gaesup_core.wasm`만 내보내게 했다(`dist` 33MB → 9.4MB).
 - dev 서버가 `/gltf/*`를 옛 빌드 산출물에서 먼저 찾던 미들웨어를 지웠다. 같은 이름의 낡은 파일이 `public/`보다 먼저 나갈 수 있었다.
 
+### 런타임별 격리 (ISO-1)
+- 오류: 런타임이 전역 sink를 바꾸던 방식을 없앴다. 런타임이 가진 경계(시계, 플러그인 이벤트 버스, 저장, 상호작용 브리지, 캔버스 프레임 스케줄러)가 만들어질 때 `runtime.reportError`를 받고, 이 함수는 setup부터 dispose 완료까지만 `onError`로 보낸다. A·B 순서로 해제하면 종료된 A의 handler가 되살아나던 결함이 구조적으로 사라졌다.
+- 자산: `createAssetStore()`로 런타임마다 카탈로그와 로드 세대를 둔다. `useAssetStore`는 scoped store가 됐고 `AvatarProvider`의 기본 조회도 가장 가까운 월드를 본다. 선택자 캐시는 store의 `ids` 배열별로 둬 월드끼리 캐시를 밀어내지 않는다.
+- 대화: 런타임마다 `dialogRegistry`. `getDialogRegistry()`는 런타임 없는 legacy 경로에만 남는다.
+- 수용 시나리오 S-H08을 실측으로 green: 두 런타임에서 자산·대화·NPC·오류를 조작하고 게임패드 폴링과 시계 소비자를 켠 뒤 해제한다. 공유 상태 0, 남은 window·document 리스너 0(활성 13), 남은 타이머 0(활성 2). jsdom의 `window`는 자체 리스너 메서드를 가져 `EventTarget.prototype`을 가로채면 보이지 않는다. 처음에는 활성 리스너가 4개로 잡혀 이 함정을 찾았다.
+
 ### 세션 전 작업 커밋 (`191699a2`)
 - 작업 트리에 있던 `IdleFrameRate`(입력이 없으면 낮은 fps로 그림)와 `NPCSimulation`의 `setNavigation`·`face`·`nextEventAt`을 테스트가 통과하는 상태로 커밋했다. `IdleFrameRate`는 아직 월드에 기본 장착되지 않는다(PERF).
 

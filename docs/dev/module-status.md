@@ -23,8 +23,8 @@
 | `core/animation` | 2,640 | 유지 | `AnimatorRuntime`(Unity식 상태 머신), 공유 애니메이션 |
 | `core/ui` | 2,015 | 유지 | 토스트, 말풍선, 미니맵, UI 시스템 |
 | `core/input` | 1,756 | 수정 | 입력 액션, 키보드·게임패드·터치. 키 매핑이 세 벌(`hooks/useKeyboard`의 `KEY_MAPPING`, 입력 액션 기본값, 프로젝트 설정)이고 조작 캐릭터는 방향키가 없는 첫 번째만 쓴다. 클릭 이동이 마우스 버튼을 구분하지 않는다(DEAD-1) |
-| `core/runtime` | 1,489 | 수정 | 합성 루트. 객체 40개를 즉시 만들고 3개(`motions`, `motionBridge`, `animationBridge`)는 처음 접근할 때 만든다. suspend/resume 순서를 setup·deactivate·dispose 세 곳에 손으로 적는다. `onError`가 전역 sink를 교체해, A·B를 setup한 뒤 A, B 순서로 dispose하면 sink가 해제된 A의 `onError`를 가리킨 채 남는다(코드 판독, ISO-1) |
-| `core/assets` | 1,427 | 수정 | 자산 카탈로그 store가 모듈 전역이고 로드 세대도 전역이다(ISO-1). GLTF 캐시·로더, 생산 파이프라인 |
+| `core/runtime` | 1,489 | 수정 | 합성 루트. 객체 42개를 즉시 만들고 3개(`motions`, `motionBridge`, `animationBridge`)는 처음 접근할 때 만든다. suspend/resume 순서를 setup·deactivate·dispose 세 곳에 손으로 적는다. 자산 카탈로그·대화 레지스트리·오류 보고는 런타임마다 따로다(ISO-1, 수용 시나리오 S-H08) |
+| `core/assets` | 1,427 | 유지 | 런타임별 자산 카탈로그(`createAssetStore`, 로드 세대 포함), GLTF 캐시·로더, 생산 파이프라인. GLTF 캐시는 페이지 전역이다 |
 | `core/plugins` | 1,297 | 유지 | 레지스트리, 컨텍스트 레지스트리, 검증. `PluginRegistry.ts` 500줄. 런타임 `logger`를 주지 않으면 `ctx.logger` 출력이 사라진다(LIB-1) |
 | `avatar` | 1,098 | 유지 | `AvatarRuntime`(공유 스켈레톤, 장착, LOD), `gaesup-world/avatar` |
 | `core/navigation` | 1,061 | 수정 | 격자 길찾기(WASM A*). `NavigationSystem.ts` 743줄. 건축이 바뀌면 장애물을 전부 다시 적용(PERF) |
@@ -43,7 +43,7 @@
 | `core/weather` | 454 | 유지 | 날씨 store·효과(TSL) |
 | `core/time` | 443 | 유지 | 게임 시계·날짜 |
 | `core/effects` | 415 | 유지 | 발자국, 텔레포트 효과 |
-| `core/dialog` | 356 | 수정 | 대화 트리, `setFlag`·`custom` 효과, `flagEquals`·`custom` 조건(2026-09-27 일반화). 레지스트리가 전역이라 월드 둘이 공유한다(ISO-1) |
+| `core/dialog` | 356 | 유지 | 대화 트리, `setFlag`·`custom` 효과, `flagEquals`·`custom` 조건(2026-09-27 일반화). 런타임마다 레지스트리를 갖고 legacy 경로만 `getDialogRegistry()`를 쓴다 |
 | `core/simulation` | 344 | 유지 | 고정 스텝 시계, 물리 보간 |
 | `core/content` | 334 | 유지 | 콘텐츠 번들 매니페스트 |
 | `core/placement` | 322 | 유지 | 배치 규칙 엔진(건축 배치가 위에 얹힌다) |
@@ -77,11 +77,11 @@
 ## 구조적 문제 요약
 
 1. **기본 경로가 deprecated 경로다.** 런타임을 쓰는 코드가 라이브러리와 문서에 없어 `GaesupWorld`만 쓰는 소비자는 legacy 전역 store로 돈다(LIB-1).
-2. **전역 상태가 월드를 가로지른다.** 자산 카탈로그, 로드 세대, 오류 sink(ISO-1).
+2. **전역 상태가 남아 있다.** GLTF 캐시, 자동 저장 중지 카운터, legacy 싱글턴([architecture.md](architecture.md)의 "런타임 밖 전역 상태"). 자산 카탈로그·대화 레지스트리·오류 보고는 ISO-1에서 런타임 소유로 옮겼다.
 3. **병렬 구현이 남아 있다.** 해 두 벌, 아바타 두 벌, 엔티티 모델 세 벌(`boilerplate`, `blueprints`, `scene-object`).
 4. **렌더링이 두 벌이다.** GLSL과 TSL(GPU-1).
 5. **번들이 쪼개지지 않는다.** 모듈 단위 트리셰이킹 불가(LIB-1).
-6. **런타임이 거의 모든 것을 즉시 만든다.** 월드마다 객체 40개를 만들고, 생활 게임 도메인을 지우기 전에는 이 수가 더 컸다.
+6. **런타임이 거의 모든 것을 즉시 만든다.** 월드마다 객체 42개를 만들고, 생활 게임 도메인을 지우기 전에는 이 수가 더 컸다.
 7. **글꼴이 실리지 않는다.** CSS가 `Pretendard` 이름만 쓰고 `@font-face`가 없어 설치되지 않은 기기에서는 시스템 글꼴로 그린다(EX-1).
 8. **WebGL 기본 렌더러를 쓰는 컴포넌트.** `MultiplayerCanvas`는 `gl`을 넘기지 않아 `WebGLRenderer`로 그리고 drei `Grid`를 쓴다(GPU-1).
 9. **아무 일도 하지 않는 설정.** 건축 안개·지면·물·벽 크기(편집 UI 토글까지 있다), `cameraOption`·`urls` 일부, profile `outline`, `Teleport` props, `connect()`의 `characterUrl`, 엔진이 보내지 않는 규칙 트리거, 조작 캐릭터에 닿지 않는 입력 설정. 사용자는 켰는데 바뀌지 않는다고 느낀다(DEAD-1).

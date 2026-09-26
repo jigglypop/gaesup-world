@@ -14,6 +14,7 @@ type SharedFrameEntry = {
 };
 
 type SharedFrameGroup = {
+  report: FrameScheduler['report'];
   channel: SharedFrameChannel;
   entries: SharedFrameEntry[];
   getThree: () => RootState;
@@ -37,7 +38,7 @@ function runGroup(group: SharedFrameGroup, delta: number, elapsedMs: number): vo
       entry.callback.current(delta, elapsedSeconds, three);
     } catch (error) {
       // Like FrameScheduler entries, a throwing callback keeps running next frame with rate-limited reports.
-      reportThrottled(entry.errors, elapsedMs, error, { source: 'frame', label: group.channel.label });
+      reportThrottled(entry.errors, elapsedMs, error, { source: 'frame', label: group.channel.label }, group.report);
     }
   }
 }
@@ -56,7 +57,7 @@ function joinGroup(
   }
   let group = groups.get(key);
   if (!group) {
-    group = { channel, entries: [], getThree, unsubscribe: null, generation: scheduler.getGeneration() };
+    group = { report: scheduler.report, channel, entries: [], getThree, unsubscribe: null, generation: scheduler.getGeneration() };
     groups.set(key, group);
   }
   const joined = group;

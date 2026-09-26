@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -10,33 +11,37 @@ import {
 
 import type { AvatarEquipmentState, AvatarState } from './core/types';
 import { AvatarRuntime, type AvatarRuntimeOptions } from './runtime/AvatarRuntime';
-import { useAssetStore } from '../core/assets/stores/assetStore';
+import { useAssetStoreApi } from '../core/assets/stores/assetStore';
 import { useEngineFrame } from '../core/runtime/frame';
 import { logger } from '../core/utils/logger';
 
 const AvatarContext = createContext<AvatarRuntime | null | undefined>(undefined);
-const getCatalogAsset: AvatarRuntimeOptions['getAsset'] = (id) =>
-  useAssetStore.getState().getAsset(id);
 const EMPTY_STATE: AvatarState = { body: '', equipment: {} };
 const subscribeEmpty = () => () => undefined;
 const getEmpty = () => EMPTY_STATE;
 
+/** Without `getAsset`, assets come from the catalog of the nearest world. */
 export function AvatarProvider({
   children,
-  getAsset = getCatalogAsset,
+  getAsset,
   cache,
   avatarId,
 }: Partial<AvatarRuntimeOptions> & { children: ReactNode }) {
+  const catalog = useAssetStoreApi();
+  const resolveAsset = useMemo<AvatarRuntimeOptions['getAsset']>(
+    () => getAsset ?? ((id) => catalog.getState().getAsset(id)),
+    [getAsset, catalog],
+  );
   const [runtime, setRuntime] = useState<AvatarRuntime | null>(null);
   useEffect(() => {
     const instance = new AvatarRuntime({
-      getAsset,
+      getAsset: resolveAsset,
       ...(cache ? { cache } : {}),
       ...(avatarId ? { avatarId } : {}),
     });
     setRuntime(instance);
     return () => instance.dispose();
-  }, [getAsset, cache, avatarId]);
+  }, [resolveAsset, cache, avatarId]);
   return <AvatarContext.Provider value={runtime}>{children}</AvatarContext.Provider>;
 }
 

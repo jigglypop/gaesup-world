@@ -5,7 +5,7 @@ import * as path from 'path';
 import { act, renderHook } from '@testing-library/react';
 
 import { SEED_ASSETS } from '../data/seedAssets';
-import { selectAssetsByKind, selectAssetsBySlot, useAssetStore } from '../stores/assetStore';
+import { createAssetStore, selectAssetsByKind, selectAssetsBySlot, useAssetStore } from '../stores/assetStore';
 import type { AssetSource } from '../types';
 
 const ROOT = path.resolve(__dirname, '../../../..');
@@ -131,6 +131,22 @@ describe('assetStore', () => {
     } finally {
       unmount();
     }
+  });
+
+  it('keeps each world catalog, load generation and selector cache separate', async () => {
+    const a = createAssetStore();
+    const b = createAssetStore();
+    let resolveA!: (assets: Awaited<ReturnType<AssetSource['listAssets']>>) => void;
+    const slowA = a.getState().loadAssets({ ...mockSource([]), listAssets: () => new Promise((accept) => { resolveA = accept; }) });
+    await b.getState().loadAssets(mockSource([{ id: 'shared', name: 'B', kind: 'weapon' }]));
+    resolveA([{ id: 'shared', name: 'A', kind: 'weapon' }]);
+    await slowA;
+    expect(a.getState().getAsset('shared')?.name).toBe('A');
+    expect(a.getState().catalogStatus.state).toBe('loaded');
+    expect(b.getState().getAsset('shared')?.name).toBe('B');
+    const weaponsA = selectAssetsByKind('weapon')(a.getState());
+    selectAssetsByKind('weapon')(b.getState());
+    expect(selectAssetsByKind('weapon')(a.getState())).toBe(weaponsA);
   });
 
   it('seeds only asset URLs that ship in public/', () => {

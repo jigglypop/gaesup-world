@@ -24,7 +24,7 @@ export function createPluginContext(
 ): PluginContext {
   return {
     plugins,
-    events: new InMemoryEventBus(),
+    events: new InMemoryEventBus(options.report),
     logger: createPluginLogger(options.logger),
     grid: new InMemoryExtensionRegistry('grid'),
     placement: new InMemoryExtensionRegistry('placement'),

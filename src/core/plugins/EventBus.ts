@@ -1,5 +1,5 @@
 import type { EventBus, EventHandler, EventUnsubscribe } from './types';
-import { reportError } from '../utils/reportError';
+import { reportError, type ErrorReporter } from '../utils/reportError';
 
 /** An `InMemoryEventBus` whose event names and payloads come from one event map. */
 export type TypedEventBus<Events extends Record<string, unknown>> = {
@@ -12,6 +12,9 @@ export type TypedEventBus<Events extends Record<string, unknown>> = {
 
 export class InMemoryEventBus implements EventBus {
   private readonly handlers = new Map<string, Set<EventHandler>>();
+
+  /** `report` receives what a handler throws; a runtime's bus reports to that runtime. */
+  constructor(private readonly report: ErrorReporter = reportError) {}
 
   on<TPayload = unknown>(eventName: string, handler: EventHandler<TPayload>): EventUnsubscribe {
     const handlers = this.handlers.get(eventName) ?? new Set<EventHandler>();
@@ -46,7 +49,7 @@ export class InMemoryEventBus implements EventBus {
       try {
         (handler as EventHandler<TPayload>)(payload);
       } catch (error) {
-        reportError(error, { source: 'event-bus', label: eventName });
+        this.report(error, { source: 'event-bus', label: eventName });
       }
     }
   }

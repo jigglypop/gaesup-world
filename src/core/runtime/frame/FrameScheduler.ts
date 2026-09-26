@@ -5,7 +5,7 @@ import {
   type FramePhaseMetrics,
   type FrameSubscriptionOptions,
 } from './types';
-import { createErrorReportState, reportThrottled, type ErrorReportState } from '../../utils/reportError';
+import { createErrorReportState, reportError, reportThrottled, type ErrorReporter, type ErrorReportState } from '../../utils/reportError';
 
 type FrameEntry = {
   callback: FrameCallback;
@@ -37,7 +37,8 @@ export class FrameScheduler {
   private frameNumber = 0;
   private lastPhaseIndex = Number.POSITIVE_INFINITY;
 
-  constructor() {
+  /** `report` receives callback failures; a canvas scheduler reports to the runtime that owns its canvas. */
+  constructor(readonly report: ErrorReporter = reportError) {
     FRAME_PHASES.forEach((phase) => {
       this.phases.set(phase, []);
       this.metrics.set(phase, { calls: 0, totalMs: 0, lastMs: 0 });
@@ -127,7 +128,7 @@ export class FrameScheduler {
       entry.callback(delta, elapsedMs);
     } catch (error) {
       // Like Unity's Update, a throwing callback keeps running next frame; reports are rate-limited per entry.
-      reportThrottled(entry.errors, elapsedMs, error, { source: 'frame', label: entry.label });
+      reportThrottled(entry.errors, elapsedMs, error, { source: 'frame', label: entry.label }, this.report);
     }
   }
 

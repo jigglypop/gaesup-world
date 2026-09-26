@@ -1,3 +1,5 @@
+import type { ErrorReporter } from '../utils/reportError';
+
 export type SerializedDomainValue = object | string | number | boolean | null | undefined;
 
 export type SaveBlob = {
@@ -61,4 +63,6 @@ export type SaveSystemOptions = {
   currentVersion?: number;
   migrations?: Record<number, Migration>;
   onDiagnostic?: SaveDiagnosticListener;
+  /** Receives failed domains and failures of hooks using this system; defaults to the page reporter. */
+  report?: ErrorReporter;
 };

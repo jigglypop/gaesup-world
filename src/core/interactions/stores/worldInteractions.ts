@@ -1,11 +1,12 @@
 import type { InteractionSliceServices } from './slices';
+import type { ErrorReporter } from '../../utils/reportError';
 import { InteractionBridge } from '../bridge/InteractionBridge';
 import { type InputBackend, type InputBackendSnapshot } from '../core/adapter';
 import { AutomationSystem } from '../core/AutomationSystem';
 import { InteractionSystem } from '../core/InteractionSystem';
 
 /** Store-owned listeners never attach to a process-wide input or automation engine. */
-export function createWorldInteractions(inputBackend: InputBackend) {
+export function createWorldInteractions(inputBackend: InputBackend, report?: ErrorReporter) {
   const inputListeners = new Set<(snapshot: InputBackendSnapshot) => void>();
   const automationListeners = new Set<() => void>();
   let unsubscribeInput: (() => void) | undefined;
@@ -31,6 +32,7 @@ export function createWorldInteractions(inputBackend: InputBackend) {
           inputBackend,
           interactionSystem: interaction,
           automationSystem: automation,
+          ...(report ? { report } : {}),
         });
       }
       return automation;

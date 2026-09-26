@@ -1,5 +1,5 @@
 import type { AnimationBridge } from '../animation/bridge/AnimationBridge';
-import type { AssetSource } from '../assets';
+import type { AssetSource, AssetStore } from '../assets';
 import type { RuntimeSaveDiagnosticsOptions, RuntimeSaveDiagnosticsService } from './saveDiagnostics';
 import type { AudioEngine } from '../audio/core/AudioEngine';
 import type { AudioStore } from '../audio/stores/audioStore';
@@ -10,6 +10,7 @@ import type { BuildingStoreApi } from '../building/stores/buildingStore';
 import type { BuildingVisibilityStore } from '../building/visibility/store';
 import type { CameraCinematicPlayer } from '../camera/cinematic';
 import type { CharacterStore } from '../character/stores/characterStore';
+import type { DialogRegistry } from '../dialog/registry/DialogRegistry';
 import type { DialogStore } from '../dialog/stores/dialogStore';
 import type { GameplayEventEngine } from '../gameplay/events/engine';
 import type { GameplayEventRegistry } from '../gameplay/events/registry';
@@ -38,7 +39,7 @@ import type { SceneStore } from '../scene/stores/sceneStore';
 import type { AnimationClockLoop } from '../simulation/AnimationClockLoop';
 import type { GaesupStore } from '../stores/gaesupStore';
 import type { TimeStore } from '../time/stores/timeStore';
-import type { ErrorSink } from '../utils/reportError';
+import type { ErrorReporter, ErrorSink } from '../utils/reportError';
 import type { WeatherStore } from '../weather/stores/weatherStore';
 import type { WorldBridge } from '../world/bridge/WorldBridge';
 import type { WorldViews } from '../world/core/WorldViews';
@@ -67,12 +68,22 @@ export type GaesupRuntimeOptions = {
   saveDiagnostics?: RuntimeSaveDiagnosticsOptions;
   assets?: RuntimeAssetOptions;
   logger?: Partial<PluginLogger>;
-  /** Receives engine errors caught at frame, clock and command boundaries while the runtime is active. Defaults to console.error. */
+  /**
+   * Receives errors caught at this runtime's boundaries (its clock, its canvases' frame callbacks, plugin events, save,
+   * interaction commands) from setup until dispose completes. Other worlds and errors outside that window never reach it;
+   * they go to the page default (console.error).
+   */
   onError?: ErrorSink;
 };
 
 export type GaesupRuntime = {
   worldId: string;
+  /** Reports through `onError` while this runtime is set up; for game code that wants the same routing. */
+  reportError: ErrorReporter;
+  /** This world's asset catalog; `useAssetStore` under this runtime reads it. */
+  assetStore: AssetStore;
+  /** Dialog trees this world's `dialogStore` starts from. */
+  dialogRegistry: DialogRegistry;
   store: GaesupStore;
   weatherStore: WeatherStore;
   dialogStore: DialogStore;
