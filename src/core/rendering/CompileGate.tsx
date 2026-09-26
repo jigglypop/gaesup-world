@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, type ReactNode } from 'react';
 
 import { useThree } from '@react-three/fiber';
-import type { Camera, Group, Object3D, Scene } from 'three';
+import type { Camera, Group, Material, Object3D, Scene } from 'three';
 
 import { isGpuBatchRevision } from './gpuBatchRevision';
 
@@ -12,8 +12,11 @@ type TargetedRenderer = {
   getMRT(): unknown;
   setMRT(mrt: unknown): void;
 };
-/** Where a pass draws the scene (postprocessing): its render target and MRT outputs select the pipelines. */
-export type SceneRenderTarget = { renderTarget: unknown; mrt: unknown };
+/**
+ * Where a pass draws the scene (postprocessing): its render target and MRT outputs, and how deep in nested renders it
+ * draws (a pass inside the output render draws at depth 1). Together they select the pipelines the scene is drawn with.
+ */
+export type SceneRenderTarget = { renderTarget: unknown; mrt: unknown; depth: number };
 
 const sceneTargets = new WeakMap<object, SceneRenderTarget>();
 
@@ -28,7 +31,95 @@ function canCompileAsync(renderer: unknown): renderer is AsyncCompiler {
   return isGpuBatchRevision() && typeof (renderer as Partial<AsyncCompiler> | null)?.compileAsync === 'function';
 }
 
-/** Starts an async compile of `root` with `scene`'s lights while it is visible and unculled for that one call. */
+const canSwitchTargets = (renderer: object): renderer is TargetedRenderer =>
+  typeof (renderer as Partial<TargetedRenderer>).setRenderTarget === 'function'
+  && typeof (renderer as Partial<TargetedRenderer>).setMRT === 'function';
+
+/** Runs `compile` with `target` and `mrt` on the renderer; compileAsync reads them before its first await. */
+function withTarget<T>(renderer: TargetedRenderer, target: unknown, mrt: unknown, compile: () => T): T {
+  const previousTarget = renderer.getRenderTarget();
+  const previousMRT = renderer.getMRT();
+  renderer.setRenderTarget(target);
+  renderer.setMRT(mrt);
+  try {
+    return compile();
+  } finally {
+    renderer.setRenderTarget(previousTarget);
+    renderer.setMRT(previousMRT);
+  }
+}
+
+type RenderContexts = { get(target?: unknown, mrt?: unknown, depth?: number): unknown };
+
+/**
+ * Runs `compile` with render contexts looked up at `depth`. three keys a context by how deep in nested renders it draws
+ * and compileAsync always asks for depth 0, so a pass or shadow map drawn inside another render would get pipelines
+ * built for a context it never uses.
+ */
+function atDepth<T>(renderer: object, depth: number, compile: () => T): T {
+  const contexts = (renderer as { _renderContexts?: RenderContexts })._renderContexts;
+  if (!contexts || depth === 0) return compile();
+  const get = contexts.get;
+  contexts.get = function (this: RenderContexts, target?: unknown, mrt?: unknown) {
+    return get.call(this, target, mrt, depth);
+  };
+  try {
+    return compile();
+  } finally {
+    contexts.get = get;
+  }
+}
+
+/** One cascade of a cascaded sun: its node draws casters with the light's shadow material into its map. */
+type ShadowCascade = { shadowMap: object; shadow: { camera: Camera }; getShadowMaterial: () => Material };
+
+/** The cascades, with a map already, of the scene's shadow-casting directional lights (three's CSMShadowNode). */
+function shadowCascades(scene: Scene): ShadowCascade[] {
+  const cascades: ShadowCascade[] = [];
+  scene.traverseVisible((object) => {
+    const light = object as Object3D & { isDirectionalLight?: boolean; shadow?: { shadowNode?: { _shadowNodes?: Partial<ShadowCascade>[] } } };
+    if (!light.isDirectionalLight || !light.castShadow) return;
+    for (const cascade of light.shadow?.shadowNode?._shadowNodes ?? []) {
+      if (cascade.shadowMap && cascade.shadow && cascade.getShadowMaterial) cascades.push(cascade as ShadowCascade);
+    }
+  });
+  return cascades;
+}
+
+const isDrawable = (object: Object3D) => {
+  const drawable = object as { isMesh?: boolean; isPoints?: boolean; isLine?: boolean; isSprite?: boolean };
+  return Boolean(drawable.isMesh || drawable.isPoints || drawable.isLine || drawable.isSprite);
+};
+
+/**
+ * Compiles the shadow pipelines of `root` as each cascade draws it: into the cascade's map at `depth`, without MRT, with
+ * the light's shadow material overriding the object's. Drawables that cast no shadow sit the call out.
+ */
+function compileShadowsAsync(renderer: AsyncCompiler & TargetedRenderer, root: Object3D, scene: Scene, depth: number): Promise<unknown>[] {
+  const cascades = shadowCascades(scene);
+  if (cascades.length === 0) return [];
+  const idle: Object3D[] = [];
+  root.traverse((object) => {
+    if (!isDrawable(object) || object.castShadow || !object.visible) return;
+    object.visible = false;
+    idle.push(object);
+  });
+  const override = scene.overrideMaterial;
+  try {
+    return cascades.map((cascade) => {
+      scene.overrideMaterial = cascade.getShadowMaterial();
+      return withTarget(renderer, cascade.shadowMap, null, () => atDepth(renderer, depth, () => renderer.compileAsync(root, cascade.shadow.camera, scene)));
+    });
+  } finally {
+    scene.overrideMaterial = override;
+    for (const object of idle) object.visible = true;
+  }
+}
+
+/**
+ * Starts an async compile of `root` with `scene`'s lights while it is visible and unculled for that one call: for the
+ * target the scene is drawn into and for the shadow cascades, which draw it one render deeper.
+ */
 export function compileSubtreeAsync(renderer: AsyncCompiler, root: Object3D, camera: Camera, scene: Scene): Promise<unknown> {
   const culled: Object3D[] = [];
   root.traverse((object) => {
@@ -38,26 +129,24 @@ export function compileSubtreeAsync(renderer: AsyncCompiler, root: Object3D, cam
   });
   const visible = root.visible;
   root.visible = true;
-  // compileAsync reads the target and MRT before its first await, so they are restored as soon as it returns.
-  const target = sceneTargets.get(renderer);
-  // Only a renderer registered through setSceneRenderTarget has a target, and it can switch targets.
-  const targeted = target ? (renderer as unknown as TargetedRenderer) : null;
-  const previousTarget = targeted?.getRenderTarget();
-  const previousMRT = targeted?.getMRT();
-  if (targeted && target) {
-    targeted.setRenderTarget(target.renderTarget);
-    targeted.setMRT(target.mrt);
-  }
   try {
-    return renderer.compileAsync(root, camera, scene);
+    const target = sceneTargets.get(renderer);
+    const depth = target?.depth ?? 0;
+    const switchable = canSwitchTargets(renderer) ? renderer : null;
+    const main = target && switchable
+      ? withTarget(switchable, target.renderTarget, target.mrt, () => atDepth(renderer, depth, () => renderer.compileAsync(root, camera, scene)))
+      : renderer.compileAsync(root, camera, scene);
+    const shadows = switchable ? compileShadowsAsync(switchable, root, scene, depth + 1) : [];
+    return shadows.length > 0 ? Promise.all([main, ...shadows]) : main;
   } finally {
-    if (targeted) {
-      targeted.setRenderTarget(previousTarget);
-      targeted.setMRT(previousMRT);
-    }
     root.visible = visible;
     for (const object of culled) object.frustumCulled = true;
   }
+}
+
+/** Compiles the whole scene for where it is drawn and its shadows; null when the renderer cannot compile ahead. */
+export function compileSceneAsync(renderer: unknown, scene: Scene, camera: Camera): Promise<unknown> | null {
+  return canCompileAsync(renderer) ? compileSubtreeAsync(renderer, scene, camera, scene) : null;
 }
 
 /**

@@ -7,7 +7,7 @@ import type { RenderPipeline, WebGPURenderer } from 'three/webgpu';
 
 import { ColorGrade } from './ColorGrade';
 import { logger } from '../../utils/logger';
-import { setSceneRenderTarget } from '../CompileGate';
+import { compileSceneAsync, setSceneRenderTarget } from '../CompileGate';
 import { ToonOutlines } from '../outline';
 import { getRenderHistoryRevision } from '../renderHistory';
 import { rendererKind } from '../webgpu';
@@ -196,9 +196,15 @@ function NodeWorldPostProcessing({
             tsl.saturation(gradedColor.add(bloom.rgb), saturationValue),
             sceneColor.a,
           );
-          pipelineRef.current = pipeline;
-          // New content compiles for the pass that draws the scene, not for the canvas it never renders to.
-          setSceneRenderTarget(gl as unknown as WebGPURenderer, { renderTarget: scenePass.renderTarget, mrt: scenePass.getMRT() });
+          // New content compiles for the pass that draws the scene (inside the output render, so one level deep), not
+          // for the canvas it never renders to.
+          setSceneRenderTarget(gl as unknown as WebGPURenderer, { renderTarget: scenePass.renderTarget, mrt: scenePass.getMRT(), depth: 1 });
+          // The pass takes over drawing once the scene's pipelines for it and for its shadows are built; switching first
+          // would build all of them on the frames after. Until then the scene keeps drawing directly.
+          const takeOver = pipeline;
+          const compiling = compileSceneAsync(gl, scene, camera);
+          if (compiling) void compiling.catch(() => undefined).then(() => { if (!cancelled) pipelineRef.current = takeOver; });
+          else pipelineRef.current = pipeline;
           temporalRef.current =
             (temporal as typeof temporal & { setSize(width: number, height: number): void }) ??
             null;

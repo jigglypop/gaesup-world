@@ -25,4 +25,4 @@
 |---|---|---|
 | P-5 | `frameloop="demand"`, 보조 캔버스 demand | 대기 5초 render 1,310(commit 0, 요청 0). 물·잔디·깃발·사쿠라 흔들림·플레이어 idle이 매 프레임 바뀌어, demand에서 대기 중 무엇을 멈출지 먼저 정해야 한다. 에셋 썸네일은 autoRotate가 스스로 invalidate한다 |
 | P-7 | 정적 장면 그림자 갱신 억제 | P-12 뒤 대기 중 프레임 draw 147 중 그림자 cascade 4개가 약 80. 사쿠라·깃발·플레이어 idle이 그림자를 계속 바꿔, 손실 없는 억제는 움직이는 caster가 없는 장면에서만 된다 |
-| P-8c | 그림자 pass 파이프라인 사전 컴파일, warm-up이 게이트의 비동기 컴파일을 기다리게 측정 보완 | S-B07 동기 컴파일 9프레임, S-B08 warm-up 뒤 program 25~40. compileAsync에 그림자 재질·shadowMap·MRT 없음을 걸어도 실제 그림자 pass와 파이프라인 키가 맞지 않았다(renderObject의 override 경로 확인 필요) |
+| P-8d | 사쿠라 꽃잎 points를 점 개수와 무관한 셰이더로(용량과 drawRange, 또는 노드 파티클) | S-B08 warm-up 뒤 program 2: 새 나무가 꽃잎 geometry를 다시 만들 때마다 생긴다 |

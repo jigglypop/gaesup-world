@@ -415,6 +415,14 @@ void main() {
 }
 `;
 
+function sakuraBatchSignature(trees: SakuraTreeEntry[]): string {
+  let signature = `${trees.length}`;
+  for (const tree of trees) {
+    signature += `|${tree.position[0]},${tree.position[1]},${tree.position[2]},${tree.size},${tree.treeKind ?? ''},${tree.blossomColor ?? ''},${tree.barkColor ?? ''}`;
+  }
+  return signature;
+}
+
 export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: boolean }) {
   const weatherStore = useWeatherStoreApi();
   const barkRef = useRef<THREE.InstancedMesh>(null!);
@@ -427,7 +435,12 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
   const useToon = toon ?? getDefaultToonMode();
   const geo = getSharedGeometry();
   const mat = getSharedMaterials(useToon);
-  const specs = useMemo(() => computeSpecs(trees), [trees]);
+  // The building regroups every object on any edit; unchanged trees keep their specs, geometry and pipelines.
+  const signature = useMemo(() => sakuraBatchSignature(trees), [trees]);
+  const stableTreesRef = useRef({ signature, trees });
+  if (stableTreesRef.current.signature !== signature) stableTreesRef.current = { signature, trees };
+  const stableTrees = stableTreesRef.current.trees;
+  const specs = useMemo(() => computeSpecs(stableTrees), [stableTrees]);
 
   const counts = useMemo(() => {
     let bark = 0, dark = 0, cluster = 0, canopy = 0, ground = 0, falling = 0;

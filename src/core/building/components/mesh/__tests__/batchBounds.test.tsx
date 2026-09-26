@@ -97,3 +97,17 @@ test('another fire or tree fills a free instance slot: the batch meshes, and so 
     await view.unmount();
   }
 });
+
+test('an edit elsewhere in the building regroups the trees into a new array, but the same trees keep their meshes', async () => {
+  const setMatrixAt = jest.spyOn(THREE.InstancedMesh.prototype, 'setMatrixAt');
+  const trees = () => Array.from({ length: 6 }, (_, i) => treeAt(i * 4)[0]!);
+  const view = await ReactThreeTestRenderer.create(<WebGLMode><SakuraBatch trees={trees()} /></WebGLMode>);
+  try {
+    setMatrixAt.mockClear();
+    await view.update(<WebGLMode><SakuraBatch trees={trees()} /></WebGLMode>);
+    expect(setMatrixAt).not.toHaveBeenCalled();
+  } finally {
+    setMatrixAt.mockRestore();
+    await view.unmount();
+  }
+});

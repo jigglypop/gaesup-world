@@ -94,6 +94,26 @@ describe('WorldPostProcessing ownership', () => {
     expect(mockPass.dispose).toHaveBeenCalledTimes(1);
   });
 
+  it('takes over drawing once the scene is compiled for its pass, and draws the scene directly until then', async () => {
+    let finish!: () => void;
+    Object.assign(mockGl, { compileAsync: jest.fn(() => new Promise<void>((resolve) => { finish = resolve; })) });
+    let view: ReactTestRenderer;
+    try {
+      await act(async () => { view = create(<WorldPostProcessing />); });
+      mockFrame();
+      expect(mockGl.render).toHaveBeenCalledWith(mockScene, mockCamera);
+      expect(mockPipeline.render).not.toHaveBeenCalled();
+      await act(async () => { finish(); });
+      mockGl.render.mockClear();
+      mockFrame();
+      expect(mockPipeline.render).toHaveBeenCalledTimes(1);
+      expect(mockGl.render).not.toHaveBeenCalled();
+    } finally {
+      act(() => view!.unmount());
+      delete (mockGl as { compileAsync?: unknown }).compileAsync;
+    }
+  });
+
   it('does not allocate targets when unmounted before lazy imports finish', async () => {
     let view: ReactTestRenderer;
     act(() => { view = create(<WorldPostProcessing />); });

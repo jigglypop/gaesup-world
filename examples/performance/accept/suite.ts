@@ -51,20 +51,23 @@ async function during(ctx: ScenarioContext, ms: number, each?: (interval: number
   }
 }
 
-type Quiesce = { minMs?: number; quietMs?: number; maxMs?: number; each?: () => void };
+type Quiesce = { minMs?: number; quietMs?: number; maxMs?: number; each?: () => void; settled?: () => number };
 
 /**
  * Waits for loading to settle: at least `minMs`, then until no request has completed for `quietMs` (models, textures,
- * chunks). `each` runs every frame meanwhile, so loading itself can be observed.
+ * chunks), nor has `settled` changed (e.g. programs still compiling in the background). `each` runs every frame
+ * meanwhile, so loading itself can be observed.
  */
-async function quiesce(ctx: ScenarioContext, { minMs = 2000, quietMs = 1000, maxMs = 60000, each }: Quiesce = {}): Promise<void> {
+async function quiesce(ctx: ScenarioContext, { minMs = 2000, quietMs = 1000, maxMs = 60000, each, settled }: Quiesce = {}): Promise<void> {
   const start = await nextFrame(ctx.signal);
   let requests = pageCounters().requests;
+  let count = settled?.();
   let since = start;
   for (;;) {
     const now = await nextFrame(ctx.signal);
     each?.();
     if (pageCounters().requests !== requests) { requests = pageCounters().requests; since = now; }
+    if (settled && settled() !== count) { count = settled(); since = now; }
     if (now - start >= minMs && now - since >= quietMs) return;
     if (now - start > maxMs) throw new Error('장면 로드가 끝나지 않습니다.');
   }
@@ -104,7 +107,9 @@ async function withWorld(ctx: ScenarioContext, props: SceneProps, run: (world: W
   const world = await mountWorld(ctx, props);
   try {
     await step(ctx, '장면 로드와 warm-up');
-    await quiesce(ctx);
+    // Warm-up also waits out background pipeline compiles (gates, the postprocessing takeover), so what a scenario
+    // measures afterwards is what its own action compiles.
+    await quiesce(ctx, { settled: () => world.renderer.programsCreated() });
     await run(world);
   } finally {
     world.dispose();
