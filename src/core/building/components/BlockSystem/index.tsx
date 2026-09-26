@@ -8,6 +8,8 @@ import { MaterialManager } from '../../core/MaterialManager';
 import type { BuildingBlockConfig, MeshConfig } from '../../types';
 import { BuildingColliderBody } from '../BuildingColliders';
 import type { BuildingColliderBox } from '../BuildingColliders/types';
+import { EditOverlay } from '../EditOverlay';
+import { blockEditItem, type EditOverlayItem } from '../EditOverlay/items';
 
 type BlockBatch = {
   key: string;
@@ -16,6 +18,7 @@ type BlockBatch = {
 };
 
 const EMPTY_COLLIDER_BOXES: readonly BuildingColliderBox[] = [];
+const NO_EDIT_ITEMS: EditOverlayItem[] = [];
 
 const DEFAULT_BLOCK_MESH: MeshConfig = {
   id: 'default-block',
@@ -35,32 +38,7 @@ export function BlockSystem({
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const geometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
-  const editMaterial = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: '#60a5fa',
-        transparent: true,
-        opacity: 0.16,
-        emissive: new THREE.Color('#2563eb'),
-        emissiveIntensity: 0.08,
-        wireframe: true,
-        depthWrite: false,
-      }),
-    [],
-  );
-  const selectedEditMaterial = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: '#bae6fd',
-        transparent: true,
-        opacity: 0.28,
-        emissive: new THREE.Color('#60a5fa'),
-        emissiveIntensity: 0.2,
-        wireframe: true,
-        depthWrite: false,
-      }),
-    [],
-  );
+  const editItems = useMemo(() => (isEditMode ? blocks.map(blockEditItem) : NO_EDIT_ITEMS), [blocks, isEditMode]);
 
   const colliderBoxes = useMemo(
     () => (colliders && !isEditMode ? createBlockColliders(blocks) : EMPTY_COLLIDER_BOXES),
@@ -88,10 +66,8 @@ export function BlockSystem({
     return () => {
       materialManagerRef.current.dispose();
       geometry.dispose();
-      editMaterial.dispose();
-      selectedEditMaterial.dispose();
     };
-  }, [editMaterial, geometry, selectedEditMaterial]);
+  }, [geometry]);
 
   return (
     <>
@@ -106,25 +82,7 @@ export function BlockSystem({
         />
       ))}
 
-      {isEditMode && blocks.map((block) => {
-        const transform = getBlockTransform(block);
-        const selected = block.id === selectedBlockId;
-        return (
-          <mesh
-            key={`${block.id}-edit`}
-            name={`block-edit-${block.id}`}
-            position={transform.position}
-            scale={[
-              transform.scale[0] * 0.82,
-              transform.scale[1] * 0.82,
-              transform.scale[2] * 0.82,
-            ]}
-            geometry={geometry}
-            material={selected ? selectedEditMaterial : editMaterial}
-            onClick={() => onBlockClick?.(block.id)}
-          />
-        );
-      })}
+      {isEditMode && <EditOverlay kind="wire" items={editItems} selectedId={selectedBlockId} onSelect={onBlockClick} />}
     </>
   );
 }

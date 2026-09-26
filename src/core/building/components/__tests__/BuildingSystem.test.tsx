@@ -518,6 +518,39 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
     });
   });
 
+  describe('편집 오버레이', () => {
+    const tiles = (groupId: string, count: number) =>
+      Array.from({ length: count }, (_, index) => ({ id: `${groupId}-${index}`, tileGroupId: groupId, size: 1, position: { x: index * 4, y: 0, z: 0 } }));
+
+    test('타일 편집 모드는 모든 그룹의 타일을 인스턴스 mesh 하나와 선택 mesh 하나로 그리고, 클릭한 인스턴스의 타일을 고른다', async () => {
+      const onTileClick = jest.fn();
+      mockStore({
+        editMode: 'tile',
+        selectedTileId: 'tile-group-2-3',
+        tileGroups: new Map([
+          ['tile-group-1', { ...mockTileGroups.get('tile-group-1')!, tiles: tiles('tile-group-1', 40) }],
+          ['tile-group-2', { ...mockTileGroups.get('tile-group-2')!, tiles: tiles('tile-group-2', 40) }],
+        ]),
+      });
+
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem onTileClick={onTileClick} />);
+      const overlay = renderer.scene.findByProps({ name: 'building-edit-overlay' });
+      expect(overlay.children.map((child) => (child.instance as { isInstancedMesh?: boolean }).isInstancedMesh === true)).toEqual([true, false]);
+      const instanced = overlay.children[0]!;
+      expect((instanced.instance as unknown as { count: number }).count).toBe(79);
+      await renderer.fireEvent(instanced, 'click', { instanceId: 40 });
+      expect(onTileClick).toHaveBeenCalledWith('tile-group-2-0');
+
+      renderer.unmount();
+    });
+
+    test('편집하지 않을 때는 오버레이를 그리지 않는다', async () => {
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+      expectSceneMissingName(renderer, 'building-edit-overlay');
+      renderer.unmount();
+    });
+  });
+
   describe('Suspense 경계', () => {
     test('Suspense fallback이 설정되어야 함', async () => {
       const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);

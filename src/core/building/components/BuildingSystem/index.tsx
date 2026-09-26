@@ -14,6 +14,8 @@ import { useBuildingVisibilityStore } from '../../visibility/store';
 import { BlockSystem } from '../BlockSystem';
 import { BuildingBatches } from '../BuildingBatches';
 import { BuildingColliders } from '../BuildingColliders';
+import { EditOverlay } from '../EditOverlay';
+import { buildingEditItems } from '../EditOverlay/items';
 import { GridHelper } from '../GridHelper';
 import { BillboardBatch } from '../mesh/billboard';
 import { FireBatch, type FireBatchEntry } from '../mesh/fire';
@@ -133,6 +135,11 @@ export const BuildingSystem = React.memo(function BuildingSystem({
     const list = blocks ?? [];
     return visibilityReady ? list.filter((block) => visibleBlockIds.has(block.id)) : list;
   }, [blocks, visibilityReady, visibleBlockIds]);
+  // One overlay for every group the edit mode works on: two draws instead of one per tile, wall or block.
+  const editItems = useMemo(
+    () => buildingEditItems(editMode, tileGroupsArray, wallGroupsArray, visibleBlocks),
+    [editMode, tileGroupsArray, wallGroupsArray, visibleBlocks],
+  );
   // Batched objects draw in a fixed number of calls however many there are, so they are built once from every
   // object and residency changes never rebuild them. Only per-object models follow residency.
   const buckets = useMemo(() => bucketObjects(objects), [objects]);
@@ -178,8 +185,6 @@ export const BuildingSystem = React.memo(function BuildingSystem({
             wallGroup={wallGroup}
             wallGroups={wallGroups}
             meshes={meshes}
-            isEditMode={editMode === 'wall'}
-            selectedWallId={selectedWallId}
             colliders={false}
             batches={false}
             {...(onWallClick ? { onWallClick } : {})}
@@ -192,8 +197,6 @@ export const BuildingSystem = React.memo(function BuildingSystem({
             key={tileGroup.id}
             tileGroup={tileGroup}
             meshes={meshes}
-            isEditMode={editMode === 'tile'}
-            selectedTileId={selectedTileId}
             colliders={false}
             batches={false}
             {...(onTileClick ? { onTileClick } : {})}
@@ -205,10 +208,17 @@ export const BuildingSystem = React.memo(function BuildingSystem({
           <BlockSystem
             blocks={visibleBlocks}
             meshes={meshes}
-            isEditMode={editMode === 'block'}
-            selectedBlockId={selectedBlockId}
             colliders={false}
             {...(onBlockClick || onBlockDelete ? { onBlockClick: onBlockClick ?? onBlockDelete } : {})}
+          />
+        )}
+
+        {editItems.length > 0 && (
+          <EditOverlay
+            kind={editMode === 'wall' ? 'marker' : 'wire'}
+            items={editItems}
+            selectedId={editMode === 'tile' ? selectedTileId : editMode === 'wall' ? selectedWallId : selectedBlockId}
+            onSelect={editMode === 'tile' ? onTileClick : editMode === 'wall' ? onWallClick : onBlockClick ?? onBlockDelete}
           />
         )}
 

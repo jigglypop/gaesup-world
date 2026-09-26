@@ -14,6 +14,8 @@ import { cellSpan, tileWorldSize } from '../../model/footprint';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { BuildingColliderBody } from '../BuildingColliders';
 import type { BuildingColliderBox } from '../BuildingColliders/types';
+import { EditOverlay } from '../EditOverlay';
+import { tileEditItem, type EditOverlayItem } from '../EditOverlay/items';
 import { GrassChunks } from '../mesh/grass/chunks';
 import { SandBatch, type SandEntry } from '../mesh/sand';
 import { SnowfieldBatch, type SnowfieldEntry } from '../mesh/snowfield';
@@ -22,6 +24,7 @@ import Water from '../mesh/water';
 type TileLike = TileSystemProps['tileGroup']['tiles'][number];
 
 const EMPTY_COLLIDER_BOXES: readonly BuildingColliderBox[] = [];
+const NO_EDIT_ITEMS: EditOverlayItem[] = [];
 
 type TerrainRock = {
   position: [number, number, number];
@@ -549,54 +552,9 @@ export function TileSystem({
 
   const rockRef = useRef<THREE.InstancedMesh>(null!);
 
-  const editGeometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
-  const editMaterial = useMemo(
-    () =>
-      getDefaultToonMode()
-        ? new THREE.MeshToonMaterial({
-            color: '#60a5fa',
-            transparent: true,
-              opacity: 0.14,
-            emissive: new THREE.Color('#2563eb'),
-            emissiveIntensity: 0.08,
-            gradientMap: getToonGradient(3),
-              wireframe: true,
-              depthWrite: false,
-          })
-        : new THREE.MeshStandardMaterial({
-            color: '#60a5fa',
-            transparent: true,
-              opacity: 0.14,
-            emissive: new THREE.Color('#2563eb'),
-            emissiveIntensity: 0.08,
-              wireframe: true,
-              depthWrite: false,
-          }),
-    [],
-  );
-  const selectedEditMaterial = useMemo(
-    () =>
-      getDefaultToonMode()
-        ? new THREE.MeshToonMaterial({
-            color: '#bae6fd',
-            transparent: true,
-              opacity: 0.28,
-            emissive: new THREE.Color('#60a5fa'),
-            emissiveIntensity: 0.18,
-            gradientMap: getToonGradient(3),
-              wireframe: true,
-              depthWrite: false,
-          })
-        : new THREE.MeshStandardMaterial({
-            color: '#bae6fd',
-            transparent: true,
-              opacity: 0.28,
-            emissive: new THREE.Color('#60a5fa'),
-            emissiveIntensity: 0.18,
-              wireframe: true,
-              depthWrite: false,
-          }),
-    [],
+  const editItems = useMemo(
+    () => (isEditMode ? tileGroup.tiles.map(tileEditItem) : NO_EDIT_ITEMS),
+    [isEditMode, tileGroup.tiles],
   );
 
   const sandTiles = useMemo(
@@ -709,11 +667,8 @@ export function TileSystem({
       localMaterialRef.current?.dispose();
       localMaterialRef.current = null;
       baseGeometry.dispose();
-      editGeometry.dispose();
-      editMaterial.dispose();
-      selectedEditMaterial.dispose();
     };
-  }, [baseGeometry, editGeometry, editMaterial, selectedEditMaterial]);
+  }, [baseGeometry]);
 
   useEffect(() => {
     return () => {
@@ -735,22 +690,7 @@ export function TileSystem({
       <>
         <BuildingColliderBody boxes={colliderBoxes} />
 
-        {isEditMode && tileGroup.tiles.map((tile) => {
-          const selected = tile.id === selectedTileId;
-          const tileSize = tileWorldSize(tile);
-          const previewHeight = Math.max(0.22, tile.position.y + 0.22);
-
-          return (
-            <group
-              key={tile.id}
-              position={[tile.position.x, previewHeight / 2, tile.position.z]}
-              scale={[tileSize * 0.82, previewHeight, tileSize * 0.82]}
-              onClick={() => onTileClick?.(tile.id)}
-            >
-              <mesh geometry={editGeometry} material={selected ? selectedEditMaterial : editMaterial} />
-            </group>
-          );
-        })}
+        {isEditMode && <EditOverlay kind="wire" items={editItems} selectedId={selectedTileId} onSelect={onTileClick} />}
         
         {batches && boxTileBatches.map((batch) => (
           <BoxTileBatchMesh

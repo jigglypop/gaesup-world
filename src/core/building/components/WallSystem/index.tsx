@@ -8,13 +8,15 @@ import { WallSystemProps } from './types';
 import { MaterialManager } from '../../core/MaterialManager';
 import { wallBox, wallKindOf, wallPieces } from '../../model/footprint';
 import { MeshConfig, WallConfig, WallGroupConfig } from '../../types';
-import { TILE_CONSTANTS } from '../../types/constants';
 import { BuildingColliderBody } from '../BuildingColliders';
 import type { BuildingColliderBox } from '../BuildingColliders/types';
+import { EditOverlay } from '../EditOverlay';
+import { wallEditItem, type EditOverlayItem } from '../EditOverlay/items';
 
 export { getWallMaterialKey };
 
 const EMPTY_COLLIDER_BOXES: readonly BuildingColliderBox[] = [];
+const NO_EDIT_ITEMS: EditOverlayItem[] = [];
 const DEFAULT_GLASS_MESH: MeshConfig = {
   id: 'default-window-glass',
   color: '#9ed8ff',
@@ -134,7 +136,6 @@ export function WallSystem({
   batches: renderBatches = true,
 }: WallSystemProps) {
   const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
-  const height = TILE_CONSTANTS.WALL_SIZES.HEIGHT;
 
   const geometry = useMemo(createWallGeometry, []);
 
@@ -159,32 +160,16 @@ export function WallSystem({
     () => (colliders && !isEditMode ? createWallColliders(wallGroup) : EMPTY_COLLIDER_BOXES),
     [colliders, isEditMode, wallGroup],
   );
+  const editItems = useMemo(
+    () => (isEditMode ? wallGroup.walls.map(wallEditItem) : NO_EDIT_ITEMS),
+    [isEditMode, wallGroup.walls],
+  );
 
   return (
     <>
       <BuildingColliderBody boxes={colliderBoxes} />
 
-      {isEditMode && wallGroup.walls.map((wall) => {
-        const selected = wall.id === selectedWallId;
-        return (
-          <group
-            key={wall.id}
-            position={[wall.position.x, wall.position.y + height + 0.5, wall.position.z]}
-            onClick={() => onWallClick?.(wall.id)}
-          >
-            <mesh scale={selected ? 1.28 : 1}>
-              <sphereGeometry args={[0.22, 16, 16]} />
-              <meshStandardMaterial
-                color={selected ? '#bae6fd' : '#7dd3fc'}
-                emissive={selected ? '#60a5fa' : '#2f8dbd'}
-                emissiveIntensity={selected ? 0.5 : 0.22}
-                transparent
-                opacity={selected ? 0.94 : 0.78}
-              />
-            </mesh>
-          </group>
-        );
-      })}
+      {isEditMode && <EditOverlay kind="marker" items={editItems} selectedId={selectedWallId} onSelect={onWallClick} />}
 
       {renderBatches && batches.map((batch) => (
         <WallBatchMesh

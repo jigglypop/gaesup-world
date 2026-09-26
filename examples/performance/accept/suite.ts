@@ -92,7 +92,7 @@ async function mountWorld(ctx: ScenarioContext, props: SceneProps) {
     const renderer = trackRenderer(state.gl as unknown as Parameters<typeof trackRenderer>[0]);
     const backend = (state.gl as unknown as { backend?: { isWebGPUBackend?: boolean } }).backend;
     ctx.environment({ backend: backend?.isWebGPUBackend ? 'webgpu' : 'webgl' });
-    return { renderer, host: element, gl: state.gl, camera: state.camera, canvas: state.gl.domElement, dispose: () => { renderer.dispose(); cleanup(); } };
+    return { renderer, host: element, gl: state.gl, scene: state.scene, camera: state.camera, canvas: state.gl.domElement, dispose: () => { renderer.dispose(); cleanup(); } };
   } catch (error) {
     cleanup();
     throw error;
@@ -238,9 +238,27 @@ const run = {
       const editing = await draws();
       ctx.sample('view-draw-calls', viewing, 'count', 'accept');
       ctx.sample('edit-draw-calls', editing, 'count', 'accept');
-      // Edit mode also unmounts the player, so frame totals cannot isolate the overlay: it stays unmeasured until the
-      // overlay draws are counted on their own (REN-04a).
-      await judge(ctx, 'S-B06', {});
+      // Edit mode also unmounts the player, so frame totals cannot isolate the overlay: its own draws are counted as the
+      // renderer calls onBeforeRender on each object under the overlay group.
+      const overlay = world.scene.getObjectsByProperty('name', 'building-edit-overlay');
+      if (overlay.length === 0) throw new Error('타일 편집 모드에 편집 오버레이(building-edit-overlay)가 없습니다.');
+      let overlayDraws = 0;
+      const hooked: [Object3D, Object3D['onBeforeRender']][] = [];
+      for (const group of overlay) group.traverse((node) => {
+        const original = node.onBeforeRender;
+        hooked.push([node, original]);
+        node.onBeforeRender = function (this: Object3D, ...args: Parameters<Object3D['onBeforeRender']>) {
+          overlayDraws++;
+          original.apply(this, args);
+        };
+      });
+      let overlayDrawCalls = 0;
+      try {
+        await during(ctx, 1000, () => { overlayDrawCalls = Math.max(overlayDrawCalls, overlayDraws); overlayDraws = 0; });
+      } finally {
+        for (const [node, original] of hooked) node.onBeforeRender = original;
+      }
+      await judge(ctx, 'S-B06', { overlayDrawCalls });
     } finally {
       useBuildingStore.getState().setEditMode('none');
     }
