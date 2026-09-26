@@ -391,7 +391,8 @@ export class NavigationSystem {
     const [gx, gz] = this.worldToGrid(worldX, worldZ);
     const idx = this.cellIndex(gx, gz);
     const clamped = Math.max(0, Math.min(255, Math.round(cost)));
-    this.costGrid[idx] = clamped;
+    // A blocked cell keeps cost 0: the weighted wasm search reads walkability from the cost grid alone.
+    this.costGrid[idx] = this.grid[idx] === 0 ? 0 : clamped;
     if (clamped === 0) {
       this.grid[idx] = 0;
       this.hasBlockedData = true;

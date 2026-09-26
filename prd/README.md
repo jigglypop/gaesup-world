@@ -23,7 +23,6 @@
 
 | ID | 내용 | 근거 |
 |---|---|---|
-| P-1 | wasm A* open set을 이진 힙으로 | 막힌 칸 클릭 245~433ms(JS 힙 28ms) |
 | P-2 | `TileSystem`·`WallSystem` memo, `MaterialManager` 지연 생성, 색 선택 mesh id 재사용 | 편집·선택마다 전 그룹 재렌더와 월드 재빌드 |
 | P-3 | 고정 바디를 보간 대상에서 제외 | 틱당 WASM 호출 320회(고정 50 + NPC 30) |
 | P-4 | 편집 오버레이를 InstancedMesh 2개로 | 편집 모드 draw 1,857 → 3,739 |

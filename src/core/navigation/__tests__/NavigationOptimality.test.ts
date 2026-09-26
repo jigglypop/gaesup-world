@@ -1,8 +1,27 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
+import { loadCoreWasm, type GaesupCoreWasmExports } from '../../wasm/loader';
 import { NavigationSystem } from '../NavigationSystem';
 
-jest.mock('../../wasm/loader', () => ({ loadCoreWasm: async () => null }));
+jest.mock('../../wasm/loader', () => ({ loadCoreWasm: jest.fn() }));
 
-afterEach(() => NavigationSystem.getInstance().dispose());
+type Backend = 'js' | 'wasm';
+const SHIPPED_WASM = path.resolve(__dirname, '../../../../public/wasm/gaesup_core.wasm');
+const created: NavigationSystem[] = [];
+afterEach(() => created.splice(0).forEach((navigation) => navigation.dispose()));
+
+/** A width × width grid whose A* runs in JS or in the wasm module the package ships. */
+async function createNavigation(backend: Backend, width: number): Promise<NavigationSystem> {
+  const wasm = backend === 'wasm'
+    ? (await WebAssembly.instantiate(new Uint8Array(readFileSync(SHIPPED_WASM)), {})).instance.exports as unknown as GaesupCoreWasmExports
+    : null;
+  jest.mocked(loadCoreWasm).mockResolvedValueOnce(wasm);
+  const navigation = new NavigationSystem({ cellSize: 1, worldMinX: 0, worldMinZ: 0, worldMaxX: width, worldMaxZ: width });
+  created.push(navigation);
+  await navigation.init();
+  return navigation;
+}
 
 // Independent Dijkstra oracle: no heuristic or production frontier implementation.
 function shortestCost(grid: number[], costs: number[], width: number): number {
@@ -32,10 +51,10 @@ function shortestCost(grid: number[], costs: number[], width: number): number {
   }
 }
 
-it.each([false, true])('preserves shortest valid paths on seeded grids (weighted=%s)', async (weighted) => {
+it.each<[Backend, boolean]>([['js', false], ['js', true], ['wasm', false], ['wasm', true]])(
+  '%s A* preserves shortest valid paths on seeded grids (weighted=%s)', async (backend, weighted) => {
   const width = 12;
-  const navigation = NavigationSystem.getInstance({ cellSize: 1, worldMinX: 0, worldMinZ: 0, worldMaxX: width, worldMaxZ: width });
-  await navigation.init();
+  const navigation = await createNavigation(backend, width);
   let seed = 1729;
   const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
   for (let sample = 0; sample < 25; sample++) {
@@ -73,4 +92,27 @@ it.each([false, true])('preserves shortest valid paths on seeded grids (weighted
     }
     expect(actual).toBe(expected);
   }
+});
+
+it('the shipped wasm gives up on an unreachable click on a 256×256 grid faster than the JS heap', async () => {
+  const size = 256;
+  const goal = size - 4;
+  const backends = [await createNavigation('js', size), await createNavigation('wasm', size)];
+  for (const navigation of backends) {
+    // A walled pocket: the goal cell is walkable, yet the search has to close every other cell to know it.
+    navigation.setBlocked(goal + 0.5, goal - 1.5, 5, 1);
+    navigation.setBlocked(goal + 0.5, goal + 2.5, 5, 1);
+    navigation.setBlocked(goal - 1.5, goal + 0.5, 1, 5);
+    navigation.setBlocked(goal + 2.5, goal + 0.5, 1, 5);
+  }
+  const best = [Infinity, Infinity];
+  for (let run = 0; run < 3; run++) {
+    backends.forEach((navigation, index) => {
+      const started = performance.now();
+      expect(navigation.findPath(1.5, 1.5, goal + 0.5, goal + 0.5, { weighted: true })).toEqual([]);
+      best[index] = Math.min(best[index]!, performance.now() - started);
+    });
+  }
+  const [js, wasm] = best;
+  expect(wasm).toBeLessThan(js!);
 });
