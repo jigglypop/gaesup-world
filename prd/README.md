@@ -25,7 +25,6 @@
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| SE-8b | MotionBridge 명령: `turn` 구현, `move`는 설정값 사용, `jump`는 jumpForce 사용 | 명령 계약 테스트 |
 | SE-8c | `HttpAssetSource` 기본 fetcher, `useNetworkGroup`·`useNetworkMessage`·`createGroup` 동작 | 계약 테스트 |
 
 ### SE-9 거대 파일 분할

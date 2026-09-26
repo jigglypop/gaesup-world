@@ -33,9 +33,9 @@ const createGameStates = (): GameStatesType => ({
   isOnTheGround: true,
 });
 
-function createRigidBodyHarness() {
+function createRigidBodyHarness(initialVelocity = { x: 3, y: 0, z: 4 }) {
   let translation = { x: 6, y: 2, z: -4 };
-  let velocity = { x: 3, y: 0, z: 4 };
+  let velocity = { ...initialVelocity };
   const rotation = { x: 0, y: 0, z: 0, w: 1 };
   const setTranslation = jest.fn((next: { x: number; y: number; z: number }) => {
     translation = { ...next };
@@ -50,6 +50,7 @@ function createRigidBodyHarness() {
     setTranslation,
     setLinvel,
     applyImpulse: jest.fn(),
+    setRotation: jest.fn(),
   } as unknown as RapierRigidBody;
 
   return { rigidBody, setTranslation, setLinvel };
@@ -166,5 +167,50 @@ describe('MotionBridge player lookup', () => {
     } finally {
       bridge.dispose();
     }
+  });
+});
+
+describe('MotionBridge command contract', () => {
+  const CONFIG = { maxSpeed: 4, acceleration: 2, jumpForce: 7 };
+  let bridge: MotionBridge;
+  beforeEach(() => { bridge = new MotionBridge(); });
+  afterEach(() => bridge.dispose());
+
+  function registered(velocity: { x: number; y: number; z: number }, type: 'character' | 'airplane' = 'character') {
+    const harness = createRigidBodyHarness(velocity);
+    bridge.register(ENTITY_ID, type, harness.rigidBody);
+    bridge.execute(ENTITY_ID, { type: 'setConfig', data: { config: CONFIG } });
+    return harness;
+  }
+
+  it('move steers toward the configured max speed with the configured acceleration and leaves a fall alone', () => {
+    const { rigidBody } = registered({ x: 1, y: -5, z: 0 });
+    bridge.execute(ENTITY_ID, { type: 'move', data: { movement: new THREE.Vector3(2, 0, 0) } });
+    const [impulse] = jest.mocked(rigidBody.applyImpulse).mock.lastCall ?? [];
+    expect(impulse).toMatchObject({ x: (4 - 1) * 2, y: 0, z: 0 });
+  });
+
+  it('airplanes steer vertically too', () => {
+    const { rigidBody } = registered({ x: 0, y: 0, z: 0 }, 'airplane');
+    bridge.execute(ENTITY_ID, { type: 'move', data: { movement: new THREE.Vector3(0, 3, 0) } });
+    expect(jest.mocked(rigidBody.applyImpulse).mock.lastCall?.[0]).toMatchObject({ x: 0, y: 4 * 2, z: 0 });
+  });
+
+  it('jump leaves the ground at jumpForce and keeps the horizontal speed', () => {
+    const { rigidBody, setLinvel } = registered({ x: 3, y: 0, z: 4 });
+    bridge.reportGrounded(ENTITY_ID, true);
+    bridge.execute(ENTITY_ID, { type: 'jump' });
+    expect(setLinvel).toHaveBeenLastCalledWith({ x: 3, y: 7, z: 4 }, true);
+    expect(rigidBody.applyImpulse).not.toHaveBeenCalled();
+  });
+
+  it('turn faces the body toward the given yaw and ignores a non-finite one', () => {
+    const { rigidBody } = registered({ x: 0, y: 0, z: 0 });
+    bridge.execute(ENTITY_ID, { type: 'turn', data: { direction: Math.PI / 2 } });
+    const rotation = jest.mocked(rigidBody.setRotation).mock.lastCall?.[0];
+    const yaw = new THREE.Euler().setFromQuaternion(new THREE.Quaternion(rotation?.x, rotation?.y, rotation?.z, rotation?.w)).y;
+    expect(yaw).toBeCloseTo(Math.PI / 2);
+    bridge.execute(ENTITY_ID, { type: 'turn', data: { direction: Number.NaN } });
+    expect(rigidBody.setRotation).toHaveBeenCalledTimes(1);
   });
 });

@@ -154,6 +154,7 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
   };
   private tempQuaternion = new THREE.Quaternion();
   private tempForce = new THREE.Vector3();
+  private tempPlanar = new THREE.Vector3();
 
   constructor(options: MotionSystemOptions) {
     super(
@@ -249,9 +250,16 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     return this.motionService.calculateJumpForce(this.state.isGrounded, config.jumpSpeed, gameStates);
   }
 
-  public applyForce(movement: THREE.Vector3, rigidBody: RapierRigidBody): void {
-    const config = this.motionService.getDefaultConfig();
-    const force = this.motionService.calculateMovementForce(movement, this.state.velocity, config, this.tempForce);
+  /** Steers the velocity toward `movement` at `config.maxSpeed`; a planar move leaves vertical motion to gravity and jumps. */
+  public applyForce(
+    movement: THREE.Vector3,
+    rigidBody: RapierRigidBody,
+    config: { maxSpeed: number; acceleration: number } = this.motionService.getDefaultConfig(),
+    planar = false,
+  ): void {
+    const target = planar ? this.tempPlanar.set(movement.x, 0, movement.z) : movement;
+    const force = this.motionService.calculateMovementForce(target, this.state.velocity, config, this.tempForce);
+    if (planar) force.y = 0;
     rigidBody.applyImpulse(force, true);
   }
 

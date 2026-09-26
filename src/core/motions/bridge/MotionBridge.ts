@@ -14,6 +14,7 @@ import { CoreBridge } from '@core/boilerplate';
 import { MotionCommand, MotionEntity, MotionSnapshot } from './types';
 
 const GROUNDED_VERTICAL_SPEED = 0.25;
+const UP = new THREE.Vector3(0, 1, 0);
 
 function createCommandGameStates(): GameStatesType {
   return {
@@ -83,18 +84,30 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
   protected executeCommand(entity: MotionEntity, command: MotionCommand, entityId: string): void {
     const { system, rigidBody } = entity;
     switch (command.type) {
+      // Ground bodies steer in the plane with the configured speed; only airplanes steer vertically.
       case 'move':
         if (command.data?.movement) {
-          system.applyForce(command.data.movement, rigidBody);
+          this.syncEntity(entity, entityId);
+          const config = this.getOrCreateSnapshot(entityId, entity.type).config;
+          system.applyForce(command.data.movement, rigidBody, config, entity.type !== 'airplane');
         }
         break;
+      // A grounded body leaves the ground at `jumpForce` m/s and keeps its horizontal speed.
       case 'jump': {
         this.syncEntity(entity, entityId);
         const jumpSpeed = this.getOrCreateSnapshot(entityId, entity.type).config.jumpForce;
-        const jumpForce = system.calculateJump({ jumpSpeed }, this.commandGameStates);
-        if (jumpForce.length() > 0) {
-          system.applyForce(jumpForce, rigidBody);
+        const jump = system.calculateJump({ jumpSpeed }, this.commandGameStates);
+        if (jump.y > 0) {
+          const velocity = rigidBody.linvel();
+          rigidBody.setLinvel({ x: velocity.x, y: jump.y, z: velocity.z }, true);
         }
+        break;
+      }
+      // Faces the body toward yaw `direction` (radians about +Y).
+      case 'turn': {
+        const yaw = command.data?.direction;
+        if (typeof yaw !== 'number' || !Number.isFinite(yaw)) break;
+        rigidBody.setRotation(this.tempQuaternion.setFromAxisAngle(UP, yaw), true);
         break;
       }
       case 'stop':
