@@ -18,12 +18,16 @@ export type InteractableProps = {
   children?: React.ReactNode;
 };
 
+/** Defaults shared by every interaction target, so an NPC reacts at the same distance and key as a placed object. */
+export const DEFAULT_INTERACTION_RANGE = 2.2;
+export const DEFAULT_INTERACTION_KEY = 'e';
+
 export function Interactable({
   id,
   kind = 'misc',
   label,
-  range = 2.2,
-  activationKey = 'e',
+  range = DEFAULT_INTERACTION_RANGE,
+  activationKey = DEFAULT_INTERACTION_KEY,
   data,
   onActivate,
   position,

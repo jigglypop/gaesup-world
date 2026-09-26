@@ -8,6 +8,7 @@ import { SkeletonUtils } from 'three-stdlib';
 
 import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
 
+import { NPCPresence } from './NPCPresence';
 import { NPCPartMeshProps, NPCInstanceProps } from './types';
 import { useSharedAnimations } from '../../../animation/hooks/useSharedAnimations';
 import { CompileGate } from '../../../rendering/CompileGate';
@@ -198,7 +199,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
     document.body.style.cursor = 'default';
   }, []);
 
-  const runEvent = useCallback((eventType: 'onClick' | 'onHover') => {
+  const runEvent = useCallback((eventType: 'onClick' | 'onHover' | 'onInteract') => {
     const event = instance.events?.find((entry) => entry.type === eventType);
     if (!event) return;
 
@@ -313,6 +314,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
             <meshStandardMaterial color="#00ff00" transparent opacity={0.6} />
           </mesh>
         )}
+        <NPCPresence instance={instance} height={capsule.height} onInteract={() => runEvent('onInteract')} />
       </PhysicsEntity>
       </NPCModelGate>
     );
@@ -372,7 +374,9 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
             <meshStandardMaterial color="#00ff00" transparent opacity={0.6} />
           </mesh>
         )}
-      </group></NPCVisual>
+      </group>
+      <NPCPresence instance={instance} height={capsule.height} onInteract={() => runEvent('onInteract')} />
+      </NPCVisual>
     </RigidBody>
   );
 });

@@ -71,7 +71,7 @@ export class MaterialManager {
         gradientMap: getToonGradient(isGlass ? 2 : 4),
       });
       if (mapTextureUrl) {
-        toon.map = this.loadTexture(mapTextureUrl);
+        toon.map = this.loadTexture(mapTextureUrl, true);
       }
       if (normalTextureUrl) {
         toon.normalMap = this.loadTexture(normalTextureUrl);
@@ -89,7 +89,7 @@ export class MaterialManager {
     }
 
     if (mapTextureUrl) {
-      baseOptions.map = this.loadTexture(mapTextureUrl);
+      baseOptions.map = this.loadTexture(mapTextureUrl, true);
     }
 
     if (normalTextureUrl) {
@@ -99,11 +99,13 @@ export class MaterialManager {
     return new THREE.MeshStandardMaterial(baseOptions);
   }
 
-  private loadTexture(url: string): THREE.Texture {
+  /** Color maps are sRGB; normal maps stay linear. */
+  private loadTexture(url: string, color = false): THREE.Texture {
     const cached = this.textures.get(url);
     if (cached) return cached;
 
     const texture = this.textureLoader.load(url);
+    if (color) texture.colorSpace = THREE.SRGBColorSpace;
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.needsUpdate = true;
@@ -138,7 +140,7 @@ export class MaterialManager {
       }
       const mapUrl = values.mapTextureUrl;
       if (mapUrl !== undefined) {
-        const map = this.loadTexture(mapUrl);
+        const map = this.loadTexture(mapUrl, true);
         if (material.map !== map) { material.map = map; material.needsUpdate = true; }
       }
       if (values.normalTextureUrl !== undefined) {

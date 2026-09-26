@@ -1,0 +1,7 @@
+html, body, #root { height: 100%; margin: 0; }
+.mh-page { height: 100%; display: flex; }
+.mh-frame { flex: 1; display: flex; flex-direction: column; }
+.mh-body { flex: 1; display: grid; grid-template-columns: 280px 1fr 56px 320px; min-height: 0; }
+.mh-stage { position: relative; transform: translateZ(0); overflow: hidden; }
+.mh-canvas { position: absolute; inset: 0; }
+.mh-side, .mh-panel { overflow: auto; }

@@ -84,3 +84,20 @@ test('a mixer with a cull radius holds still off screen and catches up when its 
     await renderer.unmount();
   }
 });
+
+test('engine clip names find the spellings exported models use, without hiding a clip of that name', async () => {
+  const named = (name: string) => new AnimationClip(name, 1, [new NumberKeyframeTrack('.position[x]', [0, 1], [0, 1])]);
+  let found: Record<string, string | undefined> = {};
+  let listed: string[] = [];
+  function Probe() {
+    const { actions } = useSharedAnimations([named('Idle'), named('Walking'), named('Running'), named('run')], new Object3D());
+    found = Object.fromEntries(['idle', 'walk', 'run'].map((name) => [name, actions[name]?.getClip().name]));
+    listed = Object.keys({ ...actions });
+    return null;
+  }
+  const renderer = await ReactThreeTestRenderer.create(<><FrameSchedulerHost /><Probe /></>);
+  expect(found).toEqual({ idle: 'Idle', walk: 'Walking', run: 'run' });
+  // The player's animation bridge registers a spread copy, so the aliases must survive it.
+  expect(listed).toEqual(['Idle', 'Walking', 'Running', 'run', 'idle', 'walk']);
+  await renderer.unmount();
+});

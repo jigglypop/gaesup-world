@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { addAfterEffect, useThree } from '@react-three/fiber';
 
 import { readRendererStats } from './rendererStats';
+import { rendererKind } from '../rendering/webgpu';
 import { FRAME_PHASES, useCanvasFrameScheduler, useEngineFrame, type FramePhase } from '../runtime/frame';
 import { useGaesupStore } from '../stores/gaesupStore';
 
@@ -33,6 +34,7 @@ export function PerformanceCollector() {
         triangles: stats.triangles,
         points: stats.points,
         lines: stats.lines,
+        backend: rendererKind(gl),
       },
       engine: {
         geometries: stats.geometries,

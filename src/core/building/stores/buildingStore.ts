@@ -25,7 +25,8 @@ export function createBuildingStore() {
     wallCategories: new Map(),
     tileCategories: new Map(),
     editMode: 'none',
-    showGrid: true,
+    // The grid is an editing aid; entering an edit mode turns it on.
+    showGrid: false,
     gridSize: 100,
     snapToGrid: true,
     hoverPosition: null,

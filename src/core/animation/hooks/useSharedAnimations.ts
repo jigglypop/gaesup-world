@@ -33,6 +33,12 @@ function inView(object: Object3D, camera: Camera, radius: number): boolean {
  * With `cullRadius` the mixer only advances while a sphere of that radius around the root is in the camera's view;
  * the time skipped off screen is applied in one step when the root comes back.
  */
+/** Common clip spellings of exported models, by lowercase name, mapped to the engine's clip names. */
+const CANONICAL_CLIP_NAMES: Readonly<Record<string, string>> = {
+  idle: 'idle', walk: 'walk', walking: 'walk', run: 'run', running: 'run',
+  jump: 'jump', jumping: 'jump', fall: 'fall', falling: 'fall',
+};
+
 export function useSharedAnimations(clips: AnimationClip[], root?: Object3D | RefObject<Object3D | null>, cullRadius?: number): SharedAnimations {
   const ref = useRef<Object3D | null>(null);
   const [rootRef] = useState<RefObject<Object3D | null>>(() => (root ? (root instanceof Object3D ? { current: root } : root) : ref));
@@ -44,15 +50,20 @@ export function useSharedAnimations(clips: AnimationClip[], root?: Object3D | Re
   const lazyActions = useRef<Record<string, AnimationAction>>({});
   const api = useMemo<SharedAnimations>(() => {
     const actions: Record<string, AnimationAction | null> = {};
+    const define = (name: string, clip: AnimationClip) => Object.defineProperty(actions, name, {
+      enumerable: true,
+      configurable: true,
+      get() {
+        if (!rootRef.current) return null;
+        return lazyActions.current[clip.name] ??= mixer.clipAction(clip, rootRef.current);
+      },
+    });
+    for (const clip of clips) define(clip.name, clip);
+    // Engine names ('idle', 'walk', 'run') also find the spellings models ship with, unless a clip already has them.
+    // They are listed too, so copies such as the animation bridge's registration keep them; both names share one action.
     for (const clip of clips) {
-      Object.defineProperty(actions, clip.name, {
-        enumerable: true,
-        configurable: true,
-        get() {
-          if (!rootRef.current) return null;
-          return lazyActions.current[clip.name] ??= mixer.clipAction(clip, rootRef.current);
-        },
-      });
+      const canonical = CANONICAL_CLIP_NAMES[clip.name.toLowerCase()];
+      if (canonical && !(canonical in actions)) define(canonical, clip);
     }
     return { ref: rootRef, clips, actions, names: clips.map((clip) => clip.name), mixer };
   }, [clips, mixer, rootRef]);

@@ -10,18 +10,19 @@ export type BuildingObjectCatalogItem = {
   modelUrl?: string;
 };
 
+/** `defaultScale` sizes each model to a 1.7m character: a 2.1m door, a 2.1m bed, a 0.74m table. */
 export const DEFAULT_BUILDING_OBJECT_CATALOG: BuildingObjectCatalogItem[] = [
-  { id: 'door-basic', label: '문', category: 'structure', fallbackKind: 'door', defaultScale: 1, defaultColor: '#8b5a2b', modelUrl: 'gltf/props/door.glb' },
-  { id: 'window-basic', label: '창문', category: 'structure', fallbackKind: 'window', defaultScale: 1, defaultColor: '#9fd3ff', modelUrl: 'gltf/props/window.glb' },
+  { id: 'door-basic', label: '문', category: 'structure', fallbackKind: 'door', defaultScale: 0.5, defaultColor: '#8b5a2b', modelUrl: 'gltf/props/door.glb' },
+  { id: 'window-basic', label: '창문', category: 'structure', fallbackKind: 'window', defaultScale: 2.5, defaultColor: '#9fd3ff', modelUrl: 'gltf/props/window.glb' },
   { id: 'fence-basic', label: '울타리', category: 'structure', fallbackKind: 'fence', defaultScale: 1, defaultColor: '#8f6a3d', modelUrl: 'gltf/props/fence.glb' },
-  { id: 'lamp-basic', label: '조명', category: 'utility', fallbackKind: 'lamp', defaultScale: 1, defaultColor: '#ffd166', modelUrl: 'gltf/props/lamp.glb' },
-  { id: 'chair-basic', label: '의자', category: 'furniture', fallbackKind: 'chair', defaultScale: 1, defaultColor: '#a6784f', modelUrl: 'gltf/props/chair.glb' },
-  { id: 'table-basic', label: '탁자', category: 'furniture', fallbackKind: 'table', defaultScale: 1, defaultColor: '#9b6b43', modelUrl: 'gltf/props/table.glb' },
-  { id: 'bed-basic', label: '침대', category: 'furniture', fallbackKind: 'bed', defaultScale: 1, defaultColor: '#7aa2ff', modelUrl: 'gltf/props/bed.glb' },
-  { id: 'storage-basic', label: '수납장', category: 'furniture', fallbackKind: 'storage', defaultScale: 1, defaultColor: '#7c5c3e', modelUrl: 'gltf/props/storage.glb' },
-  { id: 'mailbox-basic', label: '우편함', category: 'utility', fallbackKind: 'mailbox', defaultScale: 1, defaultColor: '#d04f45', modelUrl: 'gltf/props/mailbox.glb' },
+  { id: 'lamp-basic', label: '조명', category: 'utility', fallbackKind: 'lamp', defaultScale: 1.5, defaultColor: '#ffd166', modelUrl: 'gltf/props/lamp.glb' },
+  { id: 'chair-basic', label: '의자', category: 'furniture', fallbackKind: 'chair', defaultScale: 0.65, defaultColor: '#a6784f', modelUrl: 'gltf/props/chair.glb' },
+  { id: 'table-basic', label: '탁자', category: 'furniture', fallbackKind: 'table', defaultScale: 0.9, defaultColor: '#9b6b43', modelUrl: 'gltf/props/table.glb' },
+  { id: 'bed-basic', label: '침대', category: 'furniture', fallbackKind: 'bed', defaultScale: 0.5, defaultColor: '#7aa2ff', modelUrl: 'gltf/props/bed.glb' },
+  { id: 'storage-basic', label: '수납장', category: 'furniture', fallbackKind: 'storage', defaultScale: 0.45, defaultColor: '#7c5c3e', modelUrl: 'gltf/props/storage.glb' },
+  { id: 'mailbox-basic', label: '우편함', category: 'utility', fallbackKind: 'mailbox', defaultScale: 1.25, defaultColor: '#d04f45', modelUrl: 'gltf/props/mailbox.glb' },
   { id: 'crafting-basic', label: '제작대', category: 'utility', fallbackKind: 'crafting', defaultScale: 1, defaultColor: '#b68553', modelUrl: 'gltf/props/crafting.glb' },
-  { id: 'shop-stall-basic', label: '가판대', category: 'shop', fallbackKind: 'shop', defaultScale: 1, defaultColor: '#d88f45', modelUrl: 'gltf/props/shop-stall.glb' },
+  { id: 'shop-stall-basic', label: '가판대', category: 'shop', fallbackKind: 'shop', defaultScale: 2, defaultColor: '#d88f45', modelUrl: 'gltf/props/shop-stall.glb' },
 ];
 
 export function getDefaultBuildingObject(id: string): BuildingObjectCatalogItem | undefined {

@@ -326,7 +326,8 @@ export function useBuildingEditor() {
                       modelId: catalogItem?.id ?? selectedModelObjectId,
                       modelLabel: catalogItem?.label ?? selectedModelObjectId,
                       modelFallbackKind: catalogItem?.fallbackKind ?? 'generic',
-                      modelScale: currentModelScale || catalogItem?.defaultScale || 1,
+                      // The editor scale multiplies the catalog's character-sized default.
+                      modelScale: (catalogItem?.defaultScale ?? 1) * (currentModelScale || 1),
                       modelColor: currentModelColor || catalogItem?.defaultColor || '#9b7653',
                       ...(modelUrl ? { modelUrl } : {}),
                     };

@@ -10,6 +10,8 @@ export type RenderState = {
   triangles: number;
   points: number;
   lines: number;
+  /** How the canvas draws: WebGPU, `WebGPURenderer`'s WebGL2 fallback, or a classic `WebGLRenderer`. */
+  backend?: 'webgpu' | 'webgpu-fallback' | 'webgl';
 };
 
 export type EngineState = {

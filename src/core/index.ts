@@ -63,6 +63,8 @@ export { DynamicSky } from './rendering/sky';
 export type { DynamicSkyProps, SkyKeyframe } from './rendering/sky';
 export { CascadedSun } from './rendering/sky/CascadedSun';
 export type { CascadedSunProps, CascadedSunQuality } from './rendering/sky/CascadedSun';
+export { createSkyEnvironmentTexture, SkyEnvironment } from './rendering/sky/SkyEnvironment';
+export type { SkyEnvironmentProps } from './rendering/sky/SkyEnvironment';
 export { ColorGrade } from './rendering/postprocess/ColorGrade';
 export type { ColorGradeProps, GradePreset } from './rendering/postprocess/ColorGrade';
 export { LutOverlay } from './rendering/postprocess/LutOverlay';

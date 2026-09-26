@@ -78,8 +78,8 @@ function getSharedMaterials(toon: boolean): SakuraMatSet {
       _sharedMatToon = {
         bark: createToonMaterial({ color: '#5e3d30', steps: 3 }),
         barkDark: createToonMaterial({ color: '#3f271e', steps: 3 }),
-        blossomShell: createToonMaterial({ color: '#f7bfd2', transparent: true, opacity: 0.78, steps: 4, depthWrite: false }),
-        blossomCore: createToonMaterial({ color: '#ffe6f0', transparent: true, opacity: 0.6, steps: 4, depthWrite: false }),
+        blossomShell: createToonMaterial({ color: '#f7bfd2', steps: 4 }),
+        blossomCore: createToonMaterial({ color: '#ffe6f0', steps: 4 }),
       };
     }
     return _sharedMatToon;
@@ -88,8 +88,8 @@ function getSharedMaterials(toon: boolean): SakuraMatSet {
     _sharedMatPbr = {
       bark: new THREE.MeshStandardMaterial({ color: '#5e3d30', roughness: 0.95, metalness: 0.02 }),
       barkDark: new THREE.MeshStandardMaterial({ color: '#3f271e', roughness: 1, metalness: 0.01 }),
-      blossomShell: new THREE.MeshStandardMaterial({ color: '#f7bfd2', roughness: 0.92, metalness: 0.0, transparent: true, opacity: 0.68 }),
-      blossomCore: new THREE.MeshStandardMaterial({ color: '#ffe6f0', roughness: 0.84, metalness: 0.0, transparent: true, opacity: 0.5 }),
+      blossomShell: new THREE.MeshStandardMaterial({ color: '#f7bfd2', roughness: 0.92, metalness: 0.0 }),
+      blossomCore: new THREE.MeshStandardMaterial({ color: '#ffe6f0', roughness: 0.84, metalness: 0.0 }),
     };
   }
   return _sharedMatPbr;
@@ -335,7 +335,18 @@ type TreeSpec = {
 
 const _defaultBlossom = new THREE.Color('#f7bfd2');
 const _defaultBark = new THREE.Color('#5e3d30');
+/** The shared materials' colors (see `getSharedMaterials`). */
+const _darkBark = new THREE.Color('#3f271e');
+const _coreBlossom = new THREE.Color('#ffe6f0');
 const _white = new THREE.Color('#ffffff');
+const _barkCol = new THREE.Color();
+const _darkCol = new THREE.Color();
+const _shellCol = new THREE.Color();
+const _coreCol = new THREE.Color();
+
+/** `out` such that `base * out = target`. */
+const ratio = (out: THREE.Color, target: THREE.Color, base: THREE.Color) =>
+  out.setRGB(target.r / base.r, target.g / base.g, target.b / base.b);
 
 const TREE_PRESETS: Record<BuildingTreeKind, {
   canopyColor: string;
@@ -546,31 +557,29 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
       const tp = s.pos;
       const barkTint = s.bark !== _defaultBark;
       const blossomTint = s.blossom !== _defaultBlossom;
+      // Instance colors multiply the shared material's own color, so a tint is written as its ratio to that color.
+      const barkColor = barkTint ? ratio(_barkCol, s.bark, _defaultBark) : _white;
+      const darkColor = barkTint ? ratio(_darkCol, _tmpCol.copy(s.bark).multiplyScalar(0.65), _darkBark) : _white;
+      const shellColor = blossomTint ? ratio(_shellCol, s.blossom, _defaultBlossom) : _white;
+      const coreColor = blossomTint ? ratio(_coreCol, _tmpCol.copy(s.blossom).lerp(_white, 0.4), _coreBlossom) : _white;
 
       composeInstance(barkRef.current, bi, tp,
         [0, s.trunkHeight * 0.5, 0], [0.02, 0, -0.04],
         [0, 0, 0], null, [0.3 * s.scale, s.trunkHeight, 0.3 * s.scale]);
-      if (hasCustomColor) {
-        barkRef.current.setColorAt(bi, barkTint ? s.bark : _defaultBark);
-      }
+      if (hasCustomColor) barkRef.current.setColorAt(bi, barkColor);
       bi++;
 
       composeInstance(topRef.current, ti, tp,
         [0, s.trunkHeight * 0.5, 0], [0.02, 0, -0.04],
         [0, s.trunkHeight * 0.48, 0], null, [0.24 * s.scale, 0.32 * s.scale, 0.24 * s.scale]);
-      if (hasCustomColor) {
-        const tc = barkTint ? _tmpCol.copy(s.bark).multiplyScalar(0.65) : _tmpCol.set('#3f271e');
-        topRef.current.setColorAt(ti, tc);
-      }
+      if (hasCustomColor) topRef.current.setColorAt(ti, darkColor);
       ti++;
 
       for (const b of s.branches) {
         composeInstance(barkRef.current, bi, tp,
           [0, b.pivotY, 0], [b.lean, b.yaw, b.bend],
           [0, b.length * 0.5, 0], null, [b.radius, b.length, b.radius]);
-        if (hasCustomColor) {
-          barkRef.current.setColorAt(bi, barkTint ? s.bark : _defaultBark);
-        }
+        if (hasCustomColor) barkRef.current.setColorAt(bi, barkColor);
         bi++;
       }
 
@@ -578,10 +587,7 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
         composeInstance(darkRef.current, di, tp,
           [0, 0.14 * s.scale, 0], [0, r.angle, r.spread],
           [0, r.length * 0.22, 0], null, [r.radius, r.length, r.radius]);
-        if (hasCustomColor) {
-          const dc = barkTint ? _tmpCol.copy(s.bark).multiplyScalar(0.65) : _tmpCol.set('#3f271e');
-          darkRef.current.setColorAt(di, dc);
-        }
+        if (hasCustomColor) darkRef.current.setColorAt(di, darkColor);
         di++;
       }
       for (const b of s.branches) {
@@ -589,26 +595,16 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
           [0, b.pivotY, 0], [b.lean, b.yaw, b.bend],
           [0, b.length * 0.76, 0], [b.twigLean, b.twigYaw, b.bend * -0.42],
           [b.radius * 0.52, b.twigLength, b.radius * 0.52]);
-        if (hasCustomColor) {
-          const dc = barkTint ? _tmpCol.copy(s.bark).multiplyScalar(0.65) : _tmpCol.set('#3f271e');
-          darkRef.current.setColorAt(di, dc);
-        }
+        if (hasCustomColor) darkRef.current.setColorAt(di, darkColor);
         di++;
       }
 
       for (const c of s.clusters) {
         composeSimple(shellRef.current, si, tp, c.position, c.rotation, c.outerScale);
-        if (hasCustomColor) {
-          shellRef.current.setColorAt(si, blossomTint ? s.blossom : _defaultBlossom);
-        }
+        if (hasCustomColor) shellRef.current.setColorAt(si, shellColor);
         si++;
         composeSimple(coreRef.current, ci, tp, c.position, c.rotation, c.innerScale);
-        if (hasCustomColor) {
-          const cc = blossomTint
-            ? _tmpCol.copy(s.blossom).lerp(_white, 0.4)
-            : _tmpCol.set('#ffe6f0');
-          coreRef.current.setColorAt(ci, cc);
-        }
+        if (hasCustomColor) coreRef.current.setColorAt(ci, coreColor);
         ci++;
       }
     }
