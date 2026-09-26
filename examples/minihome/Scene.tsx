@@ -10,6 +10,7 @@ import {
   GameplayArea,
   IdleFrameRate,
   InteractionTracker,
+  SkyEnvironment,
   WorldPhysics,
   type WorldQuality,
 } from 'gaesup-world';
@@ -30,13 +31,15 @@ export function Scene({ quality, postProcessing, idleThrottle }: SceneSettings) 
   return (
     <Canvas shadows="percentage" gl={createRenderer} camera={{ position: [SPAWN[0], 14, SPAWN[2] + 12], fov: 38 }}>
       <color attach="background" args={['#8fd3ee']} />
-      <hemisphereLight args={['#f2fbff', '#9ccf6a', 1.25]} />
+      {/* Daylight: sky and bounced ground fill, a warm sun, and a small sky map for PBR reflections. */}
+      <hemisphereLight args={['#eaf6ff', '#6f8a57', 1.22]} />
+      <SkyEnvironment intensity={0.32} />
       <Suspense fallback={null}>
         <GaesupWorldContent quality={quality} postProcessing={postProcessing}>
-          <CascadedSun position={[18, 36, 22]} intensity={2.3} color="#fff4df" />
+          <CascadedSun position={[18, 36, 22]} intensity={2.55} color="#fff3da" />
           {idleThrottle && <IdleFrameRate />}
           <WorldPhysics>
-            <GaesupController position={SPAWN} />
+            <GaesupController position={SPAWN} materialPolicy="figure" />
             <BuildingController />
           </WorldPhysics>
           <InteractionTracker />

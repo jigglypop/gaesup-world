@@ -48,7 +48,8 @@ export class MaterialManager {
 
   private createMaterial(meshConfig: MeshConfig): THREE.Material {
     const color = meshConfig.color ?? meshConfig.materialParams?.color ?? '#ffffff';
-    const roughness = meshConfig.roughness ?? meshConfig.materialParams?.roughness ?? 0.5;
+    // Stylized ground and walls read as painted, not glossy; a mid roughness shows the sun as a plastic sheen.
+    const roughness = meshConfig.roughness ?? meshConfig.materialParams?.roughness ?? 0.9;
     const metalness = meshConfig.metalness ?? meshConfig.materialParams?.metalness ?? 0;
     const opacity = meshConfig.opacity ?? meshConfig.materialParams?.opacity ?? 1;
     const transparent = meshConfig.transparent ?? meshConfig.materialParams?.transparent ?? false;
@@ -79,12 +80,15 @@ export class MaterialManager {
       return toon;
     }
 
+    // Clear glass blends over the scene instead of transmission, which copies the rendered backdrop every frame.
     if (meshConfig.material === 'GLASS') {
-      return new THREE.MeshPhysicalMaterial({
+      return new THREE.MeshStandardMaterial({
         ...baseOptions,
-        transmission: 0.98,
-        roughness: 0.1,
-        envMapIntensity: 1,
+        transparent: true,
+        opacity: meshConfig.opacity ?? meshConfig.materialParams?.opacity ?? 0.28,
+        roughness: 0.05,
+        metalness: 0,
+        depthWrite: false,
       });
     }
 

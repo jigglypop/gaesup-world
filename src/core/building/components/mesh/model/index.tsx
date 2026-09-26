@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import { LampRegistryContext } from './lampPool';
+import { normalizeImportedMaterials } from '../../../../assets/materialPolicy';
 import { castSubtreeNearShadowOnly } from '../../../../rendering/sky/nearShadow';
 import type { BuildingModelFallbackKind } from '../../../types';
 
@@ -47,7 +48,11 @@ class ModelErrorBoundary extends React.Component<
 
 function LoadedModel({ url }: { url: string }) {
   const { scene } = useGLTF(url) as { scene: THREE.Object3D };
-  const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+  const clone = useMemo(() => {
+    const owned = SkeletonUtils.clone(scene);
+    normalizeImportedMaterials(owned, 'prop');
+    return owned;
+  }, [scene]);
   useEffect(() => castSubtreeNearShadowOnly(clone), [clone]);
 
   return <primitive object={clone} />;

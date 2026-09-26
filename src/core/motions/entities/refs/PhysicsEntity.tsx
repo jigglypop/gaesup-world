@@ -15,6 +15,7 @@ import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import { useSharedAnimations } from '@core/animation/hooks/useSharedAnimations';
+import { normalizeImportedMaterials } from '@core/assets/materialPolicy';
 import { useEntity } from '@core/boilerplate/hooks/useEntity';
 import { useWorldPhysicsInterpolation } from '@core/simulation/physicsContext';
 
@@ -121,7 +122,13 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       ...(props.colliderSize ? { colliderSize: props.colliderSize } : {}),
     });
 
-    const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+    // The clone is this entity's own, so its materials are adjusted in place before anything reads them.
+    const materialPolicy = props.materialPolicy ?? 'keep';
+    const clone = useMemo(() => {
+      const owned = SkeletonUtils.clone(scene);
+      normalizeImportedMaterials(owned, materialPolicy);
+      return owned;
+    }, [scene, materialPolicy]);
     useLayoutEffect(() => {
       if (!props.modelHierarchy) return;
       clone.traverse((node) => {

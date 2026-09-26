@@ -14,6 +14,7 @@ import {
 import * as THREE from 'three';
 
 import type { AnimatorControllerDefinition } from '@core/animation/core/animator/types';
+import type { ImportedMaterialPolicy } from '@core/assets/materialPolicy';
 import type { CollisionUserData } from '@core/boilerplate/hooks/useCollisionHandler';
 
 import type { CharacterBoneAttachment } from '../../character/attachments';
@@ -76,6 +77,8 @@ export type PhysicsEntityProps = {
   baseColor?: string;
   /** Preserve the authored GLTF hierarchy, transforms and materials for imported rigs. */
   modelHierarchy?: boolean;
+  /** How the model's imported materials are adjusted; `'figure'` draws generated characters matte. Default `'keep'`. */
+  materialPolicy?: ImportedMaterialPolicy;
   /**
    * Hide specific mesh nodes from the base model renderer.
    * Useful when a "part" GLB includes an overlapping mesh (prevents z-fighting/ghosting).
