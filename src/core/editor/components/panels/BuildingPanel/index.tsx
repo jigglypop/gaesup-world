@@ -128,10 +128,18 @@ export const BuildingPanel: FC<BuildingPanelProps> = ({
     npcStore.getState().initializeDefaults();
   }, [hasNPCPanel, npcStore]);
 
+  // A forced panel takes the world into its mode and hands back the mode it found when it closes:
+  // edit modes unmount the player and mute its input, so a panel left behind would keep them away.
   React.useEffect(() => {
     if (!forcedEditMode) return;
-    if (editMode === forcedEditMode) return;
+    const previous = buildingStore.getState().editMode;
     buildingStore.getState().setEditMode(forcedEditMode);
+    return () => {
+      if (buildingStore.getState().editMode === forcedEditMode) buildingStore.getState().setEditMode(previous);
+    };
+  }, [buildingStore, forcedEditMode]);
+  React.useEffect(() => {
+    if (forcedEditMode && editMode !== forcedEditMode) buildingStore.getState().setEditMode(forcedEditMode);
   }, [buildingStore, editMode, forcedEditMode]);
   React.useEffect(
     () => () => {

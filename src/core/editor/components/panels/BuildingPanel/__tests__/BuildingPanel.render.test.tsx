@@ -43,6 +43,25 @@ describe('BuildingPanel subscriptions', () => {
     useBuildingStore.getState().setSelectedPlacedObjectType('none');
   }));
 
+  it('closing a panel gives the player and its input back', () => {
+    act(() => useBuildingStore.getState().setEditMode('none'));
+    const { unmount } = render(<BuildingPanel forcedEditMode="wall" />);
+    expect(useBuildingStore.getState().editMode).toBe('wall');
+    unmount();
+    // EntityController, keyboard input and the gamepad all stand down while this is true.
+    expect(useBuildingStore.getState().isInEditMode()).toBe(false);
+  });
+
+  it('switching panels hands back the mode the world had before the first one', () => {
+    act(() => useBuildingStore.getState().setEditMode('tile'));
+    const view = render(<BuildingPanel forcedEditMode="wall" />);
+    view.rerender(<BuildingPanel forcedEditMode="block" />);
+    expect(useBuildingStore.getState().editMode).toBe('block');
+    view.unmount();
+    expect(useBuildingStore.getState().editMode).toBe('tile');
+    act(() => useBuildingStore.getState().setEditMode('none'));
+  });
+
   it.each(['world', 'wall', 'tile', 'block', 'object'] as const)('commits nothing during a hover sweep in %s mode', (mode) => {
     if (mode === 'object') act(() => useBuildingStore.getState().setSelectedPlacedObjectType('billboard'));
     const { commits } = renderCounted(<BuildingPanel forcedEditMode={mode} />);
