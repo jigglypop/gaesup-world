@@ -24,9 +24,9 @@ test('a real world bridge rejects spawning before registration and retains the o
       expect(entity).not.toBeNull();
       const object = bridge.getEngine('default')?.system.getObject(entity!.id);
       expect(object?.position.toArray()).toEqual([3, 2, 1]);
-      expect(object?.metadata?.['characterUrl']).toBe('gltf/ally_body.glb');
+      expect(object?.metadata?.['characterUrl']).toBe('gltf/trainer_green.glb');
     });
-    expect(useGaesupStore.getState().urls.characterUrl).toBe('gltf/ally_body.glb');
+    expect(useGaesupStore.getState().urls.characterUrl).toBe('gltf/trainer_green.glb');
     expect(result.current.lastSpawnedEntity).not.toBeNull();
   } finally {
     unmount();

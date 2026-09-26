@@ -10,6 +10,7 @@ import {
   BUILDING_WALL_PRESETS,
   BUILDING_WEATHER_EFFECT_OPTIONS,
 } from '../../../../../building/types';
+import { DEFAULT_NPC_TEMPLATE_ID } from '../../../../../npc/stores/npcDefaults';
 import { useNPCStore } from '../../../../../npc/stores/npcStore';
 import { BuildingPanel, type BuildingPanelNPCPanelContext } from '../index';
 
@@ -73,7 +74,7 @@ describe('BuildingPanel subscriptions', () => {
     const { commits } = renderCounted(<BuildingPanel forcedEditMode="world" />);
     const groupId = useBuildingStore.getState().selectedTileGroupId!;
     act(() => {
-      useNPCStore.getState().createInstanceFromTemplate('ally', [0, 0, 0]);
+      useNPCStore.getState().createInstanceFromTemplate(DEFAULT_NPC_TEMPLATE_ID, [0, 0, 0]);
       for (let index = 0; index < 5; index++) {
         useBuildingStore.getState().addTile(groupId, {
           id: `panel-edit-${index}`, tileGroupId: groupId, position: { x: 600 + index * 4, y: 0, z: 600 }, size: 1,
@@ -84,7 +85,7 @@ describe('BuildingPanel subscriptions', () => {
   });
 
   it('keeps hover updates inside the NPC movement section', () => {
-    act(() => useNPCStore.getState().createInstanceFromTemplate('ally', [0, 0, 0]));
+    act(() => useNPCStore.getState().createInstanceFromTemplate(DEFAULT_NPC_TEMPLATE_ID, [0, 0, 0]));
     const renderPanel = jest.fn(({ defaultPanel }: BuildingPanelNPCPanelContext) => defaultPanel);
     render(<BuildingPanel forcedEditMode="npc" npcPanel={renderPanel} />);
     const panelRenders = renderPanel.mock.calls.length;

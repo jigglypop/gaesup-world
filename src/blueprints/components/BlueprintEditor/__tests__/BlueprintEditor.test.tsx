@@ -145,11 +145,11 @@ test('edits string and object array entries without changing siblings or the reg
   fireEvent.change(attackGroup.getByRole('textbox', { name: '항목 2' }), {
     target: { value: 'updated_attack.glb' },
   });
-  const parts = screen.getByText('구성 요소 · 2개 항목');
+  const parts = screen.getByText('구성 요소 · 1개 항목');
   fireEvent.click(parts);
   const partGroup = within(parts.closest('details')!);
   const urls = partGroup.getAllByRole('textbox', { name: '파일 경로' });
-  fireEvent.change(urls[1]!, { target: { value: 'updated_cloth.glb' } });
+  fireEvent.change(urls[0]!, { target: { value: 'updated_body.glb' } });
   const before = blueprintRegistry.get('char_warrior_basic');
   if (before?.type !== 'character') throw new Error('Expected character fixture');
   expect(before.animations.combat?.['attack_light']).toEqual(['attack_1.glb', 'attack_2.glb', 'attack_3.glb']);
@@ -157,8 +157,7 @@ test('edits string and object array entries without changing siblings or the reg
   const after = blueprintRegistry.get('char_warrior_basic');
   if (after?.type !== 'character') throw new Error('Expected updated character');
   expect(after.animations.combat?.['attack_light']).toEqual(['attack_1.glb', 'updated_attack.glb', 'attack_3.glb']);
-  expect(after.visuals?.parts?.[0]).toEqual(before.visuals?.parts?.[0]);
-  expect(after.visuals?.parts?.[1]?.url).toBe('updated_cloth.glb');
+  expect(after.visuals?.parts?.[0]).toEqual({ ...before.visuals?.parts?.[0], url: 'updated_body.glb' });
   fireEvent.click(screen.getByRole('button', { name: /^차량/ }));
   fireEvent.click(screen.getByText('좌석 · 1개 항목'));
   const position = screen.getByText('위치 · 3개 항목');

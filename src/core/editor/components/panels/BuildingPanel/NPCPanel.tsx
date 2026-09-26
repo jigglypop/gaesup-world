@@ -12,6 +12,7 @@ import {
   NPCPerceptionSection,
 } from './sections';
 import { NPCInstance as NPCPreviewInstance } from '../../../../npc/components/NPCInstance';
+import { DEFAULT_NPC_TEMPLATE_ID } from '../../../../npc/stores/npcDefaults';
 import { useNPCStore, useNPCStoreApi } from '../../../../npc/stores/npcStore';
 import type { NPCInstance } from '../../../../npc/types';
 import { FrameSchedulerHost } from '../../../../runtime/frame';
@@ -378,7 +379,7 @@ function NPCMotionCanvas({
   const templateId = React.useMemo(() => {
     const fallbackFromStore = instance.templateId?.trim();
     if (fallbackFromStore) return fallbackFromStore;
-    return 'ally';
+    return DEFAULT_NPC_TEMPLATE_ID;
   }, [instance.templateId]);
   const previewInstance = React.useMemo<NPCInstance>(() => {
     const previewId = `preview-${origin.join('-')}`;

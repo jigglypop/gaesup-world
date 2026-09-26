@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 
 import { useAssetStore } from '../../../../assets';
-import { SEED_ASSETS } from '../../../../assets/data/seedAssets';
+import type { AssetRecord } from '../../../../assets/types';
 import { useCharacterStore } from '../../../../character/stores/characterStore';
 import { CharacterAssetPanel } from '../CharacterAssetPanel';
 
@@ -64,11 +64,10 @@ test('searches names, tags and ids while preserving slot and ownership filters',
   }
 });
 
-test('equips and removes seed glasses through the named slot without exposing the asset id', () => {
+test('equips and removes glasses through the named slot without exposing the asset id', () => {
   const previousAssets = useAssetStore.getState();
   const previousCharacter = useCharacterStore.getState();
-  const glasses = SEED_ASSETS.find((asset) => asset.id === 'ally-glasses');
-  if (!glasses) throw new Error('Missing seed glasses');
+  const glasses: AssetRecord = { id: 'round-glasses', name: '동그란 안경', kind: 'characterPart', slot: 'glasses', url: 'gltf/round_glasses.glb', tags: ['glasses'] };
   useAssetStore.setState({
     ids: [glasses.id],
     records: { [glasses.id]: { ...glasses, thumbnailUrl: '/glasses.png' } },

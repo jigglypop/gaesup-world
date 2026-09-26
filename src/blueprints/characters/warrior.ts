@@ -74,12 +74,7 @@ export const WARRIOR_BLUEPRINT: CharacterBlueprint = {
       {
         id: 'warrior-body',
         type: 'body' as const,
-        url: 'gltf/ally_body.glb'
-      },
-      {
-        id: 'warrior-cloth',
-        type: 'top' as const,
-        url: 'gltf/ally_cloth_rabbit.glb'
+        url: 'gltf/trainer_green.glb'
       }
     ],
     scale: 1.0

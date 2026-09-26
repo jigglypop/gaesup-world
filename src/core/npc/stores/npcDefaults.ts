@@ -45,66 +45,29 @@ export const DEFAULT_NPC_BEHAVIOR: NPCBehaviorConfig = {
   arriveAnimation: 'idle',
 };
 
-const DEFAULT_NPC_ASSET_URLS = {
-  body: '/gltf/ally_body.glb',
-  cloth: '/gltf/ally_cloth.glb',
-  rabbitCloth: '/gltf/ally_cloth_rabbit.glb',
-  hat: '/gltf/ally_hat.glb',
-  glasses: '/gltf/ally_glass.glb',
-} as const;
+/** Default villager models: one skinned mesh each, with `idle`, `walk` and `run` clips. */
+const DEFAULT_NPC_MODELS = { green: '/gltf/trainer_green.glb', red: '/gltf/trainer_red.glb' } as const;
+export const DEFAULT_NPC_TEMPLATE_ID = 'trainer-green';
 
-const NPC_ASSET_URL_REPLACEMENTS = new Map<string, string>([
-  ['gltf/formal.glb', DEFAULT_NPC_ASSET_URLS.cloth],
-  ['gltf/hat_a.glb', DEFAULT_NPC_ASSET_URLS.hat],
-  ['gltf/hat_b.glb', DEFAULT_NPC_ASSET_URLS.hat],
-  ['gltf/hat_c.glb', DEFAULT_NPC_ASSET_URLS.hat],
-  ['gltf/glass_a.glb', DEFAULT_NPC_ASSET_URLS.glasses],
-  ['gltf/super_glass.glb', DEFAULT_NPC_ASSET_URLS.glasses],
-]);
+/** Part models removed with the ally character; saves that still name them fall back to a default model. */
+const REMOVED_PART_URL = /(^|\/)gltf\/(ally[^/]*|formal|hat_[abc]|glass_a|super_glass)\.glb$/;
+const withoutRemovedParts = (parts: NPCPart[]) => parts.filter((part) => !REMOVED_PART_URL.test(part.url));
 
-function repairNPCPartAssetUrl(part: NPCPart): NPCPart {
-  const repairedUrl = NPC_ASSET_URL_REPLACEMENTS.get(part.url) ?? part.url;
-  return {
-    ...part,
-    url: repairedUrl.startsWith('gltf/') ? `/${repairedUrl}` : repairedUrl,
-  };
-}
-
-function repairDefaultNPCAssetUrls(state: NPCStore): void {
-  const assetUrlByPartId = new Map<string, string>([
-    ['rabbit-cloth', DEFAULT_NPC_ASSET_URLS.rabbitCloth],
-    ['basic-suit-cloth', DEFAULT_NPC_ASSET_URLS.cloth],
-    ['formal-suit-cloth', DEFAULT_NPC_ASSET_URLS.cloth],
-    ['hat-a', DEFAULT_NPC_ASSET_URLS.hat],
-    ['hat-b', DEFAULT_NPC_ASSET_URLS.hat],
-    ['hat-c', DEFAULT_NPC_ASSET_URLS.hat],
-    ['glass-a', DEFAULT_NPC_ASSET_URLS.glasses],
-    ['super-glass', DEFAULT_NPC_ASSET_URLS.glasses],
-    ['ally-body', DEFAULT_NPC_ASSET_URLS.body],
-    ['oneyee-body', DEFAULT_NPC_ASSET_URLS.body],
-  ]);
-
-  state.clothingSets.forEach((set) => {
-    set.parts = set.parts.map((part) => {
-      const repairedPart = repairNPCPartAssetUrl(part);
-      return {
-        ...repairedPart,
-        url: assetUrlByPartId.get(part.id) ?? repairedPart.url,
-      };
-    });
-  });
+function repairRemovedAssets(state: NPCStore): void {
   state.templates.forEach((template) => {
-    template.baseParts = template.baseParts.map((part) => {
-      const repairedPart = repairNPCPartAssetUrl(part);
-      return {
-        ...repairedPart,
-        url: assetUrlByPartId.get(part.id) ?? repairedPart.url,
-      };
-    });
+    const baseParts = withoutRemovedParts(template.baseParts);
+    if (baseParts.length === template.baseParts.length) return;
+    template.baseParts = baseParts;
+    template.fullModelUrl ??= template.id === 'oneyee' ? DEFAULT_NPC_MODELS.red : DEFAULT_NPC_MODELS.green;
+  });
+  state.clothingSets.forEach((set, id) => {
+    set.parts = withoutRemovedParts(set.parts);
+    if (set.parts.length) return;
+    state.clothingSets.delete(id);
+    state.clothingCategories.forEach((category) => { category.clothingSetIds = category.clothingSetIds.filter((setId) => setId !== id); });
   });
   state.instances.forEach((instance) => {
-    if (!instance.customParts) return;
-    instance.customParts = instance.customParts.map(repairNPCPartAssetUrl);
+    if (instance.customParts) instance.customParts = withoutRemovedParts(instance.customParts);
   });
 }
 
@@ -116,10 +79,10 @@ function attachDefaultBrainToInstances(state: NPCStore): void {
   });
 }
 
-/** Seeds the default NPC catalog once; later calls only repair stale asset URLs and attach missing brains. */
+/** Seeds the default NPC catalog once; later calls only drop removed part models and attach missing brains. */
 export function seedNPCDefaults(state: Draft<NPCStore>, legacyBlueprintRegistry: boolean): void {
   if (state.initialized) {
-    repairDefaultNPCAssetUrls(state);
+    repairRemovedAssets(state);
     attachDefaultBrainToInstances(state);
     return;
   }
@@ -136,20 +99,6 @@ export function seedNPCDefaults(state: Draft<NPCStore>, legacyBlueprintRegistry:
     id: 'walk',
     name: '걷기',
     loop: true,
-    speed: 1
-  });
-  
-  state.animations.set('greet', {
-    id: 'greet',
-    name: '인사',
-    loop: false,
-    speed: 1
-  });
-  
-  state.animations.set('jump', {
-    id: 'jump',
-    name: '점프',
-    loop: false,
     speed: 1
   });
   
@@ -199,189 +148,33 @@ export function seedNPCDefaults(state: Draft<NPCStore>, legacyBlueprintRegistry:
     registerNPCBrainBlueprint(greetBlueprint);
   }
   
-  // Default clothing categories
-  state.clothingCategories.set('basic', {
-    id: 'basic',
-    name: '기본 의상',
-    description: '기본 의상 모음',
-    clothingSetIds: ['rabbit-outfit', 'basic-suit', 'formal-suit']
-  });
-  
-  state.clothingCategories.set('accessories', {
-    id: 'accessories',
-    name: '액세서리',
-    description: '모자와 안경',
-    clothingSetIds: ['hat-set-a', 'hat-set-b', 'hat-set-c', 'glass-set-a', 'glass-set-b']
-  });
-  
-  // Default clothing sets - 토끼 옷
-  state.clothingSets.set('rabbit-outfit', {
-    id: 'rabbit-outfit',
-    name: '토끼옷',
-    category: 'casual',
-    parts: [
-      {
-        id: 'rabbit-cloth',
-        type: 'top',
-        url: DEFAULT_NPC_ASSET_URLS.rabbitCloth,
-        position: [0, 0, 0]
-      }
-    ]
-  });
-  
-  // 기본 양복
-  state.clothingSets.set('basic-suit', {
-    id: 'basic-suit',
-    name: '양복',
-    category: 'formal',
-    parts: [
-      {
-        id: 'basic-suit-cloth',
-        type: 'top',
-        url: DEFAULT_NPC_ASSET_URLS.cloth,
-        position: [0, 0, 0]
-      }
-    ]
-  });
-  
-  // 정장
-  state.clothingSets.set('formal-suit', {
-    id: 'formal-suit',
-    name: '양복 2',
-    category: 'formal',
-    parts: [
-      {
-        id: 'formal-suit-cloth',
-        type: 'top',
-        url: DEFAULT_NPC_ASSET_URLS.cloth,
-        position: [0, 0, 0]
-      }
-    ]
-  });
-  
-  // 모자들
-  state.clothingSets.set('hat-set-a', {
-    id: 'hat-set-a',
-    name: '모자 A',
-    category: 'casual',
-    parts: [
-      {
-        id: 'hat-a',
-        type: 'hat',
-        url: DEFAULT_NPC_ASSET_URLS.hat,
-        position: [0, 0, 0]
-      }
-    ]
-  });
-  
-  state.clothingSets.set('hat-set-b', {
-    id: 'hat-set-b',
-    name: '모자 B',
-    category: 'casual',
-    parts: [
-      {
-        id: 'hat-b',
-        type: 'hat',
-        url: DEFAULT_NPC_ASSET_URLS.hat,
-        position: [0, 0, 0]
-      }
-    ]
-  });
-  
-  state.clothingSets.set('hat-set-c', {
-    id: 'hat-set-c',
-    name: '모자 C',
-    category: 'casual',
-    parts: [
-      {
-        id: 'hat-c',
-        type: 'hat',
-        url: DEFAULT_NPC_ASSET_URLS.hat,
-        position: [0, 0, 0]
-      }
-    ]
-  });
-  
-  // 안경들
-  state.clothingSets.set('glass-set-a', {
-    id: 'glass-set-a',
-    name: '안경 A',
-    category: 'casual',
-    parts: [
-      {
-        id: 'glass-a',
-        type: 'glasses',
-        url: DEFAULT_NPC_ASSET_URLS.glasses,
-        position: [0, 0, 0]
-      }
-    ]
-  });
-  
-  state.clothingSets.set('glass-set-b', {
-    id: 'glass-set-b',
-    name: '슈퍼 안경',
-    category: 'casual',
-    parts: [
-      {
-        id: 'super-glass',
-        type: 'glasses',
-        url: DEFAULT_NPC_ASSET_URLS.glasses,
-        position: [0, 0, 0]
-      }
-    ]
-  });
-  
-  // Default categories
   state.categories.set('humanoid', {
     id: 'humanoid',
     name: '캐릭터',
     description: '사람 형태의 캐릭터',
-    templateIds: ['ally', 'oneyee']
+    templateIds: [DEFAULT_NPC_TEMPLATE_ID, 'trainer-red'],
   });
-  
-  // Default templates - Ally (올춘삼)
-  state.templates.set('ally', {
-    id: 'ally',
-    name: '올춘삼',
-    description: '올춘삼 캐릭터',
+  state.templates.set(DEFAULT_NPC_TEMPLATE_ID, {
+    id: DEFAULT_NPC_TEMPLATE_ID,
+    name: '초록 트레이너',
     category: 'humanoid',
-    baseParts: [
-      {
-        id: 'ally-body',
-        type: 'body',
-        url: DEFAULT_NPC_ASSET_URLS.body,
-        position: [0, 0, 0]
-      }
-    ],
+    fullModelUrl: DEFAULT_NPC_MODELS.green,
+    baseParts: [],
     clothingParts: [],
     defaultAnimation: 'idle',
-    defaultClothingSet: 'rabbit-outfit'
   });
-  
-  // Oneyee (원덕배)
-  state.templates.set('oneyee', {
-    id: 'oneyee',
-    name: '원덕배',
-    description: '원덕배 캐릭터',
+  state.templates.set('trainer-red', {
+    id: 'trainer-red',
+    name: '빨간 트레이너',
     category: 'humanoid',
-    baseParts: [
-      {
-        id: 'oneyee-body',
-        type: 'body',
-        // Fallback to an existing body asset until oneyee model is added.
-        url: DEFAULT_NPC_ASSET_URLS.body,
-        position: [0, 0, 0]
-      }
-    ],
+    fullModelUrl: DEFAULT_NPC_MODELS.red,
+    baseParts: [],
     clothingParts: [],
     defaultAnimation: 'idle',
-    defaultClothingSet: 'basic-suit'
   });
-  
+
   state.selectedCategoryId = 'humanoid';
-  state.selectedTemplateId = 'ally';
-  state.selectedClothingCategoryId = 'basic';
-  state.selectedClothingSetId = 'rabbit-outfit';
+  state.selectedTemplateId = DEFAULT_NPC_TEMPLATE_ID;
   attachDefaultBrainToInstances(state);
   state.initialized = true;
 }

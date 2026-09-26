@@ -118,7 +118,7 @@ test('gamepad controls follow the blueprint setting and restore the previous con
 test('switching from a character to a vehicle removes the previous character preview', () => {
   const view = render(<BlueprintPreview blueprint={WARRIOR_BLUEPRINT} />);
   expect(screen.getByTestId('preview-canvas')).toBeInTheDocument();
-  expect(mockSetUrls).toHaveBeenCalledWith({ characterUrl: 'gltf/ally_body.glb' });
+  expect(mockSetUrls).toHaveBeenCalledWith({ characterUrl: 'gltf/trainer_green.glb' });
   view.rerender(<BlueprintPreview blueprint={BASIC_KART_BLUEPRINT} />);
   expect(screen.queryByTestId('preview-canvas')).not.toBeInTheDocument();
   expect(screen.getByRole('status')).toHaveTextContent('기본 카트');

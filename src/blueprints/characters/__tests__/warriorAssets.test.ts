@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 
 import { WARRIOR_BLUEPRINT } from '../warrior';
 
+// The trainer body ships locomotion only; missing jump clips leave the current clip playing.
 test('default locomotion clips exist in the shipped warrior body GLB', () => {
   const body = WARRIOR_BLUEPRINT.visuals?.parts?.find(part => part.type === 'body');
   expect(body).toBeDefined();
@@ -13,8 +14,8 @@ test('default locomotion clips exist in the shipped warrior body GLB', () => {
     animations: { name: string }[];
   };
   const names = new Set(document.animations.map(animation => animation.name));
-  const { idle, walk, run, jump } = WARRIOR_BLUEPRINT.animations;
-  for (const configured of [idle, walk, run, jump.start, jump.loop, jump.land]) {
+  const { idle, walk, run } = WARRIOR_BLUEPRINT.animations;
+  for (const configured of [idle, walk, run]) {
     const candidates = Array.isArray(configured) ? configured : [configured];
     expect(candidates.some(name => names.has(name))).toBe(true);
   }

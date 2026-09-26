@@ -1,6 +1,6 @@
 # gaesup-world PRD
 
-작성일: 2026-09-26 · 기준: `main` c7fa930d과 작업 트리
+작성일: 2026-09-26 · 기준: `main` 6f75baa5
 
 ## 1. 방향
 
@@ -15,7 +15,7 @@
 | 규칙 | 내용 |
 |---|---|
 | 완료 판정 | slice마다 결정적 완료 기준(테스트, 카운터, 수용 시나리오)을 둔다. 기준이 없으면 착수하지 않는다 |
-| 수용 시나리오 | 정의·예산·상태는 `test/accept/budgets.json` 하나에 둔다. 이 문서에 복제하지 않는다. 브라우저 시나리오는 예제 정리(E-1)로 없어지고, headless 시나리오만 남는다 |
+| 수용 시나리오 | 정의·예산·상태는 `test/accept/budgets.json` 하나에 둔다. 이 문서에 복제하지 않는다. 시나리오는 headless(jest `accept` 프로젝트)만 있다 |
 | 확인 후 변경 | 공개 API 삭제와 peer 의존성 변경은 먼저 묻는다. 파일 삭제, 틀린 동작을 고정한 테스트의 기대값 수정, 일반 의존성 제거는 보고에 적고 진행한다 |
 | 위치 표기 | 경로는 `src/core/` 기준이다. 줄 번호 대신 파일과 심볼 이름을 쓴다 |
 
@@ -30,8 +30,6 @@
 
 | ID | 내용 | 근거 | 완료 기준 |
 |---|---|---|---|
-| E-1 | 예제를 minihome 하나로 줄임 | 제품 본체가 minihome이다. `examples/world`, `examples/engine`, `examples/performance`와 이들에만 쓰이는 것들(`/accept` 브라우저 러너 `scripts/accept.mjs`, frame harness, `perf.yml`, `budgets.json`의 S-B 시나리오, 관련 package 스크립트)을 지운다. 참조가 끊긴 `scripts/archive`도 지운다 | 지운 경로를 가리키는 참조가 없다. typecheck, lint, check:*, jest, demo 빌드가 통과한다 |
-| N-1 | ally 캐릭터를 지우고 NPC 기본 모델을 압축한 trainer GLB로 교체 | 작업 트리에서 `public/gltf/ally*.glb` 9개를 지웠다. 그런데 `npc/stores/npcDefaults.ts`, `assets/data/seedAssets.ts`, `src/blueprints/characters/warrior.ts`와 ally 뼈대로 만든 옷 파츠(`public/gltf/parts`, `scripts/build-character-parts.cjs`, `scripts/generate-local-character-glbs.cjs`)가 아직 이 파일들을 쓴다. 새 trainer GLB는 각각 22MB·24MB이고 대부분이 PNG 텍스처다(metallicRoughness 4096²). 두 파일 모두 package `files`로 배포된다 | 지운 파일을 가리키는 참조가 없고 jest 전체가 통과한다. 새 GLB는 텍스처 2048² 이하 WebP에 meshopt를 쓰고, 애니메이션 이름은 `idle`·`walk`·`run`이다(KTX2 인코더가 없어 WebP로 한다) |
 | N-2 | 배회하는 NPC들이 같은 방향으로 함께 움직임 | `createWanderTarget`의 seed는 `timestamp`와 `instanceId.length`만 쓰는데, id가 UUID라 길이가 모두 같다. 게다가 모든 NPC가 `nextDecision: 0`으로 시작하고 간격도 같아 같은 tick에 결정한다. 목표를 현재 위치 기준으로 잡아 기준점 없이 멀어진다. 같은 계산이 `npc/core/brain.ts`, `npc/core/blueprint.ts`, `npc/core/reinforcement.ts` 세 곳에 있다 | 세 곳을 한 함수로 합친다. 목표는 기준점(`behavior.home`, 없으면 처음 위치) 주변으로 잡는다. 테스트: 길이가 같은 id 10개가 같은 tick에 서로 다른 목표를 받는다. NPC 30명의 결정이 한 fixed tick에 4명을 넘지 않는다. 결정 1,000회 뒤에도 기준점에서 `wanderRadius` 안에 있다 |
 | N-4 | 아무것도 안 하는 NPC가 결정 tick마다 store와 세이브를 바꿈 | 결정할 행동이 없어도 `NPCSimulation.update`가 모든 NPC를 `applyNPCDecisions`로 넘긴다. 이 함수가 `lastObservation`을 쓰면서 immer가 `instances` Map을 통째로 복사하고, 그 결과 `npc/plugin.ts`의 save revision이 바뀌어 autosave가 카탈로그까지 직렬화한다. `snapshotInstances`도 결정 tick마다 전체를 복사한다 | 관측·결정 기록은 `NPCSimulation` 안에 두고 store와 세이브에서 뺀다. 테스트: idle NPC 30명을 60초 돌리는 동안 npcStore 알림 0, save revision 불변 |
 | N-5 | 경로를 찾을 때마다 격자 전체를 새로 만듦 | `navigation/NavigationSystem.ts`의 `findPath`는 호출마다 `createTraversalGrid`로 격자 전체를 다시 만들고, 칸마다 좌표 배열을 할당한다. 쿼리당 반지름 없이 0.14ms, 반지름 0.24면 1.51ms다 | 격자를 footprint별로 캐시하고 격자가 바뀌면 무효화한다. 막힌 칸이 없으면 건너뛴다. 테스트: 같은 footprint로 100회 쿼리해도 격자 생성은 1회이고, 칸을 바꾸면 1회 더 생성한다 |
@@ -47,7 +45,7 @@
 
 ## 4. 성능 (보류)
 
-측정은 `/world` 예제로 했는데, E-1로 그 예제가 없어진다. minihome에서 측정 경로를 다시 정하기 전까지 착수하지 않는다.
+측정은 `/world` 예제로 했는데, 그 예제는 지웠다. minihome에서 측정 경로를 다시 정하기 전까지 착수하지 않는다.
 
 | ID | 내용 | 근거 |
 |---|---|---|

@@ -78,7 +78,7 @@ describe('assetStore', () => {
 
     await useAssetStore.getState().loadAssets(source);
 
-    expect(useAssetStore.getState().listAssets({ slot: 'top' }).length).toBeGreaterThan(0);
+    expect(useAssetStore.getState().listAssets({ slot: 'accessory' }).length).toBeGreaterThan(0);
     expect(useAssetStore.getState().error).toBe('offline');
     expect(useAssetStore.getState().catalogStatus.state).toBe('fallback');
     expect(useAssetStore.getState().catalogStatus.fallbackReason).toBe('offline');
@@ -133,17 +133,8 @@ describe('assetStore', () => {
     }
   });
 
-  it('registers local generated cloth GLB color variants', () => {
-    const variants = ['warrior-cloth-blue', 'warrior-cloth-green', 'warrior-cloth-red'];
-
-    for (const id of variants) {
-      const asset = SEED_ASSETS.find((item) => item.id === id);
-      expect(asset).toEqual(expect.objectContaining({
-        kind: 'characterPart',
-        slot: 'top',
-      }));
-      expect(asset?.url).toMatch(/^gltf\/ally_cloth_(blue|green|red)\.glb$/);
-      expect(fs.existsSync(path.join(ROOT, 'public', asset?.url ?? 'missing'))).toBe(true);
-    }
+  it('seeds only asset URLs that ship in public/', () => {
+    const missing = SEED_ASSETS.filter((asset) => asset.url && !fs.existsSync(path.join(ROOT, 'public', asset.url)));
+    expect(missing.map((asset) => asset.url)).toEqual([]);
   });
 });
