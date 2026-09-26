@@ -25,7 +25,6 @@
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| SE-9a | `building/stores/buildingStore`(1,627줄): 편집 UI 상태와 데모 데이터 분리, 기존 selector는 facade | 파일 500줄 이하, export snapshot 불변 |
 | SE-9b | `npc/stores/npcStore`(1,031줄): 카탈로그·인스턴스·두뇌 side table 분리 | 파일 500줄 이하, export snapshot 불변 |
 | SE-9c | NPC 두뇌 패널(2,142줄), `BuildingUI`(1,555줄) 분할 | 파일 500줄 이하 |
 
