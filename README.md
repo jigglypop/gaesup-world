@@ -15,7 +15,7 @@ corepack pnpm install
 corepack pnpm dev --host 127.0.0.1 --port 5174
 ```
 
-Open http://127.0.0.1:5174/. The separate rendering showcase is at `/engine`. No model URL, AI key or Unity installation is needed. The UI is currently Korean; the English guide maps its buttons to their actions.
+Open http://127.0.0.1:5174/. No model URL, AI key or Unity installation is needed. The UI is currently Korean; the English guide maps its buttons to their actions.
 
 1. Choose **미니룸 꾸미기** (Edit room), add furniture and drag it.
 2. Edit your profile and theme. Undo/redo covers room and notes together.

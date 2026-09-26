@@ -133,25 +133,18 @@ async function main() {
     await page.locator('.miniroom-view:not([data-renderer="loading"])').waitFor({ timeout: 30_000 });
     await expectWorldCanvasPaint(page);
 
-    await page.goto(`${baseUrl}/world`, { waitUntil: 'domcontentloaded' });
-    await expectWorldCanvasPaint(page);
-
     if (pageErrors.length > 0) {
       throw new Error(`Browser smoke captured page errors:\n${pageErrors.join('\n')}`);
     }
 
-    console.log('Browser smoke passed for / and /world.');
+    console.log('Browser smoke passed for /.');
   } finally {
     if (browser) await browser.close();
     stop();
   }
 }
 
-// probe-webgpu-world reuses the canvas paint check.
-module.exports = { expectWorldCanvasPaint };
-if (require.main === module) {
-  main().catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  });
-}
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

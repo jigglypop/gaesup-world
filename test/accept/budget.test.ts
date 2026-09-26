@@ -1,4 +1,4 @@
-import { checkBudget, formatLimit, verdict, violations } from './budget';
+import { checkBudget, verdict, violations } from './budget';
 
 test('a range bounds both ends and a single number only the top', () => {
   const budget = { exact: { min: 1, max: 1 }, floor: { min: 0.5 }, cap: 2 };
@@ -26,9 +26,4 @@ test('status decides what a clean or over-budget measurement means', () => {
   expect(verdict('known-red', ['x'])).toBe('known-red');
   expect(verdict('known-red', [])).toBe('fixed');
   expect(verdict('pending', ['x'])).toBe('pending');
-});
-
-test('limits print the way the board shows them', () => {
-  expect([null, true, 16, { min: 1, max: 1 }, { min: 1, max: 3 }, { min: 0.5 }, { max: 4 }].map(formatLimit))
-    .toEqual(['기록', 'true', '≤ 16', '= 1', '1~3', '≥ 0.5', '≤ 4']);
 });

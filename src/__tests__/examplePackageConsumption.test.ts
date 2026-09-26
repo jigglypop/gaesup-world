@@ -41,8 +41,6 @@ const SRC_ROOT = path.join(ROOT, 'src');
 const PACKAGE_JSON = path.join(ROOT, 'package.json');
 const TSCONFIG_JSON = path.join(ROOT, 'tsconfig.json');
 const EXAMPLES_APP = path.join(EXAMPLES_ROOT, 'App.tsx');
-const PACKAGE_SURFACE = path.join(EXAMPLES_ROOT, 'engine/packageSurface.ts');
-const SURFACE_DIR = path.join(EXAMPLES_ROOT, 'engine/surface');
 const PACKAGE_NAME = 'gaesup-world';
 
 function readPackageJson(): PackageJson {
@@ -331,21 +329,6 @@ function getPackageImportFailures(packageImports: PackageImport[], pkg: PackageJ
   return failures;
 }
 
-function getUnusedPackageExportFailures(
-  packageImports: PackageImport[],
-  pkg: PackageJson,
-): string[] {
-  const importedSubpaths = new Set(
-    packageImports
-      .map((item) => getPackageSubpath(item.moduleName))
-      .filter((subpath): subpath is string => Boolean(subpath)),
-  );
-
-  return Object.keys(pkg.exports)
-    .filter((subpath) => !importedSubpaths.has(subpath))
-    .map((subpath) => `package export ${subpath} is not consumed by examples`);
-}
-
 function getNamedImportFailures(program: ts.Program, packageImports: PackageImport[]): string[] {
   const exportCache = new Map<string, Set<string>>();
   const failures: string[] = [];
@@ -400,21 +383,6 @@ describe('examples package consumption contract', () => {
     const packageImports = getPublicModuleImports(collectExampleSourceFiles());
 
     expect(getPackageImportFailures(packageImports, pkg)).toEqual([]);
-  });
-
-  test('examples consume every package export subpath', () => {
-    const pkg = readPackageJson();
-    const packageImports = getPublicModuleImports(collectExampleSourceFiles());
-
-    expect(getUnusedPackageExportFailures(packageImports, pkg)).toEqual([]);
-  });
-
-  test('package surface smoke explicitly consumes every package export subpath', () => {
-    const pkg = readPackageJson();
-    const surfaces = fs.readdirSync(SURFACE_DIR).map((file) => path.join(SURFACE_DIR, file));
-    const packageImports = getPublicModuleImports([PACKAGE_SURFACE, ...surfaces]);
-
-    expect(getUnusedPackageExportFailures(packageImports, pkg)).toEqual([]);
   });
 
   test('examples only import names exported by public package entry points', () => {

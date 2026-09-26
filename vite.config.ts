@@ -10,7 +10,6 @@ import svgr from 'vite-plugin-svgr';
 
 import { PACKAGE_ENTRIES } from './scripts/lib/packageEntries.cjs';
 import { minihomeRoomPlugin } from './scripts/minihome-room-service.mjs';
-import { performanceIdentityPlugin } from './scripts/performance/vite-plugin.mjs';
 
 const libraryExternals = [
   'react',
@@ -126,7 +125,6 @@ export default defineConfig(({ mode }) => {
       svgr(),
       glsl(),
       serveDemoGltfAssets(),
-      performanceIdentityPlugin(),
       minihomeRoomPlugin(),
     ],
     resolve: {
@@ -137,7 +135,7 @@ export default defineConfig(({ mode }) => {
       dedupe: ['react', 'react-dom', 'three'],
     },
     optimizeDeps: {
-      entries: ['index.html', 'examples/engine/packageSurface.ts'],
+      entries: ['index.html'],
     },
     server: {
       host: '127.0.0.1',

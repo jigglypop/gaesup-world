@@ -9,7 +9,7 @@ export type Budget = Record<string, BudgetLimit>;
 export type ScenarioStatus = 'green' | 'known-red' | 'pending';
 export type ScenarioEntry = {
   title: string;
-  runner: 'headless' | 'browser';
+  runner: 'headless';
   item: string;
   status: ScenarioStatus;
   budget: Budget;
@@ -17,20 +17,10 @@ export type ScenarioEntry = {
 /** pass/fail judge a green scenario; a known-red one reads known-red until it fits its budget, then fixed. */
 export type Verdict = 'pass' | 'fail' | 'known-red' | 'fixed' | 'pending';
 
-/** Acceptance scenarios, their status and budgets; shared by the jest runner, `pnpm accept` and the /accept page. */
+/** Acceptance scenarios, their status and budgets, judged by the jest `accept` project. */
 export const scenarios = budgets.scenarios as Readonly<Record<string, ScenarioEntry>>;
 
 export type BudgetCheck = { name: string; limit: BudgetLimit; value: number | boolean | undefined; pass: boolean };
-
-/** How the board and reports print a budget line. */
-export function formatLimit(limit: BudgetLimit): string {
-  if (limit === null) return '기록';
-  if (typeof limit === 'boolean') return String(limit);
-  if (typeof limit === 'number') return `≤ ${limit}`;
-  const { min, max } = limit;
-  if (min !== undefined && max !== undefined) return min === max ? `= ${min}` : `${min}~${max}`;
-  return min !== undefined ? `≥ ${min}` : `≤ ${max}`;
-}
 
 function within(value: number | boolean, limit: Exclude<BudgetLimit, null>): boolean {
   if (typeof limit === 'boolean') return value === limit;
@@ -46,6 +36,15 @@ export function checkBudget(metrics: Readonly<Metrics>, budget: Readonly<Budget>
     const value = typeof raw === 'number' && !Number.isFinite(raw) ? undefined : raw;
     return { name, limit, value, pass: limit === null || (value !== undefined && within(value, limit)) };
   });
+}
+
+function formatLimit(limit: BudgetLimit): string {
+  if (limit === null) return '기록';
+  if (typeof limit === 'boolean') return String(limit);
+  if (typeof limit === 'number') return `≤ ${limit}`;
+  const { min, max } = limit;
+  if (min !== undefined && max !== undefined) return min === max ? `= ${min}` : `${min}~${max}`;
+  return min !== undefined ? `≥ ${min}` : `≤ ${max}`;
 }
 
 export function violations(metrics: Readonly<Metrics>, budget: Readonly<Budget>): string[] {

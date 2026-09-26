@@ -62,63 +62,41 @@ try {
     return total + (file.endsWith('.js') ? fs.statSync(path.join(outputRoot, file)).size : 0);
   }, 0);
   console.log(`Initial static imports: ${initialChunks.size} chunks, ${initialJsBytes} JS bytes.`);
-  for (const route of [
-    'examples/minihome/Minihome.tsx',
-    'examples/minihome/Miniroom.tsx',
-    'examples/engine/EngineShowcase.tsx',
-    'examples/engine/EngineCanvas.tsx',
-    'examples/engine/PackageInspector.tsx',
-    'examples/engine/packageSurface.ts',
-  ]) {
-    if (!manifest[route]?.isDynamicEntry || initialChunks.has(route)) {
-      throw new Error(`Expected an independently lazy route: ${route}`);
-    }
+  function sourcesOf(key) {
+    const map = path.join(outputRoot, `${manifest[key].file}.map`);
+    return fs.existsSync(map) ? JSON.parse(fs.readFileSync(map, 'utf8')).sources : [];
   }
+  function sourcesFor(chunks) {
+    return [...chunks].flatMap(sourcesOf);
+  }
+  // A single lazy route may be emitted as a shared chunk instead of a dynamic-entry facade, so chunks are found by the
+  // source files their maps contain.
+  const routeChunks = ['examples/minihome/Minihome.tsx', 'examples/minihome/Miniroom.tsx'].map((route) => {
+    const key = Object.keys(manifest).find((candidate) => sourcesOf(candidate).some((source) => source.endsWith(route)));
+    if (!key || initialChunks.has(key)) throw new Error(`Expected an independently lazy route: ${route}`);
+    return key;
+  });
   const cssAssets = assets.filter((file) => file.endsWith('.css'));
 
   if (cssAssets.length === 0) {
-    throw new Error('Expected showcase styles in the demo build.');
+    throw new Error('Expected minihome styles in the demo build.');
   }
 
   const builtStyles = cssAssets
     .map((file) => fs.readFileSync(path.join(assetsDir, file), 'utf8'))
     .join('\n');
-  for (const selector of [
-    '.world-stage',
-    '.miniroom-view',
-    '.world-status',
-    '.viewport',
-    '.scene-card',
-    '.lab',
-    '.metrics',
-  ]) {
+  for (const selector of ['.world-stage', '.miniroom-view', '.world-status']) {
     if (!builtStyles.includes(selector)) {
-      throw new Error(`Missing showcase styles in demo build: ${selector}`);
+      throw new Error(`Missing minihome styles in demo build: ${selector}`);
     }
   }
 
-  function sourcesFor(chunks) {
-    return [...chunks].flatMap((key) => {
-      const map = path.join(outputRoot, `${manifest[key].file}.map`);
-      return fs.existsSync(map) ? JSON.parse(fs.readFileSync(map, 'utf8')).sources : [];
-    });
-  }
   if (sourcesFor(initialChunks).some((source) => /\/three\/|\/src\/next\//.test(source))) {
     throw new Error('Engine code leaked into the initial UI import graph.');
   }
-  const engineChunks = new Set();
-  visitStaticChunk('examples/engine/EngineCanvas.tsx', engineChunks);
-  if (
-    sourcesFor(engineChunks).some((source) =>
-      /\/src\/core\/(editor|building)\/|@react-three\/rapier/.test(source),
-    )
-  ) {
-    throw new Error('Opening the forest eagerly loads editor/building/physics modules.');
-  }
-  // The home route (S-B01) must not pay for modules only the world and editor use.
+  // The home route must not pay for modules only the R3F world and editor use.
   const homeChunks = new Set();
-  visitStaticChunk('examples/minihome/Minihome.tsx', homeChunks);
-  visitStaticChunk('examples/minihome/Miniroom.tsx', homeChunks);
+  for (const key of routeChunks) visitStaticChunk(key, homeChunks);
   const homeHeavy = sourcesFor(homeChunks).filter((source) =>
     /\/src\/core\/editor\/|\/src\/core\/rendering\/postprocess\/|\/postprocessing\/|@dimforge\/rapier3d/.test(source),
   );
@@ -126,7 +104,7 @@ try {
     throw new Error(`The home route eagerly loads editor/postprocessing/physics modules: ${homeHeavy.slice(0, 5).join(', ')}`);
   }
 
-  console.log('Showcase lazy engine and responsive styles verification passed.');
+  console.log('Minihome lazy route and styles verification passed.');
 } finally {
   cleanupOutput();
 }
