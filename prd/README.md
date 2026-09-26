@@ -23,7 +23,6 @@
 
 | ID | 결함 | 위치 |
 |---|---|---|
-| D-3 | 첫 물리 틱이 `position` prop을 무시하고 stateManager 위치 +5m로 순간이동 | `motions/hooks/usePhysicsBridge` |
 | D-4 | 도구 방향·부착물이 잠긴 body 회전을 읽어 항상 +Z | `MotionBridge` snapshot, `usePlayerPosition` |
 | D-5 | authority 라우터가 `verifyActor` 없이 임의 actor 명령을 실행, 검증 함수에 세션 인자가 없음 | `networks/adapter/authority` |
 | D-6 | visit 채널이 발신자가 적은 hostId를 믿어 VisitLeave·VisitSnapshot 사칭 가능 | `networks/visit` |

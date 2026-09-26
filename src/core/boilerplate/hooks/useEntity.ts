@@ -39,6 +39,7 @@ export interface UseEntityOptions
   animatorController?: AnimatorControllerDefinition;
   physicsWorld?: UsePhysicsBridgeOptions['physicsWorld'];
   groundContactFilter?: UsePhysicsBridgeOptions['groundContactFilter'];
+  spawnAtBody?: boolean;
 }
 
 export function useEntity(options: UseEntityOptions) {
@@ -80,6 +81,7 @@ export function useEntity(options: UseEntityOptions) {
     enabled: active,
     ...(options.physicsWorld ? { physicsWorld: options.physicsWorld } : {}),
     ...(options.groundContactFilter ? { groundContactFilter: options.groundContactFilter } : {}),
+    ...(options.spawnAtBody ? { spawnAtBody: true } : {}),
     ...(outerGroupRef ? { outerGroupRef } : {}),
     ...(innerGroupRef ? { innerGroupRef } : {}),
     ...(colliderRef ? { colliderRef } : {}),

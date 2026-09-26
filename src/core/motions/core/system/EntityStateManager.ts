@@ -7,6 +7,7 @@ import { ActiveStateType } from '../types';
 
 export class EntityStateManager {
   private refs: EntityStateRefs;
+  private bodyPlaced = false;
 
   constructor() {
     this.refs = {
@@ -48,6 +49,13 @@ export class EntityStateManager {
   getState(): EntityStateRefs {
     return this.refs;
   }
+
+  /** Records that an active body stands in this world; true when one did before, so the new body takes over from it. */
+  claimActiveBody(): boolean {
+    const placedBefore = this.bodyPlaced;
+    this.bodyPlaced = true;
+    return placedBefore;
+  }
   
   updateActiveState(updates: Partial<ActiveStateType>): void {
     const target = this.refs.activeState;
@@ -72,6 +80,7 @@ export class EntityStateManager {
   }
   
   resetActiveState(): void {
+    this.bodyPlaced = false;
     this.refs.activeState.position.set(0, 0, 0);
     this.refs.activeState.quaternion.identity();
     this.refs.activeState.euler.set(0, 0, 0);

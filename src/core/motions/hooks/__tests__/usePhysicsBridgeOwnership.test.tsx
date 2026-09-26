@@ -498,3 +498,40 @@ describe('usePhysicsBridge entity ownership', () => {
     }
   });
 });
+
+describe('usePhysicsBridge first tick', () => {
+  /** Mounts one active body standing at (12, 3, -7), runs its first tick and returns its setTranslation spy. */
+  function placeBody(id: string, spawnAtBody: boolean) {
+    const runtime = createRuntime();
+    jest.spyOn(runtime.physicsBridge, 'updateEntity').mockImplementation(() => undefined);
+    jest.spyOn(runtime.physicsBridge, 'resolveEntity').mockImplementation(() => undefined);
+    const rigidBodyRef = createRigidBodyRef();
+    Object.assign(rigidBodyRef.current, { translation: () => ({ x: 12, y: 3, z: -7 }) });
+    const view = renderHook(() => usePhysicsBridge(createOptions(runtime, {
+      entityId: id, rigidBodyRef, ...(spawnAtBody ? { spawnAtBody } : {}),
+    })));
+    act(() => frameScheduler.tickBeforePhysics(0.016, performance.now()));
+    view.unmount();
+    return jest.mocked(rigidBodyRef.current.setTranslation);
+  }
+  const activePosition = () => getGlobalStateManager().getActiveState().position.toArray();
+
+  beforeEach(() => {
+    getGlobalStateManager().reset();
+    getGlobalStateManager().getActiveState().position.set(1, 0, 2);
+  });
+
+  test("the world's first body stays where its position prop placed it and becomes the active position", () => {
+    expect(placeBody('spawned', true)).not.toHaveBeenCalled();
+    expect(activePosition()).toEqual([12, 3, -7]);
+  });
+
+  test('a later body takes over above the active position even with a position prop', () => {
+    placeBody('spawned', true);
+    expect(placeBody('vehicle', true)).toHaveBeenCalledWith({ x: 12, y: 8, z: -7 }, true);
+  });
+
+  test('a body without a position prop starts above the last active position', () => {
+    expect(placeBody('legacy', false)).toHaveBeenCalledWith({ x: 1, y: 5, z: 2 }, true);
+  });
+});

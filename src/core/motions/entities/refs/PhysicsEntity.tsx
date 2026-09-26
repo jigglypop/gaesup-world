@@ -98,6 +98,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
 
     const { handleIntersectionEnter, handleIntersectionExit, handleCollisionEnter } = useEntity({
       physicsWorld,
+      ...(props.position !== undefined ? { spawnAtBody: true } : {}),
       ...(props.groundContactFilter ? { groundContactFilter: props.groundContactFilter } : {}),
       rigidBodyRef,
       ...(props.name ? { id: props.name } : {}),

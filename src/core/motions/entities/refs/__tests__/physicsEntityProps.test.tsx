@@ -8,6 +8,7 @@ import { PhysicsEntity } from '../PhysicsEntity';
 
 const mockBodies: Record<string, unknown>[] = [];
 const mockColliders: Record<string, unknown>[] = [];
+const mockEntityOptions: Record<string, unknown>[] = [];
 
 jest.mock('@core/animation/hooks/useSharedAnimations', () => ({
   useSharedAnimations: () => ({ actions: {}, ref: { current: null } }),
@@ -27,7 +28,10 @@ jest.mock('@react-three/rapier', () => {
   };
 });
 jest.mock('@core/boilerplate/hooks/useEntity', () => ({
-  useEntity: () => ({ handleCollisionEnter: jest.fn(), handleIntersectionEnter: jest.fn(), handleIntersectionExit: jest.fn() }),
+  useEntity: (options: Record<string, unknown>) => {
+    mockEntityOptions.push(options);
+    return { handleCollisionEnter: jest.fn(), handleIntersectionEnter: jest.fn(), handleIntersectionExit: jest.fn() };
+  },
 }));
 jest.mock('../../../hooks', () => {
   const three = jest.requireActual<typeof import('three')>('three');
@@ -63,4 +67,11 @@ test('scale draws the model scaled and the derived capsule follows; an explicit 
   const [halfHeight, radius] = mount({ scale: [0.5, 0.5, 0.5], colliderSize: { height: 2, radius: 0.4 } }).capsule;
   expect(halfHeight).toBeCloseTo(0.6);
   expect(radius).toBe(0.4);
+});
+
+test('a position prop tells the physics bridge the body already stands where it spawns', () => {
+  mount({ position: [4, 1, 4] });
+  expect(mockEntityOptions.at(-1)).toMatchObject({ spawnAtBody: true });
+  mount({});
+  expect(mockEntityOptions.at(-1)).not.toHaveProperty('spawnAtBody');
 });

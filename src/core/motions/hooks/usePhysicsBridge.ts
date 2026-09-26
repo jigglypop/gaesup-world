@@ -38,6 +38,8 @@ export interface UsePhysicsBridgeOptions extends PhysicsCalculationProps {
   physicsWorld?: PhysicsCalcProps['physicsWorld'];
   entityId?: string;
   enabled?: boolean;
+  /** A position prop placed the body: the world's first active body starts there instead of at the active position. */
+  spawnAtBody?: boolean;
   motionsRuntime?: MotionsRuntime;
   allowLegacyFallback?: boolean;
 }
@@ -216,16 +218,24 @@ export function usePhysicsBridge(props: UsePhysicsBridgeOptions) {
 
       if (physicsState.activeState) {
         const { activeState } = physicsState;
-        props.rigidBodyRef.current.lockRotations(false, true);
+        const body = props.rigidBodyRef.current;
+        body.lockRotations(false, true);
         activeState.euler.set(0, 0, 0);
-        props.rigidBodyRef.current.setTranslation(
-          {
-            x: activeState.position.x,
-            y: activeState.position.y + 5,
-            z: activeState.position.z,
-          },
-          true
-        );
+        const takesOver = stateManagerRef.current.claimActiveBody();
+        if (props.spawnAtBody && !takesOver) {
+          const spawn = body.translation();
+          activeState.position.set(spawn.x, spawn.y, spawn.z);
+        } else {
+          // A body that takes over (a vehicle switch, leaving edit mode) starts above the last active position.
+          body.setTranslation(
+            {
+              x: activeState.position.x,
+              y: activeState.position.y + 5,
+              z: activeState.position.z,
+            },
+            true
+          );
+        }
       }
     } else {
       // 입력 상태 업데이트
