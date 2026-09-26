@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { PACKAGE_ENTRIES } from '../../scripts/lib/packageEntries.cjs';
+
 type PackageJson = {
   engines?: { node?: string };
   exports: Record<
@@ -82,27 +84,6 @@ function getExportTargets(pkg: PackageJson): string[] {
   }
 
   return targets;
-}
-
-function getJsExportEntries(pkg: PackageJson): Array<{
-  subpath: string;
-  specifier: string;
-  entryName: string;
-}> {
-  return Object.entries(pkg.exports)
-    .filter(([, entry]) => typeof entry !== 'string')
-    .map(([subpath, entry]) => {
-      const importDefault = (entry as Exclude<PackageJson['exports'][string], string>).import
-        ?.default;
-      if (!importDefault) {
-        throw new Error(`Missing import.default for ${subpath}`);
-      }
-      return {
-        subpath,
-        specifier: subpath === '.' ? 'gaesup-world' : `gaesup-world${subpath.slice(1)}`,
-        entryName: path.basename(importDefault, '.js'),
-      };
-    });
 }
 
 describe('package export map', () => {
@@ -268,14 +249,15 @@ describe('package export map', () => {
     }
   });
 
-  test('JS package exports have matching TypeScript path aliases', () => {
-    const pkg = readPackageJson();
+  test('tsconfig paths map every JS package export to the source the build compiles', () => {
     const paths = readTsconfigPaths();
-    const missing = getJsExportEntries(pkg)
-      .map((entry) => entry.specifier)
-      .filter((specifier) => !Object.prototype.hasOwnProperty.call(paths, specifier));
+    const aliases = Object.keys(paths).filter((alias) => /^gaesup-world(?:\/|$)/.test(alias) && !alias.endsWith('.css'));
 
-    expect(missing).toEqual([]);
+    expect(aliases.sort()).toEqual(PACKAGE_ENTRIES.map((entry) => entry.specifier).sort());
+    for (const { specifier, source } of PACKAGE_ENTRIES) {
+      expect(paths[specifier]).toEqual([`./${source}`]);
+      expect(fs.existsSync(path.join(ROOT, source))).toBe(true);
+    }
   });
 
   test('Vite and Jest take aliases from tsconfig paths instead of their own lists', () => {
@@ -288,17 +270,7 @@ describe('package export map', () => {
     expect(jestConfig).not.toMatch(/'\^@\w*\//);
   });
 
-  test('JS package exports have matching Vite library build entries', () => {
-    const pkg = readPackageJson();
-    const viteConfig = fs.readFileSync(VITE_CONFIG, 'utf8');
-    const missing = getJsExportEntries(pkg)
-      .map((entry) => entry.entryName)
-      .filter(
-        (entryName) =>
-          !viteConfig.includes(`${entryName}: path.resolve(`) &&
-          !viteConfig.includes(`'${entryName}': path.resolve(`),
-      );
-
-    expect(missing).toEqual([]);
+  test('the Vite library build takes its entries from the package export list', () => {
+    expect(fs.readFileSync(VITE_CONFIG, 'utf8')).toContain('entry: Object.fromEntries(PACKAGE_ENTRIES.map(');
   });
 });

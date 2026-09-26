@@ -8,6 +8,7 @@ import { defineConfig } from 'vite';
 import glsl from 'vite-plugin-glsl';
 import svgr from 'vite-plugin-svgr';
 
+import { PACKAGE_ENTRIES } from './scripts/lib/packageEntries.cjs';
 import { minihomeRoomPlugin } from './scripts/minihome-room-service.mjs';
 import { performanceIdentityPlugin } from './scripts/performance/vite-plugin.mjs';
 
@@ -91,24 +92,7 @@ export default defineConfig(({ mode }) => {
       },
       build: {
         lib: {
-          entry: {
-            avatar: path.resolve(import.meta.dirname, 'src/avatar.ts'),
-            index: path.resolve(import.meta.dirname, 'src/index.ts'),
-            admin: path.resolve(import.meta.dirname, 'src/admin-entry.ts'),
-            assets: path.resolve(import.meta.dirname, 'src/assets.ts'),
-            blueprints: path.resolve(import.meta.dirname, 'src/blueprints/index.ts'),
-            'blueprints-editor': path.resolve(import.meta.dirname, 'src/blueprints/editor.ts'),
-            building: path.resolve(import.meta.dirname, 'src/building.ts'),
-            editor: path.resolve(import.meta.dirname, 'src/editor.ts'),
-            gameplay: path.resolve(import.meta.dirname, 'src/gameplay.ts'),
-            navigation: path.resolve(import.meta.dirname, 'src/navigation.ts'),
-            network: path.resolve(import.meta.dirname, 'src/network.ts'),
-            next: path.resolve(import.meta.dirname, 'src/next.ts'),
-            plugins: path.resolve(import.meta.dirname, 'src/plugins.ts'),
-            postprocessing: path.resolve(import.meta.dirname, 'src/postprocessing.ts'),
-            runtime: path.resolve(import.meta.dirname, 'src/runtime.ts'),
-            'server-contracts': path.resolve(import.meta.dirname, 'src/server-contracts.ts'),
-          },
+          entry: Object.fromEntries(PACKAGE_ENTRIES.map(({ name, source }) => [name, path.resolve(import.meta.dirname, source)])),
           name: 'GaesupWorld',
           fileName: (format, entryName) => `${entryName}.${format === 'cjs' ? 'cjs' : 'js'}`,
           cssFileName: 'index',

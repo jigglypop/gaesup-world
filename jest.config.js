@@ -32,7 +32,7 @@ export const base = {
     ],
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(\\.pnpm|three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand|mitt)/)',
+    'node_modules/(?!(\\.pnpm|three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand)/)',
   ],
   testPathIgnorePatterns: ['/node_modules/', '/dist/', '<rootDir>/.claude/'],
   // Agent worktrees live under .claude/ and carry their own package.json; keep them out of the module map.

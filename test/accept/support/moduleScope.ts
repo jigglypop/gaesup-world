@@ -4,13 +4,7 @@ import path from 'node:path';
 import ts from 'typescript';
 
 import { ROOT, walkRuntimeImports } from '../../../scripts/lib/importGraph.cjs';
-
-/** Source files of every package entry (vite.config.ts lib entries). */
-export const PACKAGE_ENTRIES = [
-  'src/index.ts', 'src/admin-entry.ts', 'src/assets.ts', 'src/avatar.ts', 'src/blueprints/editor.ts',
-  'src/blueprints/index.ts', 'src/building.ts', 'src/editor.ts', 'src/gameplay.ts', 'src/navigation.ts',
-  'src/network.ts', 'src/next.ts', 'src/plugins.ts', 'src/postprocessing.ts', 'src/runtime.ts', 'src/server-contracts.ts',
-];
+import { PACKAGE_ENTRIES } from '../../../scripts/lib/packageEntries.cjs';
 
 /** Factories whose module-scope result is a global store (RC-4); `lazyStore` and `lazyScopedStore` create on first use. */
 const STORE_FACTORIES = new Set(['create', 'createStore', 'createWithEqualityFn']);
@@ -101,8 +95,8 @@ export function moduleScopeEffects(file: string): ModuleScopeEffects {
 /** Our TypeScript files that importing any package entry evaluates. */
 export function packageSourceFiles(): string[] {
   const files = new Set<string>();
-  for (const entry of PACKAGE_ENTRIES) {
-    for (const file of walkRuntimeImports(entry).keys()) if (/\.tsx?$/.test(file)) files.add(file);
+  for (const { source } of PACKAGE_ENTRIES) {
+    for (const file of walkRuntimeImports(source).keys()) if (/\.tsx?$/.test(file)) files.add(file);
   }
   return [...files].sort();
 }
