@@ -449,3 +449,27 @@ describe('command authority router', () => {
     });
   });
 });
+
+describe('command authority actor binding', () => {
+  const commandAs = (actorId: string, commandId: string) => createGameCommand({
+    commandId, domain: 'inventory', action: 'drop', actorId, submittedAt: 1, payload: {},
+  });
+
+  test('a session may only act as its own actor, even without verifyActor', async () => {
+    const router = createCommandAuthorityRouter();
+    router.register({ domain: 'inventory', action: 'drop' }, (command) => createCommandAcceptedResult(command));
+    const session = { actorId: 'alice' };
+    await expect(router.handle(commandAs('bob', 'spoof'), session))
+      .resolves.toMatchObject({ accepted: false, reason: 'Actor "bob" is not bound to this session.' });
+    await expect(router.handle(commandAs('alice', 'own'), session)).resolves.toMatchObject({ accepted: true });
+  });
+
+  test('verifyActor decides with the session the command arrived on', async () => {
+    const verifyActor = jest.fn((command: GameCommand, session?: { actorId: string }) =>
+      session?.actorId === 'admin' || session?.actorId === command.actorId);
+    const router = createCommandAuthorityRouter({ verifyActor });
+    router.register({ domain: 'inventory', action: 'drop' }, (command) => createCommandAcceptedResult(command));
+    await expect(router.handle(commandAs('bob', 'moderated'), { actorId: 'admin' })).resolves.toMatchObject({ accepted: true });
+    expect(verifyActor).toHaveBeenCalledWith(expect.objectContaining({ actorId: 'bob' }), { actorId: 'admin' });
+  });
+});

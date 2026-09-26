@@ -562,6 +562,7 @@ export type {
   CommandAuthorityResult,
   CommandAuthorityRoute,
   CommandAuthorityRouter,
+  CommandSession,
   GameCommand,
   NetworkAuthorityMessageType,
   ServerEvent,

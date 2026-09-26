@@ -12,6 +12,9 @@ export type CommandAuthorityContext = {
   createId: (prefix: string, command: GameCommand) => string;
 };
 
+/** The connection a command arrived on, as the actor that connection authenticated. */
+export type CommandSession = { actorId: string };
+
 export type CommandAuthorityResult = {
   accepted: boolean;
   command: GameCommand;
@@ -36,7 +39,8 @@ export type CommandAuthorityRouter = {
     route: CommandAuthorityRoute,
     handler: CommandAuthorityHandler<TPayload>,
   ) => () => void;
-  handle: (command: GameCommand) => Promise<CommandAuthorityResult>;
+  /** A command with a session may act only as that session's actor unless `verifyActor` allows it; without one it is local. */
+  handle: (command: GameCommand, session?: CommandSession) => Promise<CommandAuthorityResult>;
   has: (route: CommandAuthorityRoute) => boolean;
   clear: () => void;
 };
@@ -44,7 +48,8 @@ export type CommandAuthorityRouter = {
 export type CommandAuthorityRouterOptions = {
   now?: () => number;
   createId?: (prefix: string, command: GameCommand) => string;
-  verifyActor?: (command: GameCommand) => boolean;
+  /** Whether the session may act as the command's actor; by default a session acts only as itself. */
+  verifyActor?: (command: GameCommand, session: CommandSession | undefined) => boolean;
   getRevision?: (command: GameCommand) => number | undefined;
   replayWindowMs?: number;
   /** Oldest replay records are evicted past this count so command-id floods cannot grow memory without bound. */
@@ -235,12 +240,13 @@ export function createCommandAuthorityRouter(
         }
       };
     },
-    handle: async (command) => {
+    handle: async (command, session) => {
       // A malformed command has no route, replay key or id to address a rejection event to.
       if (!isGameCommand(command)) return { accepted: false, command, reason: INVALID_COMMAND_REASON, events: [], deltas: [] };
-      if (options.verifyActor && !options.verifyActor(command)) {
-        return reject(command, `Actor "${command.actorId}" is not bound to this session.`);
-      }
+      const actorAllowed = options.verifyActor
+        ? options.verifyActor(command, session)
+        : session === undefined || session.actorId === command.actorId;
+      if (!actorAllowed) return reject(command, `Actor "${command.actorId}" is not bound to this session.`);
       if (replayWindowMs <= 0) return executeInDomainOrder(command);
       const time = now();
       pruneReplays(time);
