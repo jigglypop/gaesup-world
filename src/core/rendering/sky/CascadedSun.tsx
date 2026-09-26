@@ -4,6 +4,7 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { CSMShadowNode } from 'three/addons/csm/CSMShadowNode.js';
 
+import { skipNearOnlyCasters } from './nearShadow';
 import { placeShadowLight, shadowFocus } from './shadowFollow';
 import { useQualityProfile } from '../../perf/quality';
 import { useEngineFrame } from '../../runtime/frame';
@@ -69,6 +70,15 @@ async function createCascadedShadow(
     lightMargin: options.lightMargin,
   });
   node.fade = options.fade;
+  // three creates the cascades when the node first builds; all but the nearest leave the near-only casters out.
+  const cascaded = node as unknown as { _init?: (...args: unknown[]) => void; _shadowNodes?: Parameters<typeof skipNearOnlyCasters>[0][] };
+  const init = cascaded._init;
+  if (typeof init === 'function') {
+    cascaded._init = function (this: unknown, ...args: unknown[]) {
+      init.apply(this, args);
+      cascaded._shadowNodes?.slice(1).forEach(skipNearOnlyCasters);
+    };
+  }
   return node;
 }
 

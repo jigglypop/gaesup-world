@@ -44,6 +44,7 @@ jest.mock('three/addons/csm/CSMShadowNode.js', () => ({
 
 import { logger } from '../../../utils/logger';
 import { CascadedSun } from '../CascadedSun';
+import { castNearShadowOnly } from '../nearShadow';
 
 function createDirectionalLight(element: { type: unknown }) {
   if (element.type !== 'directionalLight') return null;
@@ -88,6 +89,37 @@ describe('CascadedSun', () => {
     act(() => view.unmount());
     expect(mockLights[0]!.shadow.shadowNode).toBeUndefined();
     expect(node.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('draws near-only casters, such as grass blades, into the nearest cascade and leaves them out of the far ones', async () => {
+    const seen: string[] = [];
+    const grass = { castShadow: true, name: 'grass' };
+    const wall = { castShadow: true, name: 'wall' };
+    const cascades = [0, 1, 2].map((index) => ({
+      renderShadow: () => { seen.push(`${index}: grass ${String(grass.castShadow)}, wall ${String(wall.castShadow)}`); },
+    }));
+    mockCsmConstructor.mockImplementationOnce(() => {
+      const node = {
+        camera: mockCamera, dispose: jest.fn(), fade: false, updateFrustums: jest.fn(),
+        _shadowNodes: [] as typeof cascades,
+        // Like three's CSMShadowNode, the cascades appear when the node first builds.
+        _init() { this._shadowNodes.push(...cascades); },
+      };
+      mockCsmInstances.push(node);
+      return node;
+    });
+    const release = castNearShadowOnly(grass as unknown as import('three').Object3D);
+    const view = await mountSun({ quality: 'medium' });
+    try {
+      const node = mockCsmInstances[0] as unknown as { _init(builder: object): void; _shadowNodes: typeof cascades };
+      node._init({});
+      for (const cascade of node._shadowNodes) cascade.renderShadow();
+      expect(seen).toEqual(['0: grass true, wall true', '1: grass false, wall true', '2: grass false, wall true']);
+      expect(grass.castShadow).toBe(true);
+    } finally {
+      release();
+      act(() => view.unmount());
+    }
   });
 
   it('keeps the single directional-light fallback on a WebGL backend', async () => {

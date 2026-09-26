@@ -22,6 +22,7 @@ import { setGrassManagerWasm, type GrassTileRenderState } from "./manager";
 import { GrassMaterialInstance, GrassMeshProps } from "./type";
 import { useGrassManager } from "./useGrassManager";
 import vertexShader from "./vert.glsl";
+import { castNearShadowOnly } from '../../../../rendering/sky/nearShadow';
 import { rendererKind } from '../../../../rendering/webgpu';
 
 let _grassGroundToon: THREE.MeshToonMaterial | null = null;
@@ -483,6 +484,8 @@ const GrassContent: FC<GrassMeshProps> = memo(
       paintGround(gg, baseGroundColor, accentGroundColor);
       return gg;
     }, [accentGroundColor, baseGroundColor, width, cells, cellSize, ground]);
+    // Blade shadows are finer than a far cascade's texels: only the nearest cascade draws them.
+    useEffect(() => (meshRef.current ? castNearShadowOnly(meshRef.current) : undefined), []);
     useEffect(() => () => baseGeom.dispose(), [baseGeom]);
     useEffect(() => () => groundGeo?.dispose(), [groundGeo]);
 

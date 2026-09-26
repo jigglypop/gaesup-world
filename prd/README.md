@@ -24,5 +24,4 @@
 | ID | 내용 | 근거 |
 |---|---|---|
 | P-5 | `frameloop="demand"`, 보조 캔버스 demand | 대기 5초 render 1,310(commit 0, 요청 0). 물·잔디·깃발·사쿠라 흔들림·플레이어 idle이 매 프레임 바뀌어, demand에서 대기 중 무엇을 멈출지 먼저 정해야 한다. 에셋 썸네일은 autoRotate가 스스로 invalidate한다 |
-| P-7 | 정적 장면 그림자 갱신 억제 | P-12 뒤 대기 중 프레임 draw 147 중 그림자 cascade 4개가 약 80. 사쿠라·깃발·플레이어 idle이 그림자를 계속 바꿔, 손실 없는 억제는 움직이는 caster가 없는 장면에서만 된다 |
 | P-8e | 후처리(MRT) 월드의 새 콘텐츠를 첫 draw 전에 컴파일 | r186 `compileAsync`는 셰이더를 이후 task에서 빌드하며 그때 renderer의 target·MRT를 읽어, MRT pass용 빌드가 출력이 빠진 캔버스 기준이 되고 pass가 그 상태를 재사용해 pipeline 생성이 실패한다. 지금은 MRT pass면 사전 컴파일을 건너뛰고 첫 draw에서 컴파일한다. 빌드 단계만 가로채면 viewport 텍스처 포맷과 그림자 velocity가 여전히 캔버스 기준이다 |

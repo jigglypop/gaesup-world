@@ -75,3 +75,17 @@ test('a piece instance stands where the piece of the wall group used to: wall po
     await renderer.unmount();
   }
 });
+
+test('glass panes let the sun through: the frames cast shadows, the pane only receives them', async () => {
+  const renderer = await ReactThreeTestRenderer.create(<WallSystem wallGroup={windows('a', 3)} meshes={meshes} colliders={false} />);
+  try {
+    const found = drawn(renderer.scene.instance as THREE.Object3D);
+    const [glass, ...frames] = [...found].sort((a) => (a.name.includes(':glass:') ? -1 : 1));
+    expect(glass!.name).toContain(':glass:');
+    expect([glass!.castShadow, glass!.receiveShadow]).toEqual([false, true]);
+    expect(frames).toHaveLength(4);
+    expect(frames.every((mesh) => mesh.castShadow)).toBe(true);
+  } finally {
+    await renderer.unmount();
+  }
+});

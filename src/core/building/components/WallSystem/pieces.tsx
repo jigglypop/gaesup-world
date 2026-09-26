@@ -103,7 +103,8 @@ export function WallPieceBatchMesh({ batch, onWallClick }: { batch: WallPieceBat
       name={`building-batch:wall-piece:${batch.key}`}
       ref={ref}
       args={[geometry, batch.material, capacity]}
-      castShadow
+      // Glass lets the sun through; an opaque shadow would black out the room behind it.
+      castShadow={batch.piece.role !== 'glass'}
       receiveShadow
       {...(onWallClick ? { onClick: handleClick } : {})}
     />
