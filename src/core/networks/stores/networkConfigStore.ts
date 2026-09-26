@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { lazyStore } from '../../stores/lazyStore';
+import { DEFAULT_NETWORK_CONFIG } from '../config/defaultConfig';
 import { NetworkConfig } from '../types';
 
 interface NetworkConfigStore {
@@ -14,62 +15,6 @@ interface NetworkConfigStore {
   resetToProfile: (profile: 'high' | 'balanced' | 'low') => void;
   validateConfig: () => { isValid: boolean; errors: string[] };
 }
-
-const defaultConfig: NetworkConfig = {
-  // 성능 설정
-  updateFrequency: 30,
-  maxConnections: 100,
-  messageQueueSize: 1000,
-  
-  // 통신 설정
-  maxDistance: 100.0,
-  signalStrength: 1.0,
-  bandwidth: 1000,
-  proximityRange: 10.0,
-  
-  // 최적화 설정
-  enableBatching: true,
-  batchSize: 10,
-  compressionLevel: 1,
-  connectionPoolSize: 50,
-  
-  // 메시지 설정
-  enableChatMessages: true,
-  enableActionMessages: true,
-  enableStateMessages: true,
-  enableSystemMessages: true,
-  
-  // 신뢰성 설정
-  reliableRetryCount: 3,
-  reliableTimeout: 5000,
-  enableAck: true,
-  
-  // 그룹 설정
-  maxGroupSize: 20,
-  autoJoinProximity: true,
-  groupMessagePriority: 'normal',
-  
-  // 디버깅 설정
-  enableDebugPanel: false,
-  enableVisualizer: false,
-  showConnectionLines: false,
-  showMessageFlow: false,
-  debugUpdateInterval: 500,
-  logLevel: 'warn',
-  logToConsole: true,
-  logToFile: false,
-  maxLogEntries: 1000,
-  
-  // 보안 설정
-  enableEncryption: false,
-  enableRateLimit: true,
-  maxMessagesPerSecond: 100,
-  
-  // 메모리 관리
-  messageGCInterval: 30000,
-  connectionTimeout: 30000,
-  inactiveNodeCleanup: 60000
-};
 
 const performanceProfiles = {
   high: {
@@ -191,7 +136,7 @@ const validateConfig = (config: NetworkConfig): { isValid: boolean; errors: stri
 };
 
 export const useNetworkConfigStore = lazyStore(() => create<NetworkConfigStore>((set, get) => ({
-  config: defaultConfig,
+  config: { ...DEFAULT_NETWORK_CONFIG },
   
   updateConfig: (partial) =>
     set((state) => ({
@@ -218,7 +163,7 @@ export const useNetworkConfigStore = lazyStore(() => create<NetworkConfigStore>(
       config: { ...state.config, ...config },
     })),
     
-  resetConfig: () => set({ config: { ...defaultConfig } }),
+  resetConfig: () => set({ config: { ...DEFAULT_NETWORK_CONFIG } }),
   
   resetToProfile: (profile) => 
     set((state) => ({

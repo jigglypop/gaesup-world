@@ -141,6 +141,7 @@ exports[`runtime export snapshot . export 목록 1`] = `
   "DEFAULT_MOTIONS_INPUT_EXTENSION_ID",
   "DEFAULT_MOTIONS_PHYSICS_EXTENSION_ID",
   "DEFAULT_MOTIONS_RUNTIME_SERVICE_ID",
+  "DEFAULT_NETWORK_CONFIG",
   "DEFAULT_NPC_SCALE",
   "DEFAULT_PREFAB_METADATA",
   "DEFAULT_PROJECT_SETTINGS",
@@ -1606,6 +1607,7 @@ exports[`runtime export snapshot ./network export 목록 1`] = `
 [
   "ConnectionForm",
   "ConnectionPool",
+  "DEFAULT_NETWORK_CONFIG",
   "DEFAULT_VISIT_DOMAINS",
   "MessageQueue",
   "MockNetworkAdapter",

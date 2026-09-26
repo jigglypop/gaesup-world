@@ -125,12 +125,15 @@ export interface NetworkSnapshot {
 export interface NetworkConfig {
   // 성능 설정
   updateFrequency: number;
+  /** @deprecated Has no effect. */
   maxConnections: number;
   messageQueueSize: number;
   
   // 통신 설정
   maxDistance: number;
+  /** @deprecated Has no effect. */
   signalStrength: number;
+  /** @deprecated Has no effect. */
   bandwidth: number;
   proximityRange: number;
   
@@ -142,9 +145,13 @@ export interface NetworkConfig {
   connectionPoolSize: number;
   
   // 메시지 설정
+  /** @deprecated Has no effect. */
   enableChatMessages: boolean;
+  /** @deprecated Has no effect. */
   enableActionMessages: boolean;
+  /** @deprecated Has no effect. */
   enableStateMessages: boolean;
+  /** @deprecated Has no effect. */
   enableSystemMessages: boolean;
   
   // 신뢰성 설정
@@ -153,19 +160,28 @@ export interface NetworkConfig {
   enableAck: boolean;
   
   // 그룹 설정
+  /** @deprecated Has no effect. */
   maxGroupSize: number;
+  /** @deprecated Has no effect. */
   autoJoinProximity: boolean;
+  /** @deprecated Has no effect. */
   groupMessagePriority: 'low' | 'normal' | 'high' | 'critical';
   
   // 디버깅 설정
+  /** @deprecated Has no effect. Mount `NetworkDebugPanel` to show it. */
   enableDebugPanel: boolean;
+  /** @deprecated Has no effect. Mount `NPCNetworkVisualizer` to show it. */
   enableVisualizer: boolean;
+  /** @deprecated Has no effect. Pass `showConnectionLines` to `NPCNetworkVisualizer`. */
   showConnectionLines: boolean;
+  /** @deprecated Has no effect. */
   showMessageFlow: boolean;
   debugUpdateInterval: number;
   logLevel: 'none' | 'error' | 'warn' | 'info' | 'debug';
   logToConsole: boolean;
+  /** @deprecated Has no effect. */
   logToFile: boolean;
+  /** @deprecated Has no effect. */
   maxLogEntries: number;
   
   // 보안 설정
@@ -177,9 +193,11 @@ export interface NetworkConfig {
   maxMessagesPerSecond: number;
   
   // 메모리 관리
+  /** @deprecated Has no effect. */
   messageGCInterval: number;
   connectionTimeout: number;
-    inactiveNodeCleanup: number;
+  /** @deprecated Has no effect. */
+  inactiveNodeCleanup: number;
 }
 
 // 플레이어 상태는 이미 위에 정의됨

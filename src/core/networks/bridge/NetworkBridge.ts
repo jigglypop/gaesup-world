@@ -2,6 +2,7 @@ import { CoreBridge } from '@core/boilerplate';
 
 import type { AnimationClockLoop } from '../../simulation/AnimationClockLoop';
 import type { FixedStepClock } from '../../simulation/FixedStepClock';
+import { DEFAULT_NETWORK_CONFIG } from '../config/defaultConfig';
 import { NetworkSystem } from '../core/NetworkSystem';
 import { NetworkSnapshot, NetworkCommand, NetworkConfig, NetworkSystemState } from '../types';
 
@@ -32,12 +33,12 @@ export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapsh
    */
   ensureMainEngine(config?: NetworkConfig): void {
     if (this.getEngine('main')) return;
-    this.register('main', config ?? this.createDefaultConfig());
+    this.register('main', config ?? DEFAULT_NETWORK_CONFIG);
   }
 
   protected buildEngine(_id: string, config?: NetworkConfig): NetworkBridgeEntity | null {
     try {
-      const system = new NetworkSystem(config ?? this.createDefaultConfig());
+      const system = new NetworkSystem(config ?? DEFAULT_NETWORK_CONFIG);
       const releaseOwnedClock = this.clock ? system.acquireClock(this.clock) : undefined;
       system.start();
       return {
@@ -117,67 +118,6 @@ export class NetworkBridge extends CoreBridge<NetworkBridgeEntity, NetworkSnapsh
   override dispose(): void {
     for (const lease of this.updates.values()) lease.dispose();
     super.dispose();
-  }
-
-  /**
-   * 기본 설정으로 시스템 등록
-   */
-  private createDefaultConfig(): NetworkConfig {
-    return {
-      // 성능 설정
-      updateFrequency: 30,
-      maxConnections: 100,
-      messageQueueSize: 1000,
-      
-      // 통신 설정
-      maxDistance: 100.0,
-      signalStrength: 1.0,
-      bandwidth: 1000,
-      proximityRange: 10.0,
-      
-      // 최적화 설정
-      enableBatching: true,
-      batchSize: 10,
-      compressionLevel: 1,
-      connectionPoolSize: 50,
-      
-      // 메시지 설정
-      enableChatMessages: true,
-      enableActionMessages: true,
-      enableStateMessages: true,
-      enableSystemMessages: true,
-      
-      // 신뢰성 설정
-      reliableRetryCount: 3,
-      reliableTimeout: 5000,
-      enableAck: true,
-      
-      // 그룹 설정
-      maxGroupSize: 20,
-      autoJoinProximity: true,
-      groupMessagePriority: 'normal',
-      
-      // 디버깅 설정
-      enableDebugPanel: false,
-      enableVisualizer: false,
-      showConnectionLines: false,
-      showMessageFlow: false,
-      debugUpdateInterval: 500,
-      logLevel: 'warn',
-      logToConsole: true,
-      logToFile: false,
-      maxLogEntries: 1000,
-      
-      // 보안 설정
-      enableEncryption: false,
-      enableRateLimit: true,
-      maxMessagesPerSecond: 100,
-      
-      // 메모리 관리
-      messageGCInterval: 30000,
-      connectionTimeout: 30000,
-      inactiveNodeCleanup: 60000
-    };
   }
 
   /**
