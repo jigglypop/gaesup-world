@@ -12,7 +12,7 @@
 | `examples/` | Vite 예제 앱. `index.html` → `examples/main.tsx` → lazy `examples/minihome/Minihome.tsx`. 공개 API만 쓴다 |
 | `scripts/` | 검증 관문, 빌드 후처리, 릴리스, 자산 파이프라인, 측정 보조 스크립트 |
 | `test/` | jest `accept` 프로젝트(헤드리스 수용 시나리오), jest mock, 테스트 공용 하네스 |
-| `public/` | 예제·패키지가 쓰는 glTF 모델, 폰트, WASM, 텍스처. Vite 앱의 정적 루트이자 라이브러리 빌드 때 `dist/`로 복사된다 |
+| `public/` | 예제·패키지가 쓰는 glTF 모델과 WASM. 예제 앱의 정적 루트다. 라이브러리 빌드는 여기서 `wasm/gaesup_core.wasm`만 `dist/`로 내보낸다 |
 | `integrations/unity/` | Unity 에디터 브리지 C# 2개. npm 패키지에 포함된다 |
 | `docs/` | 사용자용(`guide/`)·개발자용(`dev/`) 문서와 색인 [../README.md](../README.md) |
 | `.github/` | CI 워크플로(`release.yml`, `minihome-pages.yml`)와 공용 setup 액션 |
@@ -81,9 +81,9 @@ npm 스크립트 전체와 검증 체인은 [verification.md](verification.md)�
 | 모드 | 동작 |
 |---|---|
 | `esm`, `cjs`(`build:esm`, `build:cjs`) | 라이브러리 빌드. 엔트리는 `scripts/lib/packageEntries.cjs`의 `PACKAGE_ENTRIES`, 출력은 `dist/<엔트리 이름>.js`(ESM)·`.cjs`(CJS), CSS는 `dist/index.css`. react·three·`@react-three/*`·`three-stdlib`·`@xyflow/react`·immer·simplex-noise·zustand는 external. `emptyOutDir: false`(비우기는 `clean`이 한다). `process.env.VITE_ENABLE_BRIDGE_LOGS`를 치환한다 |
-| 그 외(dev, 예제 build) | 예제 앱. dev 서버 `127.0.0.1:5174`(`open: true`), `react`·`react-dom`·`three` dedupe, `/gltf/*` 요청을 `demo-dist/gltf`에 파일이 있으면 거기서 주는 미들웨어, 빌드 출력 `demo-dist/`(sourcemap, `strictExecutionOrder`). 감시에서 `.claude`·`dist`·`demo-dist`·`.tmp`·`.artifacts`·`.jest-cache`·`coverage`를 뺀다 |
+| 그 외(dev, 예제 build) | 예제 앱. dev 서버 `127.0.0.1:5174`(`open: true`), `react`·`react-dom`·`three` dedupe, 빌드 출력 `demo-dist/`(sourcemap, `strictExecutionOrder`). 감시에서 `.claude`·`dist`·`demo-dist`·`.tmp`·`.artifacts`·`.jest-cache`·`coverage`를 뺀다 |
 
-`GAESUP_PACKAGE_ROOT` 환경 변수가 있으면 예제 빌드가 `gaesup-world/*`를 소스 대신 그 경로에 설치된 패키지로 묶는다(`scripts/release/build-demo.mjs`가 쓴다). 라이브러리 빌드는 Vite 기본값대로 `public/` 전체를 `dist/`로 복사하지만, `files`는 그중 `dist/wasm/*.wasm`만 싣는다.
+`GAESUP_PACKAGE_ROOT` 환경 변수가 있으면 예제 빌드가 `gaesup-world/*`를 소스 대신 그 경로에 설치된 패키지로 묶는다(`scripts/release/build-demo.mjs`가 쓴다). 라이브러리 빌드는 `public/`을 복사하지 않고(`copyPublicDir: false`) `emitCoreWasm` 플러그인으로 `dist/wasm/gaesup_core.wasm`만 내보낸다.
 
 ### jest
 
@@ -220,13 +220,8 @@ npm 스크립트 전체와 검증 체인은 [verification.md](verification.md)�
 |---|---|---|---|
 | `gltf/trainer_green.glb`, `gltf/trainer_red.glb` | 캐릭터 모델 | 예제, NPC 기본 템플릿(`src/core/npc/stores/npcDefaults.ts`), warrior 청사진 | 포함 |
 | `gltf/props/*.glb`(11개) + `LICENSE.txt` | 침대·의자·작업대·문·울타리·조명·우체통·노점·수납장·탁자·창문 | 건축 오브젝트 카탈로그 `src/core/building/catalog/objects.ts`, 시드 자산 `src/core/assets/data/seedAssets.ts` | 포함 |
-| `gltf/farm/farm-library.glb` + `manifest.json` + `LICENSE.txt` | Kenney Nature Kit(CC0) 라이브러리 | 현재 코드 참조 없음 | 미포함 |
 | `gltf/avatars/manual-v1/` | 부위 17개 × LOD0·LOD1 = GLB 34개, `catalog.json`, `evidence.json` | `scripts/build-avatar-fixtures.mjs`가 만드는 시험용 형상, `src/avatar/__tests__/avatar.test.ts` | 포함 |
-| `fonts/` | Pretendard OTF 9종(Thin~Black), BlackHanSans(ttf·woff·woff2) | CSS가 `font-family: 'Pretendard'` 이름만 쓴다. `src`·`examples`에 `@font-face` 선언이 없다 | 미포함 |
 | `wasm/gaesup_core.wasm` | Rust 코어(`src/core/wasm`, `build.sh`로 빌드) | `src/core/wasm/loader.ts`(잔디, 눈, 내비게이션) | `dist/wasm/`로 포함 |
-| `wasm/gaesup_grass_attr.wasm` | 잔디 속성 크레이트(`src/core/building/components/mesh/grass/wasm`) | `grassWasm.test.ts`만 | `dist/wasm/`로 포함 |
-| `draco/` | Draco 디코더 | 참조 없음(로더는 Meshopt를 쓴다) | 미포함 |
-| `resources/`, `texture/forest-ground/`, `info/image/common/avatar.png`, `sitemap.xml` | 잔디 날·물 노멀 텍스처, 숲 바닥 텍스처, 이미지, 사이트맵 | 참조 없음 | 미포함 |
 | `gaesupworld.ico` | 파비콘 | `index.html` | 미포함 |
 
 ## scripts
@@ -248,10 +243,9 @@ npm 스크립트 전체와 검증 체인은 [verification.md](verification.md)�
 | `performance/inventory.mjs` | `src/core` 모듈 정적 인벤토리(frame·구독·직렬화·GPU·할당 표지 수) → `.artifacts/performance/inventory/<시각>/` | `audit:core`, CI checks(산출물 업로드) |
 | `performance/source-identity.mjs` | 소스·설정·잠금 파일의 내용 해시와 환경 정보 | `inventory.mjs` |
 | `assets/cli.mjs` | 생산 자산 CLI: `doctor`, `generate`, `resume`, `build`, `validate`, `approve`, `publish` | `assets:production` |
-| `assets/server.mjs` | Meshy·Blender 로컬 API(`127.0.0.1:5190`) | `assets:studio` |
 | `assets/import-kaykit.mjs` | KayKit CC0 참조 자산을 받아 `public/gltf/kaykit`에 정리 | `assets:references` |
-| `assets/build.mjs`, `meshy.mjs`, `meshy-images.mjs`, `publish.mjs`, `contract.mjs`, `export.py`, `import-candidate.py`, `test-fixtures.mjs` | Blender 빌드·검증, Meshy 호출, 게시, 라이브러리 계약(`src/core/assets/production/index.ts`를 트랜스파일해 그대로 실행), headless Blender 스크립트, 테스트 GLB | CLI·서버 내부 |
-| `assets/*.test.mjs`(3개) | 자산 도구 테스트(`node --test`) | `test:asset-tools` → `verify`, CI jest |
+| `assets/build.mjs`, `meshy.mjs`, `publish.mjs`, `contract.mjs`, `export.py`, `test-fixtures.mjs` | Blender 빌드·검증, Meshy 호출, 게시, 라이브러리 계약(`src/core/assets/production/index.ts`를 트랜스파일해 그대로 실행), headless Blender 스크립트, 테스트 GLB | CLI 내부 |
+| `assets/*.test.mjs`(2개) | 자산 도구 테스트(`node --test`) | `test:asset-tools` → `verify`, CI jest |
 | `release/run.mjs` | semantic-release 실행, 릴리스 manifest(`.artifacts/release/manifest.json`) | CI release |
 | `release/registry.mjs` | npm 레지스트리에 버전이 보일 때까지 기다리고 tarball 무결성 확인 | CI release |
 | `release/consumer.mjs` | 레지스트리 tarball로 `verify-package-consumer.cjs` 실행(무결성 고정, receipt) | CI release |

@@ -25,7 +25,7 @@ gaesup-world는 React Three Fiber 위에서 도는 **웹판 Unity/Unreal**이다
   6. 편집 UI와 타입에는 있지만 아무 일도 하지 않는 설정이 있다: 건축 안개·지면·물 설정, `cameraOption`·`urls` 일부 필드, `Teleport` props 등(DEAD-1). NPC는 말풍선을 그리지 않고 일과표가 움직이지 않는다(NPC-1).
   7. 동적 GI가 없다(GI-1).
   8. 유휴 상태에서도 매 프레임을 그리고(CPU 약 15%), 잔디가 삼각형 230만 개를 만든다(PERF).
-- 다음 작업: PRD 순서대로 CLEAN-1 → ISO-1 → ISO-2 → DEAD-1 → GPU-1 → UP-1 → LIB-1 → PERF → NPC-1 → GI-1 → EX-1.
+- 다음 작업: PRD 순서대로 ISO-1 → ISO-2 → DEAD-1 → GPU-1 → UP-1 → LIB-1 → PERF → NPC-1 → GI-1 → EX-1.
 
 ## 문서 지도
 

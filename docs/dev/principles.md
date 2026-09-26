@@ -23,7 +23,7 @@ gaesup-world는 게임이 아니라 **엔진**이다. 코어에 둘지는 "Unity
 - `examples/minihome`(포코피아·게더타운식 마을)은 엔진을 보여 주는 예제일 뿐이다. 제품은 라이브러리다.
 - 예제는 공개 API(`gaesup-world`와 subpath)로만 만든다. 예제에서 엔진 기능을 따로 구현하지 않는다.
 - 예제가 막히면 예제에서 우회하지 말고 엔진을 고친다. 옛 minihome은 엔진을 거의 쓰지 않는 자체 엔진이었고 그래서 지웠다.
-- 엔진 개선은 예제 화면에서 체감되게 보여 준다. 예제 UI 글꼴은 Pretendard(`public/fonts`)다.
+- 엔진 개선은 예제 화면에서 체감되게 보여 준다. 예제 UI 글꼴은 Pretendard이고 EX-1에서 woff2로 싣는다.
 
 ## 3. WebGPU로 전부 간다
 

@@ -82,7 +82,7 @@
 4. **렌더링이 두 벌이다.** GLSL과 TSL(GPU-1).
 5. **번들이 쪼개지지 않는다.** 모듈 단위 트리셰이킹 불가(LIB-1).
 6. **런타임이 거의 모든 것을 즉시 만든다.** 월드마다 객체 40개를 만들고, 생활 게임 도메인을 지우기 전에는 이 수가 더 컸다.
-7. **쓰이지 않는 자산과 도구.** `public/gltf/farm/farm-library.glb`, `public/draco`, `public/resources`, `public/texture/forest-ground`, `public/info`, `public/sitemap.xml`은 참조가 없다. Pretendard 글꼴은 CSS가 이름만 쓰고 `@font-face`가 없다. `assets:studio` 서버는 UI 라우트가 지워져 쓸 수 없다(CLEAN-1).
+7. **글꼴이 실리지 않는다.** CSS가 `Pretendard` 이름만 쓰고 `@font-face`가 없어 설치되지 않은 기기에서는 시스템 글꼴로 그린다(EX-1).
 8. **WebGL 기본 렌더러를 쓰는 컴포넌트.** `MultiplayerCanvas`는 `gl`을 넘기지 않아 `WebGLRenderer`로 그리고 drei `Grid`를 쓴다(GPU-1).
 9. **아무 일도 하지 않는 설정.** 건축 안개·지면·물·벽 크기(편집 UI 토글까지 있다), `cameraOption`·`urls` 일부, profile `outline`, `Teleport` props, `connect()`의 `characterUrl`, 엔진이 보내지 않는 규칙 트리거, 조작 캐릭터에 닿지 않는 입력 설정. 사용자는 켰는데 바뀌지 않는다고 느낀다(DEAD-1).
 

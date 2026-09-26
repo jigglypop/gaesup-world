@@ -178,7 +178,6 @@
     "avatar:fixtures": "node scripts/build-avatar-fixtures.mjs",
     "assets:production": "node scripts/assets/cli.mjs",
     "assets:references": "node scripts/assets/import-kaykit.mjs",
-    "assets:studio": "node scripts/assets/server.mjs",
     "test:asset-tools": "node --test scripts/assets/*.test.mjs",
     "dev": "vite",
     "clean": "rimraf dist/",

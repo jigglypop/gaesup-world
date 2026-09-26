@@ -48,6 +48,12 @@
 - `core/ops`(RBAC), 샘플 플러그인 3개, 플러그인 컨텍스트의 `catalog`·`quests` 슬롯.
 - deprecated: `usePhysics`, `BuildingBridge`, `WorldContainer` 별칭, `useGaesupContext`, `useCursorState`, 읽히지 않는 `WorldContainerProps` 11개, 오타 prop `onDestory`.
 
+### 참조 없는 자산·도구 정리 (CLEAN-1)
+- `public/`의 참조 없는 파일(글꼴 OTF 15MB, Draco 디코더, 옛 텍스처·사이트맵, farm 라이브러리)과 런타임이 싣지 않는 잔디 wasm crate를 지웠다. Pretendard는 웹에 맞는 woff2로 EX-1에서 싣는다.
+- UI 라우트가 사라져 쓸 수 없던 `assets:studio` 서버를 지웠다. 생산 자산 CLI(`assets:production`)는 남긴다.
+- 라이브러리 빌드가 Vite 기본값대로 `public/` 전체를 `dist`에 복사하던 것을 `wasm/gaesup_core.wasm`만 내보내게 했다(`dist` 33MB → 9.4MB).
+- dev 서버가 `/gltf/*`를 옛 빌드 산출물에서 먼저 찾던 미들웨어를 지웠다. 같은 이름의 낡은 파일이 `public/`보다 먼저 나갈 수 있었다.
+
 ### 세션 전 작업 커밋 (`191699a2`)
 - 작업 트리에 있던 `IdleFrameRate`(입력이 없으면 낮은 fps로 그림)와 `NPCSimulation`의 `setNavigation`·`face`·`nextEventAt`을 테스트가 통과하는 상태로 커밋했다. `IdleFrameRate`는 아직 월드에 기본 장착되지 않는다(PERF).
 

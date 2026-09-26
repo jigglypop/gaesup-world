@@ -1,9 +1,8 @@
-import { createReadStream, existsSync, readFileSync } from 'fs';
-import type { IncomingMessage, ServerResponse } from 'http';
+import { readFileSync } from 'fs';
 import path from 'path';
 
 import react from '@vitejs/plugin-react-swc';
-import type { Plugin, ViteDevServer } from 'vite';
+import type { Plugin } from 'vite';
 import { defineConfig } from 'vite';
 import glsl from 'vite-plugin-glsl';
 import svgr from 'vite-plugin-svgr';
@@ -29,36 +28,13 @@ const libraryExternals = [
   /^zustand\//,
 ];
 
-const GLTF_CONTENT_TYPES: Record<string, string> = {
-  '.glb': 'model/gltf-binary',
-  '.gltf': 'model/gltf+json',
-};
-
-function serveDemoGltfAssets(): Plugin {
+/** The package ships only the WASM core from `public/`; copying the whole folder would put the example's models into `dist`. */
+function emitCoreWasm(): Plugin {
   return {
-    name: 'serve-demo-gltf-assets',
-    configureServer(server: ViteDevServer) {
-      server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
-        const pathname = req.url?.split('?')[0] ?? '';
-        if (!pathname.startsWith('/gltf/')) {
-          next();
-          return;
-        }
-
-        const relativePath = decodeURIComponent(pathname.replace(/^\/gltf\//, ''));
-        const assetPath = path.resolve(import.meta.dirname, 'demo-dist/gltf', relativePath);
-        const assetRoot = path.resolve(import.meta.dirname, 'demo-dist/gltf');
-        if (!assetPath.startsWith(assetRoot) || !existsSync(assetPath)) {
-          next();
-          return;
-        }
-
-        res.setHeader(
-          'Content-Type',
-          GLTF_CONTENT_TYPES[path.extname(assetPath)] ?? 'application/octet-stream',
-        );
-        createReadStream(assetPath).pipe(res);
-      });
+    name: 'emit-core-wasm',
+    generateBundle() {
+      const source = readFileSync(path.resolve(import.meta.dirname, 'public/wasm/gaesup_core.wasm'));
+      this.emitFile({ type: 'asset', fileName: 'wasm/gaesup_core.wasm', source });
     },
   };
 }
@@ -84,6 +60,7 @@ export default defineConfig(({ mode }) => {
         react(),
         svgr(),
         glsl(),
+        emitCoreWasm(),
       ],
       resolve: {
         tsconfigPaths: true,
@@ -108,6 +85,7 @@ export default defineConfig(({ mode }) => {
         },
         outDir: 'dist',
         emptyOutDir: false,
+        copyPublicDir: false,
       },
       define: {
         // NODE_ENV stays for the consumer's bundler; src/core/utils/env.ts tolerates a missing `process`.
@@ -123,7 +101,6 @@ export default defineConfig(({ mode }) => {
       react(),
       svgr(),
       glsl(),
-      serveDemoGltfAssets(),
     ],
     resolve: {
       tsconfigPaths: true,
