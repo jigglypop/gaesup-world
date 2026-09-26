@@ -25,7 +25,6 @@
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| SE-6f | 정의 registry 6개의 등록 규칙 통일(중복 id 처리, freeze) | registry 계약 테스트 |
 | SE-6g | 모듈마다 따로 둔 `isRecord` 8벌(networks, project-settings, scene-object, world persistence, assets)을 `utils/guards` 하나로 | 정의 1 |
 
 ### SE-7 관측 가능성

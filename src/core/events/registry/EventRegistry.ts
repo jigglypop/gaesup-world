@@ -1,4 +1,5 @@
 import type { GameTime } from '../../time/types';
+import { DefinitionRegistry } from '../../utils/definitionRegistry';
 import type { EventDef, EventId, EventTrigger } from '../types';
 
 function triggerActive(trigger: EventTrigger, time: GameTime): boolean {
@@ -25,22 +26,8 @@ export function isEventActive(def: EventDef, time: GameTime): boolean {
   return def.triggers.some((t) => triggerActive(t, time));
 }
 
-class EventRegistry {
-  private defs = new Map<EventId, EventDef>();
-
-  register(def: EventDef): void {
-    if (this.defs.has(def.id)) return;
-    this.defs.set(def.id, def);
-  }
-
-  registerAll(defs: EventDef[]): void {
-    for (const d of defs) this.register(d);
-  }
-
-  get(id: EventId): EventDef | undefined { return this.defs.get(id); }
-  has(id: EventId): boolean { return this.defs.has(id); }
-  all(): EventDef[] { return Array.from(this.defs.values()); }
-  clear(): void { this.defs.clear(); }
+class EventRegistry extends DefinitionRegistry<EventId, EventDef> {
+  constructor() { super('EventId'); }
 
   resolveActive(time: GameTime): EventId[] {
     const out: EventId[] = [];
