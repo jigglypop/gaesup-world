@@ -1,10 +1,11 @@
 import {
   forwardRef,
+  useCallback,
   useEffect,
-  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
+  type ForwardedRef,
 } from 'react';
 
 import { useGLTF } from '@react-three/drei';
@@ -49,6 +50,11 @@ function scaleOf(scale: PhysicsEntityProps['scale']): THREE.Vector3Tuple | undef
   return Array.isArray(scale) ? scale : [scale.x, scale.y, scale.z];
 }
 
+function assignRef<T>(ref: ForwardedRef<T>, value: T | null): void {
+  if (typeof ref === 'function') ref(value);
+  else if (ref) ref.current = value;
+}
+
 function resolveAnimationKey(
   actions: Record<string, THREE.AnimationAction | null>,
   requested: string,
@@ -70,7 +76,20 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const stateManager = useScopedStateManager();
     // The controlled character publishes its interpolated pose so cameras follow what is drawn, not the last tick.
     const interpolatedVisual = useWorldPhysicsInterpolation(rigidBodyRef, props.isActive ? stateManager.getActiveState() : undefined);
-    useImperativeHandle(forwardedRef, () => rigidBodyRef.current);
+    // Rapier creates the body in an effect, again after a remount, and hands each one to this stable callback; the
+    // forwarded ref follows the live body instead of whatever existed when a handle was last computed.
+    const boundRef = useRef<ForwardedRef<RapierRigidBody>>(null);
+    const bindBody = useCallback((body: RapierRigidBody | null) => {
+      if (body) rigidBodyRef.current = body;
+      assignRef(boundRef.current, body);
+    }, []);
+    useLayoutEffect(() => {
+      const previous = boundRef.current;
+      boundRef.current = forwardedRef;
+      // A ref the parent swaps in takes over the current body.
+      if (previous !== null && previous !== forwardedRef && rigidBodyRef.current) assignRef(forwardedRef, rigidBodyRef.current);
+      return () => assignRef(forwardedRef, null);
+    }, [forwardedRef]);
     const { size } = useGltfAndSize({ url: props.url || '' });
     const modelUrl = props.url?.trim() ? props.url : EMPTY_GLTF_DATA_URI;
     const { scene, animations } = useGLTF(modelUrl);
@@ -199,7 +218,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         <RigidBody
           {...rigidBodyBehavior}
           colliders={false}
-          ref={rigidBodyRef}
+          ref={bindBody}
           {...(props.name ? { name: props.name } : {})}
           position={props.position}
           rotation={euler().set(0, rotationY, 0)}
