@@ -37,14 +37,15 @@ export function useWorldPhysicsStep(update: (state: RootState, delta: number) =>
 
 /**
  * Attach the returned ref to a group containing visuals, beside the body's colliders. A `target` receives the
- * interpolated world position as `presentedPosition` while the visual is presented.
+ * interpolated world position as `presentedPosition` while the visual is presented. A `fixed` body never moves, so
+ * its visual stays where the body is and its pose is not read from Rapier every tick.
  */
-export function useWorldPhysicsInterpolation(body: RefObject<RapierRigidBody | null>, target?: PresentationTarget): RefObject<Group> {
+export function useWorldPhysicsInterpolation(body: RefObject<RapierRigidBody | null>, target?: PresentationTarget, fixed = false): RefObject<Group> {
   const context = useContext(WorldPhysicsContext);
   const visual = useRef<Group>(null!);
   useEffect(() => {
-    if (!context || !body.current || !visual.current) return;
+    if (!context || fixed || !body.current || !visual.current) return;
     return context.presentation.register(body.current, visual.current, target);
-  }, [body, context, target]);
+  }, [body, context, fixed, target]);
   return visual;
 }

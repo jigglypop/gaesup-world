@@ -9,6 +9,7 @@ import { PhysicsEntity } from '../PhysicsEntity';
 const mockBodies: Record<string, unknown>[] = [];
 const mockColliders: Record<string, unknown>[] = [];
 const mockEntityOptions: Record<string, unknown>[] = [];
+const mockInterpolated: unknown[][] = [];
 
 jest.mock('@core/animation/hooks/useSharedAnimations', () => ({
   useSharedAnimations: () => ({ actions: {}, ref: { current: null } }),
@@ -38,6 +39,9 @@ jest.mock('../../../hooks', () => {
   return { useGltfAndSize: () => ({ size: new three.Vector3(1, 2, 1) }) };
 });
 jest.mock('../InnerGroupRef', () => ({ InnerGroupRef: ({ children }: { children?: ReactNode }) => children ?? null }));
+jest.mock('@core/simulation/physicsContext', () => ({
+  useWorldPhysicsInterpolation: (...args: unknown[]) => { mockInterpolated.push(args); return { current: null }; },
+}));
 
 const mounted: ReactTestRenderer[] = [];
 afterEach(() => act(() => mounted.splice(0).forEach((renderer) => renderer.unmount())));
@@ -67,6 +71,13 @@ test('scale draws the model scaled and the derived capsule follows; an explicit 
   const [halfHeight, radius] = mount({ scale: [0.5, 0.5, 0.5], colliderSize: { height: 2, radius: 0.4 } }).capsule;
   expect(halfHeight).toBeCloseTo(0.6);
   expect(radius).toBe(0.4);
+});
+
+test('a fixed body is left out of per-tick interpolation; a body that moves is interpolated', () => {
+  mount({});
+  expect(mockInterpolated.at(-1)?.[2]).toBe(true);
+  mount({ rigidbodyType: 'kinematicPosition' });
+  expect(mockInterpolated.at(-1)?.[2]).toBe(false);
 });
 
 test('a position prop tells the physics bridge the body already stands where it spawns', () => {

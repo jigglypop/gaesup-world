@@ -75,7 +75,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const rigidBodyRef = useRef<RapierRigidBody>(null!);
     const stateManager = useScopedStateManager();
     // The controlled character publishes its interpolated pose so cameras follow what is drawn, not the last tick.
-    const interpolatedVisual = useWorldPhysicsInterpolation(rigidBodyRef, props.isActive ? stateManager.getActiveState() : undefined);
+    const bodyType = props.rigidbodyType || (props.isActive ? 'dynamic' : 'fixed');
+    const interpolatedVisual = useWorldPhysicsInterpolation(rigidBodyRef, props.isActive ? stateManager.getActiveState() : undefined, bodyType === 'fixed');
     // Rapier creates the body in an effect, again after a remount, and hands each one to this stable callback; the
     // forwarded ref follows the live body instead of whatever existed when a handle was last computed.
     const boundRef = useRef<ForwardedRef<RapierRigidBody>>(null);
@@ -224,7 +225,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
           position={props.position}
           rotation={euler().set(0, rotationY, 0)}
           userData={props.userData}
-          type={props.rigidbodyType || (props.isActive ? 'dynamic' : 'fixed')}
+          type={bodyType}
           {...(props.sensor !== undefined ? { sensor: props.sensor } : {})}
           onIntersectionEnter={handleIntersectionEnter}
           onIntersectionExit={handleIntersectionExit}
