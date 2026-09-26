@@ -51,7 +51,6 @@ jobs:
       - run: corepack pnpm exec jest --cacheDirectory=.jest-cache
       - run: corepack pnpm run test:memory:ci
       - run: corepack pnpm run test:asset-tools
-      - run: corepack pnpm run test:minihome:service
 
   package:
     runs-on: ubuntu-latest

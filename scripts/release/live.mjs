@@ -16,9 +16,7 @@ assert.equal(live?.version, expected.version);
 assert.equal(live?.releaseCommit, expected.releaseCommit);
 assert.equal(live?.integrity, expected.integrity);
 assert.equal(live?.packageSource, 'npm');
-for (const route of ['', 'engine/', 'performance/']) {
-  const response = await fetch(new URL(route, root), { signal: AbortSignal.timeout(15000) });
-  assert.equal(response.status, 200, route);
-  assert.match(await response.text(), /<div id="root"/);
-}
-console.log(`Live routes and npm release identity verified: ${root} ${live.version}. Browser interaction remains a separate gate.`);
+const response = await fetch(root, { signal: AbortSignal.timeout(15000) });
+assert.equal(response.status, 200);
+assert.match(await response.text(), /<div id="root"/);
+console.log(`Live route and npm release identity verified: ${root} ${live.version}. Browser interaction remains a separate gate.`);

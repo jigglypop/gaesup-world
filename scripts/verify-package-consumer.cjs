@@ -881,7 +881,6 @@ ${createInteractionAggregateTypeProbe('rootModule.')}`;
           'resolveEquippedCharacterAttachments',
         ],
       ],
-      ['gaesup-world/admin', ['GaesupAdmin']],
       ['gaesup-world/assets', ['useAssetStore']],
       ['gaesup-world/blueprints', ['WARRIOR_BLUEPRINT']],
       ['gaesup-world/blueprints/editor', ['BlueprintEditor']],
@@ -891,7 +890,6 @@ ${createInteractionAggregateTypeProbe('rootModule.')}`;
       ['gaesup-world/navigation', ['NavigationSystem']],
       ['gaesup-world/avatar', ['Avatar', 'AvatarRuntime', 'createAvatarStore']],
       ['gaesup-world/network', ['ConnectionForm', 'defaultMultiplayerConfig']],
-      ['gaesup-world/next', ['NextWorld', 'createThreeWebGpuBackend', 'isWebGpuAvailable', 'createGpuDrivenInstances', 'cullAndCompactSpheres']],
       ['gaesup-world/plugins', ['defineGaesupPlugin']],
       ['gaesup-world/postprocessing', ['ColorGrade', 'parseCubeLut']],
       ['gaesup-world/runtime', ['createGaesupRuntime', 'createDefaultSaveSystem']],
@@ -1128,7 +1126,6 @@ import {
   type TouchState,
   type UsePhysicsBridgeOptions,
 } from 'gaesup-world';
-import { GaesupAdmin } from 'gaesup-world/admin';
 import { HttpAssetSource } from 'gaesup-world/assets';
 import { BlueprintFactory, BlueprintSpawner, WARRIOR_BLUEPRINT, type BlueprintAnimationClips, type BlueprintMovementInput } from 'gaesup-world/blueprints';
 import { AnimationBridge, useBlueprintEntity } from 'gaesup-world';
@@ -1242,7 +1239,6 @@ const components: ComponentType<any>[] = [
   ActionEquipmentPanel as ComponentType<any>,
   TeleportOnClick as ComponentType<any>,
   TeleportMarker as ComponentType<any>,
-  GaesupAdmin as ComponentType<any>,
   BlueprintEditor as ComponentType<any>,
   GrassDriver as ComponentType<any>,
   Editor as ComponentType<any>,
@@ -1374,7 +1370,6 @@ void parseCubeLut;
     `const allModules = ${allJsExportSpecifiers};
 const namedModules = ${namedRuntimeModules};
 const rootModule = await import('gaesup-world');
-const nextModule = await import('gaesup-world/next');
 const accessorArray = [];
 Object.defineProperty(accessorArray, '0', {
   configurable: true,
@@ -1436,12 +1431,6 @@ for (const name of [
   }
 }
 
-for (const name of ['createThreeWebGpuBackend', 'isWebGpuAvailable', 'createGpuDrivenInstances', 'cullAndCompactSpheres']) {
-  if (typeof nextModule[name] !== 'function') {
-    throw new Error('gaesup-world/next runtime export ' + name + ' is not a function');
-  }
-}
-
 console.log('ESM runtime import smoke passed.');
 `,
   );
@@ -1451,7 +1440,6 @@ console.log('ESM runtime import smoke passed.');
     `const allModules = ${allJsExportSpecifiers};
 const namedModules = ${namedRuntimeModules};
 const rootModule = require('gaesup-world');
-const nextModule = require('gaesup-world/next');
 const accessorArray = [];
 Object.defineProperty(accessorArray, '0', {
   configurable: true,
@@ -1513,12 +1501,6 @@ for (const name of [
   }
 }
 
-for (const name of ['createThreeWebGpuBackend', 'isWebGpuAvailable', 'createGpuDrivenInstances', 'cullAndCompactSpheres']) {
-  if (typeof nextModule[name] !== 'function') {
-    throw new Error('gaesup-world/next runtime export ' + name + ' is not a function');
-  }
-}
-
 console.log('CJS runtime require smoke passed.');
 `,
   );
@@ -1558,7 +1540,6 @@ import {
   teleportDestinationToVector3,
   toggleCharacterWeapon,
 } from 'gaesup-world';
-import { GaesupAdmin } from 'gaesup-world/admin';
 import { WARRIOR_BLUEPRINT } from 'gaesup-world/blueprints';
 import { BlueprintEditor } from 'gaesup-world/blueprints/editor';
 import { GrassDriver } from 'gaesup-world/building';
@@ -1667,7 +1648,6 @@ function BrowserSmoke() {
   void ActionEquipmentPanel;
   void TeleportOnClick;
   void TeleportMarker;
-  void GaesupAdmin;
   void BlueprintEditor;
   void GrassDriver;
   void Editor;

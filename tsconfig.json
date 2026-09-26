@@ -35,7 +35,6 @@
     "paths": {
       "@/*": ["./src/*"],
       "gaesup-world": ["./src/index.ts"],
-      "gaesup-world/admin": ["./src/admin-entry.ts"],
       "gaesup-world/assets": ["./src/assets.ts"],
       "gaesup-world/avatar": ["./src/avatar.ts"],
       "gaesup-world/blueprints": ["./src/blueprints/index.ts"],
@@ -45,7 +44,6 @@
       "gaesup-world/gameplay": ["./src/gameplay.ts"],
       "gaesup-world/navigation": ["./src/navigation.ts"],
       "gaesup-world/network": ["./src/network.ts"],
-      "gaesup-world/next": ["./src/next.ts"],
       "gaesup-world/postprocessing": ["./src/postprocessing.ts"],
       "gaesup-world/plugins": ["./src/plugins.ts"],
       "gaesup-world/runtime": ["./src/runtime.ts"],

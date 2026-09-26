@@ -9,7 +9,6 @@ import glsl from 'vite-plugin-glsl';
 import svgr from 'vite-plugin-svgr';
 
 import { PACKAGE_ENTRIES } from './scripts/lib/packageEntries.cjs';
-import { minihomeRoomPlugin } from './scripts/minihome-room-service.mjs';
 
 const libraryExternals = [
   'react',
@@ -125,7 +124,6 @@ export default defineConfig(({ mode }) => {
       svgr(),
       glsl(),
       serveDemoGltfAssets(),
-      minihomeRoomPlugin(),
     ],
     resolve: {
       tsconfigPaths: true,

@@ -4,7 +4,6 @@ import { act, render, renderHook } from '@testing-library/react';
 
 import { BuildingNavigationObstacleDriver } from '../../building/components/BuildingNavigationObstacleDriver';
 import { BuildingRenderStateDriver } from '../../building/components/BuildingRenderStateDriver';
-import { usePlacementPresets } from '../../building/stores/presets';
 import { getNPCBrainBlueprint } from '../../npc/core/blueprint';
 import { createNPCObservation, resolveNPCBrainDecision } from '../../npc/core/brain';
 import { useNpcSchedule } from '../../npc/hooks/useNpcSchedule';
@@ -67,20 +66,17 @@ test('same-ID NPC blueprints resolve from the owning store without changing the 
   await a.dispose(); await b.dispose();
 });
 
-test('schedule changes and placement presets follow the current Provider across a world switch', async () => {
+test('schedule changes follow the current Provider across a world switch', async () => {
   const a = createGaesupRuntime(); const b = createGaesupRuntime();
   let owner = a;
   const wrapper = ({ children }: { children: ReactNode }) => <GaesupRuntimeProvider runtime={owner}>{children}</GaesupRuntimeProvider>;
-  const owned = renderHook(() => ({ slot: useNpcSchedule('same'), presets: usePlacementPresets() }), { wrapper });
-  const presetsA = owned.result.current.presets;
+  const owned = renderHook(() => useNpcSchedule('same'), { wrapper });
   try {
     act(() => { a.npcScheduler.register({ npcId: 'same', entries: [], defaultEntry: { activity: 'work', position: [1, 0, 0] } }); b.npcScheduler.register({ npcId: 'same', entries: [], defaultEntry: { activity: 'sleep', position: [9, 0, 0] } }); });
-    expect(owned.result.current.slot?.activity).toBe('work');
-    act(() => { a.buildingStore.getState().setTileHeight(3); owned.result.current.presets.save('owned-preset'); a.buildingStore.getState().setTileHeight(0); owned.result.current.presets.apply('owned-preset'); });
-    expect(a.buildingStore.getState().currentTileHeight).toBe(3); expect(b.buildingStore.getState().currentTileHeight).toBe(0);
+    expect(owned.result.current?.activity).toBe('work');
     owner = b; owned.rerender();
-    expect(owned.result.current.slot?.activity).toBe('sleep');
-    act(() => a.npcScheduler.unregister('same')); expect(owned.result.current.slot?.activity).toBe('sleep');
-    act(() => b.npcScheduler.unregister('same')); expect(owned.result.current.slot).toBeNull();
-  } finally { act(() => presetsA.remove('owned-preset')); owned.unmount(); await a.dispose(); await b.dispose(); }
+    expect(owned.result.current?.activity).toBe('sleep');
+    act(() => a.npcScheduler.unregister('same')); expect(owned.result.current?.activity).toBe('sleep');
+    act(() => b.npcScheduler.unregister('same')); expect(owned.result.current).toBeNull();
+  } finally { owned.unmount(); await a.dispose(); await b.dispose(); }
 });

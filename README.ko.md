@@ -1,27 +1,19 @@
 # gaesup-world
 
-브라우저에서 플레이 가능한 3D 방을 만들고, React에서 사용하고, Unity와 배치를 주고받는 라이브러리입니다.
+React Three Fiber용 TypeScript 3D 월드 라이브러리입니다. WebGPU 우선 렌더링, 물리 캐릭터, 건축, NPC, 멀티플레이, 저장 가능한 월드 모델을 제공하고 Unity와 장면 데이터를 주고받습니다.
 
-[미니홈피 바로 사용하기](https://jigglypop.github.io/gaesup-world/) · [English](README.md)
+[데모 바로 보기](https://jigglypop.github.io/gaesup-world/) · [English](README.md)
 
-TypeScript 월드 라이브러리와 싸이월드에서 영감을 받은 미니홈피 예제를 제공합니다. 3D 방, 걸어 다니는 아바타, 가구 편집, 프로필, 다이어리, 방명록이 있습니다. 현재 브라우저에 저장하며 공유 링크는 방의 사본을 전달합니다. 실시간 멀티플레이 서비스는 아닙니다.
+이번 버전은 `1.1.0`입니다. 게시 여부는 npm registry에서 확인하세요.
 
-이번 버전은 `1.0.32`입니다. 게시 여부는 npm registry에서 확인하세요.
-
-## 실행하기
+## 예제 실행
 
 ```sh
 corepack pnpm install
 corepack pnpm dev --host 127.0.0.1 --port 5174
 ```
 
-http://127.0.0.1:5174/ 를 여세요. 미니홈피 체험에는 모델 URL, AI 키, Unity 설치가 필요하지 않습니다.
-
-1. **미니룸 꾸미기**에서 가구를 추가하거나 드래그로 이동합니다.
-2. 프로필과 테마를 바꿉니다. 실행 취소는 방과 글을 함께 다룹니다.
-3. 변경은 1.2초 뒤 자동저장됩니다. **미니홈피 저장**은 즉시 저장합니다.
-4. JSON 파일 백업을 내려받거나 이전 정상 저장본을 복구합니다.
-5. 방과 프로필 사본을 공유하거나 보이는 방을 GLB로 내보냅니다.
+http://127.0.0.1:5174/ 를 여세요. `examples/minihome`은 공개 API(`GaesupWorld`, `WorldPhysics`, `GaesupController`, `BuildingController`, 배회하는 NPC)만으로 작은 마을을 만듭니다. WASD로 걷습니다.
 
 ## 라이브러리 사용
 
@@ -58,11 +50,10 @@ SceneDocument는 저장 가능한 데이터입니다. React·Three.js·물리 �
 
 ```sh
 corepack pnpm run verify:full
-corepack pnpm run test:minihome:browser
 corepack pnpm run build:demo
 ```
 
-브라우저 검증은 5174 포트 dev server와 로컬 Chrome을 사용하며 WebGPU와 WebGL2를 따로 확인합니다. `test:demo`는 빌드 구조 검사로, 실제 화면 검증을 대신하지 않습니다.
+`test:demo`는 빌드 구조 검사로, 실제 화면 검증을 대신하지 않습니다.
 
 `npm run deploy`는 `demo-dist`를 빌드해 GitHub Pages에 배포합니다. 다른 경로에서는 `GAESUP_BASE_URL`을 지정하세요. `version.json`은 버전·커밋·미커밋 변경 여부·시각을 기록합니다. Pages의 깊은 경로는 `404.html`로 열리지만 HTTP 404일 수 있습니다.
 
@@ -70,8 +61,6 @@ npm은 검증과 `npm login` 인증 후, 검토한 tarball을 별도 태그 없�
 
 ## 현재 제한
 
-- 미니홈피에 계정 로그인, 기기 간 저장, 실시간 방문, 공동 편집이 없습니다.
-- 공유 링크에는 다이어리·방명록이 없으며 링크 소유자는 프로필과 방을 읽을 수 있습니다.
 - shear는 world matrix에 보존합니다. TRS로 표현 불가능하면 `getWorldTransform`이 오류를 내므로 `getWorldMatrix`를 사용하세요.
 - Unity Editor 컴파일과 실제 왕복은 Unity 설치 환경에서 따로 검증해야 합니다.
 

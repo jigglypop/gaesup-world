@@ -1,11 +1,11 @@
-import { Suspense, useEffect, useLayoutEffect, ReactNode, useMemo } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, ReactNode, useMemo } from 'react';
 
 import { Camera } from '@/core/camera';
 import type { CameraOptionType } from '@/core/camera';
 import { CAMERA_DEFAULTS } from '@/core/camera/core/constants';
 import { PerformanceCollector } from '@/core/perf/PerformanceCollector';
 import { QualityProfileProvider, useQualityProfile, type WorldQuality } from '@/core/perf/quality';
-import { WorldPostProcessing, type WorldPostProcessingProps } from '@/core/rendering/postprocess/WorldPostProcessing';
+import type { WorldPostProcessingProps } from '@/core/rendering/postprocess/WorldPostProcessing';
 import { ShadowDepthMaterials } from '@/core/rendering/shadow/ShadowDepthMaterials';
 import { GaesupRuntimeProvider } from '@/core/runtime';
 import { FrameSchedulerHost } from '@/core/runtime/frame/react/FrameSchedulerHost';
@@ -16,19 +16,19 @@ import { useGaesupStore, useGaesupStoreApi } from '@stores/gaesupStore';
 import { WorldContainerProps } from './types';
 export type { WorldAssetUrls, WorldCameraOption, WorldContainerProps } from './types';
 
-function WorldContent({ children, showGrid, showAxes }: { 
-  children?: ReactNode; 
-  showGrid?: boolean; 
-  showAxes?: boolean; 
-}) {
+// Worlds without post-processing never download its effect stack.
+const WorldPostProcessing = lazy(() =>
+  import('@/core/rendering/postprocess/WorldPostProcessing').then((module) => ({ default: module.WorldPostProcessing })),
+);
+
+/** Each URL field with its legacy short alias; the full name wins when both are set. */
+const URL_ALIASES = [['characterUrl', 'character'], ['vehicleUrl', 'vehicle'], ['airplaneUrl', 'airplane']] as const;
+
+function WorldContent({ children, showGrid, showAxes }: { children?: ReactNode; showGrid?: boolean; showAxes?: boolean }) {
   return (
     <group name="gaesup-world">
-      {showGrid && (
-        <gridHelper args={[100, 100, "#888888", "#444444"]} />
-      )}
-      {showAxes && (
-        <axesHelper args={[10]} />
-      )}
+      {showGrid && <gridHelper args={[100, 100, '#888888', '#444444']} />}
+      {showAxes && <axesHelper args={[10]} />}
       {children}
     </group>
   );
@@ -49,30 +49,18 @@ function WorldConfiguration(props: WorldContainerProps) {
   const replaceCameraOption = useGaesupStore((state) => state.replaceCameraOption);
 
   const urlUpdates = useMemo(() => {
-    if (!props.urls) return null;
+    const urls = props.urls;
+    if (!urls) return null;
     const mapped: Partial<UrlsState> = {};
-
-    if (props.urls.characterUrl !== undefined) mapped.characterUrl = props.urls.characterUrl;
-    if (props.urls.vehicleUrl !== undefined) mapped.vehicleUrl = props.urls.vehicleUrl;
-    if (props.urls.airplaneUrl !== undefined) mapped.airplaneUrl = props.urls.airplaneUrl;
-
-    if (mapped.characterUrl === undefined && props.urls.character !== undefined) {
-      mapped.characterUrl = props.urls.character;
+    for (const [key, alias] of URL_ALIASES) {
+      const url = urls[key] !== undefined ? urls[key] : urls[alias];
+      if (url !== undefined) mapped[key] = url;
     }
-    if (mapped.vehicleUrl === undefined && props.urls.vehicle !== undefined) {
-      mapped.vehicleUrl = props.urls.vehicle;
-    }
-    if (mapped.airplaneUrl === undefined && props.urls.airplane !== undefined) {
-      mapped.airplaneUrl = props.urls.airplane;
-    }
-
     return Object.keys(mapped).length > 0 ? mapped : null;
   }, [props.urls]);
-  
+
   useEffect(() => {
-    if (urlUpdates) {
-      setUrls(urlUpdates);
-    }
+    if (urlUpdates) setUrls(urlUpdates);
   }, [urlUpdates, setUrls]);
 
   const cameraOptionUpdates = useMemo(() => {
@@ -173,7 +161,8 @@ export function GaesupWorldContent({ children, showGrid, showAxes, postProcessin
         <Camera/>
         {((performance ?? !isProductionEnv()) || sampled) && <PerformanceCollector />}
         <ShadowDepthMaterials />
-        {postProcessing && <ProfiledPostProcessing props={typeof postProcessing === 'object' ? postProcessing : {}} />}
+        {/* Its own boundary: loading the effect chunk must not hide the world. */}
+        {postProcessing && <Suspense fallback={null}><ProfiledPostProcessing props={typeof postProcessing === 'object' ? postProcessing : {}} /></Suspense>}
         <WorldContent showGrid={showGrid ?? false} showAxes={showAxes ?? false}>
           {children}
         </WorldContent>

@@ -18,7 +18,7 @@ const markers = {
   gpu: /\b(?:render|renderAsync|compute|computeAsync|writeBuffer|readBuffer|mapAsync)\s*\(/g,
   allocation: /\bnew\s+(?:Vector[234]|Matrix[34]|Quaternion|Box3|Float32Array|Map|Set)\s*\(/g,
 };
-const modules = identity.manifest.filter(({ path: file }) => /^src\/(?:core|next)\/.*\.(?:ts|tsx)$/.test(file)).map(file => {
+const modules = identity.manifest.filter(({ path: file }) => /^src\/core\/.*\.(?:ts|tsx)$/.test(file)).map(file => {
   const source = readFileSync(path.join(root, file.path), 'utf8');
   const ast = ts.createSourceFile(file.path, source, ts.ScriptTarget.Latest, true);
   const imports = ast.statements.filter(ts.isImportDeclaration).map(node => node.moduleSpecifier.text);
@@ -38,7 +38,7 @@ const domains = Object.values(modules.reduce((all, module) => {
   return all;
 }, {}));
 const report = { schemaVersion: 1, generatedAt: new Date().toISOString(),
-  scope: 'Every TypeScript module in src/core and src/next. Static inventory only; manual and runtime audit remain required.',
+  scope: 'Every TypeScript module in src/core. Static inventory only; manual and runtime audit remain required.',
   source: identity, exports: pkg.exports, domains, modules };
 const stamp = report.generatedAt.replace(/[:.]/g, '-');
 const output = path.join(root, '.artifacts/performance/inventory', stamp);

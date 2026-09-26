@@ -1102,14 +1102,6 @@ exports[`runtime export snapshot . export 목록 1`] = `
 ]
 `;
 
-exports[`runtime export snapshot ./admin export 목록 1`] = `
-[
-  "GaesupAdmin",
-  "useAuthStore",
-  "useToast",
-]
-`;
-
 exports[`runtime export snapshot ./assets export 목록 1`] = `
 [
   "ASSET_BUDGET_PROFILES",
@@ -1652,32 +1644,6 @@ exports[`runtime export snapshot ./network export 목록 1`] = `
   "useRecentMessages",
   "useVisitRoom",
   "visitProviderFromSaveSystem",
-]
-`;
-
-exports[`runtime export snapshot ./next export 목록 1`] = `
-[
-  "FRUSTUM_PLANES_LENGTH",
-  "MATRIX_STRIDE",
-  "MAX_ENTITY_CAPACITY",
-  "NextWorld",
-  "RenderGraph",
-  "TASK_PHASE_ORDER",
-  "TaskGraph",
-  "TransformStore",
-  "compactVisible",
-  "composeTrsMatrix",
-  "createGpuCulledInstances",
-  "createGpuDrivenInstances",
-  "createThreeWebGpuBackend",
-  "cullAndCompactSpheres",
-  "cullSpheres",
-  "entityGenerationOf",
-  "entityIndexOf",
-  "extractFrustumPlanes",
-  "isWebGpuAvailable",
-  "makeEntityId",
-  "packInstanceMatrices",
 ]
 `;
 

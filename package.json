@@ -24,16 +24,6 @@
         "default": "./dist/index.cjs"
       }
     },
-    "./admin": {
-      "import": {
-        "types": "./dist/admin-entry.d.ts",
-        "default": "./dist/admin.js"
-      },
-      "require": {
-        "types": "./dist/admin-entry.d.cts",
-        "default": "./dist/admin.cjs"
-      }
-    },
     "./blueprints": {
       "import": {
         "types": "./dist/blueprints/index.d.ts",
@@ -144,16 +134,6 @@
         "default": "./dist/server-contracts.cjs"
       }
     },
-    "./next": {
-      "import": {
-        "types": "./dist/next.d.ts",
-        "default": "./dist/next.js"
-      },
-      "require": {
-        "types": "./dist/next.d.cts",
-        "default": "./dist/next.cjs"
-      }
-    },
     "./postprocessing": {
       "import": {
         "types": "./dist/postprocessing.d.ts",
@@ -195,18 +175,12 @@
   ],
   "scripts": {
     "audit:core": "node scripts/performance/inventory.mjs",
-    "test:minihome:features": "node scripts/probe-minihome-features.cjs",
-    "test:minihome:lighting": "node scripts/probe-minihome-lighting.cjs",
-    "test:minihome:town": "node scripts/probe-minihome-town.cjs",
-    "test:minihome:service": "node --test scripts/minihome-room-service.test.mjs",
-    "minihome:server": "node scripts/minihome-server.mjs",
     "avatar:fixtures": "node scripts/build-avatar-fixtures.mjs",
     "assets:production": "node scripts/assets/cli.mjs",
     "assets:references": "node scripts/assets/import-kaykit.mjs",
     "assets:studio": "node scripts/assets/server.mjs",
     "test:asset-tools": "node --test scripts/assets/*.test.mjs",
     "dev": "vite",
-    "test:minihome:browser": "node scripts/probe-minihome.cjs",
     "clean": "rimraf dist/",
     "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types",
     "build:esm": "vite build --mode esm",
@@ -215,7 +189,7 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json && tsc -p tsconfig.build.json --noEmit",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "verify": "pnpm run test:harness && pnpm run typecheck && pnpm run lint && pnpm run check:layer1 && pnpm run check:entries && pnpm run check:quality && pnpm run test:asset-tools && pnpm run test:minihome:service && pnpm exec jest --runInBand && pnpm run build && pnpm exec publint",
+    "verify": "pnpm run test:harness && pnpm run typecheck && pnpm run lint && pnpm run check:layer1 && pnpm run check:entries && pnpm run check:quality && pnpm run test:asset-tools && pnpm exec jest --runInBand && pnpm run build && pnpm exec publint",
     "verify:full": "pnpm run verify && pnpm run test:memory:ci && pnpm run test:package:built && pnpm run test:demo",
     "preview": "vite preview",
     "prepare": "npm run build",

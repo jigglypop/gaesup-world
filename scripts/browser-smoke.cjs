@@ -128,9 +128,8 @@ async function main() {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     const pageErrors = collectPageErrors(page);
 
-    // The default route is the minihome product example; it reports its backend once the renderer is up.
+    // The default route is the example world; it passes once its canvas paints.
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
-    await page.locator('.miniroom-view:not([data-renderer="loading"])').waitFor({ timeout: 30_000 });
     await expectWorldCanvasPaint(page);
 
     if (pageErrors.length > 0) {

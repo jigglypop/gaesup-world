@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (file) => readFileSync(path.join(root, file), 'utf8');
-assert.ok(existsSync(path.join(root, 'AGENTS.md')), 'Missing AGENTS.md');
-// Check executable gates, not prose in AGENTS.md.
+assert.ok(existsSync(path.join(root, 'CLAUDE.md')), 'Missing CLAUDE.md');
+// Check executable gates, not prose in CLAUDE.md.
 const scripts = JSON.parse(read('package.json')).scripts;
 for (const gate of ['test:harness', 'typecheck', 'lint', 'check:layer1', 'check:entries', 'check:quality', 'test:asset-tools', 'build']) {
   assert.ok(scripts.verify.includes(gate), `verify must invoke ${gate}`);
