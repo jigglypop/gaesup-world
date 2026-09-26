@@ -1,20 +1,22 @@
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import * as THREE from 'three';
 
-const mockCamera = {
-  projectionMatrix: { elements: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] },
-};
+const mockCamera = new THREE.PerspectiveCamera();
 const mockRenderer = {
   isWebGPURenderer: true,
   backend: { isWebGPUBackend: true },
 };
-let mockFrameCallback: (() => void) | null = null;
-const mockLights: Array<{ shadow: { radius: number; shadowNode?: unknown } }> = [];
+let mockFrameCallback: ((delta?: number) => void) | null = null;
+type ShadowSlot = THREE.DirectionalLightShadow & { shadowNode?: unknown };
+const mockLights: THREE.DirectionalLight[] = [];
+const shadowOf = (light: THREE.DirectionalLight) => light.shadow as ShadowSlot;
 
 const mockCsmInstances: Array<{
   camera: typeof mockCamera | null;
   dispose: jest.Mock;
   fade: boolean;
   updateFrustums: jest.Mock;
+  lights?: { shadow: { needsUpdate: boolean } }[];
 }> = [];
 const mockCsmConstructor = jest.fn().mockImplementation(() => {
   const node = {
@@ -33,8 +35,8 @@ jest.mock('@react-three/fiber', () => ({
 }));
 
 jest.mock('../../../runtime/frame', () => ({
-  useEngineFrame: (_phase: string, callback: () => void) => {
-    mockFrameCallback = callback;
+  useEngineFrame: (_phase: string, callback: (delta: number) => void) => {
+    mockFrameCallback = (delta = 1 / 60) => callback(delta);
   },
 }));
 
@@ -48,7 +50,8 @@ import { castNearShadowOnly } from '../nearShadow';
 
 function createDirectionalLight(element: { type: unknown }) {
   if (element.type !== 'directionalLight') return null;
-  const light = { shadow: { radius: 1 } };
+  const light = new THREE.DirectionalLight();
+  light.position.set(28, 36, 18);
   mockLights.push(light);
   return light;
 }
@@ -67,6 +70,8 @@ describe('CascadedSun', () => {
     mockRenderer.isWebGPURenderer = true;
     mockRenderer.backend.isWebGPUBackend = true;
     mockCamera.projectionMatrix.elements[0] = 1;
+    mockCamera.position.set(0, 5, 10);
+    mockCamera.updateMatrixWorld();
     mockFrameCallback = null;
     mockLights.length = 0;
     mockCsmInstances.length = 0;
@@ -84,10 +89,10 @@ describe('CascadedSun', () => {
       mode: 'practical',
     });
     expect(node.fade).toBe(false);
-    expect(mockLights[0]!.shadow.shadowNode).toBe(node);
+    expect(shadowOf(mockLights[0]!).shadowNode).toBe(node);
 
     act(() => view.unmount());
-    expect(mockLights[0]!.shadow.shadowNode).toBeUndefined();
+    expect(shadowOf(mockLights[0]!).shadowNode).toBeUndefined();
     expect(node.dispose).toHaveBeenCalledTimes(1);
   });
 
@@ -137,7 +142,7 @@ describe('CascadedSun', () => {
     await act(async () => { view.update(<CascadedSun quality="high" />); });
     expect(previousNode.dispose).toHaveBeenCalledTimes(1);
     expect(mockLights).toHaveLength(2);
-    expect(mockLights[1]!.shadow.shadowNode).toBe(mockCsmInstances[1]);
+    expect(shadowOf(mockLights[1]!).shadowNode).toBe(mockCsmInstances[1]);
     expect(view.root.findByType('directionalLight').props['castShadow']).toBe(true);
     act(() => view.unmount());
   });
@@ -156,6 +161,66 @@ describe('CascadedSun', () => {
     runFrame!();
     expect(node.updateFrustums).toHaveBeenCalledTimes(1);
 
+    act(() => view.unmount());
+  });
+
+  it('redraws the nearest cascade at its rate and the farther ones in turn', async () => {
+    const view = await mountSun({ quality: 'high' });
+    const node = mockCsmInstances[0]!;
+    node.lights = [0, 1, 2, 3].map(() => ({ shadow: { needsUpdate: false } }));
+    const redraws = [0, 0, 0, 0];
+    for (let frame = 0; frame < 61; frame++) {
+      mockFrameCallback!();
+      node.lights.forEach(({ shadow }, index) => {
+        if (shadow.needsUpdate) redraws[index]!++;
+        shadow.needsUpdate = false;
+      });
+    }
+    // The first frame redraws all four; after it the nearest runs at 30 Hz and the far ones at 15 Hz each, one a frame.
+    expect(redraws[0]).toBeGreaterThanOrEqual(30);
+    expect(redraws[0]).toBeLessThanOrEqual(32);
+    for (const index of [1, 2, 3]) expect(redraws[index]).toBeGreaterThanOrEqual(14);
+    for (const index of [1, 2, 3]) expect(redraws[index]).toBeLessThanOrEqual(17);
+    act(() => view.unmount());
+  });
+
+  it('redraws every cascade when the camera jumps or the sun turns', async () => {
+    const view = await mountSun({ quality: 'high', updateHz: { far: 0 } });
+    const node = mockCsmInstances[0]!;
+    node.lights = [0, 1, 2, 3].map(() => ({ shadow: { needsUpdate: false } }));
+    const farRedraws = () => node.lights!.slice(1).filter(({ shadow }) => shadow.needsUpdate).length;
+    const clear = () => node.lights!.forEach(({ shadow }) => { shadow.needsUpdate = false; });
+    mockFrameCallback!();
+    clear();
+    mockFrameCallback!();
+    expect(farRedraws()).toBe(0);
+
+    mockCamera.position.x += 20;
+    mockCamera.updateMatrixWorld();
+    mockFrameCallback!();
+    expect(farRedraws()).toBe(3);
+    clear();
+
+    mockLights[0]!.position.set(-30, 20, 10);
+    mockFrameCallback!();
+    expect(farRedraws()).toBe(3);
+    act(() => view.unmount());
+  });
+
+  it('paces the single WebGL shadow map with the near rate', async () => {
+    mockRenderer.backend.isWebGPUBackend = false;
+    mockRenderer.isWebGPURenderer = false;
+    const view = await mountSun({ updateHz: 20 });
+    const light = mockLights[0]!;
+    let redraws = 0;
+    for (let frame = 0; frame < 61; frame++) {
+      mockFrameCallback!();
+      if (light.shadow.needsUpdate) redraws++;
+      light.shadow.needsUpdate = false;
+    }
+    expect(light.shadow.autoUpdate).toBe(false);
+    expect(redraws).toBeGreaterThanOrEqual(20);
+    expect(redraws).toBeLessThanOrEqual(22);
     act(() => view.unmount());
   });
 

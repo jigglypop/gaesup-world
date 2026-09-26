@@ -4,9 +4,10 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { usePerfStore } from './stores/perfStore';
 import type { PerfTier } from './types';
+import { countNearOnlyCasters } from '../rendering/sky/nearShadow';
 import { useGaesupRuntime } from '../runtime/runtimeContext';
 import { useGaesupStore } from '../stores/gaesupStore';
-import type { EngineState, FramePhaseTimings, RenderState } from '../stores/slices/performance/types';
+import type { EngineState, FramePhaseTimings, RenderState, ShadowState } from '../stores/slices/performance/types';
 
 export type FrameTimeSummary = { fps: number; avgMs: number; p50Ms: number; p95Ms: number; maxMs: number };
 
@@ -24,6 +25,8 @@ export type PerformanceReport = {
   /** Average CPU milliseconds per frame phase; null in production builds. */
   phases: FramePhaseTimings | null;
   tier: PerfTier;
+  /** The sun's shadow maps and how many casters draw into the nearest cascade only; null without a shadow sun. */
+  shadow: (ShadowState & { nearOnlyCasters: number }) | null;
 };
 
 const EMPTY_FRAMES: FrameTimeSummary = { fps: 0, avgMs: 0, p50Ms: 0, p95Ms: 0, maxMs: 0 };
@@ -43,7 +46,7 @@ export function summarizeFrameTimes(intervals: readonly number[], windowMs: numb
   };
 }
 
-type Timing = Pick<PerformanceReport, 'frames' | 'drawnFps' | 'fixedTicksPerSecond' | 'memory'>;
+type Timing = Pick<PerformanceReport, 'frames' | 'drawnFps' | 'fixedTicksPerSecond' | 'memory'> & { nearOnlyCasters: number };
 
 const readMemory = (): PerformanceReport['memory'] => {
   const memory = (globalThis.performance as { memory?: { usedJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
@@ -59,8 +62,9 @@ export function usePerformanceReport(intervalMs = 500): PerformanceReport {
   const retain = useGaesupStore((state) => state.retainPerformanceSampling);
   const { render, engine } = useGaesupStore(useShallow((state) => state.performance));
   const phases = useGaesupStore((state) => state.framePhases);
+  const shadow = useGaesupStore((state) => state.shadow);
   const tier = usePerfStore((state) => state.profile.tier);
-  const [timing, setTiming] = useState<Timing>({ frames: EMPTY_FRAMES, drawnFps: null, fixedTicksPerSecond: null, memory: null });
+  const [timing, setTiming] = useState<Timing>({ frames: EMPTY_FRAMES, drawnFps: null, fixedTicksPerSecond: null, memory: null, nearOnlyCasters: 0 });
 
   useEffect(() => retain(), [retain]);
 
@@ -86,6 +90,7 @@ export function usePerformanceReport(intervalMs = 500): PerformanceReport {
           drawnFps: perSecond('frames'),
           fixedTicksPerSecond: perSecond('fixedTicks'),
           memory: readMemory(),
+          nearOnlyCasters: countNearOnlyCasters(),
         });
         previous = current;
         intervals.length = 0;
@@ -96,5 +101,6 @@ export function usePerformanceReport(intervalMs = 500): PerformanceReport {
     return () => cancelAnimationFrame(handle);
   }, [intervalMs, runtime]);
 
-  return { ...timing, render, engine, phases, tier };
+  const { nearOnlyCasters, ...rest } = timing;
+  return { ...rest, render, engine, phases, tier, shadow: shadow ? { ...shadow, nearOnlyCasters } : null };
 }

@@ -141,16 +141,20 @@ export function ShadowAware() {
 | `mode` | `'practical'` | cascade 분할(`uniform`·`logarithmic`·`practical`) |
 | `fade` | `true` | cascade 경계를 섞는다 |
 | `shadowBias`, `shadowNormalBias`, `shadowRadius` | −0.00015, 0.04, 1 | |
+| `updateHz` | preset 값 | 그림자를 다시 그리는 초당 횟수. `{ near, far }`는 가장 가까운 cascade(WebGL 단일 맵 포함)와 나머지 cascade 각각, 숫자는 둘 다. `Infinity`는 매 프레임 |
 
-| preset | cascade 수 | 맵 크기 | `maxFar` | `lightMargin` |
-|---|---|---|---|---|
-| `low` | 2 | 512 | 80 | 60 |
-| `medium` | 3 | 1024 | 140 | 100 |
-| `high` | 4 | 2048 | 220 | 140 |
+| preset | cascade 수 | 맵 크기 | `maxFar` | `lightMargin` | `updateHz` near / far |
+|---|---|---|---|---|---|
+| `low` | 2 | 512 | 80 | 60 | 20 / 5 |
+| `medium` | 3 | 1024 | 140 | 100 | 30 / 10 |
+| `high` | 4 | 2048 | 220 | 140 | 30 / 15 |
 
 - `webgpu`: three `CSMShadowNode`(`three/addons/csm/CSMShadowNode.js`를 동적 import)로 cascade 그림자를 만든다. 노드가 준비된 뒤에 그림자를 켜므로 마운트 직후 잠깐 그림자가 없다. 잔디 잎처럼 가는 물체는 가장 가까운 cascade에만 그림자를 넣는다.
 - `webgpu-fallback`·`webgl`: 한 장의 그림자 맵(한 변 140m)을 카메라 앞 지면에 맞추고, 맵이 떨리지 않도록 texel 단위로 스냅해 매 프레임 옮긴다.
-- 갱신은 `effects` 단계에서 돈다(그 프레임의 카메라를 따른다). 위 props 중 그림자 설정을 바꾸면 빛이 다시 만들어진다.
+- 갱신은 `effects` 단계에서 돈다(그 프레임의 카메라를 따른다). 위 props 중 그림자 설정을 바꾸면 빛이 다시 만들어진다(`updateHz`는 빛을 다시 만들지 않는다).
+- 그림자 맵은 `updateHz`로만 다시 그린다. 먼 cascade는 한 프레임에 하나씩, 가장 오래된 것부터 돌아가며 그린다. 다시 그리지 않은 맵은 행렬도 그대로라 그림자가 미끄러지지 않고 잠깐 늦게 따라온다. 해 방향이 약 0.25° 넘게 바뀌거나, 카메라가 한 프레임에 6m 넘게 움직이거나(순간이동·컷), 투영이 바뀌면 모든 맵을 바로 다시 그린다. `WebGPURenderer`에서 draw 하나가 CPU 약 20µs라 cascade 한 장을 다시 그리는 비용이 곧 캐스터 수만큼의 draw다. minihome(high)에서 60Hz 기준 프레임당 렌더 CPU가 4.04ms에서 2.82ms로, draw가 219개에서 126개로 줄었다.
+- 작은 소품(카탈로그 GLB 모델과 폴백 상자), NPC, 잔디는 가장 가까운 cascade에만 그림자를 넣는다(`castNearShadowOnly`, `castSubtreeNearShadowOnly`). 먼 cascade의 texel보다 작은 물체라 그려도 보이지 않는다.
+- 설정은 월드 store의 `shadow`(`maps`, `mapSize`, `nearHz`, `farHz`)에 들어가고, `usePerformanceReport().shadow`가 근거리 전용 캐스터 수와 함께 돌려준다.
 
 ### `DynamicSky`
 
@@ -333,7 +337,7 @@ export function Scenery() {
 ## 팁
 
 - 잔디가 가장 비싸다. 잎 수는 대략 `grassDensity`(기본 90) × 타일 면적(4m 타일이면 16m²) × `instanceScale`이다. 타일의 `objectConfig.grassDensity`를 낮추는 것이 가장 효과가 크다. 수치는 [performance.md](performance.md)에 있다.
-- 그림자 비용은 cascade 수와 맵 크기에 비례한다. `CascadedSun quality="low"`나 `shadowMapSize`로 줄이고, 그림자가 필요 없는 장식 메시는 `castShadow`를 끈다. 잔디는 가장 가까운 cascade에만 그림자를 넣는다.
+- 그림자 비용은 다시 그리는 cascade 수 × 캐스터 수다. `updateHz`를 낮추거나 `CascadedSun quality="low"`로 줄이고, 그림자가 필요 없는 장식 메시는 `castShadow`를 끄고, 작은 물체는 `castNearShadowOnly`로 가장 가까운 cascade에만 넣는다.
 - classic WebGL의 거울 물은 반사 장면을 한 번 더 그린다. 툰 모드나 WebGPU에서는 이 반사 pass가 없다.
 - 후처리 `quality="performance"`는 TRAA와 AO를 끄고 bloom과 채도만 남긴다. AO는 `aoResolutionScale`로 해상도를 낮출 수 있다.
 - `Canvas`의 기본 `dpr`는 `[1, 2]`다. `quality`를 주지 않으면 고해상도 화면에서 픽셀 비율 2로 그린다.

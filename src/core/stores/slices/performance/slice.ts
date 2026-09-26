@@ -49,6 +49,8 @@ export const createPerformanceSlice: StateCreator<
       }
       return { performance };
     }),
+  shadow: null,
+  setShadow: (shadow) => set({ shadow }),
   framePhases: null,
   setFramePhases: (framePhases: FramePhaseTimings) => set({ framePhases }),
   performanceSamplers: 0,

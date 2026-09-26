@@ -21,11 +21,24 @@ export type EngineState = {
   allocatedBytesEstimate?: number | null;
 };
 
+/** The sun's shadow maps as `CascadedSun` set them up. */
+export type ShadowState = {
+  /** Cascades on WebGPU, 1 for the single WebGL map. */
+  maps: number;
+  mapSize: number;
+  /** Redraws a second of the nearest map and of each farther one; `Infinity` means every frame. */
+  nearHz: number;
+  farHz: number;
+};
+
 export interface PerformanceState {
   performance: {
     render: RenderState;
     engine: EngineState;
   };
+  /** Null while no shadow-casting sun is mounted. */
+  shadow: ShadowState | null;
+  setShadow: (shadow: ShadowState | null) => void;
   setPerformance: (performance: {
     render: RenderState;
     engine: EngineState;

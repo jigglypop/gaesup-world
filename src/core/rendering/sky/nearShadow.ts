@@ -1,7 +1,12 @@
-import type { Object3D } from 'three';
+import type { Mesh, Object3D } from 'three';
 
 // Casters finer than a far cascade's texels, such as grass blades: only the nearest cascade resolves their shadows.
 const nearOnly = new Set<Object3D>();
+
+/** Casters currently drawn into the nearest cascade only. */
+export function countNearOnlyCasters(): number {
+  return nearOnly.size;
+}
 
 /** Casts `object`'s shadow into the nearest cascade only. Returns the undo. */
 export function castNearShadowOnly(object: Object3D): () => void {
@@ -9,6 +14,21 @@ export function castNearShadowOnly(object: Object3D): () => void {
   return () => {
     nearOnly.delete(object);
   };
+}
+
+/**
+ * Small props: every mesh under `root` casts into the nearest cascade only and receives shadows. The far cascades would
+ * spend a draw per mesh on shadows a few texels wide. Returns the undo.
+ */
+export function castSubtreeNearShadowOnly(root: Object3D): () => void {
+  const releases: (() => void)[] = [];
+  root.traverse((child) => {
+    if (!(child as Mesh).isMesh) return;
+    child.castShadow = true;
+    child.receiveShadow = true;
+    releases.push(castNearShadowOnly(child));
+  });
+  return () => releases.forEach((release) => release());
 }
 
 type Cascade = { renderShadow(frame: unknown): void };

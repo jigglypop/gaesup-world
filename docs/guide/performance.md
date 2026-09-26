@@ -134,7 +134,7 @@ export async function measureWindow(runtime: GaesupRuntime, ms: number) {
 
 ## 입력이 없을 때 fps 낮추기: `IdleFrameRate`
 
-기본 설정의 캔버스는 입력이 없어도 매 프레임 그린다. 저장소 기준 측정에서 작은 마을은 유휴 상태에서도 CPU 약 15%를 쓴다. `IdleFrameRate`(`src/core/perf/idle.tsx`, 루트 export)는 입력이 있는 동안 매 프레임 그리고, 입력이 끊기면 낮은 fps로 그린다.
+기본 설정의 캔버스는 입력이 없어도 매 프레임 그린다. 저장소 기준 측정에서 작은 마을은 유휴 상태에서도 CPU 약 15%를 쓴다. `IdleFrameRate`(`src/core/perf/idle.tsx`, 루트 export)는 화면이 바뀌는 동안 매 프레임 그리고, 바뀌지 않으면 낮은 fps로 그린다.
 
 ```tsx
 <Canvas shadows="percentage" gl={createRenderer}>
@@ -146,12 +146,12 @@ export async function measureWindow(runtime: GaesupRuntime, ms: number) {
 | prop | 기본값 | 뜻 |
 |---|---|---|
 | `fps` | 30 | 유휴 상태의 초당 최대 그리기 횟수 |
-| `after` | 2 | 이 시간(초) 동안 입력이 없으면 유휴로 본다 |
+| `after` | 2 | 이 시간(초) 동안 활동이 없으면 유휴로 본다 |
 
 - `Canvas` 안 어디에나 한 번 둔다. 마운트할 때 캔버스 `frameloop`가 `always`면 `never`로 바꾸고 자기 `requestAnimationFrame`에서 R3F `advance`로 직접 그린다. 캔버스 시계는 이어진다. 내려가면 `always`로 되돌린다. 처음부터 `frameloop`가 `always`가 아니면 아무것도 하지 않는다.
 - 캔버스를 직접 모는 방식이라, 잠들지 않는 물리 몸체처럼 다른 곳에서 오는 프레임 요청이 유휴 캔버스를 다시 최고 fps로 돌리지 못한다.
 - 시뮬레이션은 계속 60Hz다. `frameloop`가 `always`가 아니면 `WorldPhysics`가 캔버스 대신 시계 자체의 rAF로 고정 틱을 돌린다. 물리·NPC·게임 시간은 정상 속도로 가고, 화면만 낮은 fps로 갱신된다.
-- 활동으로 치는 입력: `window`의 `pointerdown`, `pointermove`, `wheel`, `keydown`, `keyup`, `touchstart`, `touchmove`. 게임패드 입력과 화면 속 움직임(NPC, 애니메이션, 입자)은 활동이 아니다. 게임패드로만 조작하거나 움직임이 중요한 화면에서는 끊겨 보인다.
+- 활동으로 치는 것: `window`의 `pointerdown`, `pointermove`, `wheel`, `keydown`, `keyup`, `touchstart`, `touchmove`, 그린 프레임 사이에 카메라가 움직인 것, 그리고 캔버스 스케줄러의 `markActivity()`. 걷는 NPC처럼 입력 없이 화면을 바꾸는 시스템은 `useCanvasFrameScheduler().markActivity()`를 부른다(NPC 시스템이 부른다). 게임패드 입력과 입자는 아직 활동이 아니다.
 - 60Hz 화면에서 `fps={30}`은 정확히 한 프레임 걸러 그린다(간격 판정에 10% 여유를 둔다).
 - 아직 월드에 기본 장착되지 않는다(PRD PERF).
 

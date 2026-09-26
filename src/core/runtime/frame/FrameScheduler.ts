@@ -173,6 +173,21 @@ export class FrameScheduler {
     return this.frameNumber;
   }
 
+  private lastActivity = Number.NEGATIVE_INFINITY;
+
+  /**
+   * Something on screen changed without user input (a walking NPC, a moving camera), so an idle frame rate should
+   * draw every frame for now.
+   */
+  markActivity(time = performance.now()): void {
+    if (time > this.lastActivity) this.lastActivity = time;
+  }
+
+  /** `performance.now()` of the latest {@link markActivity}. */
+  getLastActivity(): number {
+    return this.lastActivity;
+  }
+
   getGeneration(): number {
     return this.generation;
   }

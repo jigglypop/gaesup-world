@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import { LampRegistryContext } from './lampPool';
+import { castSubtreeNearShadowOnly } from '../../../../rendering/sky/nearShadow';
 import type { BuildingModelFallbackKind } from '../../../types';
 
 const LAMP_INTENSITY = 0.65;
@@ -47,6 +48,7 @@ class ModelErrorBoundary extends React.Component<
 function LoadedModel({ url }: { url: string }) {
   const { scene } = useGLTF(url) as { scene: THREE.Object3D };
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+  useEffect(() => castSubtreeNearShadowOnly(clone), [clone]);
 
   return <primitive object={clone} />;
 }
@@ -69,13 +71,21 @@ function cylinderGeometry(args: [number, number, number, number], position: [num
   );
 }
 
-function FallbackModel({
-  kind = 'generic',
-  color = '#9b7653',
-}: {
+type FallbackProps = {
   kind?: BuildingModelFallbackKind | undefined;
   color?: string | undefined;
-}) {
+};
+
+function FallbackModel({ kind, color }: FallbackProps) {
+  const ref = useRef<THREE.Group>(null);
+  useEffect(() => (ref.current ? castSubtreeNearShadowOnly(ref.current) : undefined), [kind, color]);
+  return <group ref={ref}><FallbackShape kind={kind} color={color} /></group>;
+}
+
+function FallbackShape({
+  kind = 'generic',
+  color = '#9b7653',
+}: FallbackProps) {
   const dark = new THREE.Color(color).multiplyScalar(0.72).getStyle();
   const light = new THREE.Color(color).lerp(new THREE.Color('#ffffff'), 0.35).getStyle();
 

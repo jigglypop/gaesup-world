@@ -25,6 +25,7 @@ const TIER = { high: '높음', medium: '보통', low: '낮음' } as const;
 const SEASON: Record<string, string> = { spring: '봄', summer: '여름', autumn: '가을', fall: '가을', winter: '겨울' };
 
 const number = (value: number, digits = 0) => value.toLocaleString('ko-KR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+const rate = (hz: number) => (Number.isFinite(hz) ? `${number(hz)}Hz` : '매 프레임');
 const compact = (value: number) => (value >= 1e6 ? `${number(value / 1e6, 1)}M` : value >= 1e4 ? `${number(value / 1e3, 1)}K` : number(value));
 
 type Grade = 'good' | 'warn' | 'bad';
@@ -75,7 +76,7 @@ function Toggle({ label, hint, checked, onChange }: { label: string; hint: strin
 /** Every number the engine reports about this world, plus the switches that move them. */
 export function StatusPanel({ settings, onChange }: { settings: SceneSettings; onChange: (next: Partial<SceneSettings>) => void }) {
   const report = usePerformanceReport(500);
-  const { frames, render, engine, phases, memory } = report;
+  const { frames, render, engine, phases, memory, shadow } = report;
   const [history, setHistory] = useState<number[]>([]);
   useEffect(() => {
     if (frames.fps > 0) setHistory((previous) => [...previous.slice(1 - HISTORY), frames.fps]);
@@ -136,6 +137,19 @@ export function StatusPanel({ settings, onChange }: { settings: SceneSettings; o
           <Metric label="셰이더 프로그램" value={number(engine.programs)} />
           <Metric label="GPU 메모리 추정" value={engine.allocatedBytesEstimate ? number(engine.allocatedBytesEstimate / 1048576) : '–'} unit={engine.allocatedBytesEstimate ? 'MB' : ''} />
         </div>
+      </Section>
+
+      <Section title="그림자">
+        {shadow ? (
+          <div className="mh-metrics">
+            <Metric label="맵" value={`${shadow.maps}장 · ${number(shadow.mapSize)}px`} hint="WebGPU는 cascade 수, WebGL은 1장이에요." />
+            <Metric label="가까운 맵 갱신" value={rate(shadow.nearHz)} />
+            <Metric label="먼 맵 갱신" value={shadow.maps > 1 ? rate(shadow.farHz) : '–'} hint="먼 cascade는 한 프레임에 하나씩 돌아가며 다시 그려요." />
+            <Metric label="근거리 전용 캐스터" value={number(shadow.nearOnlyCasters)} hint="작은 소품·주민·잔디는 가장 가까운 cascade에만 그림자를 넣어요." />
+          </div>
+        ) : (
+          <p className="mh-muted">그림자를 만드는 해가 없어요.</p>
+        )}
       </Section>
 
       <Section title="CPU 단계" aside={phases && <span className="mh-muted">합계 {number(phaseTotal, 2)}ms</span>}>
