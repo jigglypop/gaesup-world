@@ -24,7 +24,7 @@
     "S-B05": { "title": "10k 타일 월드에서 타일 칠하기 20회", "runner": "browser", "item": "REN-01c", "status": "known-red", "budget": { "batchesCreated": 0, "commitsPerEdit": 1, "bufferBytesUploadedPerEdit": null } },
     "S-B06": { "title": "편집 모드 진입", "runner": "browser", "item": "REN-04a", "status": "green", "budget": { "overlayDrawCalls": 16 } },
     "S-B07": { "title": "NPC·오브젝트 신규 모델 로드", "runner": "browser", "item": "REN-06a", "status": "green", "budget": { "visibleInstanceDrops": 0, "syncCompileFrames": 0 } },
-    "S-B08": { "title": "후처리 켠 월드 로드와 신규 객체 배치", "runner": "browser", "item": "REN-05a", "status": "known-red", "budget": { "programsAfterWarmup": 0 } },
+    "S-B08": { "title": "후처리 켠 월드 로드와 신규 객체 배치", "runner": "browser", "item": "REN-05a", "status": "green", "budget": { "programsAfterWarmup": 0 } },
     "S-B09": { "title": "NPC 30체", "runner": "browser", "item": "REN-09a", "status": "green", "budget": { "mixersPerNpc": 1, "offscreenMixerUpdates": 0 } },
     "S-B10": { "title": "품질 등급 low/medium/high/auto", "runner": "browser", "item": "REN-07b", "status": "known-red", "budget": { "dprKeptAfterResize": true, "autoDetected": true, "tierAppliedToShadowsAndPost": true } },
     "S-B11": { "title": "minihome 대기와 칠하기", "runner": "browser", "item": "DOM-11a", "status": "green", "budget": { "idleFrames": 0, "paintUploadBytes": null } },

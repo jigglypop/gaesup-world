@@ -51,14 +51,14 @@ async function during(ctx: ScenarioContext, ms: number, each?: (interval: number
   }
 }
 
-type Quiesce = { minMs?: number; quietMs?: number; maxMs?: number; each?: () => void; settled?: () => number };
+type Quiesce = { minMs?: number; quietMs?: number; maxMs?: number; each?: () => void; settled?: () => number; busy?: () => boolean };
 
 /**
  * Waits for loading to settle: at least `minMs`, then until no request has completed for `quietMs` (models, textures,
- * chunks), nor has `settled` changed (e.g. programs still compiling in the background). `each` runs every frame
- * meanwhile, so loading itself can be observed.
+ * chunks), nor has `settled` changed (e.g. programs created), nor was anything `busy` (e.g. compiles in flight, which
+ * can wait on the GPU for longer than `quietMs`). `each` runs every frame meanwhile, so loading itself can be observed.
  */
-async function quiesce(ctx: ScenarioContext, { minMs = 2000, quietMs = 1000, maxMs = 60000, each, settled }: Quiesce = {}): Promise<void> {
+async function quiesce(ctx: ScenarioContext, { minMs = 2000, quietMs = 1000, maxMs = 60000, each, settled, busy }: Quiesce = {}): Promise<void> {
   const start = await nextFrame(ctx.signal);
   let requests = pageCounters().requests;
   let count = settled?.();
@@ -68,6 +68,7 @@ async function quiesce(ctx: ScenarioContext, { minMs = 2000, quietMs = 1000, max
     each?.();
     if (pageCounters().requests !== requests) { requests = pageCounters().requests; since = now; }
     if (settled && settled() !== count) { count = settled(); since = now; }
+    if (busy?.()) since = now;
     if (now - start >= minMs && now - since >= quietMs) return;
     if (now - start > maxMs) throw new Error('장면 로드가 끝나지 않습니다.');
   }
@@ -109,7 +110,7 @@ async function withWorld(ctx: ScenarioContext, props: SceneProps, run: (world: W
     await step(ctx, '장면 로드와 warm-up');
     // Warm-up also waits out background pipeline compiles (gates, the postprocessing takeover), so what a scenario
     // measures afterwards is what its own action compiles.
-    await quiesce(ctx, { settled: () => world.renderer.programsCreated() });
+    await quiesce(ctx, { settled: () => world.renderer.programsCreated(), busy: () => world.renderer.compilesPending() > 0 });
     await run(world);
   } finally {
     world.dispose();

@@ -1,13 +1,19 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
 import { useWeatherStoreApi } from '@core/weather/stores/weatherStore';
 
+import { CompileGate } from '../../../rendering/CompileGate';
+import { rendererKind } from '../../../rendering/webgpu';
 import { useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
 import type { BuildingTreeKind } from '../../types';
 import { useInstanceCapacity } from '../BuildingBatches/capacity';
+
+// WebGPU draws points one pixel wide and cannot run the GLSL falling petals; there the petals are node sprites.
+const NodeTreeParticles = lazy(() => import('./NodeTreeParticles'));
 
 const SAKURA_BATCH_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:sakura-batch' };
 const SAKURA_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:sakura' };
@@ -424,6 +430,7 @@ function sakuraBatchSignature(trees: SakuraTreeEntry[]): string {
 }
 
 export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: boolean }) {
+  const nodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
   const weatherStore = useWeatherStoreApi();
   const barkRef = useRef<THREE.InstancedMesh>(null!);
   const darkRef = useRef<THREE.InstancedMesh>(null!);
@@ -643,7 +650,7 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
       if (uScale) uScale.value = three.gl.domElement.height * 0.5;
       if (uWind) uWind.value = base + intensity * 0.7;
     }
-  });
+  }, !nodes);
 
   if (specs.length === 0) return null;
 
@@ -654,13 +661,26 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
       <instancedMesh ref={topRef} args={[geo.trunkTop, mat.barkDark, topCapacity]} castShadow />
       <instancedMesh ref={shellRef} args={[geo.canopyCluster, mat.blossomShell, clusterCapacity]} castShadow />
       <instancedMesh ref={coreRef} args={[geo.canopyCore, mat.blossomCore, clusterCapacity]} />
-      <points geometry={canopyGeo}>
-        <pointsMaterial size={0.08 * avgScale} sizeAttenuation vertexColors transparent opacity={0.82} depthWrite={false} />
-      </points>
-      <points ref={fallingRef} geometry={fallingGeo} material={fallingMat} frustumCulled={false} />
-      <points geometry={groundGeo}>
-        <pointsMaterial size={0.085 * avgScale} sizeAttenuation vertexColors transparent opacity={0.7} depthWrite={false} />
-      </points>
+      {nodes ? (
+        // Size and opacity are uniforms and another tree only swaps instance buffers, so the gate compiles them once.
+        <Suspense fallback={null}>
+          <CompileGate>
+            <NodeTreeParticles geometry={canopyGeo} size={0.08 * avgScale} opacity={0.82} />
+            <NodeTreeParticles geometry={fallingGeo} size={1} opacity={0.88} falling />
+            <NodeTreeParticles geometry={groundGeo} size={0.085 * avgScale} opacity={0.7} />
+          </CompileGate>
+        </Suspense>
+      ) : (
+        <>
+          <points geometry={canopyGeo}>
+            <pointsMaterial size={0.08 * avgScale} sizeAttenuation vertexColors transparent opacity={0.82} depthWrite={false} />
+          </points>
+          <points ref={fallingRef} geometry={fallingGeo} material={fallingMat} frustumCulled={false} />
+          <points geometry={groundGeo}>
+            <pointsMaterial size={0.085 * avgScale} sizeAttenuation vertexColors transparent opacity={0.7} depthWrite={false} />
+          </points>
+        </>
+      )}
     </>
   );
 }

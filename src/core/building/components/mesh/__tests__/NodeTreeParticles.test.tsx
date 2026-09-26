@@ -1,8 +1,12 @@
+import type { ReactNode } from 'react';
+
+import { useThree } from '@react-three/fiber';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import * as THREE from 'three';
 
-import { getSharedFrameEntryCount, useCanvasFrameScheduler, type FrameScheduler } from '../../../../runtime/frame';
+import { FrameSchedulerHost, getSharedFrameEntryCount, useCanvasFrameScheduler, type FrameScheduler } from '../../../../runtime/frame';
 import NodeTreeParticles from '../NodeTreeParticles';
+import { SakuraBatch, type SakuraTreeEntry } from '../sakura';
 
 function createParticleGeometry(falling: boolean) {
   const geometry = new THREE.BufferGeometry();
@@ -67,4 +71,61 @@ test('떨어지는 나무 파티클만 공유 프레임 채널 하나에 등록�
   );
   expect(getSharedFrameEntryCount(scheduler!, { phase: 'effects', label: 'building:tree-particles' })).toBe(3);
   await view.unmount();
+});
+
+test('a new particle set with the same inputs, size or opacity keeps the material, and so the pipeline', async () => {
+  const view = await ReactThreeTestRenderer.create(
+    <NodeTreeParticles geometry={createParticleGeometry(true)} size={1} opacity={0.88} falling />,
+  );
+  try {
+    const sprite = view.scene.findByType('Sprite').instance as THREE.Sprite;
+    const { material } = sprite;
+    const version = material.version;
+    await view.update(<NodeTreeParticles geometry={createParticleGeometry(true)} size={1.2} opacity={0.7} falling />);
+    expect(view.scene.findByType('Sprite').instance).toBe(sprite);
+    expect(sprite.material).toBe(material);
+    expect(material.version).toBe(version);
+    expect(sprite.count).toBe(2);
+  } finally {
+    await view.unmount();
+  }
+});
+
+function WebGPUMode({ children }: { children: ReactNode }) {
+  // The test renderer cannot build node shaders, so gates skip straight to showing their content.
+  Object.assign(useThree((state) => state.gl), {
+    isWebGPURenderer: true, backend: { isWebGPUBackend: true }, compileAsync: () => Promise.resolve(),
+  });
+  return <><FrameSchedulerHost />{children}</>;
+}
+
+const trees = (count: number): SakuraTreeEntry[] =>
+  Array.from({ length: count }, (_, i) => ({ position: [i * 4, 0, 0], size: 1, treeKind: 'sakura' }));
+
+function petals(root: THREE.Object3D) {
+  const found: THREE.Object3D[] = [];
+  root.traverse((object) => { if ((object as { isPoints?: boolean }).isPoints || (object as { isSprite?: boolean }).isSprite) found.push(object); });
+  return found as THREE.Sprite[];
+}
+
+test('WebGPU draws sakura petals as sized sprites, and another tree keeps their materials', async () => {
+  const lazyLoaded = () => ReactThreeTestRenderer.act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+  const view = await ReactThreeTestRenderer.create(<WebGPUMode><SakuraBatch trees={trees(12)} /></WebGPUMode>);
+  try {
+    await lazyLoaded();
+    const root = view.scene.instance as THREE.Object3D;
+    // Points draw one pixel wide on WebGPU, and the GLSL falling petals do not run there at all.
+    const before = petals(root);
+    expect(before.map((object) => object.type)).toEqual(['Sprite', 'Sprite', 'Sprite']);
+    const materials = before.map((sprite) => sprite.material);
+    const counts = before.map((sprite) => sprite.count);
+    await view.update(<WebGPUMode><SakuraBatch trees={trees(13)} /></WebGPUMode>);
+    await lazyLoaded();
+    petals(root).forEach((sprite, index) => {
+      expect(sprite.material).toBe(materials[index]);
+      expect(sprite.count).toBeGreaterThan(counts[index]!);
+    });
+  } finally {
+    await view.unmount();
+  }
 });

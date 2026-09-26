@@ -3,7 +3,7 @@ import { readRendererStats, type RendererInfoSource } from 'gaesup-world';
 /** `compiles` counts render calls that created shader programs: compilation on the frame path, not ahead of it. */
 export type RendererFrame = { renders: number; drawCalls: number; triangles: number; compiles: number };
 type ProgramInfo = RendererInfoSource & { createProgram?: (...args: never[]) => unknown };
-type TrackedRenderer = { info: ProgramInfo; render: (...args: never[]) => unknown };
+type TrackedRenderer = { info: ProgramInfo; render: (...args: never[]) => unknown; compileAsync?: (...args: never[]) => Promise<unknown> };
 
 let active: RendererTracker | null = null;
 
@@ -22,6 +22,15 @@ export function trackRenderer(renderer: TrackedRenderer) {
   const programs = createProgram ? null : info.programs as unknown[] | null | undefined;
   const push = programs?.push;
   if (programs && push) programs.push = function (this: unknown[], ...items: unknown[]) { created += items.length; return push.apply(this, items); };
+  // Compiles in flight (gates, the postprocessing takeover), which can wait on the GPU without creating programs.
+  let pending = 0;
+  const compileAsync = renderer.compileAsync;
+  if (compileAsync) {
+    renderer.compileAsync = function (this: unknown, ...args: never[]) {
+      pending++;
+      return compileAsync.apply(this, args).finally(() => { pending--; });
+    };
+  }
   const render = renderer.render;
   renderer.render = function (this: unknown, ...args: never[]) {
     const before = created;
@@ -36,8 +45,10 @@ export function trackRenderer(renderer: TrackedRenderer) {
     stats: () => readRendererStats(info),
     /** Programs created since tracking began, on either renderer. */
     programsCreated: () => created,
+    compilesPending: () => pending,
     dispose: () => {
       renderer.render = render;
+      if (compileAsync) renderer.compileAsync = compileAsync;
       if (createProgram) info.createProgram = createProgram;
       if (programs && push) programs.push = push;
       if (active === tracker) active = null;
