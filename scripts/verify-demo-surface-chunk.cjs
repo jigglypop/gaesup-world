@@ -115,6 +115,16 @@ try {
   ) {
     throw new Error('Opening the forest eagerly loads editor/building/physics modules.');
   }
+  // The home route (S-B01) must not pay for modules only the world and editor use.
+  const homeChunks = new Set();
+  visitStaticChunk('examples/minihome/Minihome.tsx', homeChunks);
+  visitStaticChunk('examples/minihome/Miniroom.tsx', homeChunks);
+  const homeHeavy = sourcesFor(homeChunks).filter((source) =>
+    /\/src\/core\/editor\/|\/src\/core\/rendering\/postprocess\/|\/postprocessing\/|@dimforge\/rapier3d/.test(source),
+  );
+  if (homeHeavy.length > 0) {
+    throw new Error(`The home route eagerly loads editor/postprocessing/physics modules: ${homeHeavy.slice(0, 5).join(', ')}`);
+  }
 
   console.log('Showcase lazy engine and responsive styles verification passed.');
 } finally {

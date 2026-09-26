@@ -17,7 +17,7 @@
     "S-H14": { "title": "공개 엔트리가 도달하는 모듈의 최상위 부수효과", "runner": "headless", "item": "COR-12b", "status": "green", "budget": { "statementCalls": 0, "classDecorators": 0, "globalStores": 0, "otherCalls": null, "sourceFiles": null } },
     "S-H15": { "title": "에셋 URL 변경 후 저장본 load, prefab base 변경", "runner": "headless", "item": "AST-03b", "status": "pending", "budget": { "legacyUrlLoaded": true, "prefabChangePropagated": true } },
     "S-H16": { "title": "2k 객체 문서에서 편집 후 undo", "runner": "headless", "item": "AST-07a", "status": "pending", "budget": { "undoTouchesOnlyChanged": true, "resetDeltas": 0 } },
-    "S-B01": { "title": "경로별 첫 로드", "runner": "browser", "item": "PKG-01b", "status": "known-red", "budget": { "rootInitialJsGzipBytes": null, "unusedHeavyChunksOnRoot": 0 } },
+    "S-B01": { "title": "경로별 첫 로드", "runner": "browser", "item": "PKG-01b", "status": "green", "budget": { "rootInitialJsGzipBytes": null, "unusedHeavyChunksOnRoot": 0 } },
     "S-B02": { "title": "입력 없이 5초 대기", "runner": "browser", "item": "REN-11a", "status": "known-red", "budget": { "renders": 0, "commits": 0, "storeNotifications": 0, "requests": 0 } },
     "S-B03": { "title": "/world?size=m WASD 20초", "runner": "browser", "item": "REN-01b", "status": "green", "budget": { "drawCalls": null, "programsAfterWarmup": 0 } },
     "S-B04": { "title": "3인칭 궤도 360°", "runner": "browser", "item": "REN-03a", "status": "known-red", "budget": { "geometriesCreated": 0, "geometriesDisposed": 0, "commitsPerSecond": 2 } },

@@ -27,7 +27,6 @@
 | P-3 | 고정 바디를 보간 대상에서 제외 | 틱당 WASM 호출 320회(고정 50 + NPC 30) |
 | P-4 | 편집 오버레이를 InstancedMesh 2개로 | 편집 모드 draw 1,857 → 3,739 |
 | P-5 | `frameloop="demand"`, 보조 캔버스 demand | 5초 대기 중 render 515 |
-| P-6 | minihome 루트 barrel import 제거 | 첫 로드 gz 2.1MB, 쓰지 않는 heavy 청크 5 |
 | P-7 | 정적 장면 그림자 갱신 억제 | 프레임 draw 2,157(그림자 cascade 포함) |
 | P-8 | 후처리 pass 컨텍스트로 사전 컴파일, 모델 로드 시 동기 컴파일 제거 | warm-up 뒤 program 38, 동기 컴파일 5프레임 |
 | P-9 | 잔디 chunk 재사용, 지형 측면·모래 O(N²) 제거 | 400타일 그룹 약 70ms, 3천 타일 약 313ms |
