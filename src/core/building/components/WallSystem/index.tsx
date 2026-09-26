@@ -1,12 +1,11 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 
-import * as THREE from 'three';
-
 import { createWallGeometry, getWallMaterialKey, getWallMaterials, WallBatchMesh, type WallBatch } from './batch';
 import { createWallColliders } from './colliders';
+import { buildWallPieceBatches, WallPieceBatchMesh, type WallPieceBatch } from './pieces';
 import { WallSystemProps } from './types';
 import { MaterialManager } from '../../core/MaterialManager';
-import { wallBox, wallKindOf, wallPieces } from '../../model/footprint';
+import { wallKindOf } from '../../model/footprint';
 import { MeshConfig, WallConfig, WallGroupConfig } from '../../types';
 import { BuildingColliderBody } from '../BuildingColliders';
 import type { BuildingColliderBox } from '../BuildingColliders/types';
@@ -18,16 +17,7 @@ export { getWallMaterialKey };
 const EMPTY_COLLIDER_BOXES: readonly BuildingColliderBox[] = [];
 const NO_EDIT_ITEMS: EditOverlayItem[] = [];
 const NO_BATCHES: WallBatch[] = [];
-const DEFAULT_GLASS_MESH: MeshConfig = {
-  id: 'default-window-glass',
-  color: '#9ed8ff',
-  material: 'GLASS',
-  opacity: 0.42,
-  transparent: true,
-  roughness: 0.08,
-};
-const DEFAULT_DOOR_MESH: MeshConfig = { id: 'default-door-panel', color: '#7a5232', roughness: 0.78 };
-
+const NO_PIECE_BATCHES: WallPieceBatch[] = [];
 function isBatchedWall(wall: WallConfig, group: WallGroupConfig): boolean {
   return wallKindOf(wall, group) === 'solid';
 }
@@ -59,73 +49,6 @@ function buildWallBatches(
   });
 }
 
-function getGlassMaterial(manager: MaterialManager): THREE.Material {
-  return manager.getMaterial(DEFAULT_GLASS_MESH);
-}
-
-function getDoorMaterial(manager: MaterialManager, meshes: Map<string, MeshConfig>, wallGroup: WallGroupConfig): THREE.Material {
-  const base = wallGroup.frontMeshId ? meshes.get(wallGroup.frontMeshId) : undefined;
-  return manager.getMaterial({
-    ...DEFAULT_DOOR_MESH,
-    color: base?.color ? new THREE.Color(base.color).multiplyScalar(0.72).getStyle() : '#7a5232',
-  });
-}
-
-function WallPiece({
-  position,
-  size,
-  materials,
-}: {
-  position: [number, number, number];
-  size: [number, number, number];
-  materials: THREE.Material | THREE.Material[];
-}) {
-  return (
-    <mesh position={position} material={materials} castShadow receiveShadow>
-      <boxGeometry args={size} />
-    </mesh>
-  );
-}
-
-function WallModule({
-  wall,
-  wallGroup,
-  wallGroups,
-  meshes,
-  manager,
-  onWallClick,
-}: {
-  wall: WallConfig;
-  wallGroup: WallGroupConfig;
-  wallGroups: Map<string, WallGroupConfig>;
-  meshes: Map<string, MeshConfig>;
-  manager: MaterialManager;
-  onWallClick?: (wallId: string) => void;
-}) {
-  const { center, rotationY } = wallBox(wall);
-  const byRole = {
-    frame: getWallMaterials(manager, meshes, wall, wallGroups, wallGroup),
-    glass: getGlassMaterial(manager),
-    door: getDoorMaterial(manager, meshes, wallGroup),
-  };
-  const handleClick = (event: { stopPropagation: () => void }) => {
-    event.stopPropagation();
-    onWallClick?.(wall.id);
-  };
-
-  return (
-    <group
-      position={[center[0], wall.position.y, center[2]]}
-      rotation={[0, rotationY, 0]}
-      {...(onWallClick ? { onClick: handleClick } : {})}
-    >
-      {wallPieces(wallKindOf(wall, wallGroup)).map((piece) => (
-        <WallPiece key={piece.key} position={[...piece.position]} size={[...piece.size]} materials={byRole[piece.role]} />
-      ))}
-    </group>
-  );
-}
-
 /** Memoized: a building re-render for another group, a selection or a new mesh leaves unchanged groups alone. */
 export const WallSystem = memo(function WallSystem({
   wallGroup,
@@ -145,10 +68,12 @@ export const WallSystem = memo(function WallSystem({
     () => (renderBatches ? buildWallBatches(wallGroup, wallGroups ?? new Map([[wallGroup.id, wallGroup]]), meshes, materialManager) : NO_BATCHES),
     [materialManager, renderBatches, wallGroup, wallGroups, meshes],
   );
-  const moduleWallGroups = wallGroups ?? new Map([[wallGroup.id, wallGroup]]);
-  const moduleWalls = useMemo(
-    () => wallGroup.walls.filter((wall) => !isBatchedWall(wall, wallGroup)),
-    [wallGroup],
+  // Windows, doors and railings: one InstancedMesh per piece and material instead of a mesh per piece.
+  const pieceBatches = useMemo(
+    () => (renderBatches
+      ? buildWallPieceBatches(wallGroup.walls.map((wall) => ({ wall, group: wallGroup })), wallGroups ?? new Map([[wallGroup.id, wallGroup]]), meshes, materialManager)
+      : NO_PIECE_BATCHES),
+    [materialManager, renderBatches, wallGroup, wallGroups, meshes],
   );
 
   useEffect(() => {
@@ -181,16 +106,8 @@ export const WallSystem = memo(function WallSystem({
           {...(onWallClick ? { onWallClick } : {})}
         />
       ))}
-      {moduleWalls.map((wall) => (
-        <WallModule
-          key={wall.id}
-          wall={wall}
-          wallGroup={wallGroup}
-          wallGroups={moduleWallGroups}
-          meshes={meshes}
-          manager={materialManager}
-          {...(onWallClick ? { onWallClick } : {})}
-        />
+      {pieceBatches.map((batch) => (
+        <WallPieceBatchMesh key={`${wallGroup.id}-${batch.key}`} batch={batch} {...(onWallClick ? { onWallClick } : {})} />
       ))}
     </>
   );

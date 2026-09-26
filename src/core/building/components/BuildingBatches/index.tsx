@@ -10,6 +10,7 @@ import type { MeshConfig, TileGroupConfig, WallGroupConfig } from '../../types';
 import { BoxTileBatchMesh, getBoxTileBatchKey, isRaisedTile, type BoxTileBatch } from '../TileSystem/batch';
 import { getTileShape } from '../TileSystem/layout';
 import { createWallGeometry, getWallMaterials, WallBatchMesh, type WallBatch } from '../WallSystem/batch';
+import { buildWallPieceBatches, WallPieceBatchMesh, type WallPieceBatch } from '../WallSystem/pieces';
 
 export type BuildingBatchesProps = {
   tileGroups: readonly TileGroupConfig[];
@@ -23,10 +24,12 @@ export type BuildingBatchesProps = {
 const sameTileBatch = (a: BoxTileBatch, b: BoxTileBatch) =>
   a.material === b.material && a.castShadow === b.castShadow && sameItems(a.tiles, b.tiles);
 const sameWallBatch = (a: WallBatch, b: WallBatch) => sameItems(a.materials, b.materials) && sameItems(a.walls, b.walls);
+const samePieceBatch = (a: WallPieceBatch, b: WallPieceBatch) => a.material === b.material && sameItems(a.walls, b.walls);
 
 /**
  * World-level instanced batches. Every box tile and solid wall that resolves to the same materials is one
- * InstancedMesh (one draw, one GPU batch) however many groups it spans; groups keep rendering everything else.
+ * InstancedMesh (one draw, one GPU batch) however many groups it spans, and so is each piece of the windows, doors and
+ * railings; groups keep rendering everything else.
  */
 export const BuildingBatches = memo(function BuildingBatches({
   tileGroups,
@@ -89,6 +92,11 @@ export const BuildingBatches = memo(function BuildingBatches({
     return [...byMaterials.values()];
   }, [manager, meshes, wallGroupMap, wallGroups]), sameWallBatch);
 
+  const pieceBatches = useReusedByKey(useMemo(
+    () => buildWallPieceBatches(wallGroups.flatMap((group) => group.walls.map((wall) => ({ wall, group }))), wallGroupMap, meshes, manager),
+    [manager, meshes, wallGroupMap, wallGroups],
+  ), samePieceBatch);
+
   return (
     <>
       {tileBatches.map((batch) => (
@@ -101,6 +109,9 @@ export const BuildingBatches = memo(function BuildingBatches({
           geometry={resources.wallGeometry}
           {...(onWallClick ? { onWallClick } : {})}
         />
+      ))}
+      {pieceBatches.map((batch) => (
+        <WallPieceBatchMesh key={batch.key} batch={batch} {...(onWallClick ? { onWallClick } : {})} />
       ))}
     </>
   );

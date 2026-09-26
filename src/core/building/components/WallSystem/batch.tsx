@@ -56,6 +56,11 @@ export function getWallMaterials(
   ];
 }
 
+/** Six identical face materials draw as one material: one draw instead of one per BoxGeometry group. */
+export function faceMaterial(materials: THREE.Material[]): THREE.Material | THREE.Material[] {
+  return materials.every((entry) => entry === materials[0]) ? materials[0]! : materials;
+}
+
 export function WallBatchMesh({
   batch,
   geometry,
@@ -69,11 +74,7 @@ export function WallBatchMesh({
   const wallCount = batch.walls.length;
   const capacity = useInstanceCapacity(wallCount);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  // Six identical face materials draw as one material: one draw instead of one per BoxGeometry group.
-  const material = useMemo(
-    () => (batch.materials.every((entry) => entry === batch.materials[0]) ? batch.materials[0]! : batch.materials),
-    [batch.materials],
-  );
+  const material = useMemo(() => faceMaterial(batch.materials), [batch.materials]);
 
   useLayoutEffect(() => {
     const mesh = instancedRef.current;
