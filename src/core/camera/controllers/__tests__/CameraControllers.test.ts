@@ -105,6 +105,12 @@ const runControllerFrames = (
 };
 
 describe('BaseController', () => {
+  it('offset shifts the placed camera, which is what the cinematic shake beat writes', () => {
+    const shifted = runControllerFrames(new TestController(), 400, 0.05, createConfig({ offset: { x: 0, y: 3, z: 0 } }));
+    const plain = runControllerFrames(new TestController(), 400, 0.05, createConfig());
+    expect(shifted.camera.position.y - plain.camera.position.y).toBeCloseTo(3, 1);
+  });
+
   it('bounds keep the camera target inside the box, and nothing limits it without them', () => {
     const bounded = runControllerFrames(new TestController(), 400, 0.05, createConfig({ bounds: { minX: -2, minY: 2, maxY: 5, minZ: -4 } }));
     expect(bounded.camera.position.x).toBeCloseTo(-2, 1);

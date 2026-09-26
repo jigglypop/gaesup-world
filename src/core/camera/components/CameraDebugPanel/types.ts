@@ -27,7 +27,6 @@ export type CameraMetrics = {
   averageFrameTime: number;
   lastUpdateTime: number;
   mode: string;
-  activeController: string;
   distance: { x: number; y: number; z: number } | null;
   fov: number;
   /** Active controlled entity position, not camera world position. */

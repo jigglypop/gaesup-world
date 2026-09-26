@@ -9,12 +9,9 @@ export type WorldAssetUrls = Partial<UrlsState> & Partial<{
   character: string;
   vehicle: string;
   airplane: string;
-  terrain: string;
-  skybox: string;
 }>;
 
 export type WorldCameraOption = Pick<CameraOptionType,
-  | 'distance'
   | 'xDistance'
   | 'yDistance'
   | 'zDistance'
@@ -27,6 +24,8 @@ export type WorldCameraOption = Pick<CameraOptionType,
   | 'enableCollision'
 > & {
   type: CameraType;
+  /** Orbit distance the x/z distances default to (15). */
+  distance?: number;
   height?: number;
   smoothness?: number;
 };

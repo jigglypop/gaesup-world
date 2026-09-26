@@ -22,7 +22,7 @@ const WorldPostProcessing = lazy(() =>
 );
 
 /** Each URL field with its legacy short alias; the full name wins when both are set. */
-const URL_KEYS = ['characterUrl', 'vehicleUrl', 'airplaneUrl', 'wheelUrl', 'ridingUrl'] as const;
+const URL_KEYS = ['characterUrl', 'vehicleUrl', 'airplaneUrl', 'ridingUrl'] as const;
 const URL_ALIASES: Partial<Record<(typeof URL_KEYS)[number], 'character' | 'vehicle' | 'airplane'>> = {
   characterUrl: 'character', vehicleUrl: 'vehicle', airplaneUrl: 'airplane',
 };
@@ -113,7 +113,6 @@ function WorldConfiguration(props: WorldContainerProps) {
         ...cameraOption,
         ...cameraOptionUpdates,
       };
-      delete nextOption.target;
       delete nextOption.offset;
       delete nextOption.focusTarget;
       replaceCameraOption(nextOption);

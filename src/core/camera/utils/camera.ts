@@ -393,12 +393,4 @@ export const activeStateUtils = {
         return v.set(-xDistance, yDistance, -zDistance);
     }
   },
-
-  getCameraTarget: (
-    activeState: ActiveStateType,
-    cameraOption: CameraOptionType,
-  ): THREE.Vector3 => {
-    const position = activeStateUtils.getPosition(activeState);
-    return cameraOption.target || position;
-  },
-}; 
+};

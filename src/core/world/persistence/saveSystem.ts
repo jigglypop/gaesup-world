@@ -85,11 +85,6 @@ export function createCameraSaveDataFromDomain(
 ): CameraSaveData | undefined {
   if (!domain) return undefined;
 
-  const cameraOption = isRecord(domain['cameraOption']) ? domain['cameraOption'] : domain;
-  const position = toVector3Record(cameraOption['position']);
-  if (!position) return undefined;
-
-  const rotation = toVector3Record(cameraOption['rotation']) ?? { x: 0, y: 0, z: 0 };
   const modeRecord = isRecord(domain['mode']) ? domain['mode'] : undefined;
   const mode = typeof domain['mode'] === 'string'
     ? domain['mode']
@@ -103,8 +98,6 @@ export function createCameraSaveDataFromDomain(
       : undefined;
 
   return {
-    position,
-    rotation,
     mode,
     ...(settings ? { settings } : {}),
   };

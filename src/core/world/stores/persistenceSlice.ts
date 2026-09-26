@@ -31,8 +31,6 @@ export type NPCStoreState = {
 };
 
 export type CameraStoreState = {
-  position: CameraSaveData['position'];
-  rotation: CameraSaveData['rotation'];
   mode: CameraSaveData['mode'];
   settings: CameraSaveData['settings'];
 };
@@ -81,8 +79,6 @@ function createWorldData(
   const buildingState = buildingStore.getState();
   const cameraState = cameraStore?.getState();
   const camera = cameraState ? {
-    position: cameraState.position,
-    rotation: cameraState.rotation,
     mode: cameraState.mode,
     ...(cameraState.settings ? { settings: cameraState.settings } : {}),
   } : undefined;
@@ -170,8 +166,6 @@ function hydrateCameraStore(
   if (!cameraStore || !camera) return;
 
   cameraStore.setState({
-    position: camera.position,
-    rotation: camera.rotation,
     mode: camera.mode,
     settings: camera.settings || {},
   });

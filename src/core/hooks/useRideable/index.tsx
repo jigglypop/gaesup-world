@@ -8,7 +8,7 @@ import { rideableType } from './types';
 import { useWorldInputScope } from '../../input/useWorldInputScope';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
 
-export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'url' | 'wheelUrl'> =
+export const rideableDefault: Omit<rideableType, 'objectkey' | 'objectType' | 'url'> =
   {
     isRiderOn: false,
     position: vec3(),
@@ -49,7 +49,6 @@ export function useRideable() {
 
       if (props.objectType) {
         newUrls.vehicleUrl = props.url ?? '';
-        newUrls.wheelUrl = props.wheelUrl ?? '';
       }
       setUrls(newUrls);
     },

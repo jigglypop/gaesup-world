@@ -27,9 +27,8 @@ export interface CameraBounds {
 }
 
 export interface CameraOption {
+  /** World-space shift added after the mode places the camera; the cinematic shake beat writes it. */
   offset?: THREE.Vector3;
-  maxDistance?: number;
-  distance?: number;
   xDistance?: number;
   yDistance?: number;
   zDistance?: number;
@@ -38,11 +37,8 @@ export interface CameraOption {
   zoomSpeed?: number;
   minZoom?: number;
   maxZoom?: number;
-  target?: THREE.Vector3;
-  position?: THREE.Vector3;
   focus?: boolean;
   focusTarget?: THREE.Vector3;
-  focusDuration?: number;
   focusDistance?: number;
   focusLerpSpeed?: number;
   enableFocus?: boolean;
@@ -56,30 +52,10 @@ export interface CameraOption {
     fov?: number;
   };
   fov?: number;
-  minFov?: number;
-  maxFov?: number;
+  /** World-space box the camera target stays in; no limit when absent. */
   bounds?: CameraBounds;
-  mode?: string;
+  /** Where the `fixed` camera stands. */
   fixedPosition?: THREE.Vector3;
-  rotation?: THREE.Euler;
-  isoAngle?: number;
-  modeSettings?: {
-    character?: {
-      distance?: number;
-      height?: number;
-      angle?: number;
-    };
-    vehicle?: {
-      distance?: number;
-      height?: number;
-      angle?: number;
-    };
-    airplane?: {
-      distance?: number;
-      height?: number;
-      angle?: number;
-    };
-  };
 }
 
 export type CameraOptionType = CameraOption;
@@ -159,6 +135,8 @@ export interface CameraSystemConfig {
   };
   /** World-space box the camera target stays in; no limit when absent. */
   bounds?: CameraBounds | undefined;
+  /** World-space shift added to the placed camera; `undefined` clears it. */
+  offset?: { x: number; y: number; z: number } | undefined;
   enableCollision: boolean;
   collisionMargin?: number;
   collisionTargets?: CameraCollisionTargets;

@@ -8,12 +8,12 @@
 
 | 모듈 | 줄 | 상태 | 메모 |
 |---|---:|---|---|
-| `core/building` | 17,603 | 수정 | 타일·벽·블록·오브젝트 데이터와 렌더링, 편집 입력. 편집 한 번에 보이는 그룹 전체를 재분류(PERF). GLSL·TSL 이중 경로(GPU-1). `BuildingController`가 `NPCSystem`까지 올리는 결합. 실행 취소·이동·복제·다중 선택 없음. 안개·바다 표면은 그리지만 `waterScale`·벽 크기 필드는 저장만 되고 그리는 곳이 없다(DEAD-1) |
+| `core/building` | 17,603 | 수정 | 타일·벽·블록·오브젝트 데이터와 렌더링, 편집 입력. 편집 한 번에 보이는 그룹 전체를 재분류(PERF). GLSL·TSL 이중 경로(GPU-1). `BuildingController`가 `NPCSystem`까지 올리는 결합. 실행 취소·이동·복제·다중 선택 없음. |
 | `core/editor` | 12,283 | 수정 | 에디터 셸과 패널. 루트 진입점이 통째로 재수출해 루트가 무겁다(LIB-1). `@xyflow/react`는 NPC 두뇌 그래프 패널에서만 쓴다. `PerformancePanel`이 자체 rAF로 따로 잰다. 기본 규칙 패널은 가장 가까운 월드의 엔진에 묶인다 |
-| `core/motions` | 5,605 | 유지 | 물리 엔티티, 이동, 텔레포트. `Teleport` 버튼이 `cooldown`·`range`·`effect`를 무시한다(DEAD-1). deprecated `AnimationController`·`useAnimationPlayer`(`hooks`)는 `useCharacterAnimator`로 옮긴 뒤 지운다 |
+| `core/motions` | 5,605 | 유지 | 물리 엔티티, 이동, 텔레포트. deprecated `AnimationController`·`useAnimationPlayer`(`hooks`)는 `useCharacterAnimator`로 옮긴 뒤 지운다 |
 | `core/networks` | 4,504 | 수정 | 멀티플레이 WebSocket 클라이언트(`PlayerNetworkManager` 1,006줄 god file), 원격 플레이어, 방문 스냅샷. 서버가 저장소에 없다. `MultiplayerCanvas`가 WebGL 기본 렌더러로 그린다(GPU-1). transport 추상화(WebTransport)는 후보 |
-| `core/camera` | 4,503 | 유지 | 카메라 7모드, 충돌(몸 중심에서 탐사, 2026-09-27 수정), 시네마틱. 디버그·프리셋 패널은 에디터용. `fixedPosition`·`bounds`는 동작하지만 `offset`·`target`·`rotation` 등 여러 `cameraOption` 필드가 계산에 쓰이지 않는다(DEAD-1) |
-| `core/world` | 4,027 | 수정 | `GaesupWorld`(= `WorldConfigProvider`, 별칭 `World`), `GaesupWorldContent`, `WorldPhysics`, 탈것. 런타임을 만들지 않아 legacy store로 돈다(LIB-1). `World` 별칭은 삭제 후보. `urls`의 `terrain`·`skybox`는 타입에만 있고 `wheelUrl`은 그리는 코드가 없다(DEAD-1) |
+| `core/camera` | 4,503 | 유지 | 카메라 7모드, 충돌(몸 중심에서 탐사, 2026-09-27 수정), 시네마틱. 디버그·프리셋 패널은 에디터용. `cameraOption`은 계산이 읽는 필드만 남겼다(DEAD-1) |
+| `core/world` | 4,027 | 수정 | `GaesupWorld`(= `WorldConfigProvider`, 별칭 `World`), `GaesupWorldContent`, `WorldPhysics`, 탈것. 런타임을 만들지 않아 legacy store로 돈다(LIB-1). `World` 별칭은 삭제 후보. |
 | `core/character` | 3,661 | 통합 | 캐릭터 도메인·메뉴·크리에이터. `OutfitAvatar`(원시 도형 오버레이)는 `AvatarRuntime`으로 합친다(UP-1) |
 | `core/npc` | 3,440 | 수정 | 템플릿·인스턴스·두뇌·고정 틱 시뮬레이션·지각. 2026-09-26 점검 기준 결함: 말하기 상태는 있지만 말풍선으로 그리지 않는다. 렌더 경로가 두 벌(`fullModelUrl` 단일 모델과 부위 조립). 일과표가 시뮬레이션을 움직이지 않는다. 화면 밖 SkinnedMesh가 culling되지 않는다. store 하나에 카탈로그·인스턴스·에디터 선택이 섞였다. 지각이 `fieldOfView`·`hearingRadius`를 읽지 않는다. 두뇌를 정하지 않은 NPC에 `reinforcement`/`openai` 기본 두뇌를 붙인다(NPC-1) |
 | `core/scene-object` | 3,430 | 유지 | 에디터 저작 모델(명령, 계층, 프리팹 오버라이드). 건축 store와 별개의 월드 모델이라 둘의 관계를 문서화해야 한다 |
@@ -22,7 +22,7 @@
 | `core/rendering` | 3,025 | 통합 | `createRenderer`, TSL 재질, `CompileGate`, `GpuBatchBridge`, 해·안개·후처리. WebGL 전용 `ColorGrade`·`LutOverlay`·`ToonOutlines`(GPU-1), 해 두 벌 → `SunLight`(UP-1). WebGPU 어댑터가 없으면 classic `WebGLRenderer`로 떨어진다(GPU-1). `CompileGate`는 MRT 후처리(`balanced`·`quality` preset)에서 미리 컴파일하지 못한다 |
 | `core/animation` | 2,640 | 유지 | `AnimatorRuntime`(Unity식 상태 머신), 공유 애니메이션 |
 | `core/ui` | 2,015 | 유지 | 토스트, 말풍선, 미니맵, UI 시스템 |
-| `core/input` | 1,756 | 수정 | 입력 액션, 키보드·게임패드·터치. 조작 캐릭터의 키는 기본 입력 액션 표에서 파생한다(방향키·양쪽 Shift). 프로젝트 설정의 입력 바인딩은 아직 연결되지 않았다(DEAD-1) |
+| `core/input` | 1,756 | 수정 | 입력 액션, 키보드·게임패드·터치. 조작 캐릭터의 키는 기본 입력 액션 표에서 파생한다(방향키·양쪽 Shift). 프로젝트 설정의 입력 바인딩은 아직 연결되지 않았다(LIB-1) |
 | `core/runtime` | 1,489 | 수정 | 합성 루트. 객체 42개를 즉시 만들고 3개(`motions`, `motionBridge`, `animationBridge`)는 처음 접근할 때 만든다. suspend/resume 순서를 setup·deactivate·dispose 세 곳에 손으로 적는다. 자산 카탈로그·대화 레지스트리·오류 보고는 런타임마다 따로다(ISO-1, 수용 시나리오 S-H08) |
 | `core/assets` | 1,427 | 유지 | 런타임별 자산 카탈로그(`createAssetStore`, 로드 세대 포함), GLTF 캐시·로더, 생산 파이프라인. GLTF 캐시는 페이지 전역이다 |
 | `core/plugins` | 1,297 | 유지 | 레지스트리, 컨텍스트 레지스트리, 검증. `PluginRegistry.ts` 500줄. 런타임 `logger`를 주지 않으면 `ctx.logger` 출력이 사라진다(LIB-1) |
@@ -39,7 +39,7 @@
 | `core/audio` | 720 | 유지 | WebAudio 합성 효과음·BGM |
 | `core/project-settings` | 547 | 유지 | 입력·레이어 등 프로젝트 설정 |
 | `core/stores` | 540 | 수정 | 월드 store(모드·URL·크기·성능 등) 슬라이스, `lazyScopedStore`. legacy 전역 store는 2.0에서 제거 예정 |
-| `core/perf` | 520 | 수정 | 기기 감지·품질 tier·렌더러 통계·`IdleFrameRate`. GPU 시간과 성능 HUD가 없다(PERF). profile `outline`을 읽는 곳이 없고(DEAD-1), 잔디는 월드 profile이 아니라 전역 `usePerfStore`를 읽는다. `IdleFrameRate`는 게임패드 입력을 활동으로 세지 않는다 |
+| `core/perf` | 520 | 수정 | 기기 감지·품질 tier·렌더러 통계·`IdleFrameRate`. GPU 시간과 성능 HUD가 없다(PERF). 잔디는 월드 profile이 아니라 전역 `usePerfStore`를 읽는다. `IdleFrameRate`는 게임패드 입력을 활동으로 세지 않는다 |
 | `core/weather` | 454 | 유지 | 날씨 store·효과(TSL) |
 | `core/time` | 443 | 유지 | 게임 시계·날짜 |
 | `core/effects` | 415 | 유지 | 발자국, 텔레포트 효과 |
@@ -84,7 +84,6 @@
 6. **런타임이 거의 모든 것을 즉시 만든다.** 월드마다 객체 42개를 만들고, 생활 게임 도메인을 지우기 전에는 이 수가 더 컸다.
 7. **글꼴이 실리지 않는다.** CSS가 `Pretendard` 이름만 쓰고 `@font-face`가 없어 설치되지 않은 기기에서는 시스템 글꼴로 그린다(EX-1).
 8. **WebGL 기본 렌더러를 쓰는 컴포넌트.** `MultiplayerCanvas`는 `gl`을 넘기지 않아 `WebGLRenderer`로 그리고 drei `Grid`를 쓴다(GPU-1).
-9. **아무 일도 하지 않는 설정이 남아 있다.** 벽 크기, `waterScale`, `urls.terrain`·`skybox`·`wheelUrl`, `cameraOption` 여러 필드, profile `outline`, `Teleport` props, 프로젝트 설정 입력 바인딩. 안개·바다·트리거·방향키·카메라 `bounds`·`fixedPosition`·`connect()` URL은 DEAD-1에서 살렸다.
 
 ## 관련 문서
 

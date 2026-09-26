@@ -115,7 +115,6 @@ export type RideablePropType = {
   url?: string;
   characterUrl?: string;
   ridingUrl?: string;
-  wheelUrl?: string;
   position?: THREE.Vector3;
   rotation?: THREE.Euler;
   scale?: THREE.Vector3;

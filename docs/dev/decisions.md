@@ -60,6 +60,11 @@
 - 대화: 런타임마다 `dialogRegistry`. `getDialogRegistry()`는 런타임 없는 legacy 경로에만 남는다.
 - 수용 시나리오 S-H08을 실측으로 green: 두 런타임에서 자산·대화·NPC·오류를 조작하고 게임패드 폴링과 시계 소비자를 켠 뒤 해제한다. 공유 상태 0, 남은 window·document 리스너 0(활성 13), 남은 타이머 0(활성 2). jsdom의 `window`는 자체 리스너 메서드를 가져 `EventTarget.prototype`을 가로채면 보이지 않는다. 처음에는 활성 리스너가 4개로 잡혀 이 함정을 찾았다.
 
+### 죽은 공개 필드 삭제 (DEAD-1 뒷부분)
+- 사용자 결정("죽은 필드는 일단 전부 삭제")에 따라 지웠다: 벽 `width`·`height`·`depth`, 타일 `objectConfig.waterScale`, `urls`의 `terrain`·`skybox`·`wheelUrl`, 품질 profile과 프로젝트 설정의 `outline`, `Teleport`의 `cooldown`·`range`·`effect`·콜백, `CameraOption`의 11개 필드와 그것만 쓰던 설정 탭 항목·디버그 줄, 월드 세이브 카메라의 `position`·`rotation`.
+- `offset`은 지우지 않고 살렸다. 시네마틱 흔들기 비트가 쓰는데 컨트롤러가 읽지 않아 흔들기가 한 번도 보이지 않았다. 대신 store 기본값 (-10, -10, -10)을 없애고 저장에서 뺐다. 이 기본값은 옛 세이브에도 직렬화돼 있어서, 그대로 두면 불러온 월드의 카메라가 10m씩 밀린다.
+- 옛 세이브의 지운 키는 카메라 복원 때 버린다(`UNSAVED_OPTION_KEYS`).
+
 ### 동작하지 않던 설정·트리거·입력 살리기 (DEAD-1 앞부분)
 - 지우지 않고 살릴 수 있는 것부터 살렸다. 건축 안개(`DynamicFog`)와 바다 표면, `GaesupWorld`의 `wheelUrl`·`ridingUrl`, `connect()`의 모델 URL, 카메라 `fixedPosition`·`bounds`(기본 bounds는 없앴다: 한 번도 적용된 적 없는 값이 갑자기 효력을 갖지 않게), 1인칭 기본 눈높이(8m→2m, 앞 15m→0.45m), 클릭 이동은 왼쪽 버튼만.
 - 규칙 엔진 트리거를 런타임이 보낸다: 상호작용 발동 → `interaction`, 게임 시각 변경 → `timeChanged`, 영역 진입 → `enterArea`. 영역은 물리 센서가 아니라 고정 틱마다 플레이어 위치로 상자를 검사하는 방식이다(결정적이고 헤드리스에서도 돈다).

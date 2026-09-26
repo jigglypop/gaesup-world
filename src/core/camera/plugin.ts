@@ -65,12 +65,14 @@ export const DEFAULT_CAMERA_SYSTEM_EXTENSION_ID = 'camera.system';
 export const DEFAULT_CAMERA_SAVE_EXTENSION_ID = 'camera';
 export const DEFAULT_CAMERA_STORE_SERVICE_ID = 'camera.store';
 const COLLISION_TARGETS: ReadonlySet<unknown> = new Set<CameraCollisionTargets>(['scene', 'colliders']);
-const VECTOR_OPTION_KEYS = new Set([
-  'offset',
-  'target',
-  'position',
-  'focusTarget',
-  'fixedPosition',
+const VECTOR_OPTION_KEYS = new Set(['focusTarget', 'fixedPosition']);
+/**
+ * Never saved or restored: the transient shake `offset` (older saves hold a meaningless (-10, -10, -10) default that
+ * would now move the camera) and the options removed because nothing read them.
+ */
+const UNSAVED_OPTION_KEYS = new Set([
+  'offset', 'maxDistance', 'distance', 'target', 'position', 'focusDuration',
+  'minFov', 'maxFov', 'mode', 'rotation', 'isoAngle', 'modeSettings',
 ]);
 
 declare module '../plugins' {
@@ -129,27 +131,16 @@ function isSerializedVector3(value: unknown): value is SerializedVector3 {
   );
 }
 
-function isSerializedEuler(value: unknown): value is SerializedEuler {
-  if (!isSerializedVector3(value)) return false;
-  return ['XYZ', 'YZX', 'ZXY', 'XZY', 'YXZ', 'ZYX'].includes((value as Partial<SerializedEuler>).order ?? '');
-}
-
 function deserializeCameraOption(
   option: CameraSerializedState['cameraOption'],
 ): Partial<CameraOptionType> {
   const next: Partial<CameraOptionType> = {};
 
   for (const [key, value] of Object.entries(option)) {
-    if (value === undefined) continue;
+    if (value === undefined || UNSAVED_OPTION_KEYS.has(key)) continue;
     if (VECTOR_OPTION_KEYS.has(key) && !isSerializedVector3(value)) throw new TypeError('Invalid camera vector');
-    if (key === 'rotation' && !isSerializedEuler(value)) throw new TypeError('Invalid camera rotation');
     if (VECTOR_OPTION_KEYS.has(key) && isSerializedVector3(value)) {
       Object.assign(next, { [key]: new THREE.Vector3(value.x, value.y, value.z) });
-      continue;
-    }
-
-    if (key === 'rotation' && isSerializedEuler(value)) {
-      Object.assign(next, { rotation: new THREE.Euler(value.x, value.y, value.z, value.order) });
       continue;
     }
 
@@ -163,7 +154,9 @@ function getCameraSerializedState(store: GaesupStore = useGaesupStore): CameraSe
   const state = store.getState();
   return {
     mode: { ...state.mode },
-    cameraOption: serializeValue(state.cameraOption) as CameraSerializedState['cameraOption'],
+    cameraOption: serializeValue(
+      Object.fromEntries(Object.entries(state.cameraOption).filter(([key]) => !UNSAVED_OPTION_KEYS.has(key))),
+    ) as CameraSerializedState['cameraOption'],
   };
 }
 

@@ -29,7 +29,6 @@ export interface ProjectRenderingSettings {
     enabled: boolean;
     bloom: boolean;
     colorGrade: boolean;
-    outline: boolean;
   };
 }
 

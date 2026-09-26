@@ -13,7 +13,6 @@ const mockGaesupState = {
     characterUrl: '',
     ridingUrl: '',
     vehicleUrl: '',
-    wheelUrl: '',
   },
 };
 let mockBuildingEditMode = false;

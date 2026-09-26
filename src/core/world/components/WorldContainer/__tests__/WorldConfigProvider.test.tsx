@@ -13,18 +13,18 @@ describe('WorldConfigProvider', () => {
     );
     useGaesupStore.getState().setMode({ control: 'topDown' });
     useGaesupStore.getState().setCameraOption({
-      yDistance: 52, zoom: 2, focus: true, target: new THREE.Vector3(20, 0, 20),
+      yDistance: 52, zoom: 2, focus: true, focusTarget: new THREE.Vector3(20, 0, 20),
     });
     rerender(<WorldConfigProvider mode={mode} cameraOption={preset} runtimeRevision={1} />);
     expect(useGaesupStore.getState().mode.control).toBe('thirdPerson');
     expect(useGaesupStore.getState().cameraOption).toMatchObject({ yDistance: 7, zoom: 1, focus: false });
-    expect(useGaesupStore.getState().cameraOption.target).toBeUndefined();
+    expect(useGaesupStore.getState().cameraOption.focusTarget).toBeUndefined();
   });
 
   it('replaces stale camera fields when camera presets change', () => {
     useGaesupStore.getState().setCameraOption({
       focus: true,
-      target: new THREE.Vector3(1, 2, 3),
+      focusTarget: new THREE.Vector3(1, 2, 3),
       offset: new THREE.Vector3(4, 5, 6),
       zoom: 2,
     });
@@ -63,7 +63,7 @@ describe('WorldConfigProvider', () => {
 
     const cameraOption = useGaesupStore.getState().cameraOption;
     expect(cameraOption.focus).toBe(false);
-    expect(cameraOption.target).toBeUndefined();
+    expect(cameraOption.focusTarget).toBeUndefined();
     expect(cameraOption.offset).toBeUndefined();
     expect(cameraOption.xDistance).toBe(0);
     expect(cameraOption.yDistance).toBe(52);
@@ -85,9 +85,9 @@ describe('WorldConfigProvider', () => {
     view.unmount();
   });
 
-  it('applies every URL the world store keeps, riding and wheel models included', () => {
-    const view = render(<WorldConfigProvider urls={{ character: 'c.glb', ridingUrl: 'r.glb', wheelUrl: 'w.glb' }} />);
-    expect(useGaesupStore.getState().urls).toMatchObject({ characterUrl: 'c.glb', ridingUrl: 'r.glb', wheelUrl: 'w.glb' });
+  it('applies every URL the world store keeps, the riding model included', () => {
+    const view = render(<WorldConfigProvider urls={{ character: 'c.glb', ridingUrl: 'r.glb' }} />);
+    expect(useGaesupStore.getState().urls).toMatchObject({ characterUrl: 'c.glb', ridingUrl: 'r.glb' });
     view.unmount();
   });
 });

@@ -120,7 +120,7 @@ export function World() {
 4. `PhysicsEntity`가 drei `useGLTF`로 GLB를 불러온다. 로딩 중에는 가장 가까운 `Suspense`가 받는다.
 
 - 나중에 모델을 바꾸려면 새 `urls`로 다시 렌더하거나, 월드 안 컴포넌트에서 `const setUrls = useGaesupStore((s) => s.setUrls)`로 받아 `setUrls({ characterUrl })`를 부른다.
-- `WorldConfigProvider`는 store의 URL 다섯 개(`characterUrl`·`vehicleUrl`·`airplaneUrl`·`wheelUrl`·`ridingUrl`, 앞의 셋은 별칭 `character`·`vehicle`·`airplane`)를 넣는다. `terrain`·`skybox`는 타입(`WorldAssetUrls`)에만 있고 적용되지 않는다.
+- `WorldConfigProvider`는 store의 URL 네 개(`characterUrl`·`vehicleUrl`·`airplaneUrl`·`ridingUrl`, 앞의 셋은 별칭 `character`·`vehicle`·`airplane`)를 넣는다.
 - `urls`·`cameraOption`·`mode`는 객체가 바뀔 때마다 다시 적용된다. 부모가 자주 렌더된다면 모듈 상수나 `useMemo`로 고정한다. `cameraOption`을 다시 적용하면 초점과, `zoom`을 주지 않았다면 줌도 기본값으로 돌아간다.
 - 기본 애니메이터는 `idle`·`walk`·`run`·`jump`·`fall`·`ride` 이름의 클립을 찾는다(`src/core/animation/core/animator/defaultCharacterAnimator.ts`). 예제 모델 `trainer_green.glb`에는 `idle`·`walk`·`run`만 있다.
 

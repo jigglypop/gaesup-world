@@ -7,9 +7,6 @@ export const createCameraOptionSlice: StateCreator<CameraOptionSlice, [], [], Ca
   set,
 ) => ({
   cameraOption: {
-    offset: CAMERA_DEFAULTS.OFFSET.clone(),
-    maxDistance: CAMERA_DEFAULTS.MAX_DISTANCE,
-    distance: CAMERA_DEFAULTS.DISTANCE,
     xDistance: CAMERA_DEFAULTS.X_DISTANCE,
     yDistance: CAMERA_DEFAULTS.Y_DISTANCE,
     zDistance: CAMERA_DEFAULTS.Z_DISTANCE,
@@ -18,8 +15,6 @@ export const createCameraOptionSlice: StateCreator<CameraOptionSlice, [], [], Ca
     zoomSpeed: CAMERA_DEFAULTS.ZOOM_SPEED,
     minZoom: CAMERA_DEFAULTS.MIN_ZOOM,
     maxZoom: CAMERA_DEFAULTS.MAX_ZOOM,
-    target: CAMERA_DEFAULTS.TARGET.clone(),
-    position: CAMERA_DEFAULTS.POSITION.clone(),
     focus: CAMERA_DEFAULTS.FOCUS,
     enableCollision: CAMERA_DEFAULTS.ENABLE_COLLISION,
     collisionMargin: CAMERA_DEFAULTS.COLLISION_MARGIN,
@@ -29,9 +24,6 @@ export const createCameraOptionSlice: StateCreator<CameraOptionSlice, [], [], Ca
       fov: CAMERA_DEFAULTS.SMOOTHING.FOV,
     },
     fov: CAMERA_DEFAULTS.FOV,
-    minFov: CAMERA_DEFAULTS.MIN_FOV,
-    maxFov: CAMERA_DEFAULTS.MAX_FOV,
-    modeSettings: {},
   },
   setCameraOption: (update) =>
     set((state) => ({

@@ -274,8 +274,6 @@ describe('createGaesupRuntime', () => {
     useGaesupStore.getState().setCameraOption({
       fov: 75,
       zoom: 1,
-      position: new THREE.Vector3(-15, 8, -15),
-      target: new THREE.Vector3(0, 0, 0),
     });
   });
 
@@ -765,8 +763,8 @@ describe('createGaesupRuntime', () => {
     runtime.store.getState().setCameraOption({
       fov: 48,
       zoom: 1.4,
-      position: new THREE.Vector3(2, 4, 6),
-      target: new THREE.Vector3(8, 10, 12),
+      fixedPosition: new THREE.Vector3(2, 4, 6),
+      focusTarget: new THREE.Vector3(8, 10, 12),
     });
 
     await runtime.save.save('camera-slot');
@@ -775,8 +773,8 @@ describe('createGaesupRuntime', () => {
     runtime.store.getState().setCameraOption({
       fov: 90,
       zoom: 2,
-      position: new THREE.Vector3(20, 40, 60),
-      target: new THREE.Vector3(80, 100, 120),
+      fixedPosition: new THREE.Vector3(20, 40, 60),
+      focusTarget: new THREE.Vector3(80, 100, 120),
     });
 
     await runtime.save.load('camera-slot');
@@ -791,8 +789,8 @@ describe('createGaesupRuntime', () => {
       expect.objectContaining({
         fov: 48,
         zoom: 1.4,
-        position: expect.objectContaining({ x: 2, y: 4, z: 6 }),
-        target: expect.objectContaining({ x: 8, y: 10, z: 12 }),
+        fixedPosition: expect.objectContaining({ x: 2, y: 4, z: 6 }),
+        focusTarget: expect.objectContaining({ x: 8, y: 10, z: 12 }),
       }),
     );
 
@@ -833,8 +831,8 @@ describe('createGaesupRuntime', () => {
     runtime.store.getState().setCameraOption({
       fov: 55,
       zoom: 1.25,
-      position: new THREE.Vector3(3, 5, 7),
-      target: new THREE.Vector3(1, 0, 2),
+      fixedPosition: new THREE.Vector3(3, 5, 7),
+      focusTarget: new THREE.Vector3(1, 0, 2),
     });
     hydrateNPC([
       {
@@ -867,8 +865,8 @@ describe('createGaesupRuntime', () => {
     runtime.store.getState().setCameraOption({
       fov: 90,
       zoom: 2,
-      position: new THREE.Vector3(20, 40, 60),
-      target: new THREE.Vector3(80, 100, 120),
+      fixedPosition: new THREE.Vector3(20, 40, 60),
+      focusTarget: new THREE.Vector3(80, 100, 120),
     });
     hydrateNPC([]);
 
@@ -884,8 +882,8 @@ describe('createGaesupRuntime', () => {
       expect.objectContaining({
         fov: 55,
         zoom: 1.25,
-        position: expect.objectContaining({ x: 3, y: 5, z: 7 }),
-        target: expect.objectContaining({ x: 1, y: 0, z: 2 }),
+        fixedPosition: expect.objectContaining({ x: 3, y: 5, z: 7 }),
+        focusTarget: expect.objectContaining({ x: 1, y: 0, z: 2 }),
       }),
     );
     expect(runtime.npcStore.getState().instances.get('npc-runtime-roundtrip')).toEqual(

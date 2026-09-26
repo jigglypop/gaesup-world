@@ -92,9 +92,8 @@ export interface EnvironmentSaveData {
   };
 }
 
+/** Older saves may also hold `position` and `rotation`; they came from camera options nothing read and are ignored. */
 export interface CameraSaveData {
-  position: { x: number; y: number; z: number };
-  rotation: { x: number; y: number; z: number };
   mode: string;
   settings?: RuntimeRecord;
 }

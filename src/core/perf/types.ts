@@ -10,8 +10,6 @@ export type PerfProfile = {
   shadowMapSize: number;
   /** Whether postprocessing/expensive effects should be enabled by default. */
   postprocess: boolean;
-  /** Whether the toon outline pass should run. */
-  outline: boolean;
 };
 
 export type DeviceCapabilities = {

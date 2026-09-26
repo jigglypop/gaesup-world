@@ -59,9 +59,6 @@ export interface WallConfig {
   materialId?: string;
   /** The grid edge the wall stands on, named north or west; derived from position and rotation when stored. */
   edge?: EdgeCoord;
-  width?: number;
-  height?: number;
-  depth?: number;
   wallKind?: BuildingWallKind;
   flipSides?: boolean;
 }
@@ -172,7 +169,6 @@ export interface TileConfig {
   objectConfig?: {
     /** Blades per square meter. The mesh layer multiplies this by tile area. */
     grassDensity?: number;
-    waterScale?: number;
     terrainColor?: string;
     terrainAccentColor?: string;
   };

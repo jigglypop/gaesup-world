@@ -60,7 +60,7 @@ classic 경로와 비교할 때는 `<Canvas gl={createLegacyRenderer}>`로 강�
 | 생략 | profile 없음. 각 컴포넌트가 자기 기본값을 쓴다(`CascadedSun` `medium`, 캔버스 `dpr`는 준 값 그대로) |
 | `'auto'` | 기기를 한 번 감지해 tier를 고른다. 결과는 페이지 전역 `usePerfStore`에 저장되어 다른 월드도 재사용한다 |
 | `'low'` \| `'medium'` \| `'high'` | 그 tier의 profile로 고정 |
-| `PerfProfile` 객체 | 직접 만든 profile(`tier`, `instanceScale`, `pixelRatio`, `shadowMapSize`, `postprocess`, `outline`) |
+| `PerfProfile` 객체 | 직접 만든 profile(`tier`, `instanceScale`, `pixelRatio`, `shadowMapSize`, `postprocess`) |
 
 ### tier와 profile
 
@@ -71,7 +71,6 @@ classic 경로와 비교할 때는 `<Canvas gl={createLegacyRenderer}>`로 강�
 | `low` | 1.0 | 512 | 끔 | 0.4 |
 
 - 실제 픽셀 비율은 `min(profile.pixelRatio, MAX_QUALITY_PIXEL_RATIO(1.5), devicePixelRatio)`다. 후처리와 셰이딩 비용이 픽셀 수에 비례하기 때문이다. `Canvas`가 다시 렌더되며 자기 `dpr`(기본 `[1, 2]`)을 적용해도 profile 값으로 되돌린다.
-- `outline` 필드는 profile에 있지만 지금 읽는 곳이 없다.
 
 `auto` 감지(`classifyTier`): GPU 이름은 캔버스 렌더러에서 읽는다(WebGPU 어댑터 정보, 또는 WebGL `WEBGL_debug_renderer_info`). 코어 수(`hardwareConcurrency`, 없으면 4), 메모리(`deviceMemory`, 없으면 4GB), 모바일 UA를 함께 본다.
 
@@ -106,7 +105,7 @@ import { Canvas } from '@react-three/fiber';
 import { createRenderer, GaesupWorldContent, resolveQualityDpr, useQualityProfile, type PerfProfile } from 'gaesup-world';
 
 export const calm: PerfProfile = {
-  tier: 'medium', instanceScale: 0.5, pixelRatio: 1.25, shadowMapSize: 1024, postprocess: false, outline: false,
+  tier: 'medium', instanceScale: 0.5, pixelRatio: 1.25, shadowMapSize: 1024, postprocess: false,
 };
 
 export function CalmWorld() {

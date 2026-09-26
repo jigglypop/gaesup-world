@@ -33,7 +33,6 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
       enabled: false,
       bloom: false,
       colorGrade: false,
-      outline: true,
     },
   },
   input: {

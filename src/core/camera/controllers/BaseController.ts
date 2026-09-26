@@ -19,6 +19,7 @@ export abstract class BaseController implements ICameraController {
   private focusTargetPosition = new THREE.Vector3();
   private readonly nextPosition = new THREE.Vector3();
   private readonly collisionPivot = new THREE.Vector3();
+  private readonly shift = new THREE.Vector3();
   private orbitRight = new THREE.Vector3();
   private orbitYawQuaternion = new THREE.Quaternion();
   private orbitPitchQuaternion = new THREE.Quaternion();
@@ -128,6 +129,7 @@ export abstract class BaseController implements ICameraController {
       targetPosition = this.calculateTargetPosition(props, state);
       lookAtTarget = this.calculateLookAt(props, state);
     }
+    if (cameraOption.offset) targetPosition.add(this.shift.set(cameraOption.offset.x, cameraOption.offset.y, cameraOption.offset.z));
     if (cameraOption.bounds) cameraUtils.clampPosition(targetPosition, cameraOption.bounds);
     const focusLerpSpeed = cameraOption.focusLerpSpeed || 10.0;
     const positionSmoothing = cameraOption.focus

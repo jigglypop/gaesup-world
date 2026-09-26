@@ -72,8 +72,6 @@ export function readCameraSettingsValue(
       return cameraOption.enableFocus ?? field.defaultValue;
     case 'focusDistance':
       return cameraOption.focusDistance ?? field.defaultValue;
-    case 'maxDistance':
-      return cameraOption.maxDistance ?? field.defaultValue;
     case 'smoothing.position':
       return cameraOption.smoothing?.position ?? field.defaultValue;
     case 'smoothing.rotation':
@@ -117,8 +115,6 @@ export function createCameraSettingsUpdate(
       return { enableFocus: toBoolean(value) };
     case 'focusDistance':
       return { focusDistance: toNumber(value) };
-    case 'maxDistance':
-      return { maxDistance: toNumber(value) };
     case 'smoothing.position':
       return { smoothing: { ...cameraOption.smoothing, position: toNumber(value) } };
     case 'smoothing.rotation':

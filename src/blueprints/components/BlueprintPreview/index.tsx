@@ -115,8 +115,6 @@ function CharacterBlueprintPreview({ blueprint, modelUrl }: { blueprint: Charact
       minZoom: cameraConfig.minZoom || 0.5,
       maxZoom: cameraConfig.maxZoom || 3.0,
       enableFocus: false,
-      maxDistance: 50,
-      distance: 10,
       bounds: { minY: 2, maxY: 50 },
     });
     const { mode: appliedMode, cameraOption: appliedCamera } = storeApi.getState();

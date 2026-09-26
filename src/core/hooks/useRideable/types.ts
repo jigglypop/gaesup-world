@@ -10,7 +10,6 @@ export type rideableType = {
   url?: string;
   characterUrl?: string;
   ridingUrl?: string;
-  wheelUrl?: string;
   position?: THREE.Vector3;
   rotation?: THREE.Euler;
   offset?: THREE.Vector3;

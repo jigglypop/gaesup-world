@@ -19,7 +19,6 @@ export type CameraSettingsFieldPath =
   | 'enableCollision'
   | 'enableFocus'
   | 'focusDistance'
-  | 'maxDistance'
   | 'smoothing.position'
   | 'smoothing.rotation'
   | 'smoothing.fov'

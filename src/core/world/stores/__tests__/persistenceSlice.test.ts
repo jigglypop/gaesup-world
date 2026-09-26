@@ -143,8 +143,6 @@ function createStores() {
     ]),
   };
   const cameraState = {
-    position: { x: 1, y: 2, z: 3 },
-    rotation: { x: 0, y: 0.5, z: 0 },
     mode: 'topDown',
     settings: { zoom: 1.2 },
   };
@@ -206,8 +204,8 @@ describe('persistenceSlice', () => {
 
     await store.getState().saveWorld('world', 'World');
     stores.cameraStore!.setState({
-      position: { x: 9, y: 9, z: 9 },
       mode: 'firstPerson',
+      settings: { zoom: 3 },
     });
 
     const loaded = await store.getState().loadWorld('world_123');
@@ -216,8 +214,6 @@ describe('persistenceSlice', () => {
     expect(stores.buildingStore!.getState().hydrated).toEqual(manager.savedWorld?.buildings);
     expect(stores.npcStore!.getState().instances.has('npc')).toBe(true);
     expect(stores.cameraStore!.getState()).toEqual({
-      position: { x: 1, y: 2, z: 3 },
-      rotation: { x: 0, y: 0.5, z: 0 },
       mode: 'topDown',
       settings: { zoom: 1.2 },
     });
@@ -347,7 +343,6 @@ describe('persistenceSlice', () => {
         position: { x: 1, y: 0, z: 2 },
       })],
       camera: expect.objectContaining({
-        position: { x: 1, y: 2, z: 3 },
         mode: 'thirdPerson',
       }),
     }));
@@ -419,8 +414,8 @@ describe('persistenceSlice', () => {
       runtime.store.getState().setMode({ type: 'character', control: 'thirdPerson' });
       runtime.store.getState().setCameraOption({
         zoom: 1.75,
-        position: new THREE.Vector3(4, 5, 6),
-        target: new THREE.Vector3(1, 2, 3),
+        fixedPosition: new THREE.Vector3(4, 5, 6),
+        focusTarget: new THREE.Vector3(1, 2, 3),
       });
 
       await store.getState().saveWorld('camera-world', 'Camera World');
@@ -428,25 +423,25 @@ describe('persistenceSlice', () => {
       runtime.store.getState().setMode({ type: 'vehicle', control: 'isometric' });
       runtime.store.getState().setCameraOption({
         zoom: 3,
-        position: new THREE.Vector3(9, 9, 9),
-        target: new THREE.Vector3(0, 0, 0),
+        fixedPosition: new THREE.Vector3(9, 9, 9),
+        focusTarget: new THREE.Vector3(0, 0, 0),
       });
 
       const loaded = await store.getState().loadWorld('camera-world_987');
 
       expect(loaded?.world.camera).toEqual(expect.objectContaining({
-        position: { x: 4, y: 5, z: 6 },
         mode: 'thirdPerson',
         settings: expect.objectContaining({
           zoom: 1.75,
-          position: { x: 4, y: 5, z: 6 },
-          target: { x: 1, y: 2, z: 3 },
+          fixedPosition: { x: 4, y: 5, z: 6 },
+          focusTarget: { x: 1, y: 2, z: 3 },
         }),
       }));
+      expect(loaded?.world.camera).not.toHaveProperty('position');
       expect(runtime.store.getState().cameraOption).toEqual(expect.objectContaining({
         zoom: 1.75,
-        position: expect.objectContaining({ x: 4, y: 5, z: 6 }),
-        target: expect.objectContaining({ x: 1, y: 2, z: 3 }),
+        fixedPosition: expect.objectContaining({ x: 4, y: 5, z: 6 }),
+        focusTarget: expect.objectContaining({ x: 1, y: 2, z: 3 }),
       }));
     } finally {
       runtime.store.getState().setMode(originalMode);

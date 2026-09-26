@@ -45,8 +45,8 @@ const baseConfig: CameraSystemConfig = {
 
 describe('camera plugin', () => {
   it.each([
-    { position: { x: 0, y: NaN, z: 0 } }, { target: [0, 0, 0] },
-    { rotation: { x: 0, y: 0, z: 0, order: 'invalid' } }, { zoom: 'large' },
+    { fixedPosition: { x: 0, y: NaN, z: 0 } }, { focusTarget: [0, 0, 0] },
+    { focusTarget: { x: Infinity, y: 0, z: 0 } }, { zoom: 'large' },
     { enableZoom: 'yes' }, { smoothing: { position: Infinity } },
   ])('rejects malformed options before applying mode or other domains: %j', async (cameraOption) => {
     const save = new SaveSystem({ adapter: new MemoryAdapter() });
@@ -71,16 +71,20 @@ describe('camera plugin', () => {
     const extension = registry.context.save.require<CameraSaveExtension>('camera');
     const before = useGaesupStore.getState();
     const data = { mode: { ...before.mode }, cameraOption: {
-      position: { x: 1, y: 2, z: 3 }, rotation: { x: 0, y: 1, z: 0, order: 'YXZ' as const }, smoothing: { position: 0.3 },
+      fixedPosition: { x: 1, y: 2, z: 3 }, smoothing: { position: 0.3 },
+      // An older save: its default shake offset and options nothing reads any more stay out.
+      offset: { x: -10, y: -10, z: -10 }, position: { x: 4, y: 5, z: 6 }, minFov: 10,
     } };
     try {
       const apply = extension.prepareHydrate!(data);
       expect(useGaesupStore.getState()).toBe(before);
-      data.cameraOption.position.x = 99;
+      data.cameraOption.fixedPosition.x = 99;
       data.cameraOption.smoothing.position = 99;
       apply();
-      expect(useGaesupStore.getState().cameraOption.position).toEqual(new THREE.Vector3(1, 2, 3));
-      expect(useGaesupStore.getState().cameraOption.rotation).toEqual(new THREE.Euler(0, 1, 0, 'YXZ'));
+      expect(useGaesupStore.getState().cameraOption.fixedPosition).toEqual(new THREE.Vector3(1, 2, 3));
+      expect(useGaesupStore.getState().cameraOption).not.toHaveProperty('offset');
+      expect(useGaesupStore.getState().cameraOption).not.toHaveProperty('position');
+      expect(useGaesupStore.getState().cameraOption).not.toHaveProperty('minFov');
       expect(useGaesupStore.getState().cameraOption.smoothing?.position).toBe(0.3);
     } finally {
       useGaesupStore.setState(before);
@@ -93,8 +97,6 @@ describe('camera plugin', () => {
     useGaesupStore.getState().setCameraOption({
       fov: 75,
       zoom: 1,
-      position: new THREE.Vector3(-15, 8, -15),
-      target: new THREE.Vector3(0, 0, 0),
     });
   });
 
@@ -154,8 +156,8 @@ describe('camera plugin', () => {
     service.setCameraOption({
       fov: 55,
       zoom: 1.25,
-      position: new THREE.Vector3(1, 2, 3),
-      target: new THREE.Vector3(4, 5, 6),
+      fixedPosition: new THREE.Vector3(1, 2, 3),
+      focusTarget: new THREE.Vector3(4, 5, 6),
     });
 
     const binding = registry.context.save.require<CameraSaveExtension>('camera');
@@ -170,8 +172,8 @@ describe('camera plugin', () => {
       cameraOption: expect.objectContaining({
         fov: 55,
         zoom: 1.25,
-        position: { x: 1, y: 2, z: 3 },
-        target: { x: 4, y: 5, z: 6 },
+        fixedPosition: { x: 1, y: 2, z: 3 },
+        focusTarget: { x: 4, y: 5, z: 6 },
       }),
     });
 
@@ -179,8 +181,8 @@ describe('camera plugin', () => {
     service.setCameraOption({
       fov: 90,
       zoom: 2,
-      position: new THREE.Vector3(10, 20, 30),
-      target: new THREE.Vector3(40, 50, 60),
+      fixedPosition: new THREE.Vector3(10, 20, 30),
+      focusTarget: new THREE.Vector3(40, 50, 60),
     });
 
     binding.hydrate(saved);
@@ -194,8 +196,8 @@ describe('camera plugin', () => {
     expect(state.cameraOption).toEqual(expect.objectContaining({
       fov: 55,
       zoom: 1.25,
-      position: expect.objectContaining({ x: 1, y: 2, z: 3 }),
-      target: expect.objectContaining({ x: 4, y: 5, z: 6 }),
+      fixedPosition: expect.objectContaining({ x: 1, y: 2, z: 3 }),
+      focusTarget: expect.objectContaining({ x: 4, y: 5, z: 6 }),
     }));
   });
 

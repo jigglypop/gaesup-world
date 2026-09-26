@@ -120,7 +120,6 @@ export function profileForTier(tier: PerfTier): PerfProfile {
       pixelRatio: 2.0,
       shadowMapSize: 2048,
       postprocess: true,
-      outline: true,
     };
   }
   if (tier === 'medium') {
@@ -130,7 +129,6 @@ export function profileForTier(tier: PerfTier): PerfProfile {
       pixelRatio: 1.5,
       shadowMapSize: 1024,
       postprocess: true,
-      outline: true,
     };
   }
   return {
@@ -139,7 +137,6 @@ export function profileForTier(tier: PerfTier): PerfProfile {
     pixelRatio: 1.0,
     shadowMapSize: 512,
     postprocess: false,
-    outline: false,
   };
 }
 

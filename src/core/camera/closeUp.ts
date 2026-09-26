@@ -22,14 +22,10 @@ export function cloneCameraOption(option: CameraOptionType): CameraOptionType {
   return {
     ...option,
     ...(option.offset ? { offset: option.offset.clone() } : {}),
-    ...(option.target ? { target: option.target.clone() } : {}),
-    ...(option.position ? { position: option.position.clone() } : {}),
     ...(option.focusTarget ? { focusTarget: option.focusTarget.clone() } : {}),
     ...(option.fixedPosition ? { fixedPosition: option.fixedPosition.clone() } : {}),
-    ...(option.rotation ? { rotation: option.rotation.clone() } : {}),
     ...(option.smoothing ? { smoothing: { ...option.smoothing } } : {}),
     ...(option.bounds ? { bounds: { ...option.bounds } } : {}),
-    ...(option.modeSettings ? { modeSettings: { ...option.modeSettings } } : {}),
   };
 }
 

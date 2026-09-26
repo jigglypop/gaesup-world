@@ -38,7 +38,6 @@ const cloneCameraOption = (cameraOption: CameraOptionType): CameraOptionType => 
   ...cameraOption,
   ...(cameraOption.smoothing ? { smoothing: { ...cameraOption.smoothing } } : {}),
   ...(cameraOption.bounds ? { bounds: { ...cameraOption.bounds } } : {}),
-  ...(cameraOption.modeSettings ? { modeSettings: { ...cameraOption.modeSettings } } : {}),
 });
 
 export const Editor: FC<EditorProps> = ({ 

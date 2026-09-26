@@ -84,11 +84,10 @@ export function CameraDebugPanel({
       frameCount: metricsRef.current.frameCount + 1,
       averageFrameTime: lastUpdateTime - metricsRef.current.lastUpdateTime,
       mode: mode?.control ?? 'unknown',
-      activeController: cameraOption?.mode ?? mode?.control ?? 'unknown',
       distance,
       fov: cameraOption?.fov ?? 0,
       position: toVec3(activeState?.position),
-      targetPosition: toVec3(cameraOption?.target),
+      targetPosition: toVec3(cameraOption?.focusTarget),
       velocity: toVec3(activeState?.velocity),
       rotation: toVec3(activeState?.euler),
       lastUpdateTime,
@@ -119,7 +118,7 @@ export function CameraDebugPanel({
         'getValue' in field ? field.getValue() : readMetricValue(metrics, field.key);
       const fieldPrecision = field.precision ?? precision;
       const displayValue =
-        !('getValue' in field) && (field.key === 'mode' || field.key === 'activeController')
+        !('getValue' in field) && field.key === 'mode'
           ? CAMERA_CONTROLLER_DEFAULT_MODES.find((modeOption) => modeOption.value === value)?.label ??
             (value === 'unknown' ? labels.unavailable : value)
           : value;

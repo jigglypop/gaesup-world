@@ -83,8 +83,7 @@ setPhysics({ walkSpeed: 6, runSpeed: 12, jumpSpeed: 12 });
 | 입력 | 반영 |
 |---|---|
 | `urls.characterUrl` / `vehicleUrl` / `airplaneUrl` | 그대로. 짧은 별칭 `character`·`vehicle`·`airplane`도 받는다(정식 이름이 우선) |
-| `urls.wheelUrl`, `ridingUrl` | `GaesupWorld`가 store에 넣는다. `ridingUrl`은 탈것에 탄 캐릭터 모델이다. `wheelUrl`은 저장만 되고 그리는 코드가 없다 |
-| `urls.terrain`, `skybox` | 타입에만 있고 적용되지 않는다 |
+| `urls.ridingUrl` | 탈것에 탄 캐릭터 모델. `GaesupWorld`가 store에 넣는다 |
 | `mode` | `{ type: 'character' \| 'vehicle' \| 'airplane', controller?: 'keyboard' \| 'clicker' \| 'gamepad', control?: CameraType }`. 기본은 `character` / `keyboard` / `thirdPerson` |
 
 `mode.type`을 처음부터 `vehicle`이나 `airplane`으로 두면 그 모델을 직접 조종한다. `cameraOption`·`mode` 객체는 참조가 바뀔 때마다 store에 다시 적용된다. 부모가 다시 그려질 때마다 새 객체 리터럴을 넘기면 그때마다 카메라 설정이 초기화되고 휠 줌도 `zoom` 값으로 돌아가므로, 모듈 상수나 `useMemo`로 고정한다.
@@ -189,14 +188,12 @@ function useCameraMode() {
 - `requestCameraCloseUp(target, { focusDistance?, focusLerpSpeed?, fov?, enableCollision?, rememberPrevious? }, storeApi?)`는 이전 설정을 기억하고 클로즈업하며, 되돌리는 함수를 돌려준다. `restoreCameraCloseUp(storeApi?)`로도 되돌린다. `storeApi`를 생략하면 legacy 전역 store를 쓰므로 런타임 월드에서는 `useGaesupStoreApi()` 결과를 넘긴다.
 - `playCameraCinematic`, `createCameraCinematicPlayer`는 클로즈업·돌리·궤도·흔들기·페이드·대화 등 비트 목록을 재생한다. 런타임 월드는 `runtime.cinematics`를 쓴다(`src/core/camera/cinematic.ts`).
 
-### `fixedPosition`과 `bounds`
+### `fixedPosition`, `bounds`, `offset`
 
 - `fixedPosition`: `fixed` 모드 카메라가 서는 곳이다. `setCameraOption({ fixedPosition: new Vector3(...) })`로 바꾸고, 지우면 기본 위치로 돌아간다.
 - `bounds`(`minX`·`maxX`·`minY`·`maxY`·`minZ`·`maxZ`, 모두 선택): 카메라 목표 위치를 이 상자 안으로 제한한다. 기본값은 없다(제한 없음).
-
-### 반영되지 않는 `cameraOption` 필드
-
-`CameraOption` 타입에는 있지만 지금 카메라 계산에 쓰이지 않는다: `offset`, `target`, `maxDistance`, `position`, `rotation`, `isoAngle`, `minFov`, `maxFov`, `modeSettings`, `mode`, `focusDuration`, store의 `distance`(PRD DEAD-1).
+- `offset`: 모드가 정한 카메라 위치에 더하는 월드 좌표 이동이다. 시네마틱 흔들기 비트가 쓰며, 저장하지 않는다.
+- 카메라 계산이 읽지 않던 옵션(`target`, `maxDistance`, `position`, `rotation`, `isoAngle`, `minFov`, `maxFov`, `modeSettings`, `mode`, `focusDuration`, `distance`)은 지웠다. 옛 세이브에 남은 값은 복원할 때 버린다.
 
 ## 입력
 
@@ -345,7 +342,7 @@ useInteractablesStoreApi().getState().register({ id, kind: 'npc', label, key: 'e
 | API | 설명 |
 |---|---|
 | `useTeleport()` | `{ teleport(position: Vector3, rotation?: Euler, options?), canTeleport }`. `options.dropHeight`(기본 7m)와 `options.effect`(`false` 또는 `{ kind: 'instant' \| 'drop', durationMs }`, 기본 0.9초 낙하 연출) |
-| `<Teleport position text? teleportStyle? />` | DOM 버튼. 타입에 있는 `cooldown`, `range`, `effect`, 콜백 props는 쓰지 않는다 |
+| `<Teleport position text? teleportStyle? />` | DOM 버튼 |
 | `<TeleportMarker destination enabled? yOffset? onTeleport? />` | 목적지 고리·기둥. 누르면 이동 |
 | `<TeleportOnClick modifierKey="altKey" />` | 수정키+클릭한 바닥으로 이동(기본 Alt). 평면은 `intangible` |
 | `createTeleportDestination({ id, name, position, radius?, markerColor? })` | 목적지 정규화(기본 반지름 1.4). `findTeleportDestination`, `teleportDestinationToVector3` |
@@ -357,9 +354,9 @@ useInteractablesStoreApi().getState().register({ id, kind: 'npc', label, key: 'e
 
 - 프로젝트 설정의 입력 바인딩(`moveForward` 등)은 조작 캐릭터에 연결되지 않는다.
 - 실물 게임패드는 런타임 월드에서만 동작한다.
-- `offset`·`target` 등 일부 `cameraOption` 필드가 반영되지 않는다(위 표). `smoothing: 0`은 카메라를 멈춘다.
+- `smoothing: 0`은 카메라를 멈춘다.
 - `InteractionTracker`를 따로 올려야 상호작용이 동작한다. NPC는 상호작용 대상을 스스로 등록하지 않는다.
-- 탈것은 예제·브라우저 검증 경로가 없고, 바퀴 모델(`wheelUrl`)을 그리지 않는다.
+- 탈것은 예제·브라우저 검증 경로가 없고, 바퀴를 따로 그리지 않는다(바퀴는 탈것 모델에 포함한다).
 - 터치 기본 버튼에 상호작용 키가 없다.
 
 ## 관련 문서

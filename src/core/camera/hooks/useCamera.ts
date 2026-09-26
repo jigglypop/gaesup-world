@@ -80,12 +80,8 @@ export function useCamera(enableMouse = true) {
     ...(cameraOption?.collisionTargets !== undefined ? { collisionTargets: cameraOption.collisionTargets } : {}),
     orbitYaw: orbitYawRef.current,
     orbitPitch: orbitPitchRef.current,
-    ...(cameraOption?.maxDistance !== undefined ? { maxDistance: cameraOption.maxDistance } : {}),
     ...(cameraOption?.offset
       ? { offset: { x: cameraOption.offset.x, y: cameraOption.offset.y, z: cameraOption.offset.z } }
-      : {}),
-    ...(cameraOption?.target
-      ? { lookAt: { x: cameraOption.target.x, y: cameraOption.target.y, z: cameraOption.target.z } }
       : {}),
   }), []);
   
@@ -115,20 +111,14 @@ export function useCamera(enableMouse = true) {
       enableCollision: opt?.enableCollision ?? true,
       ...(opt?.collisionMargin !== undefined ? { collisionMargin: opt.collisionMargin } : {}),
       ...(opt?.collisionTargets !== undefined ? { collisionTargets: opt.collisionTargets } : {}),
-      ...(opt?.maxDistance !== undefined ? { maxDistance: opt.maxDistance } : {}),
-      ...(opt?.offset
-        ? { offset: { x: opt.offset.x, y: opt.offset.y, z: opt.offset.z } }
-        : {}),
-      ...(opt?.target
-        ? { lookAt: { x: opt.target.x, y: opt.target.y, z: opt.target.z } }
-        : {}),
       ...(opt?.focus !== undefined ? { focus: opt.focus } : {}),
       ...(opt?.focusTarget
         ? { focusTarget: { x: opt.focusTarget.x, y: opt.focusTarget.y, z: opt.focusTarget.z } }
         : { focusTarget: undefined }),
       ...(opt?.focusDistance !== undefined ? { focusDistance: opt.focusDistance } : {}),
       ...(opt?.focusLerpSpeed !== undefined ? { focusLerpSpeed: opt.focusLerpSpeed } : {}),
-      // Always written, so clearing either option in the store clears it here too.
+      // Always written, so clearing one of these in the store clears it here too.
+      offset: opt?.offset ? { x: opt.offset.x, y: opt.offset.y, z: opt.offset.z } : undefined,
       bounds: opt?.bounds ? { ...opt.bounds } : undefined,
       fixedPosition: opt?.fixedPosition?.clone(),
     });

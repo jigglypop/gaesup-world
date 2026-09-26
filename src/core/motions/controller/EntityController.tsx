@@ -83,7 +83,6 @@ export function EntityController({ props, children }: EntityControllerProps) {
           ...baseProps,
           ...ridingProps,
           url: urls.vehicleUrl || '',
-          wheelUrl: urls.wheelUrl,
         };
       case 'airplane':
         return {

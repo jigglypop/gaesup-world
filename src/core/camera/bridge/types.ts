@@ -29,11 +29,8 @@ export interface CameraSystemConfig {
   orbitYaw?: number;
   orbitPitch?: number;
   minDistance?: number;
-  maxDistance?: number;
   /** `undefined` clears a previously configured offset. */
   offset?: { x: number; y: number; z: number } | undefined;
-  /** `undefined` clears a previously configured look-at target. */
-  lookAt?: { x: number; y: number; z: number } | undefined;
   /** World-space box the camera target stays in; `undefined` removes the limit. */
   bounds?: CameraBounds | undefined;
   /** Where the fixed camera stands; `undefined` falls back to its default. */

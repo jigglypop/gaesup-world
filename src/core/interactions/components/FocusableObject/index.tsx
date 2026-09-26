@@ -15,7 +15,7 @@ export function unfocusCamera(store: GaesupStore = useGaesupStore) {
 }
 
 export const FocusableObject = forwardRef<THREE.Group, FocusableObjectProps>(
-  ({ children, position, focusDistance = 10, focusDuration = 1, onFocus, onBlur, ...props }, ref) => {
+  ({ children, position, focusDistance = 10, onFocus, onBlur, ...props }, ref) => {
     const storeApi = useGaesupStoreApi();
     const setCameraOption = useGaesupStore((state) => state.setCameraOption);
     const cameraOption = useGaesupStore((state) => state.cameraOption);
@@ -34,7 +34,6 @@ export const FocusableObject = forwardRef<THREE.Group, FocusableObjectProps>(
       
       setCameraOption({
         focusTarget: objectPosition,
-        focusDuration: focusDuration,
         focusDistance: focusDistance,
         focus: true,
       });

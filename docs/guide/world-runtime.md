@@ -24,7 +24,7 @@ createGaesupRuntime()              월드 하나의 store·시계·입력·NPC �
 |---|---|---|
 | `runtime` | `GaesupRuntime` | 이 월드가 쓸 런타임. 생략하면 바깥 `GaesupRuntimeProvider`의 런타임을 물려받고, 그것도 없으면 legacy store를 쓴다 |
 | `runtimeRevision` | `number` | 런타임 자체 revision에 더해져 하위 트리에 전달된다. 값을 바꾸면 `mode`·`cameraOption`이 다시 적용된다 |
-| `urls` | `WorldAssetUrls` | `characterUrl`·`vehicleUrl`·`airplaneUrl`(별칭 `character`·`vehicle`·`airplane`, 긴 이름 우선)과 `wheelUrl`·`ridingUrl`을 월드 store `urls`에 넣는다. `terrain`·`skybox`는 타입에만 있고 적용되지 않는다 |
+| `urls` | `WorldAssetUrls` | `characterUrl`·`vehicleUrl`·`airplaneUrl`(별칭 `character`·`vehicle`·`airplane`, 긴 이름 우선)과 `ridingUrl`을 월드 store `urls`에 넣는다 |
 | `cameraOption` | `WorldCameraOption` | `type`(필수, 카메라 모드)과 `distance`·`xDistance`·`yDistance`·`zDistance`·`height`·`fov`·`zoom`·`enableZoom`·`minZoom`·`maxZoom`·`zoomSpeed`·`enableCollision`·`smoothness` |
 | `mode` | `Partial<ModeState> & { type }` | `type`: `character`·`vehicle`·`airplane`, `controller`: `keyboard`·`clicker`·`gamepad`, `control`: 카메라 모드 |
 | `children` | `ReactNode` | 그대로 렌더한다. DOM을 만들지 않는다 |
@@ -439,7 +439,6 @@ export function createFlagsPlugin() {
 
 - `GaesupWorld`는 런타임을 스스로 만들지 않는다. `runtime`을 주지 않으면 모든 store가 legacy 전역 store로 돌고 개발 모드 경고가 난다. `GaesupWorld`가 런타임을 만들고 수명을 관리하게 바꾸는 일이 PRD LIB-1에 있다.
 - 직접 만든 `saveSystem`을 넘기면 그 저장 시스템의 오류는 `onError`가 아니라 만들 때 준 `report`(없으면 console)로 간다. `new SaveSystem({ adapter, report: (error, context) => ... })`로 연결한다.
-- `urls`의 `terrain`·`skybox`는 적용되지 않고, `wheelUrl`은 store에 들어가지만 그리는 코드가 없다.
 - 고정 스텝 주기(60Hz)는 설정할 수 없다.
 
 ## 관련 문서

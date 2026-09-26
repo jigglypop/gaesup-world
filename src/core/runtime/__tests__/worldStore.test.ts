@@ -9,10 +9,10 @@ import { createGaesupRuntime } from '../createGaesupRuntime';
 
 test('world stores do not share mutable camera defaults or world maps', () => {
   const a = createGaesupStore(); const b = createGaesupStore();
-  a.getState().cameraOption.target!.set(9, 8, 7);
+  a.getState().cameraOption.smoothing!.position = 0.9;
   a.getState().addTile({ id: 'same', position: [1, 0, 0] });
   b.getState().addTile({ id: 'same', position: [2, 0, 0] });
-  expect(b.getState().cameraOption.target).toEqual(new Vector3());
+  expect(b.getState().cameraOption.smoothing!.position).not.toBe(0.9);
   expect(a.getState().tiles.get('same')?.position[0]).toBe(1);
   expect(b.getState().tiles.get('same')?.position[0]).toBe(2);
 });

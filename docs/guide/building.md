@@ -79,7 +79,7 @@
 - 타일: `{ id, position, tileGroupId, materialId?, size?, rotation?, shape?, objectType?, objectConfig?, cell?, footprint? }`. `materialId`가 있으면 그룹의 `floorMeshId` 대신 쓴다. `cell`·`footprint`는 store가 채운다.
 - `shape`: `'box'`(기본) · `'stairs'` · `'round'` · `'ramp'`.
 - `objectType`(지형 덮개): `'none'` · `'grass'` · `'water'` · `'sand'` · `'snowfield'`. **`box` 타일에만 그려진다.** 잔디는 인스턴스 풀잎, 물은 인접 물 타일을 묶은 수면, 모래·눈밭은 전용 지면이다.
-- `objectConfig`: `grassDensity`(m²당 풀잎, 기본 90), `terrainColor`, `terrainAccentColor`. `waterScale`은 타입에만 있고 쓰이지 않는다.
+- `objectConfig`: `grassDensity`(m²당 풀잎, 기본 90), `terrainColor`, `terrainAccentColor`.
 
 ### 벽 `WallGroupConfig` / `WallConfig`
 
@@ -293,7 +293,6 @@ getSaveSystem().register({
 - 배치 오브젝트는 에디터에서 선택하거나 지울 수 없다. `removeObject(id)`로만 지운다.
 - `add*` 액션은 겹침을 검사하지 않는다.
 - `hydrate`는 부분 병합이 아니라 전체 교체다.
-- `objectConfig.waterScale`, 벽의 `width`·`height`·`depth`는 저장되지만 그려지지 않는다(PRD DEAD-1).
 - 오브젝트에는 물리 콜라이더가 없다.
 - `BuildingController`가 `NPCSystem`까지 올린다. NPC만 쓰려면 `NPCSystem`을 직접 올릴 수 있지만 둘을 함께 올리면 NPC가 두 번 그려진다.
 - 편집 한 번에 보이는 그룹 전체를 다시 분류하고(PRD PERF), 불·깃발·잔디 등에 GLSL·TSL 두 경로가 남아 있다(PRD GPU-1).
