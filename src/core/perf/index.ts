@@ -14,4 +14,5 @@ export {
   type WorldQuality,
 } from './quality';
 export { readRendererStats } from './rendererStats';
+export { createIdleFrameGate, IdleFrameRate, type IdleFrameRateProps } from './idle';
 export type { RendererInfoSource, RendererStats, RendererCounterScope } from './rendererStats';

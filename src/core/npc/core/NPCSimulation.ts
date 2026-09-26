@@ -74,6 +74,7 @@ export class NPCSimulation {
   private now = 0;
   /** Non-NPC targets NPCs perceive, such as the player; never decided for, stored or saved. */
   private actors = new Map<string, NPCInstance>();
+  private navigation: NavigationSystem | undefined;
 
   private movedPoses = 0;
   /** Advances whenever a simulated pose moves; saves use it because moved poses are not in the store. */
@@ -87,6 +88,7 @@ export class NPCSimulation {
     } = {}) {
     if (simulations.has(store)) throw new Error('NPC store already has a simulation owner');
     simulations.set(store, this);
+    this.navigation = options.navigation;
   }
 
   /** Compatibility ownership for legacy components without a runtime provider. */
@@ -153,6 +155,24 @@ export class NPCSimulation {
       const pose = this.poses.get(id);
       return [id, pose ? { ...instance, position: [...pose.position], rotation: [...pose.rotation] } : instance];
     }));
+  }
+
+  /** Routes later movement on `navigation`. Call it again after the grid changes, so routes are planned anew. */
+  setNavigation(navigation: NavigationSystem | undefined): void {
+    this.navigation = navigation;
+    this.routes.clear();
+  }
+
+  /** Clock seconds of the next decision or speech end; a paused presentation may sleep until then. */
+  nextEventAt(): number | undefined {
+    let next = Infinity;
+    for (const instance of this.store.getState().instances.values()) {
+      if ((instance.brain?.mode ?? 'none') === 'none') continue;
+      const pose = this.poses.get(instance.id);
+      next = Math.min(next, pose && pose.nextDecision >= 0 ? pose.nextDecision : this.now);
+    }
+    for (const speech of this.speech.values()) next = Math.min(next, speech.until);
+    return Number.isFinite(next) ? next : undefined;
   }
 
   /** Adds or moves an actor NPCs can see, such as the player. Its id must not be an NPC id. */
@@ -283,14 +303,15 @@ export class NPCSimulation {
       this.records.set(entry.instanceId, entry);
       for (const action of entry.decision?.actions ?? []) {
         if (action.type === 'speak') this.speak(entry.instanceId, action.text, action.duration);
-        else if (action.type === 'lookAt') this.turnToward(entry.instanceId, action.target);
+        else if (action.type === 'lookAt') this.face(entry.instanceId, action.target);
       }
     }
     applyDecisions(this.store, entries);
     for (const listener of this.recordListeners) listener();
   }
 
-  private turnToward(id: string, target: readonly [number, number, number]): void {
+  /** Turns the NPC toward `target` from where it stands; walking turns it again toward its next step. */
+  face(id: string, target: readonly [number, number, number]): void {
     const pose = this.poses.get(id);
     if (!pose) return;
     const dx = target[0] - pose.position[0], dz = target[2] - pose.position[2];
@@ -307,7 +328,7 @@ export class NPCSimulation {
     const cached = this.routes.get(instance.id);
     if (cached && cached.waypoints === waypoints && cached.index === index) return cached.steps;
     const target = waypoints[index]!;
-    const navigation = this.options.navigation;
+    const navigation = this.navigation;
     let steps: Point[] = [[...target]];
     if (navigation?.isReady) {
       const agentRadius = instance.volume ? instance.volume.radius * Math.max(instance.scale[0], instance.scale[2]) : undefined;
