@@ -2,7 +2,7 @@
 
 A TypeScript 3D world library for React Three Fiber: WebGPU-first rendering, physics characters, building, NPCs, multiplayer and a persistent world model. Scene data can be exchanged with Unity.
 
-[Live demo](https://jigglypop.github.io/gaesup-world/) · [User guide](docs/user-guide.md) · [Developer guide](docs/developer-guide.md) · [한국어](README.ko.md)
+[Live demo](https://jigglypop.github.io/gaesup-world/) · [Docs (Korean)](docs/README.md) · [Getting started](docs/guide/getting-started.md) · [한국어](README.ko.md)
 
 This release is `1.1.0`. Check the npm registry for publication status.
 
@@ -20,7 +20,7 @@ Open http://127.0.0.1:5174/. `examples/minihome` builds a small village with the
 A matching React 19 peer set:
 
 ```sh
-npm install gaesup-world react@19 react-dom@19 three@0.185 three-stdlib @react-three/fiber@9 @react-three/drei@10 @react-three/rapier@2 @react-three/postprocessing@3
+npm install gaesup-world react@19 react-dom@19 three@0.186 three-stdlib @react-three/fiber@9 @react-three/drei@10 @react-three/rapier@2 @react-three/postprocessing@3
 ```
 
 React 18/Fiber 8 are also declared peers, but that combination needs separate consumer validation.

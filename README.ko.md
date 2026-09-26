@@ -2,7 +2,7 @@
 
 React Three Fiber용 TypeScript 3D 월드 라이브러리입니다. WebGPU 우선 렌더링, 물리 캐릭터, 건축, NPC, 멀티플레이, 저장 가능한 월드 모델을 제공하고 Unity와 장면 데이터를 주고받습니다.
 
-[데모 바로 보기](https://jigglypop.github.io/gaesup-world/) · [사용자 가이드](docs/user-guide.md) · [개발자 가이드](docs/developer-guide.md) · [English](README.md)
+[데모 바로 보기](https://jigglypop.github.io/gaesup-world/) · [문서](docs/README.md) · [시작하기](docs/guide/getting-started.md) · [English](README.md)
 
 이번 버전은 `1.1.0`입니다. 게시 여부는 npm registry에서 확인하세요.
 
@@ -20,7 +20,7 @@ http://127.0.0.1:5174/ 를 여세요. `examples/minihome`은 공개 API(`GaesupW
 React 19 앱에서 서로 맞는 의존성 조합:
 
 ```sh
-npm install gaesup-world react@19 react-dom@19 three@0.185 three-stdlib @react-three/fiber@9 @react-three/drei@10 @react-three/rapier@2 @react-three/postprocessing@3
+npm install gaesup-world react@19 react-dom@19 three@0.186 three-stdlib @react-three/fiber@9 @react-three/drei@10 @react-three/rapier@2 @react-three/postprocessing@3
 ```
 
 React 18/Fiber 8도 peer 범위에 포함되지만 별도 소비 검증이 필요합니다.
