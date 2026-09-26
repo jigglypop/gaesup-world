@@ -1,10 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const BUILDING_UI_ENTRY = path.resolve(__dirname, '../index.tsx');
+const BUILDING_UI_DIR = path.resolve(__dirname, '..');
 
+/** Every source file of the BuildingUI module, since the component and its sections live in several files. */
 function readBuildingUISource(): string {
-  return fs.readFileSync(BUILDING_UI_ENTRY, 'utf8');
+  return fs.readdirSync(BUILDING_UI_DIR)
+    .filter((file) => /\.tsx?$/.test(file))
+    .map((file) => fs.readFileSync(path.join(BUILDING_UI_DIR, file), 'utf8'))
+    .join('\n');
 }
 
 describe('BuildingUI decoupling', () => {
