@@ -22,6 +22,7 @@ import { setGrassManagerWasm, type GrassTileRenderState } from "./manager";
 import { GrassMaterialInstance, GrassMeshProps } from "./type";
 import { useGrassManager } from "./useGrassManager";
 import vertexShader from "./vert.glsl";
+import { rendererKind } from '../../../../rendering/webgpu';
 
 let _grassGroundToon: THREE.MeshToonMaterial | null = null;
 let _grassGroundPbr: THREE.MeshStandardMaterial | null = null;
@@ -382,7 +383,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
   }) => {
     extendGrassMaterial();
     const { bW = 0.14, bH = 0.65, joints = 5 } = options;
-    const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+    const useNodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
     const manager = useGrassManager();
     // Auto-clamp instance budget to the active perf tier. Low-end devices get
     // a quarter of the blades; high-end keep the user-supplied cap. This is

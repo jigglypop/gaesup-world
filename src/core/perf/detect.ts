@@ -1,4 +1,5 @@
 import type { DeviceCapabilities, PerfProfile, PerfTier } from './types';
+import { rendererKind } from '../rendering/webgpu';
 
 declare global {
   interface Navigator {
@@ -15,7 +16,7 @@ export type RendererIdentity = Pick<DeviceCapabilities, 'webgl2' | 'maxTextureSi
 
 type AdapterInfo = { vendor?: string; architecture?: string; device?: string; description?: string };
 type IdentitySource = {
-  backend?: { isWebGPUBackend?: boolean; device?: { adapterInfo?: AdapterInfo; limits?: { maxTextureDimension2D?: number } }; gl?: unknown };
+  backend?: { device?: { adapterInfo?: AdapterInfo; limits?: { maxTextureDimension2D?: number } }; gl?: unknown };
   getContext?: () => unknown;
 };
 
@@ -37,7 +38,7 @@ function isWebGLContext(value: unknown): value is WebGLRenderingContext | WebGL2
 export function readRendererIdentity(renderer: unknown): RendererIdentity | null {
   const source = renderer as IdentitySource | null;
   if (!source) return null;
-  const info = source.backend?.isWebGPUBackend ? source.backend.device?.adapterInfo : undefined;
+  const info = rendererKind(renderer) === 'webgpu' ? source.backend?.device?.adapterInfo : undefined;
   if (info) {
     return {
       webgl2: true,

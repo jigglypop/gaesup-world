@@ -76,19 +76,3 @@ export async function createGrassWindCompute(
     return null;
   }
 }
-
-/**
- * TSL node material definition for grass.
- *
- * This replaces the GLSL shaderMaterial with a TSL-based NodeMaterial
- * that works on both WebGPU (WGSL) and WebGL (GLSL) renderers.
- *
- * Integration point: When Three.js TSL API stabilizes further,
- * the vertex displacement, wind, and color mixing can be expressed
- * as TSL nodes for optimal cross-renderer compilation.
- */
-export function isWebGPURenderer(renderer: object | null | undefined): boolean {
-  if (!renderer) return false;
-  const name = (renderer as { constructor?: { name?: string } })?.constructor?.name ?? '';
-  return (renderer as { isWebGPURenderer?: boolean }).isWebGPURenderer === true || name === 'WebGPURenderer';
-}

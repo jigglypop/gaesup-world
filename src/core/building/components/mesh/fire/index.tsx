@@ -8,7 +8,7 @@ import { shaderMaterial } from '@/core/rendering/legacyDrei';
 
 import fragmentShader from './frag.glsl';
 import vertexShader from './vert.glsl';
-import { isWebGPURenderer } from '../../../../rendering/tsl/grass';
+import { rendererKind } from '../../../../rendering/webgpu';
 import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
 
 const NodeFireEffects = lazy(() => import('./NodeFireEffects'));
@@ -134,7 +134,7 @@ interface FireProps {
 
 const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color = '#ffffff' }) => {
   extendFireMaterial();
-  const nodes = useThree((state) => isWebGPURenderer(state.gl));
+  const nodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
   const tintColor = useMemo(() => new THREE.Color(color), [color]);
 
   const geo = getSharedGeo();
@@ -534,7 +534,7 @@ export function createFireBatchSignature(fires: FireBatchEntry[]): string {
 }
 
 export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireBatchEntry[] }) {
-  const nodes = useThree((state) => isWebGPURenderer(state.gl));
+  const nodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
   const billboardRef = useRef<THREE.InstancedMesh>(null!);
   const logRef = useRef<THREE.InstancedMesh>(null!);
   const charRef = useRef<THREE.InstancedMesh>(null!);

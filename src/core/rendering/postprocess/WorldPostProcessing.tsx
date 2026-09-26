@@ -9,7 +9,7 @@ import { ColorGrade } from './ColorGrade';
 import { logger } from '../../utils/logger';
 import { ToonOutlines } from '../outline';
 import { getRenderHistoryRevision } from '../renderHistory';
-import { isWebGPURenderer } from '../tsl/grass';
+import { rendererKind } from '../webgpu';
 
 export type WorldPostProcessingProps = {
   quality?: 'performance' | 'balanced' | 'quality';
@@ -265,7 +265,7 @@ function NodeWorldPostProcessing({
 
 /** One render owner per canvas; TSL bloom/color on WebGPU and the existing effects on WebGL. */
 export function WorldPostProcessing(props: WorldPostProcessingProps = {}) {
-  const webgpu = useThree((state) => isWebGPURenderer(state.gl));
+  const webgpu = useThree((state) => rendererKind(state.gl) !== 'webgl');
   return webgpu ? (
     <NodeWorldPostProcessing {...props} />
   ) : (

@@ -3,6 +3,7 @@ import type { BufferAttribute, BufferGeometry } from 'three';
 import type { WebGPURenderer } from 'three/webgpu';
 
 import { isGpuBatchRevision } from '../../core/rendering/gpuBatchRevision';
+import { rendererKind } from '../../core/rendering/webgpu';
 
 export type GpuDrivenInstancesOptions = {
   /** An initialized native WebGPU renderer. The caller retains ownership. */
@@ -22,8 +23,7 @@ export type GpuDrivenInstancesOptions = {
  */
 export async function createGpuDrivenInstances(options: GpuDrivenInstancesOptions) {
   const { renderer, positions, radius } = options;
-  const backend = renderer.backend as { isWebGPUBackend?: boolean };
-  if (!backend.isWebGPUBackend) return null;
+  if (rendererKind(renderer) !== 'webgpu') return null;
   const count = positions.length / 3;
   if (!Number.isInteger(count) || count < 1 || !Number.isFinite(radius) || radius < 0) {
     throw new RangeError('Expected nonempty xyz positions and a finite nonnegative radius.');

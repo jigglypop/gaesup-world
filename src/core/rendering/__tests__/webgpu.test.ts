@@ -50,6 +50,14 @@ describe('WebGPU renderer factory', () => {
     jest.clearAllMocks();
   });
 
+  it('classifies renderers by the backend they draw with', async () => {
+    const { rendering } = await loadRendering();
+    expect(rendering.rendererKind({ isWebGPURenderer: true, backend: { isWebGPUBackend: true } })).toBe('webgpu');
+    expect(rendering.rendererKind({ isWebGPURenderer: true, backend: {} })).toBe('webgpu-fallback');
+    expect(rendering.rendererKind({ isWebGLRenderer: true })).toBe('webgl');
+    expect(rendering.rendererKind(null)).toBe('webgl');
+  });
+
   it('shares one in-flight and settled availability promise', async () => {
     let resolveAdapter: (adapter: object | null) => void = () => undefined;
     const adapterPromise = new Promise<object | null>((resolve) => {

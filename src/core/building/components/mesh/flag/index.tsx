@@ -13,6 +13,7 @@ import fragmentShader from "./frag.glsl";
 import { FlagBatchProps, FlagMeshProps, FlagMaterialInstance, FlagSurfaceMaterialProps } from "./type";
 import vertexShader from "./vert.glsl";
 import { MILLISECONDS_IN_SECOND } from '../../../../boilerplate/types';
+import { rendererKind } from '../../../../rendering/webgpu';
 import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
 import { FLAG_STYLE_META, FlagStyle } from "../../../types";
 
@@ -41,7 +42,7 @@ const NodeFlagMaterial = lazy(() => import('./NodeFlagMaterial'));
 
 function FlagSurfaceMaterial(props: FlagSurfaceMaterialProps) {
   extendFlagMaterial();
-  const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+  const useNodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
   if (useNodes) return <NodeFlagMaterial {...props} />;
   return <flagMaterial ref={props.materialRef} map={props.texture}
     windStrength={props.windStrength} envMapIntensity={1} side={THREE.DoubleSide} transparent />;

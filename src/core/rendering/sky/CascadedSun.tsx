@@ -8,6 +8,7 @@ import { placeShadowLight, shadowFocus } from './shadowFollow';
 import { useQualityProfile } from '../../perf/quality';
 import { useEngineFrame } from '../../runtime/frame';
 import { logger } from '../../utils/logger';
+import { rendererKind } from '../webgpu';
 
 /** Half-size of the single-map fallback shadow box. */
 const FALLBACK_SHADOW_RANGE = 70;
@@ -26,15 +27,6 @@ const SHADOW_QUALITY: Record<CascadedSunQuality, ShadowQuality> = {
   low: { cascades: 2, mapSize: 512, maxFar: 80, lightMargin: 60 },
   medium: { cascades: 3, mapSize: 1024, maxFar: 140, lightMargin: 100 },
   high: { cascades: 4, mapSize: 2048, maxFar: 220, lightMargin: 140 },
-};
-
-type RendererBackend = {
-  isWebGPUBackend?: boolean;
-};
-
-type RendererWithBackend = {
-  backend?: RendererBackend;
-  isWebGPURenderer?: boolean;
 };
 
 type ShadowNodeSlot = { shadowNode?: CSMShadowNode };
@@ -56,11 +48,6 @@ export type CascadedSunProps = {
   shadowNormalBias?: number;
   shadowRadius?: number;
 };
-
-function isNativeWebGPURenderer(renderer: object): boolean {
-  const candidate = renderer as RendererWithBackend;
-  return candidate.isWebGPURenderer === true && candidate.backend?.isWebGPUBackend === true;
-}
 
 async function createCascadedShadow(
   light: THREE.DirectionalLight,
@@ -126,7 +113,7 @@ export function CascadedSun({
     if (!light) return;
     setShadowReady(false);
     light.shadow.radius = shadowRadius;
-    if (!castShadow || !isNativeWebGPURenderer(renderer)) return;
+    if (!castShadow || rendererKind(renderer) !== 'webgpu') return;
 
     let cancelled = false;
     const shadow = light.shadow as unknown as ShadowNodeSlot;
@@ -189,7 +176,7 @@ export function CascadedSun({
   useEngineFrame('effects', () => {
     const light = lightRef.current;
     // Without native cascades the single map follows the view, snapped to texels, instead of staying at the origin.
-    if (light && castShadow && !isNativeWebGPURenderer(renderer)) {
+    if (light && castShadow && rendererKind(renderer) !== 'webgpu') {
       placeShadowLight(light, shadowFocus(camera, FALLBACK_SHADOW_RANGE, focus), sunOffset, (FALLBACK_SHADOW_RANGE * 2) / resolvedMapSize);
     }
     const node = shadowNodeRef.current;
@@ -210,7 +197,7 @@ export function CascadedSun({
     <directionalLight
       key={`${camera.uuid}:${resolvedCascades}:${resolvedMapSize}:${resolvedMaxFar}:${resolvedLightMargin}:${mode}:${fade}:${shadowBias}:${shadowNormalBias}:${shadowRadius}`}
       ref={lightRef}
-      castShadow={castShadow && (!isNativeWebGPURenderer(renderer) || shadowReady)}
+      castShadow={castShadow && (rendererKind(renderer) !== 'webgpu' || shadowReady)}
       position={position}
       intensity={intensity}
       color={color}

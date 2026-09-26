@@ -10,6 +10,7 @@ import { isGpuBatchRevision } from './gpuBatchRevision';
 import { createGpuInstanceBatch, type GpuInstanceBatch } from './gpuInstanceBatch';
 import { supportsGpuBatchMaterial } from './gpuMaterialSync';
 import { invalidateRenderHistory } from './renderHistory';
+import { rendererKind } from './webgpu';
 import { logger } from '../utils/logger';
 
 type RenderCallback = NonNullable<ReturnType<WebGPURenderer['getRenderObjectFunction']>>;
@@ -51,11 +52,7 @@ function acquireFilter(renderer: WebGPURenderer) {
 }
 
 export function supportsGpuInstanceBatches(renderer: unknown): renderer is WebGPURenderer {
-  const value = renderer as {
-    backend?: { isWebGPUBackend?: boolean };
-    _attributes?: unknown;
-  } | null;
-  return isGpuBatchRevision() && value?.backend?.isWebGPUBackend === true && !!value._attributes;
+  return isGpuBatchRevision() && rendererKind(renderer) === 'webgpu' && !!(renderer as { _attributes?: unknown })._attributes;
 }
 
 function supportsAllGpuBatchMaterials(material: InstancedMesh['material']): boolean {

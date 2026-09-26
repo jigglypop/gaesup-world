@@ -4,7 +4,7 @@ import type { GridProps } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 
 import { Grid } from '../legacyDrei';
-import { isWebGPURenderer } from '../tsl/grass';
+import { rendererKind } from '../webgpu';
 
 const NodeGrid = lazy(() => import('./NodeGrid'));
 
@@ -12,6 +12,6 @@ export type WorldGridProps = Omit<GridProps, 'ref'>;
 
 /** Renderer-aware grid; the WebGPU facade also supports TSL on its WebGL backend. */
 export function WorldGrid(props: WorldGridProps) {
-  const webgpu = useThree((state) => isWebGPURenderer(state.gl));
+  const webgpu = useThree((state) => rendererKind(state.gl) !== 'webgl');
   return webgpu ? <Suspense fallback={null}><NodeGrid {...props} /></Suspense> : <Grid {...props} />;
 }

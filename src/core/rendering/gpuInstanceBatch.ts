@@ -4,6 +4,7 @@ import type { NodeMaterial, WebGPURenderer } from 'three/webgpu';
 
 import { isGpuBatchRevision } from './gpuBatchRevision';
 import { createMaterialSynchronizer, supportsGpuBatchMaterial } from './gpuMaterialSync';
+import { rendererKind } from './webgpu';
 
 const MATRIX_SIZE = 16;
 
@@ -22,7 +23,7 @@ export async function createGpuInstanceBatch(renderer: WebGPURenderer, source: I
     _attributes?: { delete(attribute: BufferAttribute): unknown };
   };
   if (
-    !(renderer.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend ||
+    rendererKind(renderer) !== 'webgpu' ||
     !isGpuBatchRevision() ||
     !owner._attributes ||
     source.count < 1

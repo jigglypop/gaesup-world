@@ -5,6 +5,7 @@ import * as THREE from 'three';
 
 import { loadCoreWasm, type GaesupCoreWasmExports } from '@core/wasm/loader';
 
+import { rendererKind } from '../../../../rendering/webgpu';
 import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
 import { logger } from '../../../../utils/logger';
 
@@ -166,7 +167,7 @@ function GpuSnow({ followCamera = false }: Pick<SnowProps, 'followCamera'>) {
 }
 
 export function Snow({ gpu, followCamera = false }: SnowProps = {}) {
-  const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+  const useNodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
   if (gpu && useNodes) return <Suspense fallback={null}><NodeGpuSnow followCamera={followCamera} count={COUNT} halfRange={HALF_RANGE} height={HEIGHT} /></Suspense>;
   if (gpu) {
     return <GpuSnow followCamera={followCamera} />;

@@ -4,6 +4,7 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { getSnowParticleTexture } from './particleTexture';
+import { rendererKind } from '../../../rendering/webgpu';
 import { useEngineFrame } from '../../../runtime/frame';
 import { useWeatherStore } from '../../stores/weatherStore';
 import type { WeatherKind } from '../../types';
@@ -32,7 +33,7 @@ export function WeatherEffect({
   wind = 0,
 }: WeatherEffectProps) {
   const selectedKind = useWeatherStore((s) => forcedKind ?? s.current?.kind);
-  const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+  const useNodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
   const getThreeState = useThree((state) => state.get);
   const ref = useRef<THREE.Object3D | null>(null);
   const handleObject = useCallback((object: THREE.Object3D | null) => { ref.current = object; }, []);

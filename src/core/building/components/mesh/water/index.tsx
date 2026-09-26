@@ -9,6 +9,7 @@ import { getDefaultToonMode } from "@core/rendering/toon";
 import { weightFromDistance } from "@core/utils/sfe";
 
 import { getSharedWaterNormals } from './normals';
+import { rendererKind } from '../../../../rendering/webgpu';
 import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
 
 
@@ -109,7 +110,7 @@ void main() {
 export default function Ocean({ lod, center, size = 16, width, depth, shore, toon, normalMap, followCamera = false, brightness = 1 }: WaterProps) {
   extendWater();
   const useToon = toon ?? getDefaultToonMode();
-  const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+  const useNodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
   const waterRef = useRef<Water | null>(null);
   const toonMatRef = useRef<THREE.ShaderMaterial | null>(null);
   const toonMeshRef = useRef<THREE.Mesh | null>(null);
