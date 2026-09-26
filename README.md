@@ -2,7 +2,7 @@
 
 A TypeScript 3D world library for React Three Fiber: WebGPU-first rendering, physics characters, building, NPCs, multiplayer and a persistent world model. Scene data can be exchanged with Unity.
 
-[Live demo](https://jigglypop.github.io/gaesup-world/) · [한국어](README.ko.md)
+[Live demo](https://jigglypop.github.io/gaesup-world/) · [User guide](docs/user-guide.md) · [Developer guide](docs/developer-guide.md) · [한국어](README.ko.md)
 
 This release is `1.1.0`. Check the npm registry for publication status.
 

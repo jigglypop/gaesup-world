@@ -2,7 +2,7 @@
 
 React Three Fiber용 TypeScript 3D 월드 라이브러리입니다. WebGPU 우선 렌더링, 물리 캐릭터, 건축, NPC, 멀티플레이, 저장 가능한 월드 모델을 제공하고 Unity와 장면 데이터를 주고받습니다.
 
-[데모 바로 보기](https://jigglypop.github.io/gaesup-world/) · [English](README.md)
+[데모 바로 보기](https://jigglypop.github.io/gaesup-world/) · [사용자 가이드](docs/user-guide.md) · [개발자 가이드](docs/developer-guide.md) · [English](README.md)
 
 이번 버전은 `1.1.0`입니다. 게시 여부는 npm registry에서 확인하세요.
 

@@ -41,14 +41,14 @@ export default function Minihome() {
   useLayoutEffect(() => { useBuildingStore.getState().hydrate(createVillage()); }, []);
   return (
     <GaesupWorld urls={{ characterUrl: PLAYER_URL }} cameraOption={{ type: 'thirdPerson' }}>
-      <Canvas shadows gl={createRenderer} camera={{ position: [0, 12, 22], fov: 50 }} style={{ position: 'fixed', inset: 0 }}>
+      <Canvas shadows="percentage" gl={createRenderer} camera={{ position: [0, 12, 22], fov: 50 }} style={{ position: 'fixed', inset: 0 }}>
         <color attach="background" args={['#bfe3f2']} />
         <ambientLight intensity={1.2} />
         <Suspense fallback={null}>
           <GaesupWorldContent quality="auto">
             <CascadedSun position={[30, 50, 20]} intensity={2.2} />
             <WorldPhysics>
-              <GaesupController parts={[]} position={[0, 2, 0]} />
+              <GaesupController position={[0, 2, 0]} />
               <BuildingController />
               <Villagers />
             </WorldPhysics>

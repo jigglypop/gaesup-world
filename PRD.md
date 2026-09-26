@@ -1,103 +1,39 @@
-# gaesup-world 코드베이스 개선 PRD
+# gaesup-world PRD
 
-작성일: 2026-09-26  
-기준: 현재 작업 트리. 미니홈 삭제는 의도된 변경이며 복구 대상에서 제외한다.
+작성일: 2026-09-27 · 기준: `main` 8e21fc39
 
-## 목표
+## 방향
 
-1. 두 개 이상의 월드를 동시에 실행해도 자산과 오류 보고가 서로 섞이지 않는다.
-2. 방문 스냅샷을 적용하다 실패해도 로컬 월드가 일부만 변경되지 않는다.
-3. 쓰지 않는 공개 API를 지워 라이브러리 표면과 번들을 줄인다.
-4. WebGPU 우선 성능을 실제 시나리오의 수치로 관리한다.
+- gaesup-world는 웹판 Unity/Unreal이다. React Three Fiber 위의 3D 엔진이며, 예제(`examples/minihome`, 포코피아·게더타운식 마을)는 엔진을 증명하는 수단일 뿐이다.
+- WebGPU로 전부 간다. 렌더러는 `WebGPURenderer`, 셰이더는 TSL만 쓴다. WebGL2는 `WebGPURenderer` 내장 fallback으로만 지원한다.
+- upstream(three r186, R3F 9/10)이 제공하는 기능은 자체 구현을 지우고 upstream을 쓴다.
+- 엔진 코어 판단 기준은 "웹판 Unity/Unreal에 필요한가"다. 게임 장르 로직은 코어에 두지 않는다.
+- 공개 API 삭제는 승인 후 진행한다. 문서는 `docs/`(사용자용·개발자용)에 두고 slice마다 갱신한다.
 
-## 현재 확인한 상태
+## 현재 상태
 
-- `pnpm run verify:full` 통과(2026-09-27): jest 3,116개, publint, 설치형 ESM/CJS 소비자, 예제 lazy 라우트.
-- 수용 테스트: 9개 통과, 12개는 `pending` 시나리오에 대응하는 `todo`이다. `test/accept/budgets.json`의 미구현 계약을 전체 기능의 합격 근거로 계산하지 않는다.
-- 예제 `examples/minihome`은 공개 API만 쓰는 최소 마을(타일·벽·나무·플레이어·NPC 2명)이다.
-- 기준 측정(작은 마을, WebGPU, dev): 스크립트 2.3ms/프레임, draw 81, 삼각형 230만(대부분 잔디), 유휴에도 매 프레임 렌더(CPU 15%). 소비자 번들(피어 제외): `createSceneDocument` 하나에 712KB, 최소 월드 6개 이름에 848KB, 전체 1,495KB. 루트 export 1,097개.
+- `pnpm run verify:full` 통과: jest 3,116개, publint, 설치형 ESM/CJS 소비자, 예제 lazy 라우트.
+- 기준 측정(작은 마을, WebGPU, dev): 스크립트 2.3ms/프레임, draw 81, 삼각형 230만(대부분 잔디), 유휴에도 매 프레임 렌더(CPU 15%). 운영 월드 라우트 3,913KB min / 1,311KB gz.
+- 소비자 번들(피어 제외): `createSceneDocument` 하나에 712KB, 최소 월드 6개 이름에 848KB, 전체 1,495KB. 루트 export 1,097개.
+- 수용 테스트 12개가 `pending`이다. `test/accept/budgets.json`의 미구현 계약을 합격 근거로 세지 않는다.
 
-## P1 — 런타임별 상태 격리
+## 실행 순서
 
-### 문제
+표 순서가 착수 순서다. 끝난 slice는 지우고 기록은 커밋 제목의 ID로 남긴다.
 
-`createGaesupRuntime().loadAssets()`는 모듈 전역 `useAssetStore`를 갱신한다. `latestLoad`도 전역이라 월드 B의 로드가 월드 A의 로드 결과를 무효화하고, 자산 레코드는 런타임별로 분리되지 않는다. `onError` 역시 `reportError.ts`의 단일 전역 sink를 교체해 동시 실행 월드의 오류가 다른 월드 콜백으로 전달될 수 있다.
+| ID | 내용 | 완료 기준 |
+|---|---|---|
+| DEL-1 | 생활 게임 도메인 삭제: farming, economy, inventory, items, quests, mail, crafting, events, catalog, town, relations와 이것만 쓰는 tools, 채집 오브젝트(`TreeObject`·`FishSpot`·`BugSpot`). 대화는 트리·선택지·플래그·`custom`만, gameplay events는 생활 게임 트리거·조건·액션을 빼고 `custom`으로 확장하게 남긴다. NPC 두뇌의 퀘스트·호감도 조건을 뺀다 | 런타임·세이브 도메인·루트 export에서 사라지고 export snapshot 갱신, `verify:full` 통과. 런타임 서브시스템 수를 보고한다 |
+| DEL-2 | 승인된 공개 API 삭제: NPC 네트워크 섬(`NetworkBridge`·`NetworkSystem`·`NPCNetworkManager`·`ConnectionPool`·`networkStateStore`, hook 5개, 패널 2개, `runtime.networkBridge`), `core/ops`, 샘플 플러그인 3개, deprecated 묶음(`usePhysics`, `BuildingBridge`, `WorldContainer` 별칭, `useGaesupContext`·`useCursorState`, 읽히지 않는 `WorldContainerProps`, `onDestory`) | export snapshot·소비자 검증 갱신, `verify:full` 통과. `blueprints`는 유지 |
+| ISO-1 | 런타임별 격리. 자산 카탈로그와 로드 세대(`latestLoad`)를 런타임 소유로, `AvatarProvider` 기본 조회도 런타임 카탈로그로. 오류는 전역 sink 교체 대신 런타임이 소유한 경계(클록, 플러그인 이벤트 버스, 세이브, 상호작용, 캔버스 프레임 스케줄러)가 자기 `onError`로 보고한다 | 같은 asset ID에 다른 메타데이터를 가진 월드 A/B가 각자 결과만 읽고, 한쪽의 느린 로드·해제가 다른 쪽을 바꾸지 않는다. A의 오류는 A의 `onError`로만 가고, 해제 순서와 관계없이 종료된 런타임의 콜백이 다시 불리지 않는다. 두 런타임 해제 뒤 리스너·타이머 누수 0. `S-H08`을 실측으로 |
+| ISO-2 | 방문 스냅샷 원자적 적용. 모든 도메인을 먼저 검증하고, 적용 중 실패하면 바뀐 도메인을 역순으로 되돌린다. 복구 실패는 구조화된 결과로 알린다 | `atomic: true`에서 한 도메인이라도 실패하면 로컬 상태가 적용 전과 같다. 호출자가 성공·실패를 구분하고 실패 뒤 autosave가 멈춰 있지 않다. 두 번째 도메인 예외 주입 테스트 |
+| GPU-1 | WebGPU 전면. `createRenderer`는 `WebGPURenderer`만 만들고, `WebGLRenderer`·GLSL(`shaderMaterial`)·WebGL 그림자 깊이 재질·`@react-three/postprocessing` 경로(불, 깃발, 잔디, 벚꽃, 눈, 물, 날씨, `ColorGrade`, `LutOverlay`, `ToonOutlines`)를 지운다. 필요한 효과는 TSL로 옮긴다. `postprocessing`·`@react-three/postprocessing` 의존성을 뺀다 | `rendererKind(...) === 'webgl'` 분기 0, GLSL 소스 0, 브라우저에서 WebGPU와 WebGL2 fallback 둘 다 그린다. 설치형 소비자 검증 통과 |
+| UP-1 | upstream 대체. `CascadedSun`·`DynamicSky`를 three r186 `SunLight`(두 백엔드 CSM)와 시간대 연동 하나로, 가로등 라이트 풀은 r185 클러스터(Forward+) 조명으로, 품질 tier에 r184 TAAU/FSR 업스케일. `OutfitAvatar`는 `AvatarRuntime`으로 합친다 | 자체 CSM·라이트 풀 코드 삭제, 같은 장면의 draw·프레임 시간 전후 기록 |
+| LIB-1 | 라이브러리 형태. `preserveModules` 빌드로 트리셰이킹 복구, `GaesupWorld`가 런타임을 만들고 수명을 관리(legacy 경고 0), 루트 진입점에서 에디터 분리, 캔버스·WebGPU·품질·`GaesupWorldContent`를 묶은 부팅 컴포넌트 | import 모양별 소비자 번들 크기 전후, 최소 월드 부팅 코드 줄 수, 콘솔 경고 0 |
+| PERF | 측정 기반 병목 제거. 건물 편집 증분 갱신(`BuildingBatches`, `BlockColliders`), WebGPU 일반 모델 상주 정책, 내비게이션 변경 영역만 갱신, NPC 비가시 시뮬레이션 예산, 장면 전체 순회 제거, 기본 유휴 프레임 정책(`IdleFrameRate`), 잔디 밀도 품질 tier, GPU 시간(`trackTimestamp`)과 성능 HUD | 같은 장면·장치에서 프레임 p50/p95, long task, draw, GPU ms, collider 수를 전후로 남긴다. CPU 미세 측정만으로 FPS 개선을 선언하지 않는다 |
+| EX-1 | 예제 minihome: 계단식 마을 꾸미기(건축), 주민 NPC, 방문자 멀티플레이, 성능 HUD, Pretendard UI | 공개 API만 사용, 브라우저 스크린샷, 성능 HUD 수치 |
 
-### 작업
+## 검증
 
-- 자산 카탈로그와 로드 세대를 런타임 소유로 만들고 관련 UI가 자신의 런타임 카탈로그를 읽게 한다. 불변 파일 캐시가 필요하면 카탈로그 상태와 분리한다.
-- 프레임·시뮬레이션·명령 경계의 오류 콜백을 런타임 소유로 전달한다. 전역 기본 로거는 런타임 밖 호출에만 사용한다.
-- 두 런타임의 생성·설정·역순/정순 해제를 반복하는 테스트를 추가한다. 기존 수용 시나리오 `S-H08`을 실제 측정으로 전환한다.
-
-### 완료 기준
-
-- 같은 asset ID에 서로 다른 메타데이터를 가진 월드 A/B가 각자의 결과만 읽는다. 한쪽의 느린 로드와 해제가 다른 쪽 상태를 바꾸지 않는다.
-- A에서 발생한 오류는 A의 `onError`에만 전달된다. 해제 순서와 관계없이 종료된 런타임의 콜백이 다시 활성화되지 않는다.
-- 두 런타임 종료 뒤 리스너·타이머 누수가 없다.
-
-## P1 — 방문 스냅샷의 원자적 적용
-
-### 문제
-
-`applyVisitSnapshot(..., { atomic: true })`는 도메인별 적용 함수를 순서대로 호출하고 실패한 항목만 건너뛴다. 앞선 도메인이 이미 변경됐을 수 있다. `useVisitRoom`은 일부 성공만 있어도 적용 성공으로 처리한다.
-
-### 작업
-
-- 모든 도메인의 입력 검증을 먼저 끝내고, 적용 중 실패하면 변경된 도메인을 이전 값으로 되돌리는 계약을 정한다.
-- 복구 실패도 숨기지 않고 호출자에게 구조화된 결과/오류로 전달한다. 방문 격리와 autosave 정지 상태가 항상 해제되는지 확인한다.
-- 두 번째 도메인의 적용 중 예외를 주입하는 테스트와 방문 종료 복구 테스트를 추가한다.
-
-### 완료 기준
-
-- `atomic: true`에서 한 도메인이라도 실패하면 로컬 상태가 적용 전과 동일하다.
-- 호출자는 전체 성공과 실패를 구분하며, 실패 뒤 autosave가 계속 정지하지 않는다.
-
-## D — 승인된 공개 API 삭제
-
-- NPC 네트워크 섬: `NetworkBridge`·`NetworkSystem`·`NPCNetworkManager`·`ConnectionPool`·`networkStateStore`, hook 5개(`useNetworkBridge`·`useNetworkGroup`·`useNetworkMessage`·`useNetworkStats`·`useNPCConnection`), 패널 2개, `runtime.networkBridge`.
-- `core/ops`(RBAC)와 샘플 플러그인 3개(`createCozyLifeSamplePlugin`·`createHighGraphicsSamplePlugin`·`createShooterKitSamplePlugin`).
-- deprecated: `usePhysics`, `BuildingBridge`, `WorldContainer` 별칭, `useGaesupContext`·`useCursorState`, `WorldContainerProps`의 읽히지 않는 prop, `onDestory`.
-- 완료 기준: export snapshot과 설치형 소비자 검증 갱신, `verify:full` 통과. `blueprints`는 유지한다.
-
-## P2 — 성능과 공개 API를 측정하며 단순화
-
-### 문제
-
-성능 수용 시나리오 12개가 아직 `pending`이다. 품질 기준선에도 200줄 초과 컴포넌트 42개, 500줄 초과 모듈 12개가 허용되어 있다. 루트 공개 진입점은 많은 도메인을 재수출한다. 설치형 소비자 빌드에는 큰 Three/Rapier 청크가 나타났지만, 이 수치만으로 실제 초기 로딩 비용이나 WebGPU 프레임 시간을 판단할 수 없다.
-
-### 작업
-
-- `S-H01`, `S-H02`, `S-H04`, `S-H08`, `S-H09`, `S-H12`를 우선 실제 수용 테스트로 만든다. 객체 10k, 내비게이션, 60/144Hz, 2런타임, 저장 복원 경로를 포함한다.
-- 최소 월드·아바타·에디터 시나리오별 초기 전송량, 프레임 시간, draw call, 메모리를 WebGPU와 WebGL2에서 각각 기록한다. 기준선과 회귀 한계를 `test/accept/budgets.json`에 둔다.
-- 측정으로 병목이 확인된 모듈부터 책임별로 분리한다. 루트 API의 기존 import는 유지하면서 신규 사용 경로에는 작은 subpath 진입점을 제공한다.
-
-### 완료 기준
-
-- 성능 변경 전후 동일한 장면·장치·브라우저 조건의 결과와 원시 측정 산출물을 남긴다.
-- 우선 시나리오의 `pending`이 실제 합격/실패 판정으로 바뀐다. 기준 상향은 근거와 별도 검토를 요구한다.
-- 공개 API와 설치형 ESM/CJS 소비자 검증이 유지된다.
-
-### 성능 감사에서 확인한 우선 작업
-
-아래는 현재 소스의 실행 경로에서 확인한 구조적 비용이다. 브라우저 FPS나 GPU 시간의 실측 결과는 아직 없으므로 심각도는 대규모 장면에서의 위험도를 뜻한다.
-
-1. **P1 — 건물 편집의 전체 재구성 제거.** `BuildingBatches`는 타일·벽 한 곳을 편집해도 보이는 모든 그룹을 다시 순회하여 재분류하고, 영향을 받은 재질 배치의 인스턴스 행렬 전체를 다시 쓴다. `BlockColliders`는 블록 배열이 바뀔 때 모든 Rapier collider를 제거하고 재생성한다. 변경 그룹/블록만 갱신하는 배치 및 collider 레지스트리를 도입하고, 2천/1만 개 월드에서 단일 편집의 CPU 시간·GPU 업로드량·물리 객체 생성 수를 기록한다.
-2. **P1 — WebGPU의 일반 모델 상주 정책 분리.** WebGPU 배치 지원 시 `BuildingVisibilityDriver`가 빠지고 `BuildingSystem`의 거리 필터도 해제된다. GPU 브리지는 `building-batch:` 인스턴스에만 적용되므로 개별 GLTF 모델까지 전부 상주한다. 개별 모델과 리소스에는 거리/가시성 기반 로딩·해제를 유지하고, 배치만 GPU 컬링한다. 카메라 이동 시 모델 수·메모리·draw call·프레임 시간을 검증한다. 충돌체는 렌더 가시성과 별개로 유지해야 하므로 별도 공간 청크 정책으로 설계한다.
-3. **P1 — 내비게이션의 전체 reset과 전체 격자 파생 캐시 재생성 축소.** 건물 데이터 변경 시 장애물을 모두 재적용하고, 이후 반경별 첫 경로 질의는 200×200 기본 격자의 통과 가능 셀을 전부 다시 계산한다. 타일/벽/블록/객체별 변경 영역만 갱신하고 반경별 캐시도 변경 영역만 무효화한다. 높이 정보가 있어 JS A*를 쓰는 경우 질의마다 생성하는 세 버퍼도 재사용 가능한 작업 공간으로 바꾼다. 로컬 Node 미세 측정에서 1만 객체 전체 장애물 재적용 중앙값은 약 0.74ms, 장애물 편집 뒤 반경 0.5 경로 질의 중앙값은 약 2.3ms였다. 이는 브라우저 프레임 측정이 아니며 복수 NPC·높이 지형의 최악값은 별도로 측정한다.
-4. **P2 — NPC 비가시 시뮬레이션 예산화.** 현재 NPC가 하나라도 있으면 60Hz 고정 틱에서 전체 NPC를 순회한다. 표시 LOD는 `NPCInstance` 장착만 줄이고 시뮬레이션 순회는 줄이지 않는다. 정지·원거리 NPC의 의사결정 간격과 갱신 주기를 분리하고, 밀집 지각의 이전 관찰 대상 확인은 `Set`으로 바꾼다. 30/300/3000 NPC의 CPU 시간, 결과 일치, 반응 지연을 함께 검증한다.
-5. **P2 — 불필요한 장면 순회와 할당 제거.** `BuildingRenderStateDriver`는 기본 WebGPU 경로에서 거리 상주 결과를 사용하지 않아도 매 건물 변경마다 전체 항목을 포장한 스냅샷을 새로 만든다. WebGL 그림자 깊이 캐시는 0.5초마다 장면 전체를 순회한다. 카메라 충돌 인덱스도 자식 객체 증감 후 다음 질의에서 장면 전체를 다시 순회한다. 실제 소비자/변경 이벤트에 맞춰 증분화하고 idle CPU 및 할당량을 계측한다.
-6. **P2 — 기본 프레임·효과 비용 확인.** 현재 작업 트리의 `IdleFrameRate`는 세계 기본 구성이 자동으로 장착하지 않는다. WebGL 날씨는 입자 위치 버퍼를 매 프레임 CPU에서 수정·업로드하며, 후처리는 켠 경우 TRAA/AO/Bloom 비용이 추가된다. 최소 월드, 비/눈, 그림자, 후처리, 유휴 상태를 WebGPU/WebGL2에서 분리 측정한 뒤 품질 프리셋과 기본 유휴 프레임 정책을 결정한다.
-7. **P1 — 트리셰이킹 복구.** 라이브러리 빌드가 모듈을 큰 청크로 합쳐 소비자가 모듈 단위로 버리지 못한다. `preserveModules`로 빌드하고 import 모양별 소비자 번들 크기를 기록한다.
-8. **P1 — 런타임 기본 소유와 루트 표면.** `GaesupWorld`만 쓰면 legacy 전역 store로 돌며 경고 7개가 난다. 월드가 런타임을 만들고 수명을 관리한다. 루트 진입점은 에디터를 재수출하지 않는다.
-9. **P2 — upstream 중복 통합.** `DynamicSky`+`CascadedSun`은 three r186 `SunLight`로, WebGL 전용 `ColorGrade`·`LutOverlay`·`ToonOutlines`는 TSL 후처리로, `OutfitAvatar`는 `AvatarRuntime`으로 합친다. 잔디 밀도는 품질 tier를 따른다.
-
-수용 증거는 동일한 월드 데이터와 브라우저/장치에서 편집 전후의 프레임 시간 p50/p95, 메인 스레드 long task, draw call, GPU 메모리, Rapier collider 수, 경로 결과 일치로 남긴다. CPU 미세 측정만으로 FPS 개선을 선언하지 않는다.
-
-## 실행 순서와 검증
-
-1. P1의 격리와 방문 복구를 각각 독립 변경으로 구현한다.
-2. D의 삭제를 진행한다.
-3. P2는 기준선 측정 후 병목을 골라 진행한다.
-4. 패키지 검증은 `build` → `publint` → `test:package:built` 순서로 실행한다. pack/빌드를 같은 `dist`에서 병렬 실행하지 않는다.
-
-기존 작업 트리의 NPC·성능 수정과 미니홈 삭제는 이 문서 작성 중 수정하지 않았다.
+- slice마다 `pnpm run verify:full`을 통과시킨다. 패키지 검증은 `build` → `publint` → `test:package:built` 순서로, 같은 `dist`에서 병렬 실행하지 않는다.
+- 공개 API가 바뀌면 export snapshot과 `scripts/verify-package-consumer.cjs`를 같은 커밋에서 갱신한다.
