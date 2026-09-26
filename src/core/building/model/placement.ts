@@ -377,27 +377,37 @@ export const indexAabb = (
   minZ: number,
   maxZ: number,
   cellSize: number,
-): void => {
+): void => insertCellKeys(cells, cellsById, id, aabbCellKeys(minX, maxX, minZ, maxZ, cellSize));
+
+/** The index keys of the cells an AABB covers; throws for ranges the index cannot hold, before anything changes. */
+export const aabbCellKeys = (minX: number, maxX: number, minZ: number, maxZ: number, cellSize: number): number[] => {
   if (!Number.isFinite(cellSize) || cellSize <= 0) throw new RangeError('Invalid building cell size');
   const minCellX = Math.floor(minX / cellSize);
   const maxCellX = Math.floor(maxX / cellSize);
   const minCellZ = Math.floor(minZ / cellSize);
   const maxCellZ = Math.floor(maxZ / cellSize);
-
   validateCellRange(minCellX, maxCellX, minCellZ, maxCellZ);
 
   const keys: number[] = [];
   for (let cx = minCellX; cx <= maxCellX; cx++) {
-    for (let cz = minCellZ; cz <= maxCellZ; cz++) {
-      const key = pair(cx, cz);
-      let set = cells.get(key);
-      if (!set) {
-        set = new Set<string>();
-        cells.set(key, set);
-      }
-      set.add(id);
-      keys.push(key);
+    for (let cz = minCellZ; cz <= maxCellZ; cz++) keys.push(pair(cx, cz));
+  }
+  return keys;
+};
+
+export const insertCellKeys = (
+  cells: Map<number, Set<string>>,
+  cellsById: Map<string, number[]>,
+  id: string,
+  keys: number[],
+): void => {
+  for (const key of keys) {
+    let set = cells.get(key);
+    if (!set) {
+      set = new Set<string>();
+      cells.set(key, set);
     }
+    set.add(id);
   }
   cellsById.set(id, keys);
 };

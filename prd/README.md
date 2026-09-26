@@ -21,12 +21,6 @@
 
 위에서 아래 순서로 한다.
 
-### SE-4 building 형상·좌표 단일화
-
-| Slice | 내용 | 완료 기준 |
-|---|---|---|
-| SE-4d | `addTileGroup`·`updateTileGroup`의 지지높이 인덱스 갱신, `updateTile`·`updateWall`·`removeWall`의 인덱스 원자성 | 인덱스와 store 일관성 테스트 |
-
 ### SE-5 모드 원본 단일화
 
 | Slice | 내용 | 완료 기준 |

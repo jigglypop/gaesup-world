@@ -12,10 +12,9 @@ import {
   snapBuildingPosition,
   createTileFootprint,
   tilePositionToCell,
-  unindexId,
 } from '../model';
 import { snapTilePosition, wallEdge } from '../model/footprint';
-import { blockPlacementCells, placeTileOnGrid, tilePlacementCells } from '../model/placement';
+import { blockPlacementCells, placeTileOnGrid } from '../model/placement';
 import {
   BuildingSystemState,
   MeshConfig,
@@ -292,12 +291,6 @@ interface BuildingStore extends BuildingSystemState {
 }
 
 // Callers may replace a group's tile list wholesale; every footprint is validated before occupancy changes.
-function replaceTileOccupancy(index: BuildingSpatialIndex, previous: readonly TileConfig[], next: readonly TileConfig[]): void {
-  const cells = next.map(tilePlacementCells);
-  for (const tile of previous) index.vacate(tile.id);
-  next.forEach((tile, i) => index.occupy(tile.id, cells[i]!));
-}
-
 export function createBuildingStore() {
   enableMapSet();
   return create<BuildingStore>()(
@@ -734,26 +727,25 @@ export function createBuildingStore() {
 
     addWallGroup: (group) =>
       set((state) => {
-        state.wallGroups.set(group.id, group);
+        const walls = group.walls.map((wall) => ({ ...wall, edge: wallEdge(wall) }));
+        state.spatialIndex.replaceWalls(state.wallGroups.get(group.id)?.walls ?? [], walls);
+        state.wallGroups.set(group.id, { ...group, walls });
       }),
 
     updateWallGroup: (id, updates) =>
       set((state) => {
         const group = state.wallGroups.get(id);
         if (group) {
-          state.wallGroups.set(id, { ...group, ...updates });
+          const walls = updates.walls?.map((wall) => ({ ...wall, edge: wallEdge(wall) }));
+          if (walls) state.spatialIndex.replaceWalls(group.walls, walls);
+          state.wallGroups.set(id, { ...group, ...updates, ...(walls ? { walls } : {}) });
         }
       }),
 
     removeWallGroup: (id) =>
       set((state) => {
         const group = state.wallGroups.get(id);
-        if (group) {
-          for (const wall of group.walls) {
-            unindexId(state.spatialIndex.wallIndex, state.spatialIndex.wallCells, wall.id);
-            state.spatialIndex.wallMeta.delete(wall.id);
-          }
-        }
+        if (group) state.spatialIndex.replaceWalls(group.walls, []);
         state.wallGroups.delete(id);
       }),
 
@@ -827,7 +819,8 @@ export function createBuildingStore() {
     removeWall: (groupId, wallId) =>
       set((state) => {
         const group = state.wallGroups.get(groupId);
-        if (group) {
+        // A wall that lives in another group keeps its index entries.
+        if (group?.walls.some((w) => w.id === wallId)) {
           state.spatialIndex.unindexWall(wallId);
           group.walls = group.walls.filter((w) => w.id !== wallId);
           if (state.selectedWallId === wallId) state.selectedWallId = null;
@@ -836,27 +829,25 @@ export function createBuildingStore() {
 
     addTileGroup: (group) =>
       set((state) => {
-        replaceTileOccupancy(state.spatialIndex, state.tileGroups.get(group.id)?.tiles ?? [], group.tiles);
-        state.tileGroups.set(group.id, group);
+        const tiles = group.tiles.map(placeTileOnGrid);
+        state.spatialIndex.replaceTiles(state.tileGroups.get(group.id)?.tiles ?? [], tiles);
+        state.tileGroups.set(group.id, { ...group, tiles });
       }),
 
     updateTileGroup: (id, updates) =>
       set((state) => {
         const group = state.tileGroups.get(id);
         if (group) {
-          if (updates.tiles) replaceTileOccupancy(state.spatialIndex, group.tiles, updates.tiles);
-          state.tileGroups.set(id, { ...group, ...updates });
+          const tiles = updates.tiles?.map(placeTileOnGrid);
+          if (tiles) state.spatialIndex.replaceTiles(group.tiles, tiles);
+          state.tileGroups.set(id, { ...group, ...updates, ...(tiles ? { tiles } : {}) });
         }
       }),
 
     removeTileGroup: (id) =>
       set((state) => {
         const group = state.tileGroups.get(id);
-        if (group) {
-          for (const tile of group.tiles) {
-            state.spatialIndex.unindexTile(tile.id);
-          }
-        }
+        if (group) state.spatialIndex.replaceTiles(group.tiles, []);
         state.tileGroups.delete(id);
       }),
 

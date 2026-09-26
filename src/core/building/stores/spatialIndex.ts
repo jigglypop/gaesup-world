@@ -1,7 +1,7 @@
 import type { CellCoord } from '../../grid';
-import { indexAabb, pair, unindexId, type TileMeta, type WallMeta } from '../model';
+import { pair, unindexId, type TileMeta, type WallMeta } from '../model';
 import { tileWorldSize, wallBox } from '../model/footprint';
-import { tilePlacementCells, WALL_INDEX_TOLERANCE } from '../model/placement';
+import { aabbCellKeys, insertCellKeys, tilePlacementCells, WALL_INDEX_TOLERANCE } from '../model/placement';
 import type { TileConfig, WallConfig } from '../types';
 import { TILE_CONSTANTS } from '../types/constants';
 
@@ -21,14 +21,33 @@ export class BuildingSpatialIndex {
   readonly placementColumns = new Map<number, Set<string>>();
   readonly placementCells = new Map<string, readonly CellCoord[]>();
 
-  /** Indexes a stored tile for support heights and placement; cells are copied so a draft never lands here. */
+  /**
+   * Swaps the entries of `previous` tiles for `next` ones. Every entry is worked out before any is removed, so a
+   * tile the index rejects throws with the index untouched, as the store's own state is when its update throws.
+   * Cells are copied so an Immer draft never lands here.
+   */
+  replaceTiles(previous: readonly { id: string }[], next: readonly TileConfig[]): void {
+    const entries = next.map((tile) => {
+      const { x, y, z } = tile.position;
+      const halfSize = tileWorldSize(tile) / 2;
+      return {
+        id: tile.id,
+        meta: { x, z, y, halfSize },
+        keys: aabbCellKeys(x - halfSize, x + halfSize, z - halfSize, z + halfSize, TILE_CONSTANTS.GRID_CELL_SIZE),
+        cells: tilePlacementCells(tile).map(({ x: cx, z: cz, level }) => ({ x: cx, z: cz, level })),
+      };
+    });
+    for (const { id } of previous) this.unindexTile(id);
+    for (const { id, meta, keys, cells } of entries) {
+      this.unindexTile(id);
+      this.tileMeta.set(id, meta);
+      insertCellKeys(this.tileIndex, this.tileCells, id, keys);
+      this.occupy(id, cells);
+    }
+  }
+
   indexTile(tile: TileConfig): void {
-    this.unindexTile(tile.id);
-    const { x, y, z } = tile.position;
-    const halfSize = tileWorldSize(tile) / 2;
-    this.tileMeta.set(tile.id, { x, z, y, halfSize });
-    indexAabb(this.tileIndex, this.tileCells, tile.id, x - halfSize, x + halfSize, z - halfSize, z + halfSize, TILE_CONSTANTS.GRID_CELL_SIZE);
-    this.occupy(tile.id, tilePlacementCells(tile).map(({ x: cx, z: cz, level }) => ({ x: cx, z: cz, level })));
+    this.replaceTiles([], [tile]);
   }
 
   unindexTile(id: string): void {
@@ -37,12 +56,29 @@ export class BuildingSpatialIndex {
     this.vacate(id);
   }
 
-  /** Indexes a wall around its center; `hasWallCollision` finds walls on one edge there, facing either way. */
+  /**
+   * Swaps the entries of `previous` walls for `next` ones, all or nothing like `replaceTiles`. Walls are found
+   * around their center: `hasWallCollision` meets walls on one edge there, facing either way.
+   */
+  replaceWalls(previous: readonly { id: string }[], next: readonly Pick<WallConfig, 'id' | 'position' | 'rotation'>[]): void {
+    const entries = next.map((wall) => {
+      const [x, , z] = wallBox(wall).center;
+      return {
+        id: wall.id,
+        meta: { x: wall.position.x, z: wall.position.z, rotY: wall.rotation.y },
+        keys: aabbCellKeys(x - WALL_INDEX_TOLERANCE, x + WALL_INDEX_TOLERANCE, z - WALL_INDEX_TOLERANCE, z + WALL_INDEX_TOLERANCE, 1),
+      };
+    });
+    for (const { id } of previous) this.unindexWall(id);
+    for (const { id, meta, keys } of entries) {
+      this.unindexWall(id);
+      this.wallMeta.set(id, meta);
+      insertCellKeys(this.wallIndex, this.wallCells, id, keys);
+    }
+  }
+
   indexWall(wall: Pick<WallConfig, 'id' | 'position' | 'rotation'>): void {
-    this.unindexWall(wall.id);
-    const [x, , z] = wallBox(wall).center;
-    this.wallMeta.set(wall.id, { x: wall.position.x, z: wall.position.z, rotY: wall.rotation.y });
-    indexAabb(this.wallIndex, this.wallCells, wall.id, x - WALL_INDEX_TOLERANCE, x + WALL_INDEX_TOLERANCE, z - WALL_INDEX_TOLERANCE, z + WALL_INDEX_TOLERANCE, 1);
+    this.replaceWalls([], [wall]);
   }
 
   unindexWall(id: string): void {
