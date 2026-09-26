@@ -29,7 +29,6 @@
 
 | ID | 내용 | 근거 | 완료 기준 |
 |---|---|---|---|
-| N-5 | 경로를 찾을 때마다 격자 전체를 새로 만듦 | `navigation/NavigationSystem.ts`의 `findPath`는 호출마다 `createTraversalGrid`로 격자 전체를 다시 만들고, 칸마다 좌표 배열을 할당한다. 쿼리당 반지름 없이 0.14ms, 반지름 0.24면 1.51ms다 | 격자를 footprint별로 캐시하고 격자가 바뀌면 무효화한다. 막힌 칸이 없으면 건너뛴다. 테스트: 같은 footprint로 100회 쿼리해도 격자 생성은 1회이고, 칸을 바꾸면 1회 더 생성한다 |
 | N-3 | 말하기가 화면에 나오지 않고 저장 데이터만 키움 | `npc/stores/npcActions.ts`의 `applyNPCAction`에서 `speak`는 `instance.events`에 핸들러를 붙이기만 하고 지우지 않는다. 이 이벤트를 실행하는 곳도 말풍선도 없다. `events`는 세이브에 들어가고, 바뀔 때마다 NPC가 다시 렌더링된다 | 말하기는 `NPCSimulation`의 일시 상태(`getSpeech`)로 옮긴다. 테스트: 결정 100회 뒤 `events` 길이가 그대로이고, 저장본에 말하기가 없으며, `duration`이 지나면 말하기가 사라진다 |
 | N-8 | 행동 버그와 플레이어 지각 | ① `lookAt`이 시뮬레이션 pose가 아니라 store의 `position`으로 방향을 잡는다. ② `playAnimation`이 공유 카탈로그 `animations` 항목을 바꾼다. ③ `NPCPerceptionIndex`는 NPC만 보고 플레이어는 보지 않는다. ④ 기본 배회 블루프린트는 퀘스트 `welcome`이 active일 때만 움직인다. ⑤ `NPCSimulation.move`는 waypoint마다 store를 두 번 바꾼다. 블루프린트에는 "대상이 새로 보임" 조건과 "대상 바라보기" 행동이 없다 | 항목별 단위 테스트. 플레이어 같은 외부 대상을 넘기는 API(`setActors`)가 있고, 대상이 시야에 새로 들어온 결정에서만 참인 조건이 있다 |
 | M-1 | minihome 마을 주민 (MH-08) | minihome에는 NPC가 없다. 기능표 `examples/minihome/features.ts`의 MH-08이 `pending`이다 | 두 주민(trainer)이 걷기·대기 애니메이션으로 집 주변을 배회하고, 가구와 물을 피한다. 플레이어가 다가오면 돌아보고 말풍선으로 인사하고, 클릭하면 대사를 말한다. 주민이 모두 멈춰 있으면 다음 결정까지 프레임을 그리지 않는다. 테스트: 주민 모듈 headless 테스트와 `engine.diagnostics().villagers` 값, `pnpm test:minihome:features` 통과 |

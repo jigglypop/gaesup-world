@@ -475,4 +475,36 @@ describe('NavigationSystem', () => {
 
     expect(path.map(([, y]) => y)).toEqual([0, 0.5, 1, 1.5, 2]);
   });
+
+  it('builds the traversal grid of a footprint once per grid change, whatever the query count', async () => {
+    const navigation = createNavigation();
+    await navigation.init();
+    navigation.setBlocked(3, 3, 1, 1);
+    const occupy = jest.spyOn(navigation as unknown as { canOccupyCell: () => boolean }, 'canOccupyCell');
+    const first = navigation.findPath(0.5, 0.5, 5.5, 5.5, { agentRadius: 0.4 });
+    for (let query = 1; query < 100; query++) expect(navigation.findPath(0.5, 0.5, 5.5, 5.5, { agentRadius: 0.4 })).toEqual(first);
+    expect(occupy).toHaveBeenCalledTimes(36);
+
+    navigation.setBlocked(1, 4, 1, 1);
+    for (let query = 0; query < 100; query++) navigation.findPath(0.5, 0.5, 5.5, 5.5, { agentRadius: 0.4 });
+    expect(occupy).toHaveBeenCalledTimes(72);
+  });
+
+  it('copies the grid into WASM memory only after it changes', async () => {
+    mockWasm = createMockWasm();
+    const navigation = createNavigation();
+    await navigation.init();
+    navigation.findPath(0.5, 0.5, 4.5, 0.5);
+    const gridPtr = mockWasm.astar_find_path.mock.calls[0]![0];
+    const wasmGrid = () => new Uint8Array(mockWasm!.memory.buffer, gridPtr, 36);
+    wasmGrid()[20] = 7;
+
+    navigation.findPath(0.5, 0.5, 4.5, 0.5);
+    expect(wasmGrid()[20]).toBe(7);
+
+    navigation.setBlocked(5.5, 5.5, 1, 1);
+    navigation.findPath(0.5, 0.5, 4.5, 0.5);
+    expect(wasmGrid()[20]).toBe(1);
+    expect(wasmGrid()[35]).toBe(0);
+  });
 });

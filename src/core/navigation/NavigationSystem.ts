@@ -85,6 +85,11 @@ export class NavigationSystem {
   private heightGrid: Float32Array;
   private hasHeightData = false;
   private hasBlockedData = false;
+  /** Advances with every walkability or cost change; cached traversal grids and the wasm copy are valid for one. */
+  private revision = 0;
+  /** Traversal grids per agent footprint, rebuilt in place only after the grid changes. */
+  private traversal = new Map<string, { revision: number; grid: Uint8Array; cost: Uint8Array | null; costRevision: number }>();
+  private synced: { source: Uint8Array; revision: number } | null = null;
   private wasm: GaesupCoreWasmExports | null = null;
   private ready = false;
   private initialization: Promise<boolean> | null = null;
@@ -174,6 +179,7 @@ export class NavigationSystem {
       }
 
       this.wasm = pendingWasm;
+      this.synced = null;
       this.gridPtr = pendingGridPtr;
       this.outPathPtr = pendingOutPathPtr;
       pendingWasm = null;
@@ -212,13 +218,15 @@ export class NavigationSystem {
     const gridPtr = this.gridPtr;
     const outPathPtr = this.outPathPtr;
     this.wasm = null;
+    this.synced = null;
     this.gridPtr = 0;
     this.outPathPtr = 0;
     if (wasm) this.deallocateBuffers(wasm, gridPtr, outPathPtr);
   }
 
   private syncToWasm(source: Uint8Array): void {
-    if (!this.wasm) return;
+    if (!this.wasm || (this.synced?.source === source && this.synced.revision === this.revision)) return;
+    this.synced = { source, revision: this.revision };
     new Uint8Array(
       this.wasm.memory.buffer,
       this.gridPtr,
@@ -239,6 +247,7 @@ export class NavigationSystem {
     const idx = this.cellIndex(gx, gz);
     this.grid[idx] = value;
     this.costGrid[idx] = value;
+    this.revision++;
     if (value === 0) this.hasBlockedData = true;
   }
 
@@ -277,45 +286,26 @@ export class NavigationSystem {
     };
   }
 
-  private getCellBounds(gx: number, gz: number): { minX: number; maxX: number; minZ: number; maxZ: number } {
-    const { cellSize, worldMinX, worldMinZ } = this.config;
-    const minX = worldMinX + gx * cellSize;
-    const minZ = worldMinZ + gz * cellSize;
-    return {
-      minX,
-      maxX: minX + cellSize,
-      minZ,
-      maxZ: minZ + cellSize,
-    };
-  }
-
   private footprintOverlapsBlockedCell(gx: number, gz: number, footprint: ResolvedAgentFootprint): boolean {
-    const [centerX, , centerZ] = this.gridToWorld(gx, gz, 0);
-    const agentMinX = centerX - footprint.halfWidth;
-    const agentMaxX = centerX + footprint.halfWidth;
-    const agentMinZ = centerZ - footprint.halfDepth;
-    const agentMaxZ = centerZ + footprint.halfDepth;
-
-    const searchX = Math.ceil(footprint.halfWidth / this.config.cellSize);
-    const searchZ = Math.ceil(footprint.halfDepth / this.config.cellSize);
+    const { cellSize } = this.config;
+    // Offsets from this cell's minimum corner, so a neighbour's bounds need no allocation.
+    const agentMinX = (0.5 * cellSize) - footprint.halfWidth;
+    const agentMaxX = (0.5 * cellSize) + footprint.halfWidth;
+    const agentMinZ = (0.5 * cellSize) - footprint.halfDepth;
+    const agentMaxZ = (0.5 * cellSize) + footprint.halfDepth;
+    const searchX = Math.ceil(footprint.halfWidth / cellSize);
+    const searchZ = Math.ceil(footprint.halfDepth / cellSize);
 
     for (let oz = gz - searchZ; oz <= gz + searchZ; oz += 1) {
       for (let ox = gx - searchX; ox <= gx + searchX; ox += 1) {
-        if (!this.isGridCell(ox, oz)) continue;
-        const idx = this.cellIndex(ox, oz);
-        if (this.grid[idx] !== 0) continue;
-
-        const blocked = this.getCellBounds(ox, oz);
-        const overlapsX =
-          agentMaxX > blocked.minX + CLEARANCE_EPSILON &&
-          agentMinX < blocked.maxX - CLEARANCE_EPSILON;
-        const overlapsZ =
-          agentMaxZ > blocked.minZ + CLEARANCE_EPSILON &&
-          agentMinZ < blocked.maxZ - CLEARANCE_EPSILON;
+        if (!this.isGridCell(ox, oz) || this.grid[this.cellIndex(ox, oz)] !== 0) continue;
+        const blockedMinX = (ox - gx) * cellSize;
+        const blockedMinZ = (oz - gz) * cellSize;
+        const overlapsX = agentMaxX > blockedMinX + CLEARANCE_EPSILON && agentMinX < blockedMinX + cellSize - CLEARANCE_EPSILON;
+        const overlapsZ = agentMaxZ > blockedMinZ + CLEARANCE_EPSILON && agentMinZ < blockedMinZ + cellSize - CLEARANCE_EPSILON;
         if (overlapsX && overlapsZ) return true;
       }
     }
-
     return false;
   }
 
@@ -327,27 +317,29 @@ export class NavigationSystem {
     return !this.footprintOverlapsBlockedCell(gx, gz, footprint);
   }
 
-  private createTraversalGrid(footprint: ResolvedAgentFootprint): Uint8Array {
-    if (!footprint.hasClearance) return this.grid;
-
-    const traversalGrid = new Uint8Array(this.grid.length);
+  /** Cells the footprint can stand on; with no blocked cell anywhere every cell qualifies, so the grid itself serves. */
+  private traversalFor(footprint: ResolvedAgentFootprint) {
+    if (!footprint.hasClearance || !this.hasBlockedData) return null;
+    const key = `${footprint.halfWidth}:${footprint.halfDepth}`;
+    let entry = this.traversal.get(key);
+    if (entry?.revision === this.revision) return entry;
+    const grid = entry?.grid ?? new Uint8Array(this.grid.length);
     for (let gz = 0; gz < this.gridHeight; gz += 1) {
       for (let gx = 0; gx < this.gridWidth; gx += 1) {
-        const idx = this.cellIndex(gx, gz);
-        traversalGrid[idx] = this.canOccupyCell(gx, gz, footprint) ? 1 : 0;
+        grid[this.cellIndex(gx, gz)] = this.canOccupyCell(gx, gz, footprint) ? 1 : 0;
       }
     }
-    return traversalGrid;
+    entry = { revision: this.revision, grid, cost: entry?.cost ?? null, costRevision: -1 };
+    this.traversal.set(key, entry);
+    return entry;
   }
 
-  private createTraversalCostGrid(traversalGrid: Uint8Array): Uint8Array {
-    if (traversalGrid === this.grid) return this.costGrid;
-
-    const next = new Uint8Array(this.costGrid.length);
-    for (let i = 0; i < next.length; i += 1) {
-      next[i] = traversalGrid[i] === 0 ? 0 : this.costGrid[i] ?? 1;
-    }
-    return next;
+  private traversalCostFor(entry: NonNullable<ReturnType<NavigationSystem['traversalFor']>>): Uint8Array {
+    if (entry.cost && entry.costRevision === this.revision) return entry.cost;
+    const cost = entry.cost ?? new Uint8Array(this.costGrid.length);
+    for (let i = 0; i < cost.length; i += 1) cost[i] = entry.grid[i] === 0 ? 0 : this.costGrid[i] ?? 1;
+    entry.cost = cost; entry.costRevision = this.revision;
+    return cost;
   }
 
   setBlocked(worldX: number, worldZ: number, width: number, depth: number): void {
@@ -362,6 +354,7 @@ export class NavigationSystem {
     const clamped = Math.max(0, Math.min(255, Math.round(value)));
     this.grid.fill(clamped === 0 ? 0 : 1);
     this.costGrid.fill(clamped);
+    this.revision++;
     this.heightGrid.fill(0);
     this.hasHeightData = false;
     this.hasBlockedData = clamped === 0;
@@ -393,6 +386,7 @@ export class NavigationSystem {
     const clamped = Math.max(0, Math.min(255, Math.round(cost)));
     // A blocked cell keeps cost 0: the weighted wasm search reads walkability from the cost grid alone.
     this.costGrid[idx] = this.grid[idx] === 0 ? 0 : clamped;
+    this.revision++;
     if (clamped === 0) {
       this.grid[idx] = 0;
       this.hasBlockedData = true;
@@ -471,8 +465,9 @@ export class NavigationSystem {
     const useWeighted = options.weighted ?? weighted;
     const [sx, sz] = this.worldToGrid(startX, startZ);
     const [gx, gz] = this.worldToGrid(goalX, goalZ);
-    const traversalGrid = this.createTraversalGrid(footprint);
-    const traversalCostGrid = useWeighted ? this.createTraversalCostGrid(traversalGrid) : this.costGrid;
+    const traversal = this.traversalFor(footprint);
+    const traversalGrid = traversal?.grid ?? this.grid;
+    const traversalCostGrid = useWeighted && traversal ? this.traversalCostFor(traversal) : this.costGrid;
 
     if (this.wasm && !this.hasHeightData) {
       return this.findPathWasm(sx, sz, gx, gz, pathY, useWeighted, traversalGrid, traversalCostGrid);
