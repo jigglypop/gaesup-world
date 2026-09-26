@@ -5,7 +5,7 @@ import * as THREE from 'three';
 
 import type { MaterialManager } from '../../core/MaterialManager';
 import { wallBox } from '../../model/footprint';
-import type { BuildingWallKind, MeshConfig, WallConfig, WallGroupConfig } from '../../types';
+import type { MeshConfig, WallConfig, WallGroupConfig } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { useInstanceCapacity } from '../BuildingBatches/capacity';
 
@@ -25,10 +25,6 @@ export function createWallGeometry(): THREE.BoxGeometry {
 
 export function getWallMaterialKey(wall: WallConfig): string {
   return wall.materialId ? `material:${wall.materialId}` : `type:${wall.wallGroupId}`;
-}
-
-export function getWallKind(wall: WallConfig, group: WallGroupConfig): BuildingWallKind {
-  return wall.wallKind ?? group.defaultWallKind ?? 'solid';
 }
 
 export function getWallMaterials(

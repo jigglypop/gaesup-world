@@ -4,10 +4,11 @@ import * as THREE from 'three';
 
 import { getDefaultToonMode, getToonGradient } from '../../../rendering/toon';
 import { MaterialManager } from '../../core/MaterialManager';
+import { wallKindOf } from '../../model/footprint';
 import type { MeshConfig, TileGroupConfig, WallGroupConfig } from '../../types';
 import { BoxTileBatchMesh, getBoxTileBatchKey, isRaisedTile, type BoxTileBatch } from '../TileSystem/batch';
 import { getTileShape } from '../TileSystem/layout';
-import { createWallGeometry, getWallKind, getWallMaterials, WallBatchMesh, type WallBatch } from '../WallSystem/batch';
+import { createWallGeometry, getWallMaterials, WallBatchMesh, type WallBatch } from '../WallSystem/batch';
 
 export type BuildingBatchesProps = {
   tileGroups: readonly TileGroupConfig[];
@@ -68,7 +69,7 @@ export const BuildingBatches = memo(function BuildingBatches({
     const byMaterials = new Map<string, WallBatch>();
     for (const group of wallGroups) {
       for (const wall of group.walls) {
-        if (getWallKind(wall, group) !== 'solid') continue;
+        if (wallKindOf(wall, group) !== 'solid') continue;
         const materials = getWallMaterials(manager, meshes, wall, wallGroupMap, group);
         const key = materials.map((material) => material.uuid).join('|');
         let batch = byMaterials.get(key);

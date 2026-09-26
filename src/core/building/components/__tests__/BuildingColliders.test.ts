@@ -68,7 +68,7 @@ describe('building collider boxes', () => {
       rotation: { x: 0, y: 0, z: 0 },
     };
     const { WIDTH, HEIGHT, THICKNESS } = TILE_CONSTANTS.WALL_SIZES;
-    expect(createWallColliders([wall])).toEqual([
+    expect(createWallColliders({ walls: [wall] })).toEqual([
       { key: 'wall', position: [0, HEIGHT / 2, WIDTH / 2], rotation: [0, 0, 0], args: [WIDTH / 2, HEIGHT / 2, THICKNESS / 2] },
     ]);
   });

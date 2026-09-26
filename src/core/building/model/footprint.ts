@@ -1,4 +1,4 @@
-import type { BuildingBlockConfig, TileConfig, WallConfig } from '../types';
+import type { BuildingBlockConfig, BuildingWallKind, TileConfig, WallConfig, WallGroupConfig } from '../types';
 import { TILE_CONSTANTS } from '../types/constants';
 
 const { GRID_CELL_SIZE: CELL, HEIGHT_STEP } = TILE_CONSTANTS;
@@ -38,6 +38,90 @@ export function wallBox(wall: Pick<WallConfig, 'position' | 'rotation'>): Buildi
     half: [WIDTH / 2, HEIGHT / 2, THICKNESS / 2],
     rotationY,
   };
+}
+
+export const wallKindOf = (wall: Pick<WallConfig, 'wallKind'>, group?: Pick<WallGroupConfig, 'defaultWallKind'>): BuildingWallKind =>
+  wall.wallKind ?? group?.defaultWallKind ?? 'solid';
+
+/** A wall part in the wall's frame: x along the wall from its center, y up from its base, z across it. */
+export type WallPiece = {
+  key: string;
+  position: readonly [number, number, number];
+  size: readonly [number, number, number];
+  /** A door leaf is drawn but walked through; frames and glass stop bodies. */
+  role: 'frame' | 'glass' | 'door';
+};
+
+/** The parts each kind of wall is built from, shared by its mesh and its colliders. */
+export function wallPieces(kind: BuildingWallKind): WallPiece[] {
+  const { WIDTH: w, HEIGHT: h, THICKNESS: d } = TILE_CONSTANTS.WALL_SIZES;
+  const frame = (key: string, position: WallPiece['position'], size: WallPiece['size']): WallPiece => ({ key, position, size, role: 'frame' });
+  switch (kind) {
+    case 'solid':
+      return [frame('solid', [0, h / 2, 0], [w, h, d])];
+    case 'half': {
+      const railHeight = h * 0.46;
+      return [frame('half', [0, railHeight / 2, 0], [w, railHeight, d])];
+    }
+    case 'railing': {
+      const postH = h * 0.62;
+      return [
+        frame('post-l', [-w * 0.42, postH / 2, 0], [0.18, postH, d]),
+        frame('post-c', [0, postH / 2, 0], [0.16, postH * 0.9, d]),
+        frame('post-r', [w * 0.42, postH / 2, 0], [0.18, postH, d]),
+        frame('rail-top', [0, postH * 0.82, 0], [w, 0.18, d]),
+        frame('rail-mid', [0, postH * 0.48, 0], [w * 0.88, 0.12, d]),
+      ];
+    }
+    case 'door':
+    case 'arch': {
+      const sideW = w * 0.24;
+      const openingW = w - sideW * 2;
+      const headerH = kind === 'arch' ? h * 0.34 : h * 0.22;
+      const doorH = h - headerH;
+      return [
+        frame('left', [-(openingW + sideW) / 2, h / 2, 0], [sideW, h, d]),
+        frame('right', [(openingW + sideW) / 2, h / 2, 0], [sideW, h, d]),
+        frame('top', [0, h - headerH / 2, 0], [openingW, headerH, d]),
+        { key: 'door', position: [0, doorH / 2, -d * 0.07], size: [openingW * 0.76, doorH * 0.94, d * 0.34], role: 'door' },
+      ];
+    }
+    case 'window': {
+      const sideW = w * 0.22;
+      const bandH = h * 0.24;
+      const openingW = w - sideW * 2;
+      const openingH = h - bandH * 2;
+      return [
+        frame('left', [-(openingW + sideW) / 2, h / 2, 0], [sideW, h, d]),
+        frame('right', [(openingW + sideW) / 2, h / 2, 0], [sideW, h, d]),
+        frame('bottom', [0, bandH / 2, 0], [openingW, bandH, d]),
+        frame('top', [0, h - bandH / 2, 0], [openingW, bandH, d]),
+        { key: 'glass', position: [0, h / 2, -d * 0.08], size: [openingW * 0.82, openingH * 0.72, d * 0.24], role: 'glass' },
+      ];
+    }
+    case 'glass':
+      return [
+        { key: 'glass-wall', position: [0, h / 2, 0], size: [w, h, d * 0.4], role: 'glass' },
+        frame('frame-top', [0, h - 0.08, 0], [w, 0.16, d]),
+        frame('frame-bottom', [0, 0.08, 0], [w, 0.16, d]),
+        frame('frame-left', [-w / 2 + 0.08, h / 2, 0], [0.16, h, d]),
+        frame('frame-right', [w / 2 - 0.08, h / 2, 0], [0.16, h, d]),
+      ];
+  }
+}
+
+/** World boxes of the parts of a wall that stop bodies. */
+export function wallSolidBoxes(wall: Pick<WallConfig, 'position' | 'rotation' | 'wallKind'>, group?: Pick<WallGroupConfig, 'defaultWallKind'>): BuildingBox[] {
+  const { center, rotationY } = wallBox(wall);
+  const cos = exact(Math.cos(rotationY));
+  const sin = exact(Math.sin(rotationY));
+  return wallPieces(wallKindOf(wall, group))
+    .filter((piece) => piece.role !== 'door')
+    .map(({ position: [x, y, z], size }) => ({
+      center: [center[0] + x * cos + z * sin, wall.position.y + y, center[2] - x * sin + z * cos],
+      half: [size[0] / 2, size[1] / 2, size[2] / 2],
+      rotationY,
+    }));
 }
 
 /** A block fills whole cells from the cell centered on `position` toward +X, +Y and +Z. */

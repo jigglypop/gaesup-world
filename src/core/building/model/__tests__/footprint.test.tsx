@@ -8,7 +8,7 @@ import type { BuildingColliderBox } from '../../components/BuildingColliders/typ
 import { createTileColliders } from '../../components/TileSystem/layout';
 import { createWallColliders } from '../../components/WallSystem/colliders';
 import { applyBuildingNavigationObstacles } from '../../navigation';
-import type { BuildingBlockConfig, TileConfig, TileGroupConfig, WallConfig, WallGroupConfig } from '../../types';
+import type { BuildingBlockConfig, BuildingWallKind, TileConfig, TileGroupConfig, WallConfig, WallGroupConfig } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { buildBlockRecord, buildTileGroupRecord, buildWallGroupRecord, type VisibilityRecord } from '../../visibility/core';
 import { boxBoundsXZ, type BoundsXZ } from '../footprint';
@@ -82,10 +82,30 @@ describe.each([0, Math.PI / 2, Math.PI, Math.PI * 1.5])('a wall turned %s', (tur
   test('renders, collides, blocks navigation and stays visible over one box', async () => {
     const [rendered, ...rest] = await renderedBounds({ wallGroups: [group] });
     expect(rest).toHaveLength(0);
-    expectSameBounds(colliderBounds(createWallColliders([wall])[0]!), rendered!);
+    expectSameBounds(colliderBounds(createWallColliders(group)[0]!), rendered!);
     expect(navCells((navigation) => applyBuildingNavigationObstacles(navigation, { wallGroups: [group] }), (navigation, x, z) => !navigation.isWalkable(x, z)))
       .toEqual(cellsUnder(rendered!));
     expectRecordCovers(buildWallGroupRecord(group)!, rendered!);
+  });
+});
+
+describe.each<[BuildingWallKind, boolean]>([
+  ['door', true], ['arch', true], ['solid', false], ['window', false], ['glass', false], ['half', false], ['railing', false],
+])('a %s wall', (kind, passes) => {
+  // The kind comes from the group, as a wall preset sets it.
+  const wall: WallConfig = { id: 'wall', wallGroupId: 'walls', position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } };
+  const group: WallGroupConfig = { id: 'walls', name: 'walls', defaultWallKind: kind, walls: [wall] };
+
+  test(`${passes ? 'lets' : 'stops'} a person walking through its middle, in physics and navigation alike`, () => {
+    // The wall stands along X at z = 2; the body steps through its center.
+    const body = { minX: -0.3, maxX: 0.3, minY: 0.1, maxY: 1.7, minZ: 1.7, maxZ: 2.3 };
+    const hit = createWallColliders(group).some(({ position: [x, y, z], args: [hx, hy, hz] }) =>
+      x - hx < body.maxX && x + hx > body.minX && y - hy < body.maxY && y + hy > body.minY && z - hz < body.maxZ && z + hz > body.minZ);
+    expect(hit).toBe(!passes);
+    const navigation = new NavigationSystem(NAV);
+    applyBuildingNavigationObstacles(navigation, { wallGroups: [group] });
+    expect(navigation.isWalkable(0.5, 2.5)).toBe(passes);
+    navigation.dispose();
   });
 });
 

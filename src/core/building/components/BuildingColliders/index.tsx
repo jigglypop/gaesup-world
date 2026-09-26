@@ -46,8 +46,8 @@ const TileGroupColliders = memo(function TileGroupColliders({ tiles }: TileGroup
   return <BuildingColliderBody boxes={boxes} />;
 });
 
-const WallGroupColliders = memo(function WallGroupColliders({ walls }: WallGroupCollidersProps) {
-  const boxes = useMemo(() => createWallColliders(walls), [walls]);
+const WallGroupColliders = memo(function WallGroupColliders({ group }: WallGroupCollidersProps) {
+  const boxes = useMemo(() => createWallColliders(group), [group]);
   return <BuildingColliderBody boxes={boxes} />;
 });
 
@@ -75,7 +75,7 @@ export const BuildingColliders = memo(function BuildingColliders({
         <TileGroupColliders key={group.id} tiles={group.tiles} />
       ))}
       {!wallEditMode && wallGroupList.map((group) => (
-        <WallGroupColliders key={group.id} walls={group.walls} />
+        <WallGroupColliders key={group.id} group={group} />
       ))}
       {!blockEditMode && <BlockColliders blocks={blocks} />}
     </>

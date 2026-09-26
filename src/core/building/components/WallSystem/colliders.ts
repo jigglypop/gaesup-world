@@ -1,10 +1,16 @@
-import { wallBox } from '../../model/footprint';
-import type { WallConfig } from '../../types';
+import { wallSolidBoxes } from '../../model/footprint';
+import type { WallGroupConfig } from '../../types';
 import type { BuildingColliderBox } from '../BuildingColliders/types';
 
-export function createWallColliders(walls: readonly WallConfig[]): BuildingColliderBox[] {
-  return walls.map((wall) => {
-    const { center, half, rotationY } = wallBox(wall);
-    return { key: wall.id, position: [...center], rotation: [0, rotationY, 0], args: [...half] };
+/** One box per solid wall part: a door or arch keeps its opening free. */
+export function createWallColliders(group: Pick<WallGroupConfig, 'walls' | 'defaultWallKind'>): BuildingColliderBox[] {
+  return group.walls.flatMap((wall) => {
+    const boxes = wallSolidBoxes(wall, group);
+    return boxes.map(({ center, half, rotationY }, index) => ({
+      key: boxes.length === 1 ? wall.id : `${wall.id}:${index}`,
+      position: [...center],
+      rotation: [0, rotationY, 0],
+      args: [...half],
+    }));
   });
 }

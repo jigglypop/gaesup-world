@@ -1,5 +1,5 @@
 import type { NavigationSystem } from '../navigation';
-import { blockBox, boxBoundsXZ, cellSpan, tileBox, tileWorldSize, wallBox, type BuildingBox } from './model/footprint';
+import { blockBox, boxBoundsXZ, cellSpan, tileBox, tileWorldSize, wallBox, wallKindOf, type BuildingBox } from './model/footprint';
 import type {
   BuildingBlockConfig,
   BuildingWallKind,
@@ -28,10 +28,11 @@ export type BuildingNavigationObstacleOptions = {
   wallPadding?: number;
 };
 
-const NON_BLOCKING_WALL_KINDS = new Set<BuildingWallKind>(['door', 'arch', 'railing']);
+/** Kinds whose colliders leave an opening to walk through; a railing's rails stop bodies at chest height. */
+const NON_BLOCKING_WALL_KINDS = new Set<BuildingWallKind>(['door', 'arch']);
 
-function isBlockingWall(wall: WallConfig): boolean {
-  return !NON_BLOCKING_WALL_KINDS.has(wall.wallKind ?? 'solid');
+function isBlockingWall(wall: WallConfig, group: WallGroupConfig): boolean {
+  return !NON_BLOCKING_WALL_KINDS.has(wallKindOf(wall, group));
 }
 
 function rotatedFootprint(width: number, depth: number, rotationY: number): { width: number; depth: number } {
@@ -148,7 +149,7 @@ export function applyBuildingNavigationObstacles(
   if (includeWalls) {
     for (const group of source.wallGroups ?? []) {
       for (const wall of group.walls) {
-        if (!isBlockingWall(wall)) continue;
+        if (!isBlockingWall(wall, group)) continue;
         blockUnderBox(navigation, wallBox(wall), wallPadding);
         applied += 1;
       }

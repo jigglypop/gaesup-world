@@ -1,4 +1,4 @@
-import type { BuildingBlockConfig, TileConfig, TileGroupConfig, WallConfig, WallGroupConfig } from '../../types';
+import type { BuildingBlockConfig, TileConfig, TileGroupConfig, WallGroupConfig } from '../../types';
 
 export type BuildingColliderBox = {
   key: string;
@@ -16,7 +16,7 @@ export type TileGroupCollidersProps = {
 };
 
 export type WallGroupCollidersProps = {
-  walls: readonly WallConfig[];
+  group: WallGroupConfig;
 };
 
 export type BlockCollidersProps = {
