@@ -2,7 +2,7 @@ import { TILE_CONSTANTS } from '../../types/constants';
 import { createCellIndex } from '../cellIndex';
 
 const cell = TILE_CONSTANTS.GRID_CELL_SIZE;
-const square = (x: number, z: number, size = cell) => ({ minX: x - size / 2, maxX: x + size / 2, minZ: z - size / 2, maxZ: z + size / 2 });
+const square = (x: number, z: number, size: number = cell) => ({ minX: x - size / 2, maxX: x + size / 2, minZ: z - size / 2, maxZ: z + size / 2 });
 
 test('a point lookup returns the few items around it, whatever the item count', () => {
   const tiles = Array.from({ length: 2500 }, (_, i) => ({ id: i, ...square((i % 50) * cell, Math.floor(i / 50) * cell) }));
