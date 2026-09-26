@@ -25,7 +25,6 @@ const libraryExternals = [
   '@xyflow/react',
   'immer',
   /^immer\//,
-  'mitt',
   'simplex-noise',
   'zustand',
   /^zustand\//,

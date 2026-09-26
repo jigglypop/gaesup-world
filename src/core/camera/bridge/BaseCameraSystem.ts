@@ -1,6 +1,5 @@
-import mitt from 'mitt';
-
-import { CameraEventValue, CameraSystemEvents, CameraSystemConfig, ICameraSystemMonitor, CameraSystemEmitter, CameraSystemState } from './types';
+import { CameraEventValue, CameraSystemConfig, ICameraSystemMonitor, CameraSystemEmitter, CameraSystemState } from './types';
+import { InMemoryEventBus } from '../../plugins/EventBus';
 
 export function cloneCameraSystemConfig(config: CameraSystemConfig): CameraSystemConfig {
   return {
@@ -22,7 +21,7 @@ export abstract class BaseCameraSystem implements ICameraSystemMonitor {
     lastUpdateTime: 0,
   };
   protected constructor(initialConfig: CameraSystemConfig) {
-    this.emitter = mitt<CameraSystemEvents>();
+    this.emitter = new InMemoryEventBus();
     this.config = cloneCameraSystemConfig(initialConfig);
   }
 
@@ -75,7 +74,7 @@ export abstract class BaseCameraSystem implements ICameraSystemMonitor {
   }
 
   public destroy(): void {
-    this.emitter.all.clear();
+    this.emitter.clear();
   }
 
   abstract update(deltaTime: number): void;

@@ -1,5 +1,4 @@
-import { Emitter } from 'mitt';
-
+import type { TypedEventBus } from '../../plugins/EventBus';
 import type { CameraCollisionTargets } from '../core/types';
 
 export type CameraEventValue = object | string | number | boolean | null | undefined;
@@ -55,4 +54,4 @@ export interface ICameraSystemMonitor {
   };
 }
 
-export type CameraSystemEmitter = Emitter<CameraSystemEvents>;
+export type CameraSystemEmitter = TypedEventBus<CameraSystemEvents>;

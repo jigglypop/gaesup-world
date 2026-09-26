@@ -1,5 +1,14 @@
 import type { EventBus, EventHandler, EventUnsubscribe } from './types';
 
+/** An `InMemoryEventBus` whose event names and payloads come from one event map. */
+export type TypedEventBus<Events extends Record<string, unknown>> = {
+  on<K extends keyof Events & string>(eventName: K, handler: EventHandler<Events[K]>): EventUnsubscribe;
+  once<K extends keyof Events & string>(eventName: K, handler: EventHandler<Events[K]>): EventUnsubscribe;
+  off<K extends keyof Events & string>(eventName: K, handler: EventHandler<Events[K]>): void;
+  emit<K extends keyof Events & string>(eventName: K, payload: Events[K]): void;
+  clear(eventName?: keyof Events & string): void;
+};
+
 export class InMemoryEventBus implements EventBus {
   private readonly handlers = new Map<string, Set<EventHandler>>();
 

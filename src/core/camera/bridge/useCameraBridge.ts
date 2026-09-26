@@ -33,8 +33,7 @@ export function useCameraBridge<T extends BaseCameraSystem>(
     const subscribe = <K extends keyof CameraSystemEvents>(eventName: K) => {
       const handler = eventHandlers[eventName];
       if (!handler) return;
-      emitter.on(eventName, handler);
-      unsubscribers.push(() => emitter.off(eventName, handler));
+      unsubscribers.push(emitter.on(eventName, handler));
     };
 
     (Object.keys(eventHandlers) as Array<keyof CameraSystemEvents>).forEach(subscribe);
