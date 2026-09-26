@@ -2,11 +2,11 @@ import {
   createBlockFootprint,
   createTileFootprint,
   indexAabb,
-  tileHalfSize,
   tilePositionToCell,
   wallTransformToEdge,
 } from '../model';
 import { BuildingSpatialIndex } from './spatialIndex';
+import { tileWorldSize } from '../model/footprint';
 import { tilePlacementCells } from '../model/placement';
 import type {
   BuildingBlockConfig,
@@ -239,7 +239,7 @@ function hydrateTileGroups(state: BuildingHydrationTarget, groups: TileGroupConf
         cell,
         footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1),
       };
-      const halfSize = tileHalfSize(tileWithCell.size || 1);
+      const halfSize = tileWorldSize(tileWithCell) / 2;
       state.spatialIndex.tileMeta.set(tileWithCell.id, {
         x: tileWithCell.position.x,
         z: tileWithCell.position.z,

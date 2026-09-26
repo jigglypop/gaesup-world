@@ -4,6 +4,7 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { getDefaultBuildingObject } from '../catalog';
+import { tileWorldSize } from '../model/footprint';
 import { useBuildingStore, useBuildingStoreApi } from '../stores/buildingStore';
 import { MeshConfig, Position3D, Rotation3D, TileGroupConfig, TileObjectType } from '../types';
 import { TILE_CONSTANTS } from '../types/constants';
@@ -53,7 +54,7 @@ export function findTerrainBlockMaterial(
   for (const group of tileGroups) {
     for (const tile of group.tiles) {
       if (tile.objectType !== 'sand' && tile.objectType !== 'snowfield') continue;
-      const tileSize = (tile.size ?? 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+      const tileSize = tileWorldSize(tile);
       const half = tileSize * 0.5;
       const inX = position.x >= tile.position.x - half && position.x <= tile.position.x + half;
       const inZ = position.z >= tile.position.z - half && position.z <= tile.position.z + half;
@@ -278,7 +279,7 @@ export function useBuildingEditor() {
     const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
     for (const group of tileGroups.values()) {
       for (const tile of group.tiles) {
-        const half = ((tile.size || 1) * cellSize) / 2;
+        const half = tileWorldSize(tile) / 2;
         if (
           Math.abs(tile.position.x - hoverPosition.x) < half &&
           Math.abs(tile.position.z - hoverPosition.z) < half

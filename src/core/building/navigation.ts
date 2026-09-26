@@ -1,4 +1,5 @@
 import type { NavigationSystem } from '../navigation';
+import { blockBox, boxBoundsXZ, cellSpan, tileBox, tileWorldSize, wallBox, type BuildingBox } from './model/footprint';
 import type {
   BuildingBlockConfig,
   BuildingWallKind,
@@ -70,10 +71,6 @@ function inverseRotateXZ(x: number, z: number, rotation: number): [number, numbe
   return [x * cos - z * sin, x * sin + z * cos];
 }
 
-function tileWorldSize(tile: TileConfig): number {
-  return Math.max(1, tile.size ?? 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
-}
-
 function tileTopHeight(tile: TileConfig): number {
   return Math.max(tile.position.y, TILE_CONSTANTS.HEIGHT_STEP);
 }
@@ -95,7 +92,7 @@ function sampleTileHeight(tile: TileConfig, worldX: number, worldZ: number): num
   const progress = Math.max(0, Math.min(1, (localZ + half) / size));
   const height = tileTopHeight(tile);
   if (shape === 'stairs') {
-    const stepCount = Math.max(4, Math.min(8, (tile.size ?? 1) * 4));
+    const stepCount = Math.max(4, Math.min(8, cellSpan(tile.size) * 4));
     return Math.ceil(progress * stepCount) / stepCount * height;
   }
   if (shape === 'ramp') {
@@ -106,16 +103,20 @@ function sampleTileHeight(tile: TileConfig, worldX: number, worldZ: number): num
 }
 
 function applyTileNavigationHeights(navigation: NavigationSystem, tile: TileConfig): void {
-  const size = tileWorldSize(tile);
-  const rotation = tile.rotation ?? 0;
-  const footprint = rotatedFootprint(size, size, rotation);
+  const { minX, maxX, minZ, maxZ } = boxBoundsXZ(tileBox(tile));
   navigation.setHeightSampler(
-    tile.position.x,
-    tile.position.z,
-    footprint.width,
-    footprint.depth,
+    (minX + maxX) / 2,
+    (minZ + maxZ) / 2,
+    maxX - minX,
+    maxZ - minZ,
     (worldX, worldZ) => sampleTileHeight(tile, worldX, worldZ),
   );
+}
+
+/** Blocks the cells under a box, grown by `padding` in total along each axis. */
+function blockUnderBox(navigation: NavigationSystem, box: BuildingBox, padding = 0): void {
+  const { minX, maxX, minZ, maxZ } = boxBoundsXZ(box);
+  navigation.setBlocked((minX + maxX) / 2, (minZ + maxZ) / 2, maxX - minX + padding, maxZ - minZ + padding);
 }
 
 export function applyBuildingNavigationObstacles(
@@ -148,12 +149,7 @@ export function applyBuildingNavigationObstacles(
     for (const group of source.wallGroups ?? []) {
       for (const wall of group.walls) {
         if (!isBlockingWall(wall)) continue;
-        const footprint = rotatedFootprint(
-          (wall.width ?? TILE_CONSTANTS.WALL_SIZES.WIDTH) + wallPadding,
-          (wall.depth ?? TILE_CONSTANTS.WALL_SIZES.THICKNESS) + wallPadding,
-          wall.rotation.y,
-        );
-        navigation.setBlocked(wall.position.x, wall.position.z, footprint.width, footprint.depth);
+        blockUnderBox(navigation, wallBox(wall), wallPadding);
         applied += 1;
       }
     }
@@ -161,9 +157,7 @@ export function applyBuildingNavigationObstacles(
 
   if (includeBlocks) {
     for (const block of source.blocks ?? []) {
-      const width = Math.max(1, block.size?.x ?? 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
-      const depth = Math.max(1, block.size?.z ?? 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
-      navigation.setBlocked(block.position.x, block.position.z, width, depth);
+      blockUnderBox(navigation, blockBox(block));
       applied += 1;
     }
   }

@@ -10,6 +10,7 @@ import { getDefaultToonMode, getToonGradient } from '../../../rendering/toon';
 import { MinimapSystem } from '../../../ui/core';
 import { WorldProps } from '../../../world/components/WorldProps';
 import { MaterialManager } from '../../core/MaterialManager';
+import { cellSpan, tileWorldSize } from '../../model/footprint';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { BuildingColliderBody } from '../BuildingColliders';
 import type { BuildingColliderBox } from '../BuildingColliders/types';
@@ -71,7 +72,7 @@ function getTileMaterialId(tile: TileLike, fallbackId: string): string {
 }
 
 function buildTileBounds(tile: TileLike): TileBounds {
-  const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+  const tileSize = tileWorldSize(tile);
   const half = tileSize / 2;
   const terrainLift = tile.objectType ? (TERRAIN_COVER_EDGE_LIFT[tile.objectType] ?? 0) : 0;
 
@@ -84,7 +85,7 @@ function buildTileBounds(tile: TileLike): TileBounds {
     maxZ: tile.position.z + half,
     centerX: tile.position.x,
     centerZ: tile.position.z,
-    segments: tile.size || 1,
+    segments: cellSpan(tile.size),
   };
 }
 
@@ -606,7 +607,7 @@ export function TileSystem({
   const sandEntries: SandEntry[] = useMemo(
     () => sandTiles.map((t) => ({
       position: [t.position.x, t.position.y, t.position.z] as [number, number, number],
-      size: TILE_CONSTANTS.GRID_CELL_SIZE * (t.size || 1),
+      size: tileWorldSize(t),
       ...(t.objectConfig?.terrainColor ? { color: t.objectConfig.terrainColor } : {}),
       ...(t.objectConfig?.terrainAccentColor ? { accentColor: t.objectConfig.terrainAccentColor } : {}),
     })),
@@ -621,7 +622,7 @@ export function TileSystem({
   const snowfieldEntries: SnowfieldEntry[] = useMemo(
     () => snowfieldTiles.map((t) => ({
       position: [t.position.x, t.position.y, t.position.z] as [number, number, number],
-      size: TILE_CONSTANTS.GRID_CELL_SIZE * (t.size || 1),
+      size: tileWorldSize(t),
       ...(t.objectConfig?.terrainColor ? { color: t.objectConfig.terrainColor } : {}),
       ...(t.objectConfig?.terrainAccentColor ? { accentColor: t.objectConfig.terrainAccentColor } : {}),
     })),
@@ -675,7 +676,7 @@ export function TileSystem({
     const tmp = new THREE.Vector3();
     
     tileGroup.tiles.forEach((tile) => {
-      const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+      const tileSize = tileWorldSize(tile);
       const halfSize = tileSize / 2;
       
       tmp.set(tile.position.x - halfSize, tile.position.y, tile.position.z - halfSize);
@@ -736,7 +737,7 @@ export function TileSystem({
 
         {isEditMode && tileGroup.tiles.map((tile) => {
           const selected = tile.id === selectedTileId;
-          const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+          const tileSize = tileWorldSize(tile);
           const previewHeight = Math.max(0.22, tile.position.y + 0.22);
 
           return (
@@ -761,7 +762,7 @@ export function TileSystem({
         ))}
 
         {roundTiles.map((tile) => {
-          const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+          const tileSize = tileWorldSize(tile);
           const elevated = tile.position.y > 0.02;
           const height = elevated ? tile.position.y : 0.04;
           const centerY = elevated ? height / 2 : -0.02;

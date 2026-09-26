@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef } from 'react';
 
 import * as THREE from 'three';
 
-import { getWallKind, getWallMaterialKey, getWallMaterials, WallBatchMesh, type WallBatch } from './batch';
+import { createWallGeometry, getWallKind, getWallMaterialKey, getWallMaterials, WallBatchMesh, type WallBatch } from './batch';
 import { createWallColliders } from './colliders';
 import { WallSystemProps } from './types';
 import { MaterialManager } from '../../core/MaterialManager';
+import { wallBox } from '../../model/footprint';
 import { MeshConfig, WallConfig, WallGroupConfig } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { BuildingColliderBody } from '../BuildingColliders';
@@ -105,10 +106,10 @@ function WallModule({
   onWallClick?: (wallId: string) => void;
 }) {
   const kind = getWallKind(wall, wallGroup);
+  const { center, rotationY } = wallBox(wall);
   const materials = getWallMaterials(manager, meshes, wall, wallGroups, wallGroup);
   const glass = getGlassMaterial(manager);
   const door = getDoorMaterial(manager, meshes, wallGroup);
-  const z = width / 2;
   const railHeight = height * 0.46;
   const handleClick = (event: { stopPropagation: () => void }) => {
     event.stopPropagation();
@@ -118,17 +119,17 @@ function WallModule({
   const pieces = (() => {
     if (kind === 'half') {
       return [
-        <WallPiece key="half" position={[0, railHeight / 2, z]} size={[width, railHeight, depth]} materials={materials} />,
+        <WallPiece key="half" position={[0, railHeight / 2, 0]} size={[width, railHeight, depth]} materials={materials} />,
       ];
     }
     if (kind === 'railing') {
       const postH = height * 0.62;
       return [
-        <WallPiece key="post-l" position={[-width * 0.42, postH / 2, z]} size={[0.18, postH, depth]} materials={materials} />,
-        <WallPiece key="post-c" position={[0, postH / 2, z]} size={[0.16, postH * 0.9, depth]} materials={materials} />,
-        <WallPiece key="post-r" position={[width * 0.42, postH / 2, z]} size={[0.18, postH, depth]} materials={materials} />,
-        <WallPiece key="rail-top" position={[0, postH * 0.82, z]} size={[width, 0.18, depth]} materials={materials} />,
-        <WallPiece key="rail-mid" position={[0, postH * 0.48, z]} size={[width * 0.88, 0.12, depth]} materials={materials} />,
+        <WallPiece key="post-l" position={[-width * 0.42, postH / 2, 0]} size={[0.18, postH, depth]} materials={materials} />,
+        <WallPiece key="post-c" position={[0, postH / 2, 0]} size={[0.16, postH * 0.9, depth]} materials={materials} />,
+        <WallPiece key="post-r" position={[width * 0.42, postH / 2, 0]} size={[0.18, postH, depth]} materials={materials} />,
+        <WallPiece key="rail-top" position={[0, postH * 0.82, 0]} size={[width, 0.18, depth]} materials={materials} />,
+        <WallPiece key="rail-mid" position={[0, postH * 0.48, 0]} size={[width * 0.88, 0.12, depth]} materials={materials} />,
       ];
     }
     if (kind === 'door' || kind === 'arch') {
@@ -137,10 +138,10 @@ function WallModule({
       const headerH = kind === 'arch' ? height * 0.34 : height * 0.22;
       const doorH = height - headerH;
       return [
-        <WallPiece key="left" position={[-(openingW + sideW) / 2, height / 2, z]} size={[sideW, height, depth]} materials={materials} />,
-        <WallPiece key="right" position={[(openingW + sideW) / 2, height / 2, z]} size={[sideW, height, depth]} materials={materials} />,
-        <WallPiece key="top" position={[0, height - headerH / 2, z]} size={[openingW, headerH, depth]} materials={materials} />,
-        <WallPiece key="door" position={[0, doorH / 2, z - depth * 0.07]} size={[openingW * 0.76, doorH * 0.94, depth * 0.34]} materials={door} />,
+        <WallPiece key="left" position={[-(openingW + sideW) / 2, height / 2, 0]} size={[sideW, height, depth]} materials={materials} />,
+        <WallPiece key="right" position={[(openingW + sideW) / 2, height / 2, 0]} size={[sideW, height, depth]} materials={materials} />,
+        <WallPiece key="top" position={[0, height - headerH / 2, 0]} size={[openingW, headerH, depth]} materials={materials} />,
+        <WallPiece key="door" position={[0, doorH / 2, -depth * 0.07]} size={[openingW * 0.76, doorH * 0.94, depth * 0.34]} materials={door} />,
       ];
     }
     if (kind === 'window') {
@@ -149,26 +150,26 @@ function WallModule({
       const openingW = width - sideW * 2;
       const openingH = height - bandH * 2;
       return [
-        <WallPiece key="left" position={[-(openingW + sideW) / 2, height / 2, z]} size={[sideW, height, depth]} materials={materials} />,
-        <WallPiece key="right" position={[(openingW + sideW) / 2, height / 2, z]} size={[sideW, height, depth]} materials={materials} />,
-        <WallPiece key="bottom" position={[0, bandH / 2, z]} size={[openingW, bandH, depth]} materials={materials} />,
-        <WallPiece key="top" position={[0, height - bandH / 2, z]} size={[openingW, bandH, depth]} materials={materials} />,
-        <WallPiece key="glass" position={[0, height / 2, z - depth * 0.08]} size={[openingW * 0.82, openingH * 0.72, depth * 0.24]} materials={glass} />,
+        <WallPiece key="left" position={[-(openingW + sideW) / 2, height / 2, 0]} size={[sideW, height, depth]} materials={materials} />,
+        <WallPiece key="right" position={[(openingW + sideW) / 2, height / 2, 0]} size={[sideW, height, depth]} materials={materials} />,
+        <WallPiece key="bottom" position={[0, bandH / 2, 0]} size={[openingW, bandH, depth]} materials={materials} />,
+        <WallPiece key="top" position={[0, height - bandH / 2, 0]} size={[openingW, bandH, depth]} materials={materials} />,
+        <WallPiece key="glass" position={[0, height / 2, -depth * 0.08]} size={[openingW * 0.82, openingH * 0.72, depth * 0.24]} materials={glass} />,
       ];
     }
     return [
-      <WallPiece key="glass-wall" position={[0, height / 2, z]} size={[width, height, depth * 0.4]} materials={glass} />,
-      <WallPiece key="frame-top" position={[0, height - 0.08, z]} size={[width, 0.16, depth]} materials={materials} />,
-      <WallPiece key="frame-bottom" position={[0, 0.08, z]} size={[width, 0.16, depth]} materials={materials} />,
-      <WallPiece key="frame-left" position={[-width / 2 + 0.08, height / 2, z]} size={[0.16, height, depth]} materials={materials} />,
-      <WallPiece key="frame-right" position={[width / 2 - 0.08, height / 2, z]} size={[0.16, height, depth]} materials={materials} />,
+      <WallPiece key="glass-wall" position={[0, height / 2, 0]} size={[width, height, depth * 0.4]} materials={glass} />,
+      <WallPiece key="frame-top" position={[0, height - 0.08, 0]} size={[width, 0.16, depth]} materials={materials} />,
+      <WallPiece key="frame-bottom" position={[0, 0.08, 0]} size={[width, 0.16, depth]} materials={materials} />,
+      <WallPiece key="frame-left" position={[-width / 2 + 0.08, height / 2, 0]} size={[0.16, height, depth]} materials={materials} />,
+      <WallPiece key="frame-right" position={[width / 2 - 0.08, height / 2, 0]} size={[0.16, height, depth]} materials={materials} />,
     ];
   })();
 
   return (
     <group
-      position={[wall.position.x, wall.position.y, wall.position.z]}
-      rotation={[0, wall.rotation.y, 0]}
+      position={[center[0], wall.position.y, center[2]]}
+      rotation={[0, rotationY, 0]}
       {...(onWallClick ? { onClick: handleClick } : {})}
     >
       {pieces}
@@ -191,11 +192,7 @@ export function WallSystem({
   const height = TILE_CONSTANTS.WALL_SIZES.HEIGHT;
   const depth = TILE_CONSTANTS.WALL_SIZES.THICKNESS;
 
-  const geometry = useMemo(() => {
-    const geom = new THREE.BoxGeometry(width, height, depth);
-    geom.translate(0, 0, width / 2);
-    return geom;
-  }, [width, height, depth]);
+  const geometry = useMemo(createWallGeometry, []);
 
   const batches = useMemo(
     () => buildWallBatches(wallGroup, wallGroups ?? new Map([[wallGroup.id, wallGroup]]), meshes, materialManagerRef.current),
@@ -250,7 +247,6 @@ export function WallSystem({
           key={`${wallGroup.id}-${batch.key}`}
           batch={batch}
           geometry={geometry}
-          height={height}
           {...(onWallClick ? { onWallClick } : {})}
         />
       ))}

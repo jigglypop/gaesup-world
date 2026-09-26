@@ -25,7 +25,6 @@
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| SE-4a | 벽·블록·타일마다 footprint 함수 하나를 렌더, collider, 내비게이션, 가시성, 배치 검사가 공유한다 | "렌더 범위 = collider 범위 = 내비 막힘 셀" 불변식 테스트(벽 4방향, 블록·타일 크기 1~4) |
 | SE-4b | 문·아치·난간 벽의 collider를 종류별 형상으로 | 문은 통과, 통짜 벽은 차단하는 테스트 |
 | SE-4c | 짝수 크기 타일 점유, 반대 방향 벽 겹침 판정, `WallConfig.edge` 좌표계 | 재현 테스트 |
 | SE-4d | `addTileGroup`·`updateTileGroup`의 지지높이 인덱스 갱신, `updateTile`·`updateWall`·`removeWall`의 인덱스 원자성 | 인덱스와 store 일관성 테스트 |

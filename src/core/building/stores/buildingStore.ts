@@ -12,11 +12,11 @@ import {
   indexAabb,
   snapBuildingPosition,
   createTileFootprint,
-  tileHalfSize,
   tilePositionToCell,
   unindexId,
   wallTransformToEdge,
 } from '../model';
+import { tileWorldSize } from '../model/footprint';
 import { blockPlacementCells, tilePlacementCells } from '../model/placement';
 import {
   BuildingSystemState,
@@ -627,7 +627,7 @@ export function createBuildingStore() {
             footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1),
           };
           group.tiles.push(tileWithCell);
-          const hs = tileHalfSize(tile.size || 1);
+          const hs = tileWorldSize(tile) / 2;
           state.spatialIndex.tileMeta.set(tileWithCell.id, {
             x: tileWithCell.position.x,
             z: tileWithCell.position.z,
@@ -947,7 +947,7 @@ export function createBuildingStore() {
           group.tiles.push(tileWithObject);
 
           const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-          const halfSize = tileHalfSize(tileWithObject.size || 1);
+          const halfSize = tileWorldSize(tileWithObject) / 2;
           state.spatialIndex.tileMeta.set(tileWithObject.id, {
             x: tileWithObject.position.x,
             z: tileWithObject.position.z,
@@ -998,7 +998,7 @@ export function createBuildingStore() {
 
               if (shouldReindex) {
                 const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-                const halfSize = tileHalfSize(tile.size || 1);
+                const halfSize = tileWorldSize(tile) / 2;
                 state.spatialIndex.tileMeta.set(tile.id, {
                   x: tile.position.x,
                   z: tile.position.z,

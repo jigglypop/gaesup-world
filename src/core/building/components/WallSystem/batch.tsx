@@ -4,7 +4,9 @@ import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import type { MaterialManager } from '../../core/MaterialManager';
+import { wallBox } from '../../model/footprint';
 import type { BuildingWallKind, MeshConfig, WallConfig, WallGroupConfig } from '../../types';
+import { TILE_CONSTANTS } from '../../types/constants';
 import { useInstanceCapacity } from '../BuildingBatches/capacity';
 
 export type WallBatch = {
@@ -14,6 +16,12 @@ export type WallBatch = {
 };
 
 const DEFAULT_WALL_MESH: MeshConfig = { id: 'default', color: '#000000' };
+
+/** A wall centered on its own box; each instance moves it to `wallBox(wall)`. */
+export function createWallGeometry(): THREE.BoxGeometry {
+  const { WIDTH, HEIGHT, THICKNESS } = TILE_CONSTANTS.WALL_SIZES;
+  return new THREE.BoxGeometry(WIDTH, HEIGHT, THICKNESS);
+}
 
 export function getWallMaterialKey(wall: WallConfig): string {
   return wall.materialId ? `material:${wall.materialId}` : `type:${wall.wallGroupId}`;
@@ -55,12 +63,10 @@ export function getWallMaterials(
 export function WallBatchMesh({
   batch,
   geometry,
-  height,
   onWallClick,
 }: {
   batch: WallBatch;
   geometry: THREE.BoxGeometry;
-  height: number;
   onWallClick?: (wallId: string) => void;
 }) {
   const instancedRef = useRef<THREE.InstancedMesh | null>(null);
@@ -81,8 +87,9 @@ export function WallBatchMesh({
     for (let i = 0; i < wallCount; i++) {
       const wall = batch.walls[i];
       if (!wall) continue;
-      dummy.position.set(wall.position.x, wall.position.y + height / 2, wall.position.z);
-      dummy.rotation.set(0, wall.rotation.y, 0);
+      const { center, rotationY } = wallBox(wall);
+      dummy.position.set(center[0], center[1], center[2]);
+      dummy.rotation.set(0, rotationY, 0);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
     }
@@ -91,7 +98,7 @@ export function WallBatchMesh({
       mesh.computeBoundingBox();
       mesh.computeBoundingSphere();
     }
-  }, [batch.walls, wallCount, dummy, height, capacity]);
+  }, [batch.walls, wallCount, dummy, capacity]);
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();

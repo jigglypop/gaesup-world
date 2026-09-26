@@ -5,10 +5,9 @@ import * as THREE from 'three';
 import { getDefaultToonMode, getToonGradient } from '../../../rendering/toon';
 import { MaterialManager } from '../../core/MaterialManager';
 import type { MeshConfig, TileGroupConfig, WallGroupConfig } from '../../types';
-import { TILE_CONSTANTS } from '../../types/constants';
 import { BoxTileBatchMesh, getBoxTileBatchKey, isRaisedTile, type BoxTileBatch } from '../TileSystem/batch';
 import { getTileShape } from '../TileSystem/layout';
-import { getWallKind, getWallMaterials, WallBatchMesh, type WallBatch } from '../WallSystem/batch';
+import { createWallGeometry, getWallKind, getWallMaterials, WallBatchMesh, type WallBatch } from '../WallSystem/batch';
 
 export type BuildingBatchesProps = {
   tileGroups: readonly TileGroupConfig[];
@@ -31,15 +30,14 @@ export const BuildingBatches = memo(function BuildingBatches({
   onWallClick,
 }: BuildingBatchesProps) {
   const [manager] = useState(() => new MaterialManager());
-  const { WIDTH, HEIGHT, THICKNESS } = TILE_CONSTANTS.WALL_SIZES;
   const resources = useMemo(() => ({
     fallback: getDefaultToonMode()
       ? new THREE.MeshToonMaterial({ color: '#888888', gradientMap: getToonGradient(4) })
       : new THREE.MeshStandardMaterial({ color: '#888888' }),
     tileGeometry: new THREE.PlaneGeometry(1, 1, 1, 1).rotateX(-Math.PI / 2),
-    wallGeometry: new THREE.BoxGeometry(WIDTH, HEIGHT, THICKNESS).translate(0, 0, WIDTH / 2),
+    wallGeometry: createWallGeometry(),
     dummy: new THREE.Object3D(),
-  }), [HEIGHT, THICKNESS, WIDTH]);
+  }), []);
   useEffect(() => () => {
     resources.fallback.dispose();
     resources.tileGeometry.dispose();
@@ -94,7 +92,6 @@ export const BuildingBatches = memo(function BuildingBatches({
           key={batch.key}
           batch={batch}
           geometry={resources.wallGeometry}
-          height={HEIGHT}
           {...(onWallClick ? { onWallClick } : {})}
         />
       ))}

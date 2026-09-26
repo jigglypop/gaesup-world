@@ -1,3 +1,4 @@
+import { cellSpan, tileWorldSize } from '../../model/footprint';
 import type { TileConfig, TileShapeType } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
 import type { BuildingColliderBox } from '../BuildingColliders/types';
@@ -21,8 +22,8 @@ export function rotateXZ(x: number, z: number, rotation: number): [number, numbe
 }
 
 export function getStairLayout(tile: TileConfig) {
-  const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
-  const stepCount = Math.max(4, Math.min(8, (tile.size || 1) * 4));
+  const tileSize = tileWorldSize(tile);
+  const stepCount = Math.max(4, Math.min(8, cellSpan(tile.size) * 4));
   const totalHeight = Math.max(tile.position.y, TILE_CONSTANTS.HEIGHT_STEP);
   const stepHeight = totalHeight / stepCount;
   const stepDepth = tileSize / stepCount;
@@ -33,7 +34,7 @@ export function getStairLayout(tile: TileConfig) {
 }
 
 export function getRampLayout(tile: TileConfig) {
-  const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+  const tileSize = tileWorldSize(tile);
   const rampSlices = Math.max(12, Math.min(24, Math.ceil(tileSize / 0.25)));
   const totalHeight = Math.max(tile.position.y, TILE_CONSTANTS.HEIGHT_STEP);
   const sliceHeight = totalHeight / rampSlices;
@@ -152,7 +153,7 @@ export function createTileColliders(tiles: readonly TileConfig[]): BuildingColli
       continue;
     }
 
-    const tileSize = (tile.size || 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+    const tileSize = tileWorldSize(tile);
     const elevated = tile.position.y > ELEVATED_TILE_MIN_Y;
 
     if (shape === 'round') {
@@ -178,7 +179,7 @@ export function createTileColliders(tiles: readonly TileConfig[]): BuildingColli
     }
 
     const rotation = tile.rotation ?? 0;
-    if ((tile.size || 1) === 1 && isRightAngle(rotation)) {
+    if (cellSpan(tile.size) === 1 && isRightAngle(rotation)) {
       const phaseX = latticePhase(tile.position.x, cell);
       const phaseZ = latticePhase(tile.position.z, cell);
       const key = `${phaseX}|${phaseZ}|${tile.position.y}`;

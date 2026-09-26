@@ -2,8 +2,8 @@ import { useLayoutEffect, useRef } from 'react';
 
 import * as THREE from 'three';
 
+import { tileWorldSize } from '../../model/footprint';
 import type { TileConfig } from '../../types';
-import { TILE_CONSTANTS } from '../../types/constants';
 import { useInstanceCapacity } from '../BuildingBatches/capacity';
 
 export type BoxTileBatch = {
@@ -41,14 +41,12 @@ export function BoxTileBatchMesh({
     const mesh = ref.current;
     if (!mesh) return;
 
-    const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
     mesh.count = batch.tiles.length;
 
     for (let i = 0; i < batch.tiles.length; i++) {
       const tile = batch.tiles[i];
       if (!tile) continue;
-      const tileMultiplier = tile.size || 1;
-      const tileSize = cellSize * tileMultiplier;
+      const tileSize = tileWorldSize(tile);
 
       dummy.position.set(tile.position.x, tile.position.y + 0.001, tile.position.z);
       dummy.rotation.set(0, tile.rotation ?? 0, 0);

@@ -19,7 +19,7 @@ afterEach(() => {
 });
 
 describe('applyBuildingNavigationObstacles', () => {
-  it('blocks solid walls and ignores pass-through wall kinds', async () => {
+  it('blocks solid walls where they stand and ignores pass-through wall kinds', async () => {
     const navigation = NavigationSystem.getInstance(TEST_CONFIG);
     await navigation.init();
 
@@ -32,24 +32,22 @@ describe('applyBuildingNavigationObstacles', () => {
           wallGroupId: 'walls',
           position: { x: 2.5, y: 0, z: 2.5 },
           rotation: { x: 0, y: 0, z: 0 },
-          width: 1,
-          depth: 1,
           wallKind: 'solid',
         },
         {
           id: 'door',
           wallGroupId: 'walls',
-          position: { x: 4.5, y: 0, z: 2.5 },
+          position: { x: 4.5, y: 0, z: 0.5 },
           rotation: { x: 0, y: 0, z: 0 },
-          width: 1,
-          depth: 1,
           wallKind: 'door',
         },
       ],
     }];
 
     expect(applyBuildingNavigationObstacles(navigation, { wallGroups })).toBe(1);
-    expect(navigation.isWalkable(2.5, 2.5)).toBe(false);
+    // A wall hangs off its pivot: 4 m along X, half a length toward +Z, where it renders and collides.
+    expect(navigation.isWalkable(2.5, 4.5)).toBe(false);
+    expect(navigation.isWalkable(2.5, 2.5)).toBe(true);
     expect(navigation.isWalkable(4.5, 2.5)).toBe(true);
   });
 

@@ -39,7 +39,8 @@ describe('building visibility core', () => {
     const record = buildTileGroupRecord(group);
 
     expect(record).not.toBeNull();
-    expect(record?.centerX).toBeCloseTo(3.25);
+    // Sizes count 4 m cells: the tiles span -2..2 and 2..10.
+    expect(record?.centerX).toBeCloseTo(4);
     expect(record?.centerY).toBeGreaterThan(1);
     expect(record?.radius).toBeGreaterThan(3);
   });

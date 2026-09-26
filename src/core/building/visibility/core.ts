@@ -1,6 +1,6 @@
 import { indexAabb, queryAabbIds, unindexId } from '../model';
+import { blockBox, boxBoundsXZ, tileBox, wallBox } from '../model/footprint';
 import type { BuildingBlockConfig, PlacedObject, TileGroupConfig, WallGroupConfig } from '../types';
-import { TILE_CONSTANTS } from '../types/constants';
 
 export const VISIBILITY_CELL_SIZE = 18;
 export const VISIBILITY_MAX_DISTANCE = 140;
@@ -126,20 +126,18 @@ export function buildTileGroupRecord(group: TileGroupConfig, cellSize = VISIBILI
   if (group.tiles.length === 0) return null;
   let minX = Infinity;
   let maxX = -Infinity;
-  let minY = 0;
+  const minY = 0;
   let maxY = 0.2;
   let minZ = Infinity;
   let maxZ = -Infinity;
 
   for (const tile of group.tiles) {
-    const size = tile.size ?? 1;
-    const half = size * 0.5;
-    minX = Math.min(minX, tile.position.x - half);
-    maxX = Math.max(maxX, tile.position.x + half);
-    minY = Math.min(minY, 0);
+    const bounds = boxBoundsXZ(tileBox(tile));
+    minX = Math.min(minX, bounds.minX);
+    maxX = Math.max(maxX, bounds.maxX);
     maxY = Math.max(maxY, Math.max(tile.position.y, 0.2) + 1.5);
-    minZ = Math.min(minZ, tile.position.z - half);
-    maxZ = Math.max(maxZ, tile.position.z + half);
+    minZ = Math.min(minZ, bounds.minZ);
+    maxZ = Math.max(maxZ, bounds.maxZ);
   }
 
   return createRecord(group.id, minX, maxX, minY, maxY, minZ, maxZ, cellSize);
@@ -155,30 +153,29 @@ export function buildWallGroupRecord(group: WallGroupConfig, cellSize = VISIBILI
   let maxZ = -Infinity;
 
   for (const wall of group.walls) {
-    minX = Math.min(minX, wall.position.x - 1.1);
-    maxX = Math.max(maxX, wall.position.x + 1.1);
-    minY = Math.min(minY, wall.position.y);
-    maxY = Math.max(maxY, wall.position.y + 3.5);
-    minZ = Math.min(minZ, wall.position.z - 1.1);
-    maxZ = Math.max(maxZ, wall.position.z + 1.1);
+    const box = wallBox(wall);
+    const bounds = boxBoundsXZ(box);
+    minX = Math.min(minX, bounds.minX);
+    maxX = Math.max(maxX, bounds.maxX);
+    minY = Math.min(minY, box.center[1] - box.half[1]);
+    maxY = Math.max(maxY, box.center[1] + box.half[1]);
+    minZ = Math.min(minZ, bounds.minZ);
+    maxZ = Math.max(maxZ, bounds.maxZ);
   }
 
   return createRecord(group.id, minX, maxX, minY, maxY, minZ, maxZ, cellSize);
 }
 
 export function buildBlockRecord(block: BuildingBlockConfig, cellSize = VISIBILITY_CELL_SIZE): VisibilityRecord {
-  const width = Math.max(1, Math.round(block.size?.x ?? 1)) * TILE_CONSTANTS.GRID_CELL_SIZE;
-  const height = Math.max(1, Math.round(block.size?.y ?? 1)) * TILE_CONSTANTS.HEIGHT_STEP;
-  const depth = Math.max(1, Math.round(block.size?.z ?? 1)) * TILE_CONSTANTS.GRID_CELL_SIZE;
-  const halfCell = TILE_CONSTANTS.GRID_CELL_SIZE * 0.5;
+  const { center, half } = blockBox(block);
   return createRecord(
     block.id,
-    block.position.x - halfCell,
-    block.position.x - halfCell + width,
-    block.position.y,
-    block.position.y + height,
-    block.position.z - halfCell,
-    block.position.z - halfCell + depth,
+    center[0] - half[0],
+    center[0] + half[0],
+    center[1] - half[1],
+    center[1] + half[1],
+    center[2] - half[2],
+    center[2] + half[2],
     cellSize,
   );
 }

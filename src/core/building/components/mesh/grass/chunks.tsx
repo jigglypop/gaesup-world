@@ -2,8 +2,8 @@ import { memo, useEffect, useMemo } from 'react';
 
 import Grass, { createGrassGround, getGrassGroundMaterial } from './Grass';
 import { getDefaultToonMode } from '../../../../rendering/toon';
+import { tileWorldSize } from '../../../model/footprint';
 import type { TileConfig } from '../../../types';
-import { TILE_CONSTANTS } from '../../../types/constants';
 
 /**
  * Tiles per blade chunk side. Blades are one draw per chunk (LOD and culling stay per chunk); ground has no LOD,
@@ -52,7 +52,7 @@ function colors(tile: TileConfig): { terrainColor?: string; terrainAccentColor?:
 export function groupGrassChunks(tiles: readonly TileConfig[]): GrassChunk[] {
   const chunks = new Map<string, GrassChunk>();
   for (const tile of tiles) {
-    const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE * (tile.size || 1);
+    const cellSize = tileWorldSize(tile);
     const span = cellSize * CHUNK_TILES;
     const cx = Math.floor(tile.position.x / span);
     const cz = Math.floor(tile.position.z / span);
@@ -76,7 +76,7 @@ export function groupGrassChunks(tiles: readonly TileConfig[]): GrassChunk[] {
 export function groupGrassGrounds(tiles: readonly TileConfig[]): GrassGround[] {
   const grounds = new Map<string, GrassGround>();
   for (const tile of tiles) {
-    const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE * (tile.size || 1);
+    const cellSize = tileWorldSize(tile);
     const key = `${cellSize}:${colorKey(tile)}`;
     let ground = grounds.get(key);
     if (!ground) {
