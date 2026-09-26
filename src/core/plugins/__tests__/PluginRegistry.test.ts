@@ -1,3 +1,4 @@
+import { setErrorSink } from '../../utils/reportError';
 import {
   CircularPluginDependencyError,
   createPluginRegistry,
@@ -267,6 +268,32 @@ describe('PluginRegistry', () => {
     await registry.setup('emitter');
 
     expect(payloads).toEqual(['ok']);
+  });
+
+  it('a throwing listener neither fails the emitting plugin setup nor starves later listeners', async () => {
+    const failure = new Error('listener');
+    const reported = jest.fn();
+    const releaseSink = setErrorSink(reported);
+    const payloads: string[] = [];
+    const registry = createPluginRegistry();
+    registry.register(plugin('broken', (ctx) => {
+      ctx.events.on('ready', () => { throw failure; });
+    }));
+    registry.register(plugin('listener', (ctx) => {
+      ctx.events.on<string>('ready', (payload) => payloads.push(payload));
+    }, { dependencies: ['broken'] }));
+    registry.register(plugin('emitter', (ctx) => {
+      ctx.events.emit('ready', 'ok');
+    }, { dependencies: ['listener'] }));
+
+    try {
+      await registry.setup('emitter');
+      expect(registry.status('emitter')).toBe('ready');
+      expect(payloads).toEqual(['ok']);
+      expect(reported).toHaveBeenCalledWith(failure, { source: 'event-bus', label: 'ready' });
+    } finally {
+      releaseSink();
+    }
   });
 
   it('reports configured capability conflicts and missing capabilities', async () => {

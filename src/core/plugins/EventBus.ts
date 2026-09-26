@@ -1,4 +1,5 @@
 import type { EventBus, EventHandler, EventUnsubscribe } from './types';
+import { reportError } from '../utils/reportError';
 
 /** An `InMemoryEventBus` whose event names and payloads come from one event map. */
 export type TypedEventBus<Events extends Record<string, unknown>> = {
@@ -36,12 +37,17 @@ export class InMemoryEventBus implements EventBus {
     }
   }
 
+  /** Each handler runs isolated: one that throws is reported and the rest still receive the event. */
   emit<TPayload = unknown>(eventName: string, payload: TPayload): void {
     const handlers = this.handlers.get(eventName);
     if (!handlers) return;
 
     for (const handler of Array.from(handlers)) {
-      (handler as EventHandler<TPayload>)(payload);
+      try {
+        (handler as EventHandler<TPayload>)(payload);
+      } catch (error) {
+        reportError(error, { source: 'event-bus', label: eventName });
+      }
     }
   }
 

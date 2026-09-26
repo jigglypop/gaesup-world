@@ -25,7 +25,6 @@
 
 | Slice | 내용 | 완료 기준 |
 |---|---|---|
-| SE-7b | `InMemoryEventBus.emit`에서 handler별 예외 격리 | 한 listener 예외가 다른 plugin setup을 깨지 않는 테스트 |
 | SE-7c | `PerformanceCollector`가 WebGPU에서 draw·삼각형을 0으로 읽는 문제 | WebGPU 경로 값 검증 테스트 |
 
 ### SE-8 공개 API 계약
