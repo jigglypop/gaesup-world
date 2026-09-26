@@ -41,17 +41,20 @@ test('distance budget crosses multiple 3D waypoints in one tick', async () => {
   } finally { await runtime.dispose(); }
 });
 
-test('each decision tick publishes its whole batch of observations once', async () => {
-  const runtime = createGaesupRuntime(); await runtime.setup();
+test('NPCs that decide nothing leave the store and save untouched for a minute', async () => {
+  const runtime = createGaesupRuntime({ plugins: [createNPCPlugin()] }); await runtime.setup();
   try {
-    for (let i = 0; i < 100; i++) runtime.npcStore.getState().addInstance({ ...npc(String(i)), brain: { mode: 'scripted' } });
-    const ticks: number[] = []; const off = runtime.npcStore.subscribe(() => ticks.push(runtime.clockLoop.clock.tick));
-    // A 1 s interval puts every first decision within 62 ticks, spread over them rather than on one.
-    runtime.clockLoop.clock.stepTicks(62);
-    expect(Array.from(runtime.npcStore.getState().instances.values()).every(instance => instance.lastObservation)).toBe(true);
-    expect(new Set(ticks).size).toBe(ticks.length);
-    expect(ticks.length).toBeGreaterThan(30);
+    // The default brain with no policy server falls back to the idle behavior, which decides nothing.
+    for (let i = 0; i < 30; i++) runtime.npcStore.getState().addInstance({ ...npc(String(i)), brain: { mode: 'reinforcement' }, behavior: { mode: 'idle', speed: 2 } });
+    const binding = [...runtime.save.getBindings()].find((entry) => entry.key === 'npc')!;
+    runtime.clockLoop.clock.stepTicks(1);
+    const revision = binding.revision!();
+    const notify = jest.fn(); const off = runtime.npcStore.subscribe(notify);
+    runtime.clockLoop.clock.stepTicks(60 * 60);
     off();
+    expect(notify).not.toHaveBeenCalled();
+    expect(binding.revision!()).toBe(revision);
+    expect(Array.from(runtime.npcStore.getState().instances.keys()).every(id => runtime.npcSimulation.getRecord(id)?.observation)).toBe(true);
   } finally { await runtime.dispose(); }
 });
 
@@ -129,7 +132,7 @@ test('each decision tick with actions for many NPCs is one store update', async 
     off();
     expect(new Set(ticks).size).toBe(ticks.length);
     const instance = runtime.npcStore.getState().instances.get('7')!;
-    expect(instance.lastDecision?.actions).toHaveLength(2);
+    expect(runtime.npcSimulation.getRecord('7')?.decision?.actions).toHaveLength(2);
     expect(instance.rotation[1]).toBeCloseTo(Math.PI / 4);
     expect(instance.brain?.memory?.['seen']).toBeDefined();
   } finally { await runtime.dispose(); }

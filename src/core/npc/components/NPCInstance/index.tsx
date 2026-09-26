@@ -8,7 +8,6 @@ import { SkeletonUtils } from 'three-stdlib';
 
 import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
 
-import { sameNPCInstanceProps } from './memo';
 import { NPCPartMeshProps, NPCInstanceProps } from './types';
 import { useSharedAnimations } from '../../../animation/hooks/useSharedAnimations';
 import { CompileGate } from '../../../rendering/CompileGate';
@@ -380,7 +379,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
       </group></NPCVisual>
     </RigidBody>
   );
-}, sameNPCInstanceProps);
+});
 
 /** Characters never block the camera or other ray probes, matching `PhysicsEntity`. */
 const INTANGIBLE = { intangible: true };

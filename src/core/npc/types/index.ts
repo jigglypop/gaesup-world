@@ -214,8 +214,6 @@ export interface NPCInstance {
   perception?: NPCPerceptionConfig;
   behavior?: NPCBehaviorConfig;
   navigation?: NPCNavigationState;
-  lastObservation?: NPCObservation;
-  lastDecision?: NPCBrainDecision;
   metadata?: {
     modelUrl?: string;
     nameTag?: string;

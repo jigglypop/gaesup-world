@@ -152,33 +152,10 @@ export function createNPCInstanceActions(set: NPCSet, get: NPCGet, { invalidateB
       if (instance) state.instances.set(instanceId, withBehavior(instance, behavior));
     }),
 
-    setInstanceObservation: (instanceId, observation) => get().setInstanceObservations([[instanceId, observation]]),
-
-    setInstanceObservations: (observations) => set((state) => {
-      for (const [instanceId, observation] of observations) {
-        const instance = state.instances.get(instanceId);
-        if (instance) state.instances.set(instanceId, { ...instance, lastObservation: observation });
-      }
-    }),
-
-    setInstanceDecision: (instanceId, decision) => set((state) => {
-      const instance = state.instances.get(instanceId);
-      if (!instance) return;
-      state.instances.set(instanceId, {
-        ...instance,
-        lastDecision: decision,
-      });
-    }),
-
     applyNPCDecisions: (entries) => {
-      if (entries.length === 0) return;
+      if (!entries.some((entry) => entry.decision)) return;
       set((state) => {
-        for (const { instanceId, observation, decision } of entries) {
-          const instance = state.instances.get(instanceId);
-          if (!instance) continue;
-          state.instances.set(instanceId, decision
-            ? { ...instance, lastObservation: observation, lastDecision: decision }
-            : { ...instance, lastObservation: observation });
+        for (const { instanceId, decision } of entries) {
           if (decision) for (const action of decision.actions) applyNPCAction(state, instanceId, action, invalidateBrainRequests);
         }
       });

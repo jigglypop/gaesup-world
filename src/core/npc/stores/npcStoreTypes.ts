@@ -8,12 +8,10 @@ import type {
   NPCBehaviorConfig,
   NPCBrainBlueprint,
   NPCBrainConfig,
-  NPCBrainDecision,
   NPCCategory,
   NPCDecisionEntry,
   NPCEvent,
   NPCInstance,
-  NPCObservation,
   NPCPart,
   NPCPerceptionConfig,
   NPCSystemState,
@@ -79,10 +77,7 @@ export interface NPCStore extends NPCSystemState {
   updateInstanceBrain: (instanceId: string, brain: Partial<NPCBrainConfig>) => void;
   updateInstancePerception: (instanceId: string, perception: Partial<NPCPerceptionConfig>) => void;
   updateInstanceBehavior: (instanceId: string, behavior: Partial<NPCBehaviorConfig>) => void;
-  setInstanceObservation: (instanceId: string, observation: NPCObservation) => void;
-  setInstanceObservations: (observations: ReadonlyArray<readonly [string, NPCObservation]>) => void;
-  setInstanceDecision: (instanceId: string, decision: NPCBrainDecision) => void;
-  /** Records a decision tick's observations and decisions and executes their actions in one update. */
+  /** Executes the actions of a decision tick's decisions in one update; entries without a decision are skipped. */
   applyNPCDecisions: (entries: ReadonlyArray<NPCDecisionEntry>) => void;
   executeInstanceAction: (instanceId: string, action: NPCAction) => void;
   executeInstanceActions: (instanceId: string, actions: NPCAction[]) => void;

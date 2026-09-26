@@ -1,4 +1,4 @@
-import type { NPCAction, NPCBrainBlueprint, NPCBrainDecision, NPCDecisionEntry, NPCInstance, NPCObservation } from './index';
+import type { NPCAction, NPCBrainBlueprint, NPCDecisionEntry, NPCInstance } from './index';
 
 type Point = [number, number, number];
 type Vector = { x: number; y: number; z: number };
@@ -21,10 +21,8 @@ export interface NPCSimulationStore {
     brainBlueprints: Map<string, NPCBrainBlueprint>;
     updateNavigationPosition(id: string, position: Point): void;
     advanceNavigation(id: string): void;
-    setInstanceObservations(observations: ReadonlyArray<readonly [string, NPCObservation]>): void;
-    setInstanceDecision(id: string, decision: NPCBrainDecision): void;
     executeInstanceActions(id: string, actions: NPCAction[]): void;
-    /** Applies a whole decision tick in one update; stores without it get per-NPC updates. */
+    /** Applies the actions of a whole decision tick in one update; stores without it get per-NPC updates. */
     applyNPCDecisions?(entries: ReadonlyArray<NPCDecisionEntry>): void;
   };
   subscribe(listener: () => void): () => void;

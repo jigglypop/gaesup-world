@@ -3,7 +3,7 @@ import ReactThreeTestRenderer from '@react-three/test-renderer';
 import { NPCSystem } from '..';
 import { useBuildingStore } from '../../../../building/stores/buildingStore';
 import { useNPCStore } from '../../../stores/npcStore';
-import type { NPCInstance } from '../../../types';
+import type { NPCInstance, NPCObservation } from '../../../types';
 
 const renders = new Map<string, number>();
 jest.mock('../../NPCInstance', () => ({
@@ -29,7 +29,10 @@ test('a decision tick re-renders only the NPCs it changed, and never the list', 
   try {
     renders.clear();
     await ReactThreeTestRenderer.act(async () => {
-      useNPCStore.getState().applyNPCDecisions([{ instanceId: 'b', observation: { timestamp: 1 } as NonNullable<NPCInstance['lastObservation']> }]);
+      useNPCStore.getState().applyNPCDecisions([
+        { instanceId: 'a', observation: { timestamp: 1 } as NPCObservation },
+        { instanceId: 'b', observation: { timestamp: 1 } as NPCObservation, decision: { source: 'scripted', actions: [{ type: 'lookAt', target: [1, 0, 1] }] } },
+      ]);
     });
     expect([...renders]).toEqual([['b', 1]]);
     renders.clear();

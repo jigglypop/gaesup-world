@@ -21,22 +21,22 @@ type Pose = {
   nextDecision: number;
   /** Kinematic bodies keep their last target, so they are written only after the pose changes. */
   moved: boolean;
+  /** Advances with every pose change; perception rebuilds an NPC's view only after it moves. */
+  revision: number;
 };
+type View = { source: NPCInstance; revision: number; view: NPCInstance };
 /** Points left to walk toward one waypoint of a navigation. */
 type Route = { waypoints: Point[]; index: number; steps: Point[] };
 
+/** Only decisions with actions reach the store; a tick where no NPC acts changes nothing there. */
 function applyDecisions(store: NPCSimulationStore, entries: NPCDecisionEntry[]): void {
+  if (!entries.some((entry) => entry.decision)) return;
   const state = store.getState();
   if (state.applyNPCDecisions) {
     state.applyNPCDecisions(entries);
     return;
   }
-  state.setInstanceObservations(entries.map(({ instanceId, observation }) => [instanceId, observation] as const));
-  for (const { instanceId, decision } of entries) {
-    if (!decision) continue;
-    state.setInstanceDecision(instanceId, decision);
-    state.executeInstanceActions(instanceId, decision.actions);
-  }
+  for (const { instanceId, decision } of entries) if (decision) state.executeInstanceActions(instanceId, decision.actions);
 }
 const simulations = new WeakMap<NPCSimulationStore, NPCSimulation>();
 export function findNPCSimulation(store: NPCSimulationStore): NPCSimulation | undefined { return simulations.get(store); }
@@ -56,6 +56,9 @@ export class NPCSimulation {
   private rotation = new Quaternion();
   private translation = { x: 0, y: 0, z: 0 };
   private perception = new NPCPerceptionIndex();
+  private views = new Map<string, View>();
+  private records = new Map<string, NPCDecisionEntry>();
+  private recordListeners = new Set<() => void>();
 
   private movedPoses = 0;
   /** Advances whenever a simulated pose moves; saves use it because moved poses are not in the store. */
@@ -99,7 +102,7 @@ export class NPCSimulation {
     } else {
       this.releaseSystem?.(); this.releaseSystem = undefined;
       this.releaseClock?.(); this.releaseClock = undefined;
-      if (!this.store.getState().instances.size) { this.poses.clear(); this.perception.refresh(new Map()); }
+      if (!this.store.getState().instances.size) { this.poses.clear(); this.views.clear(); this.records.clear(); this.perception.refresh(new Map()); }
     }
   }
 
@@ -107,11 +110,11 @@ export class NPCSimulation {
     if (!this.dirty) return;
     this.dirty = false;
     const instances = this.store.getState().instances;
-    for (const id of this.poses.keys()) if (!instances.has(id)) { this.poses.delete(id); this.routes.delete(id); }
+    for (const id of this.poses.keys()) if (!instances.has(id)) { this.poses.delete(id); this.routes.delete(id); this.views.delete(id); this.records.delete(id); }
     for (const instance of instances.values()) {
       let pose = this.poses.get(instance.id);
       if (!pose) {
-        pose = { position: [...instance.position], rotation: [...instance.rotation], sourcePosition: instance.position, sourceRotation: instance.rotation, home: [...instance.position], nextDecision: -1, moved: true };
+        pose = { position: [...instance.position], rotation: [...instance.rotation], sourcePosition: instance.position, sourceRotation: instance.rotation, home: [...instance.position], nextDecision: -1, moved: true, revision: 0 };
         this.poses.set(instance.id, pose);
       }
       if (pose.sourcePosition !== instance.position) {
@@ -135,6 +138,30 @@ export class NPCSimulation {
       const pose = this.poses.get(id);
       return [id, pose ? { ...instance, position: [...pose.position], rotation: [...pose.rotation] } : instance];
     }));
+  }
+
+  /** The NPC's last observation and decision. Neither is stored or saved; editors read them here. */
+  getRecord(id: string): Readonly<NPCDecisionEntry> | undefined { return this.records.get(id); }
+
+  subscribeRecords(listener: () => void): () => void {
+    this.recordListeners.add(listener);
+    return () => { this.recordListeners.delete(listener); };
+  }
+
+  /** Store instances at their live poses, rebuilt only for NPCs that moved or changed since the last decision tick. */
+  private perceptionView(): Map<string, NPCInstance> {
+    const view = new Map<string, NPCInstance>();
+    for (const instance of this.store.getState().instances.values()) {
+      const pose = this.poses.get(instance.id);
+      if (!pose) { view.set(instance.id, instance); continue; }
+      let entry = this.views.get(instance.id);
+      if (!entry || entry.source !== instance || entry.revision !== pose.revision) {
+        entry = { source: instance, revision: pose.revision, view: { ...instance, position: [...pose.position], rotation: [...pose.rotation] } };
+        this.views.set(instance.id, entry);
+      }
+      view.set(instance.id, entry.view);
+    }
+    return view;
   }
 
   bindBody(id: string, body: NPCBodyPort): () => void {
@@ -179,7 +206,7 @@ export class NPCSimulation {
           body.setRotation(this.writeRotation(pose), true);
         }
       }
-      if (pose.moved) this.movedPoses++;
+      if (pose.moved) { this.movedPoses++; pose.revision++; }
       pose.moved = false;
     }
     let observed: Map<string, NPCInstance> | undefined;
@@ -191,7 +218,7 @@ export class NPCSimulation {
       if (pose.nextDecision < 0) pose.nextDecision = tick.elapsedSeconds + interval * npcDecisionPhase(instance.id);
       if (tick.elapsedSeconds + 1e-9 < pose.nextDecision) continue;
       pose.nextDecision = tick.elapsedSeconds + interval;
-      if (!observed) { observed = this.snapshotInstances(); this.perception.refresh(observed); }
+      if (!observed) { observed = this.perceptionView(); this.perception.refresh(observed); }
       const observation = this.perception.observe(observed.get(instance.id)!, tick.elapsedSeconds);
       observation.home = instance.behavior?.home ?? pose.home;
       entries.push({ instanceId: instance.id, observation });
@@ -207,7 +234,9 @@ export class NPCSimulation {
       if (this.store.getState().instances.get(entry.instanceId) !== owner) continue;
       if (decision?.actions.length) entry.decision = decision;
     }
+    for (const entry of entries) this.records.set(entry.instanceId, entry);
     applyDecisions(this.store, entries);
+    for (const listener of this.recordListeners) listener();
   }
 
   /**

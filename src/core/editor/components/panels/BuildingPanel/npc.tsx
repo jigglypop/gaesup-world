@@ -1,4 +1,7 @@
+import { useCallback, useSyncExternalStore } from 'react';
+
 import { useBuildingStore } from '../../../../building/stores/buildingStore';
+import { useNPCSimulation } from '../../../../npc/hooks/useNPCSimulation';
 import type {
   NPCAnimation,
   NPCBehaviorConfig,
@@ -333,8 +336,7 @@ export function NPCPerceptionSection({
         <div className="building-panel__info-item">
           <span className="building-panel__info-label">관측</span>
           <span className="building-panel__info-value">
-            감지 {instance.lastObservation?.perceived.length ?? 0} · 결정{' '}
-            {instance.lastDecision?.source ?? '없음'}
+            <NPCDecisionSummary id={instance.id} />
           </span>
         </div>
       </div>
@@ -342,3 +344,11 @@ export function NPCPerceptionSection({
   );
 }
 
+
+/** The simulation's last observation and decision for one NPC; it re-renders only when that NPC decides. */
+function NPCDecisionSummary({ id }: { id: string }) {
+  const simulation = useNPCSimulation();
+  const subscribe = useCallback((listener: () => void) => simulation.subscribeRecords(listener), [simulation]);
+  const record = useSyncExternalStore(subscribe, () => simulation.getRecord(id));
+  return <>감지 {record?.observation.perceived.length ?? 0} · 결정 {record?.decision?.source ?? '없음'}</>;
+}
