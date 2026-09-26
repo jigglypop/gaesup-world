@@ -72,3 +72,28 @@ test('sakura batch bounds follow instances when the tree count is unchanged', as
     await view.unmount();
   }
 });
+
+test('another fire or tree fills a free instance slot: the batch meshes, and so their pipelines, stay', async () => {
+  const meshes = (root: THREE.Object3D) => {
+    const found: THREE.InstancedMesh[] = [];
+    // The WebGL flame billboards bake per-instance values into their geometry and rebuild it with the fires.
+    root.traverse((object) => { if (object instanceof THREE.InstancedMesh && !(object.material instanceof THREE.ShaderMaterial)) found.push(object); });
+    return found;
+  };
+  const scene = (count: number) => (
+    <WebGLMode>
+      <FireBatch fires={Array.from({ length: count }, (_, i) => fireAt(i * 4)[0]!)} />
+      <SakuraBatch trees={Array.from({ length: count }, (_, i) => treeAt(i * 4)[0]!)} />
+    </WebGLMode>
+  );
+  const view = await ReactThreeTestRenderer.create(scene(12));
+  try {
+    const before = meshes(view.scene.instance as THREE.Object3D);
+    await view.update(scene(13));
+    const after = meshes(view.scene.instance as THREE.Object3D);
+    expect(before.length).toBeGreaterThan(0);
+    expect(after.map((mesh) => mesh.uuid)).toEqual(before.map((mesh) => mesh.uuid));
+  } finally {
+    await view.unmount();
+  }
+});

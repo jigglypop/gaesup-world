@@ -9,6 +9,7 @@ import { weightFromDistance } from '@core/utils/sfe';
 import { MILLISECONDS_IN_SECOND } from '../../../../boilerplate/types';
 import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
 import type { PlacedObject } from '../../../types';
+import { useInstanceCapacity } from '../../BuildingBatches/capacity';
 
 export interface BillboardProps {
   text?: string;
@@ -322,7 +323,7 @@ function BillboardBatchGroup({
   const mainMatRef = useRef<THREE.MeshBasicMaterial | null>(null);
   const glowMatRef = useRef<THREE.MeshBasicMaterial | null>(null);
   const count = entries.length;
-  const capacity = Math.max(1, count);
+  const capacity = useInstanceCapacity(count);
   const emissiveColor = useMemo(() => new THREE.Color(color), [color]);
   const mainGeo = useMemo(() => {
     const geo = new THREE.PlaneGeometry(width, height);

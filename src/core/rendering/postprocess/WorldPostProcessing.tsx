@@ -7,6 +7,7 @@ import type { RenderPipeline, WebGPURenderer } from 'three/webgpu';
 
 import { ColorGrade } from './ColorGrade';
 import { logger } from '../../utils/logger';
+import { setSceneRenderTarget } from '../CompileGate';
 import { ToonOutlines } from '../outline';
 import { getRenderHistoryRevision } from '../renderHistory';
 import { rendererKind } from '../webgpu';
@@ -111,6 +112,7 @@ function NodeWorldPostProcessing({
         const auxiliaryTextures: Texture[] = [];
         release = () => {
           if (pipelineRef.current === pipeline) {
+            setSceneRenderTarget(gl as unknown as WebGPURenderer, null);
             pipelineRef.current = null;
             updateSettingsRef.current = null;
             temporalRef.current = null;
@@ -195,6 +197,8 @@ function NodeWorldPostProcessing({
             sceneColor.a,
           );
           pipelineRef.current = pipeline;
+          // New content compiles for the pass that draws the scene, not for the canvas it never renders to.
+          setSceneRenderTarget(gl as unknown as WebGPURenderer, { renderTarget: scenePass.renderTarget, mrt: scenePass.getMRT() });
           temporalRef.current =
             (temporal as typeof temporal & { setSize(width: number, height: number): void }) ??
             null;

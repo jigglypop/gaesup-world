@@ -13,9 +13,11 @@ import fragmentShader from "./frag.glsl";
 import { FlagBatchProps, FlagMeshProps, FlagMaterialInstance, FlagSurfaceMaterialProps } from "./type";
 import vertexShader from "./vert.glsl";
 import { MILLISECONDS_IN_SECOND } from '../../../../boilerplate/types';
+import { CompileGate } from '../../../../rendering/CompileGate';
 import { rendererKind } from '../../../../rendering/webgpu';
 import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
 import { FLAG_STYLE_META, FlagStyle } from "../../../types";
+import { useInstanceCapacity } from "../../BuildingBatches/capacity";
 
 const FLAG_BATCH_HZ = 30;
 const FLAG_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:flag' };
@@ -229,7 +231,7 @@ function PoleBatch({ entries }: { entries: FlagEntry[] }) {
 
   const matrices = useMemo(() => buildPoleMatrices(entries), [entries]);
   const count = matrices.length;
-  const capacity = useMemo(() => Math.max(1, count), [count]);
+  const capacity = useInstanceCapacity(count);
 
   const isFrame = entries.some((e) => e.style === "panel");
   const mat = isFrame ? _frameMat : _poleMat;
@@ -265,7 +267,7 @@ function ClothBatchInner({ entries, windStrength, texture }: ClothBatchInnerProp
   const ref = useRef<THREE.InstancedMesh>(null!);
   const materialRef = useRef<FlagMaterialInstance>(null!);
   const count = entries.length;
-  const capacity = useMemo(() => Math.max(1, count), [count]);
+  const capacity = useInstanceCapacity(count);
 
   const wGeo = entries[0]?.flagWidth ?? 1.5;
   const hGeo = entries[0]?.flagHeight ?? 1.0;
@@ -361,10 +363,11 @@ function ClothBatchGroup({
   textureUrl: string;
   windStrength: number;
 }) {
+  // The cloth waits on its texture and lazy node material, so it has its own gate inside its boundary.
   if (textureUrl) {
-    return <Suspense fallback={null}><ClothBatchTextured entries={entries} textureUrl={textureUrl} windStrength={windStrength} /></Suspense>;
+    return <Suspense fallback={null}><CompileGate><ClothBatchTextured entries={entries} textureUrl={textureUrl} windStrength={windStrength} /></CompileGate></Suspense>;
   }
-  return <Suspense fallback={null}><ClothBatchFallback entries={entries} windStrength={windStrength} /></Suspense>;
+  return <Suspense fallback={null}><CompileGate><ClothBatchFallback entries={entries} windStrength={windStrength} /></CompileGate></Suspense>;
 }
 
 // --- Main batch component ---

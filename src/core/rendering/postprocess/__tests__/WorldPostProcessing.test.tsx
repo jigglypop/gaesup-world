@@ -5,7 +5,7 @@ const mockGl = { isWebGPURenderer: true, render: jest.fn() };
 const mockScene = new Scene();
 const mockCamera = new PerspectiveCamera();
 const mockRgb: { add: jest.Mock; mul: jest.Mock } = { add: jest.fn(() => ({})), mul: jest.fn(() => mockRgb) };
-const mockPass = { options: {}, setMRT: jest.fn(), getTextureNode: jest.fn(() => ({ rgb: mockRgb, a: {} })), dispose: jest.fn() };
+const mockPass = { options: {}, renderTarget: {}, setMRT: jest.fn(), getMRT: jest.fn(() => null), getTextureNode: jest.fn(() => ({ rgb: mockRgb, a: {} })), dispose: jest.fn() };
 const mockTemporal = { setSize: jest.fn(), getTextureNode: jest.fn(() => ({ rgb: mockRgb, a: {} })), dispose: jest.fn(), _previousDepthNode: { value: { dispose: jest.fn() } } };
 const mockAo = { radius: { value: 0 }, samples: { value: 0 }, resolutionScale: 1, getTextureNode: jest.fn(() => ({ r: {} })), dispose: jest.fn(), _noiseNode: { value: { dispose: jest.fn() } } };
 const mockCreateTemporal = jest.fn(() => mockTemporal);

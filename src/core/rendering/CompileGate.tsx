@@ -6,6 +6,22 @@ import type { Camera, Group, Object3D, Scene } from 'three';
 import { isGpuBatchRevision } from './gpuBatchRevision';
 
 type AsyncCompiler = { compileAsync: (scene: Object3D, camera: Camera, targetScene?: Scene | null) => Promise<unknown> };
+type TargetedRenderer = {
+  getRenderTarget(): unknown;
+  setRenderTarget(target: unknown): void;
+  getMRT(): unknown;
+  setMRT(mrt: unknown): void;
+};
+/** Where a pass draws the scene (postprocessing): its render target and MRT outputs select the pipelines. */
+export type SceneRenderTarget = { renderTarget: unknown; mrt: unknown };
+
+const sceneTargets = new WeakMap<object, SceneRenderTarget>();
+
+/** Registers the target a renderer draws the scene into, or clears it, so gates compile for that target. */
+export function setSceneRenderTarget(renderer: TargetedRenderer, target: SceneRenderTarget | null): void {
+  if (target) sceneTargets.set(renderer, target);
+  else sceneTargets.delete(renderer);
+}
 
 function canCompileAsync(renderer: unknown): renderer is AsyncCompiler {
   // Verified against the revisions whose compileAsync collects render objects synchronously before its first await.
@@ -22,9 +38,23 @@ export function compileSubtreeAsync(renderer: AsyncCompiler, root: Object3D, cam
   });
   const visible = root.visible;
   root.visible = true;
+  // compileAsync reads the target and MRT before its first await, so they are restored as soon as it returns.
+  const target = sceneTargets.get(renderer);
+  // Only a renderer registered through setSceneRenderTarget has a target, and it can switch targets.
+  const targeted = target ? (renderer as unknown as TargetedRenderer) : null;
+  const previousTarget = targeted?.getRenderTarget();
+  const previousMRT = targeted?.getMRT();
+  if (targeted && target) {
+    targeted.setRenderTarget(target.renderTarget);
+    targeted.setMRT(target.mrt);
+  }
   try {
     return renderer.compileAsync(root, camera, scene);
   } finally {
+    if (targeted) {
+      targeted.setRenderTarget(previousTarget);
+      targeted.setMRT(previousMRT);
+    }
     root.visible = visible;
     for (const object of culled) object.frustumCulled = true;
   }
@@ -45,7 +75,14 @@ export function CompileGate({ children }: { children: ReactNode }) {
     if (!root || !canCompileAsync(gl)) return undefined;
     let active = true;
     root.visible = false;
-    compileSubtreeAsync(gl, root, camera, scene)
+    // Postprocessing loads after the first content mounts; content still hidden when its scene target appears is
+    // compiled again for that target, since the first compile built pipelines for a target the scene never uses.
+    const compile = (): Promise<unknown> => {
+      const target = sceneTargets.get(gl);
+      return compileSubtreeAsync(gl, root, camera, scene)
+        .then(() => (active && sceneTargets.get(gl) !== target ? compile() : undefined));
+    };
+    compile()
       .catch(() => undefined)
       .finally(() => {
         if (active) root.visible = true;

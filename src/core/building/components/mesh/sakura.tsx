@@ -7,6 +7,7 @@ import { useWeatherStoreApi } from '@core/weather/stores/weatherStore';
 
 import { useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
 import type { BuildingTreeKind } from '../../types';
+import { useInstanceCapacity } from '../BuildingBatches/capacity';
 
 const SAKURA_BATCH_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:sakura-batch' };
 const SAKURA_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:sakura' };
@@ -440,6 +441,12 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
     }
     return { bark, dark, top: specs.length, cluster, canopy, ground, falling };
   }, [specs]);
+  // Capacities with headroom: a new tree fills a free slot instead of rebuilding the meshes, and with them the
+  // shaders, whose instance buffers are sized by capacity.
+  const barkCapacity = useInstanceCapacity(counts.bark);
+  const darkCapacity = useInstanceCapacity(counts.dark);
+  const topCapacity = useInstanceCapacity(counts.top);
+  const clusterCapacity = useInstanceCapacity(counts.cluster);
 
   const avgScale = useMemo(() => {
     if (specs.length === 0) return 1;
@@ -629,11 +636,11 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
 
   return (
     <>
-      <instancedMesh ref={barkRef} args={[geo.limb, mat.bark, counts.bark]} castShadow />
-      <instancedMesh ref={darkRef} args={[geo.limb, mat.barkDark, counts.dark]} />
-      <instancedMesh ref={topRef} args={[geo.trunkTop, mat.barkDark, counts.top]} castShadow />
-      <instancedMesh ref={shellRef} args={[geo.canopyCluster, mat.blossomShell, counts.cluster]} castShadow />
-      <instancedMesh ref={coreRef} args={[geo.canopyCore, mat.blossomCore, counts.cluster]} />
+      <instancedMesh ref={barkRef} args={[geo.limb, mat.bark, barkCapacity]} castShadow />
+      <instancedMesh ref={darkRef} args={[geo.limb, mat.barkDark, darkCapacity]} />
+      <instancedMesh ref={topRef} args={[geo.trunkTop, mat.barkDark, topCapacity]} castShadow />
+      <instancedMesh ref={shellRef} args={[geo.canopyCluster, mat.blossomShell, clusterCapacity]} castShadow />
+      <instancedMesh ref={coreRef} args={[geo.canopyCore, mat.blossomCore, clusterCapacity]} />
       <points geometry={canopyGeo}>
         <pointsMaterial size={0.08 * avgScale} sizeAttenuation vertexColors transparent opacity={0.82} depthWrite={false} />
       </points>

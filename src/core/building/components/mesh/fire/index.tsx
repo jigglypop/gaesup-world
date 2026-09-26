@@ -8,8 +8,10 @@ import { shaderMaterial } from '@/core/rendering/legacyDrei';
 
 import fragmentShader from './frag.glsl';
 import vertexShader from './vert.glsl';
+import { CompileGate } from '../../../../rendering/CompileGate';
 import { rendererKind } from '../../../../rendering/webgpu';
 import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
+import { useInstanceCapacity } from '../../BuildingBatches/capacity';
 
 const NodeFireEffects = lazy(() => import('./NodeFireEffects'));
 const NodeFireBatchEffects = lazy(() => import('./NodeFireEffects').then((module) => ({ default: module.NodeFireBatchEffects })));
@@ -253,7 +255,7 @@ const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color
         scale={baseScale}
       />
 
-      {nodes && <Suspense fallback={null}><NodeFireEffects intensity={intensity} width={width} height={height} color={color} /></Suspense>}
+      {nodes && <Suspense fallback={null}><CompileGate><NodeFireEffects intensity={intensity} width={width} height={height} color={color} /></CompileGate></Suspense>}
       {!nodes && billboardLayers.map((l, i) => (
         (() => {
           const geometry = billboardGeos[i];
@@ -544,6 +546,9 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
   const N = fires.length;
   const billboardCount = N * FIRE_LAYERS.length;
   const logCount = N * 2;
+  const billboardCapacity = useInstanceCapacity(billboardCount);
+  const logCapacity = useInstanceCapacity(logCount);
+  const fireCapacity = useInstanceCapacity(N);
   const geo = getSharedGeo();
   const mat = getSharedMat();
   // WebGPU draws flames through NodeFireBatchEffects; the GLSL billboard/ember path stays unbuilt.
@@ -753,17 +758,18 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
 
   return (
     <>
-      {nodes && <Suspense fallback={null}><NodeFireBatchEffects fires={stableFires} /></Suspense>}
+      {/* Lazy and so mounting after an outer gate compiled: its own gate compiles it before it shows. */}
+      {nodes && <Suspense fallback={null}><CompileGate><NodeFireBatchEffects fires={stableFires} /></CompileGate></Suspense>}
       {billboardGeo && bbMat && (
         <instancedMesh
           ref={billboardRef}
-          args={[billboardGeo, bbMat, billboardCount]}
+          args={[billboardGeo, bbMat, billboardCapacity]}
           frustumCulled={false}
         />
       )}
-      <instancedMesh ref={logRef} args={[geo.log, mat.log, logCount]} />
-      <instancedMesh ref={charRef} args={[geo.charcoal, mat.charcoal, N]} />
-      <instancedMesh ref={glowRef} args={[geo.glow, glowMat, N]} />
+      <instancedMesh ref={logRef} args={[geo.log, mat.log, logCapacity]} />
+      <instancedMesh ref={charRef} args={[geo.charcoal, mat.charcoal, fireCapacity]} />
+      <instancedMesh ref={glowRef} args={[geo.glow, glowMat, fireCapacity]} />
       {emberGeo && bEmberMat && (
         <points ref={emberRef} geometry={emberGeo} material={bEmberMat} frustumCulled={false} />
       )}
