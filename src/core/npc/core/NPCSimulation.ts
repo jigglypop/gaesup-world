@@ -3,6 +3,8 @@ import { Euler, Quaternion } from 'three';
 import type { NPCBrainConditionStores } from './blueprint';
 import { resolveNPCBrainDecision, type NPCBrainAdapterRegistry } from './brain';
 import { NPCPerceptionIndex } from './NPCPerceptionIndex';
+import type { NavigationSystem } from '../../navigation/NavigationSystem';
+import { createNPCNavigationRoute } from '../../navigation/NPCNavigationAdapter';
 import type { AnimationClockLoop } from '../../simulation/AnimationClockLoop';
 import type { FixedTick } from '../../simulation/FixedStepClock';
 import type { NPCDecisionEntry, NPCInstance } from '../types';
@@ -16,6 +18,8 @@ type Pose = {
   /** Kinematic bodies keep their last target, so they are written only after the pose changes. */
   moved: boolean;
 };
+/** Points left to walk toward one waypoint of a navigation. */
+type Route = { waypoints: Point[]; index: number; steps: Point[] };
 
 function applyDecisions(store: NPCSimulationStore, entries: NPCDecisionEntry[]): void {
   const state = store.getState();
@@ -36,6 +40,7 @@ export function findNPCSimulation(store: NPCSimulationStore): NPCSimulation | un
 /** Authoritative NPC motion and decisions outlive presentation/LOD. Pose writes never notify React per tick. */
 export class NPCSimulation {
   private poses = new Map<string, Pose>();
+  private routes = new Map<string, Route>();
   private bodies = new Map<string, Set<NPCBodyPort>>();
   private unsubscribe: (() => void) | undefined;
   private releaseClock: (() => void) | undefined;
@@ -53,7 +58,11 @@ export class NPCSimulation {
   get poseRevision(): number { return this.movedPoses; }
 
   constructor(private readonly store: NPCSimulationStore, private readonly loop: AnimationClockLoop,
-    private readonly options: { conditions?: NPCBrainConditionStores; adapters?: NPCBrainAdapterRegistry; scoped?: boolean } = {}) {
+    private readonly options: {
+      conditions?: NPCBrainConditionStores; adapters?: NPCBrainAdapterRegistry; scoped?: boolean;
+      /** Routes NPC movement around walls once its grid is ready. */
+      navigation?: NavigationSystem;
+    } = {}) {
     if (simulations.has(store)) throw new Error('NPC store already has a simulation owner');
     simulations.set(store, this);
   }
@@ -94,7 +103,7 @@ export class NPCSimulation {
     if (!this.dirty) return;
     this.dirty = false;
     const instances = this.store.getState().instances;
-    for (const id of this.poses.keys()) if (!instances.has(id)) this.poses.delete(id);
+    for (const id of this.poses.keys()) if (!instances.has(id)) { this.poses.delete(id); this.routes.delete(id); }
     for (const instance of instances.values()) {
       let pose = this.poses.get(instance.id);
       if (!pose) {
@@ -103,6 +112,7 @@ export class NPCSimulation {
       }
       if (pose.sourcePosition !== instance.position) {
         pose.position = [...instance.position]; pose.sourcePosition = instance.position; pose.nextDecision = 0; pose.moved = true;
+        this.routes.delete(instance.id);
       }
       if (pose.sourceRotation !== instance.rotation) { pose.rotation = [...instance.rotation]; pose.sourceRotation = instance.rotation; pose.moved = true; }
     }
@@ -191,22 +201,51 @@ export class NPCSimulation {
     applyDecisions(this.store, entries);
   }
 
+  /**
+   * The points to walk toward waypoint `index`: the grid's route around walls once navigation is ready, the straight
+   * segment before that, and none when the grid cannot reach the waypoint, which is then skipped.
+   */
+  private route(instance: NPCInstance, pose: Pose, waypoints: Point[], index: number): Point[] {
+    const cached = this.routes.get(instance.id);
+    if (cached && cached.waypoints === waypoints && cached.index === index) return cached.steps;
+    const target = waypoints[index]!;
+    const navigation = this.options.navigation;
+    let steps: Point[] = [[...target]];
+    if (navigation?.isReady) {
+      const agentRadius = instance.volume ? instance.volume.radius * Math.max(instance.scale[0], instance.scale[2]) : undefined;
+      const path = createNPCNavigationRoute(navigation, {
+        id: instance.id, position: [...pose.position], ...(agentRadius !== undefined ? { agentRadius } : {}),
+      }, target, { includeStart: true });
+      steps = path.slice(1).map(([x, y, z]): Point => [x, y, z]);
+      const end = steps[steps.length - 1] ?? path[0];
+      if (end && Math.hypot(end[0] - target[0], end[2] - target[2]) > 1e-6) steps.push([...target]);
+    }
+    this.routes.set(instance.id, { waypoints, index, steps });
+    return steps;
+  }
+
   private move(instance: NPCInstance, pose: Pose, delta: number): void {
     const nav = instance.navigation;
     if (nav?.state !== 'moving' || !Number.isFinite(nav.speed) || nav.speed <= 0) return;
     let remaining = nav.speed * delta;
     for (let index = nav.currentIndex; index < nav.waypoints.length; index++) {
-      const target = nav.waypoints[index]!;
-      const dx = target[0] - pose.position[0], dy = target[1] - pose.position[1], dz = target[2] - pose.position[2];
-      const distance = Math.hypot(dx, dy, dz);
-      if (distance > 0) {
-        const fraction = Math.min(1, remaining / distance);
-        pose.position[0] += dx * fraction; pose.position[1] += dy * fraction; pose.position[2] += dz * fraction;
-        if (Math.hypot(dx, dz) > 1e-9) pose.rotation[1] = Math.atan2(dx, dz);
-        pose.moved = true;
+      const steps = this.route(instance, pose, nav.waypoints, index);
+      while (steps.length > 0) {
+        const target = steps[0]!;
+        const dx = target[0] - pose.position[0], dy = target[1] - pose.position[1], dz = target[2] - pose.position[2];
+        const distance = Math.hypot(dx, dy, dz);
+        if (distance > 0) {
+          const fraction = Math.min(1, remaining / distance);
+          pose.position[0] += dx * fraction; pose.position[1] += dy * fraction; pose.position[2] += dz * fraction;
+          if (Math.hypot(dx, dz) > 1e-9) pose.rotation[1] = Math.atan2(dx, dz);
+          pose.moved = true;
+        }
+        if (distance > remaining + 1e-9) return;
+        remaining = Math.max(0, remaining - distance);
+        steps.shift();
+        if (remaining === 0 && steps.length > 0) return;
       }
-      if (distance > remaining + 1e-9) break;
-      remaining = Math.max(0, remaining - distance);
+      this.routes.delete(instance.id);
       const state = this.store.getState();
       state.updateNavigationPosition(instance.id, [...pose.position]);
       pose.sourcePosition = this.store.getState().instances.get(instance.id)!.position;

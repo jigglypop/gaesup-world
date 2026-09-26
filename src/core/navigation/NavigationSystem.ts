@@ -88,6 +88,9 @@ export class NavigationSystem {
   private wasm: GaesupCoreWasmExports | null = null;
   private ready = false;
   private initialization: Promise<boolean> | null = null;
+
+  /** Whether the grid is loaded, so `findPath` answers instead of returning no path. */
+  get isReady(): boolean { return this.ready; }
   private lifecycleGeneration = 0;
 
   private gridPtr = 0;

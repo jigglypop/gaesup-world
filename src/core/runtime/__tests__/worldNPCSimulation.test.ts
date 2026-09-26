@@ -163,3 +163,36 @@ test('the NPC save revision advances while a pose moves and holds while it rests
     expect(binding.revision!()).toBe(rested);
   } finally { await runtime.dispose(); }
 });
+
+describe('NPC routes on the navigation grid', () => {
+  async function routedWorld(route: [number, number, number][]) {
+    const runtime = createGaesupRuntime(); await runtime.setup();
+    Object.defineProperty(runtime.navigation, 'isReady', { get: () => true });
+    jest.spyOn(runtime.navigation, 'findPath').mockReturnValue(route);
+    jest.spyOn(runtime.navigation, 'smoothPath').mockImplementation((path) => path);
+    runtime.npcStore.getState().addInstance(npc());
+    runtime.npcStore.getState().setNavigation('one', [[6, 0, 6]], 3);
+    return { runtime, at: () => runtime.npcSimulation.getPose('one')!.position };
+  }
+
+  test('an NPC walks the route around a wall instead of cutting straight through it', async () => {
+    const { runtime, at } = await routedWorld([[0, 0, 0], [0, 0, 6], [6, 0, 6]]);
+    try {
+      runtime.clockLoop.clock.stepTicks(120);
+      expect(at()[0]).toBeCloseTo(0);
+      expect(at()[2]).toBeCloseTo(6);
+      runtime.clockLoop.clock.stepTicks(180);
+      expect(at()[0]).toBeCloseTo(6);
+      expect(runtime.npcStore.getState().instances.get('one')!.navigation?.state).toBe('arrived');
+    } finally { await runtime.dispose(); }
+  });
+
+  test('an NPC skips a waypoint the grid cannot reach instead of walking through walls', async () => {
+    const { runtime, at } = await routedWorld([]);
+    try {
+      runtime.clockLoop.clock.stepTicks(60);
+      expect(at()).toEqual([0, 0, 0]);
+      expect(runtime.npcStore.getState().instances.get('one')!.navigation?.state).toBe('arrived');
+    } finally { await runtime.dispose(); }
+  });
+});
