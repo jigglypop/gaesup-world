@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 
 import Grass, { createGrassGround, getGrassGroundMaterial } from './Grass';
 import { getDefaultToonMode } from '../../../../rendering/toon';
@@ -88,6 +88,37 @@ export function groupGrassGrounds(tiles: readonly TileConfig[]): GrassGround[] {
   return [...grounds.values()];
 }
 
+type Placed = { key: string; origin: readonly number[]; cells: readonly Cell[] };
+
+function sameNumbers(a: readonly number[], b: readonly number[]): boolean {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+/**
+ * The rebuilt items with every one whose key, origin and cells match the previous build replaced by that previous
+ * object, so its memoized blades and ground keep their geometry.
+ */
+export function reuseUnchanged<T extends Placed>(next: T[], previous: ReadonlyMap<string, T>): T[] {
+  return next.map((item) => {
+    const old = previous.get(item.key);
+    const same = old
+      && sameNumbers(old.origin, item.origin)
+      && old.cells.length === item.cells.length
+      && old.cells.every((cell, index) => sameNumbers(cell, item.cells[index]!));
+    return same ? old : item;
+  });
+}
+
+/** `reuseUnchanged` against the last committed build. */
+function useReused<T extends Placed>(next: T[]): T[] {
+  const committed = useRef<ReadonlyMap<string, T>>(new Map());
+  const items = useMemo(() => reuseUnchanged(next, committed.current), [next]);
+  useEffect(() => {
+    committed.current = new Map(items.map((item) => [item.key, item]));
+  }, [items]);
+  return items;
+}
+
 const GrassGroundMesh = memo(function GrassGroundMesh({ ground }: { ground: GrassGround }) {
   const geometry = useMemo(
     () => createGrassGround(ground.cells, ground.cellSize, ground.terrainColor, ground.terrainAccentColor),
@@ -98,8 +129,9 @@ const GrassGroundMesh = memo(function GrassGroundMesh({ ground }: { ground: Gras
 });
 
 export const GrassChunks = memo(function GrassChunks({ tiles }: { tiles: readonly TileConfig[] }) {
-  const chunks = useMemo(() => groupGrassChunks(tiles), [tiles]);
-  const grounds = useMemo(() => groupGrassGrounds(tiles), [tiles]);
+  // An edit regroups every tile, but only the chunks it touched get new objects and rebuild their blades.
+  const chunks = useReused(useMemo(() => groupGrassChunks(tiles), [tiles]));
+  const grounds = useReused(useMemo(() => groupGrassGrounds(tiles), [tiles]));
   return (
     <>
       {grounds.map((ground) => <GrassGroundMesh key={ground.key} ground={ground} />)}

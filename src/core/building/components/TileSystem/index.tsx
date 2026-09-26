@@ -3,15 +3,15 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 
 import { BoxTileBatchMesh, getBoxTileBatchKey, isRaisedTile, type BoxTileBatch } from './batch';
-import { createTileColliders, getRampLayout, getStairLayout, getTileShape, rotateXZ } from './layout';
+import { createTileColliders, getRampLayout, getStairLayout, getTileShape } from './layout';
+import { buildTerrainGeometry, createTileSupport, shouldCloseStairBack, type TileSupport } from './terrain';
 import { TileSystemProps } from './types';
 import { buildWaterPatches } from './waterPatches';
 import { getDefaultToonMode, getToonGradient } from '../../../rendering/toon';
 import { MinimapSystem } from '../../../ui/core';
 import { WorldProps } from '../../../world/components/WorldProps';
 import { MaterialManager } from '../../core/MaterialManager';
-import { cellSpan, tileWorldSize } from '../../model/footprint';
-import { TILE_CONSTANTS } from '../../types/constants';
+import { tileWorldSize } from '../../model/footprint';
 import { BuildingColliderBody } from '../BuildingColliders';
 import type { BuildingColliderBox } from '../BuildingColliders/types';
 import { EditOverlay } from '../EditOverlay';
@@ -26,111 +26,10 @@ type TileLike = TileSystemProps['tileGroup']['tiles'][number];
 const EMPTY_COLLIDER_BOXES: readonly BuildingColliderBox[] = [];
 const NO_EDIT_ITEMS: EditOverlayItem[] = [];
 
-type TerrainRock = {
-  position: [number, number, number];
-  rotation: [number, number, number];
-  scale: [number, number, number];
-};
-
-type TerrainBuild = {
-  sideGeometry: THREE.BufferGeometry;
-  rocks: TerrainRock[];
-  /** Only cliffs cast shadows; the few-centimeter lip of a ground cover does not. */
-  castShadow: boolean;
-};
-
-const SHADOW_CASTING_DROP = TILE_CONSTANTS.HEIGHT_STEP * 0.5;
-
-type TileBounds = {
-  id: string;
-  topY: number;
-  minX: number;
-  maxX: number;
-  minZ: number;
-  maxZ: number;
-  centerX: number;
-  centerZ: number;
-  segments: number;
-};
-
-const TERRAIN_COVER_EDGE_LIFT: Partial<Record<NonNullable<TileLike['objectType']>, number>> = {
-  grass: 0.05,
-  sand: 0.065,
-  snowfield: 0.055,
-  water: 0.055,
-};
 const WATER_LOD = { near: 25, far: 90, strength: 4 } as const;
-
-function fract(value: number): number {
-  return value - Math.floor(value);
-}
-
-function hashNoise(...values: number[]): number {
-  const seed = values.reduce((acc, value, index) => acc + value * (index * 19.19 + 7.13), 0);
-  return fract(Math.sin(seed) * 43758.5453123);
-}
 
 function getTileMaterialId(tile: TileLike, fallbackId: string): string {
   return tile.materialId ?? fallbackId;
-}
-
-function buildTileBounds(tile: TileLike): TileBounds {
-  const tileSize = tileWorldSize(tile);
-  const half = tileSize / 2;
-  const terrainLift = tile.objectType ? (TERRAIN_COVER_EDGE_LIFT[tile.objectType] ?? 0) : 0;
-
-  return {
-    id: tile.id,
-    topY: tile.position.y + terrainLift,
-    minX: tile.position.x - half,
-    maxX: tile.position.x + half,
-    minZ: tile.position.z - half,
-    maxZ: tile.position.z + half,
-    centerX: tile.position.x,
-    centerZ: tile.position.z,
-    segments: cellSpan(tile.size),
-  };
-}
-
-function sampleSupportHeight(boundsList: TileBounds[], currentId: string, x: number, z: number): number {
-  let support = 0;
-
-  for (const bounds of boundsList) {
-    if (bounds.id === currentId) continue;
-    if (
-      x > bounds.minX + 0.001 &&
-      x < bounds.maxX - 0.001 &&
-      z > bounds.minZ + 0.001 &&
-      z < bounds.maxZ - 0.001
-    ) {
-      support = Math.max(support, bounds.topY);
-    }
-  }
-
-  return support;
-}
-
-function pushQuad(
-  positions: number[],
-  colors: number[],
-  a: [number, number, number],
-  b: [number, number, number],
-  c: [number, number, number],
-  d: [number, number, number],
-  topColor: THREE.Color,
-  bottomColor: THREE.Color,
-) {
-  const pushVertex = (vertex: [number, number, number], color: THREE.Color) => {
-    positions.push(vertex[0], vertex[1], vertex[2]);
-    colors.push(color.r, color.g, color.b);
-  };
-
-  pushVertex(a, topColor);
-  pushVertex(b, topColor);
-  pushVertex(c, bottomColor);
-  pushVertex(a, topColor);
-  pushVertex(c, bottomColor);
-  pushVertex(d, bottomColor);
 }
 
 function pushGeometryQuad(
@@ -148,164 +47,6 @@ function pushGeometryQuad(
     c[0], c[1], c[2],
     d[0], d[1], d[2],
   );
-}
-
-function buildTerrainGeometry(subjectTiles: TileLike[], supportTiles: TileLike[], baseColor: THREE.Color): TerrainBuild {
-  const positions: number[] = [];
-  const colors: number[] = [];
-  const rocks: TerrainRock[] = [];
-  const boundsList = supportTiles.map(buildTileBounds);
-  const subjectBounds = subjectTiles.map(buildTileBounds);
-  const rockWarm = new THREE.Color('#7b6a58');
-  const rockDark = new THREE.Color('#433930');
-  const segmentSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-  let castShadow = false;
-
-  const addSide = (
-    bounds: TileBounds,
-    x0: number,
-    z0: number,
-    x1: number,
-    z1: number,
-    sampleX: number,
-    sampleZ: number,
-    outwardX: number,
-    outwardZ: number,
-    seed: number,
-  ) => {
-    const supportY = sampleSupportHeight(boundsList, bounds.id, sampleX, sampleZ);
-    if (bounds.topY <= supportY + 0.02) return;
-
-    const drop = bounds.topY - supportY;
-    if (drop >= SHADOW_CASTING_DROP) castShadow = true;
-    const topTint = 0.72 + hashNoise(seed, bounds.centerX, bounds.centerZ) * 0.16;
-    const bottomTint = 0.42 + hashNoise(seed, bounds.topY) * 0.08;
-    const topColor = baseColor.clone().lerp(rockWarm, 0.28 + Math.min(drop, 2) * 0.08).multiplyScalar(topTint);
-    const bottomColor = baseColor.clone().lerp(rockDark, 0.7).multiplyScalar(bottomTint);
-
-    pushQuad(
-      positions,
-      colors,
-      [x0, bounds.topY, z0],
-      [x1, bounds.topY, z1],
-      [x1, supportY, z1],
-      [x0, supportY, z0],
-      topColor,
-      bottomColor,
-    );
-
-    if (drop < TILE_CONSTANTS.HEIGHT_STEP * 0.95) return;
-
-    const rockChance = hashNoise(seed, supportY, drop);
-    if (rockChance < 0.58) return;
-
-    const midX = (x0 + x1) * 0.5;
-    const midZ = (z0 + z1) * 0.5;
-    const scaleBase = 0.12 + Math.min(drop, 2.5) * 0.06;
-    const scaleJitter = 0.08 + rockChance * 0.08;
-
-    rocks.push({
-      position: [
-        midX + outwardX * (0.18 + rockChance * 0.24),
-        supportY + scaleBase * 0.65,
-        midZ + outwardZ * (0.18 + rockChance * 0.24),
-      ],
-      rotation: [
-        rockChance * Math.PI * 1.7,
-        rockChance * Math.PI * 2.9,
-        rockChance * Math.PI * 0.9,
-      ],
-      scale: [
-        scaleBase + scaleJitter * 0.6,
-        scaleBase * 0.9 + scaleJitter * 0.45,
-        scaleBase + scaleJitter,
-      ],
-    });
-  };
-
-  for (const bounds of subjectBounds) {
-    if (bounds.topY <= 0.02) continue;
-
-    const tileSize = bounds.segments * segmentSize;
-    const minOffset = -tileSize / 2;
-
-    for (let i = 0; i < bounds.segments; i++) {
-      const start = minOffset + i * segmentSize;
-      const end = start + segmentSize;
-      const segmentMid = start + segmentSize * 0.5;
-
-      addSide(
-        bounds,
-        bounds.maxX,
-        bounds.centerZ + start,
-        bounds.maxX,
-        bounds.centerZ + end,
-        bounds.maxX + 0.02,
-        bounds.centerZ + segmentMid,
-        1,
-        0,
-        hashNoise(bounds.centerX, bounds.centerZ, i, 1),
-      );
-
-      addSide(
-        bounds,
-        bounds.minX,
-        bounds.centerZ + end,
-        bounds.minX,
-        bounds.centerZ + start,
-        bounds.minX - 0.02,
-        bounds.centerZ + segmentMid,
-        -1,
-        0,
-        hashNoise(bounds.centerX, bounds.centerZ, i, 2),
-      );
-
-      addSide(
-        bounds,
-        bounds.centerX + end,
-        bounds.minZ,
-        bounds.centerX + start,
-        bounds.minZ,
-        bounds.centerX + segmentMid,
-        bounds.minZ - 0.02,
-        0,
-        -1,
-        hashNoise(bounds.centerX, bounds.centerZ, i, 3),
-      );
-
-      addSide(
-        bounds,
-        bounds.centerX + start,
-        bounds.maxZ,
-        bounds.centerX + end,
-        bounds.maxZ,
-        bounds.centerX + segmentMid,
-        bounds.maxZ + 0.02,
-        0,
-        1,
-        hashNoise(bounds.centerX, bounds.centerZ, i, 4),
-      );
-    }
-  }
-
-  const sideGeometry = new THREE.BufferGeometry();
-  if (positions.length > 0) {
-    sideGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    sideGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    sideGeometry.computeVertexNormals();
-    sideGeometry.computeBoundingBox();
-    sideGeometry.computeBoundingSphere();
-  }
-
-  return { sideGeometry, rocks, castShadow };
-}
-
-function shouldCloseStairBack(tile: TileLike, supportTiles: TileLike[]): boolean {
-  const boundsList = supportTiles.map(buildTileBounds);
-  const { tileSize, totalHeight, rotation } = getStairLayout(tile);
-  const [offsetX, offsetZ] = rotateXZ(0, tileSize / 2 + 0.04, rotation);
-  const supportY = sampleSupportHeight(boundsList, tile.id, tile.position.x + offsetX, tile.position.z + offsetZ);
-  return supportY + 0.02 < totalHeight;
 }
 
 function buildStairGeometry(tile: TileLike, closeBack: boolean): THREE.BufferGeometry {
@@ -373,14 +114,14 @@ function buildStairGeometry(tile: TileLike, closeBack: boolean): THREE.BufferGeo
 function StairTileMesh({
   tile,
   material,
-  supportTiles,
+  support,
 }: {
   tile: TileLike;
   material: THREE.Material;
-  supportTiles: TileLike[];
+  support: TileSupport;
 }) {
   const rotation = tile.rotation ?? 0;
-  const closeBack = useMemo(() => shouldCloseStairBack(tile, supportTiles), [supportTiles, tile]);
+  const closeBack = useMemo(() => shouldCloseStairBack(tile, support), [support, tile]);
   const geometry = useMemo(() => buildStairGeometry(tile, closeBack), [tile, closeBack]);
 
   useEffect(() => {
@@ -481,9 +222,10 @@ export function TileSystem({
     return new THREE.Color(floorMesh?.color || '#8a806f');
   }, [tileGroup.floorMeshId, meshes]);
 
+  const support = useMemo(() => createTileSupport(tileGroup.tiles), [tileGroup.tiles]);
   const terrain = useMemo(
-    () => buildTerrainGeometry(boxTiles, tileGroup.tiles, terrainColor),
-    [boxTiles, tileGroup.tiles, terrainColor],
+    () => buildTerrainGeometry(boxTiles, support, terrainColor),
+    [boxTiles, support, terrainColor],
   );
 
   const sideMaterial = useMemo(
@@ -726,7 +468,7 @@ export function TileSystem({
             key={`${tile.id}-stairs`}
             tile={tile}
             material={materialById.get(getTileMaterialId(tile, tileGroup.floorMeshId)) ?? defaultMaterial}
-            supportTiles={tileGroup.tiles}
+            support={support}
           />
         ))}
 

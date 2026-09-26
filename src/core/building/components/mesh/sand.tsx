@@ -5,6 +5,8 @@ import * as THREE from 'three';
 
 import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
 
+import { createCellIndex, type CellQuery } from '../../model/cellIndex';
+
 const noise2D = createNoise2D();
 const disableRaycast = () => undefined;
 
@@ -57,11 +59,15 @@ export type SandEntry = {
   accentColor?: string;
 };
 
-function hasCoverAt(entries: SandEntry[], x: number, z: number, y: number, currentIndex: number): boolean {
-  for (let index = 0; index < entries.length; index++) {
-    if (index === currentIndex) continue;
-    const entry = entries[index];
-    if (!entry || Math.abs(entry.position[1] - y) > 0.01) continue;
+function sandBounds(entry: SandEntry) {
+  const half = entry.size * 0.5;
+  return { minX: entry.position[0] - half, maxX: entry.position[0] + half, minZ: entry.position[2] - half, maxZ: entry.position[2] + half };
+}
+
+/** Whether another patch at the same height covers the point, so the edge there needs no skirt. */
+function hasCoverAt(near: CellQuery<SandEntry>, x: number, z: number, y: number, current: SandEntry): boolean {
+  for (const entry of near(x, z)) {
+    if (entry === current || Math.abs(entry.position[1] - y) > 0.01) continue;
     const half = entry.size * 0.5;
     if (
       x >= entry.position[0] - half + 0.001 &&
@@ -125,6 +131,7 @@ function buildMergedSand(entries: SandEntry[]): [THREE.BufferGeometry, THREE.Buf
   const indices = new Uint32Array(totalIdx);
 
   let vOff = 0, iOff = 0;
+  const near = createCellIndex(entries, sandBounds);
 
   for (let ei = 0; ei < entries.length; ei++) {
     const e = entries[ei];
@@ -176,7 +183,7 @@ function buildMergedSand(entries: SandEntry[]): [THREE.BufferGeometry, THREE.Buf
     ) => {
       const sampleX = side === 'east' ? s * 0.5 + 0.02 : side === 'west' ? -s * 0.5 - 0.02 : (x0 + x1) * 0.5;
       const sampleZ = side === 'north' ? -s * 0.5 - 0.02 : side === 'south' ? s * 0.5 + 0.02 : (z0 + z1) * 0.5;
-      if (hasCoverAt(entries, ox + sampleX, oz + sampleZ, e.position[1], ei)) return;
+      if (hasCoverAt(near, ox + sampleX, oz + sampleZ, e.position[1], e)) return;
 
       const topA = e.position[1] + 0.04 + getSandHeight(x0, z0, s);
       const topB = e.position[1] + 0.04 + getSandHeight(x1, z1, s);
