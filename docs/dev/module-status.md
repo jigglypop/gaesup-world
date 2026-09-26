@@ -11,7 +11,7 @@
 | `core/building` | 17,603 | 수정 | 타일·벽·블록·오브젝트 데이터와 렌더링, 편집 입력. 편집 한 번에 보이는 그룹 전체를 재분류(PERF). GLSL·TSL 이중 경로(GPU-1). `BuildingController`가 `NPCSystem`까지 올리는 결합. 실행 취소·이동·복제·다중 선택 없음. `showFog`·`fogColor`·`worldSurface`·`waterScale`·벽 크기 필드는 편집 UI·저장만 있고 그리는 곳이 없다(DEAD-1) |
 | `core/editor` | 12,283 | 수정 | 에디터 셸과 패널. 루트 진입점이 통째로 재수출해 루트가 무겁다(LIB-1). `@xyflow/react`는 NPC 두뇌 그래프 패널에서만 쓴다. `PerformancePanel`이 자체 rAF로 따로 잰다. `EditorLayout`이 `GameplayEventPanel`을 콜백 없이 올려 편집이 버려진다(DEAD-1) |
 | `core/motions` | 5,605 | 유지 | 물리 엔티티, 이동, 텔레포트. `Teleport` 버튼이 `cooldown`·`range`·`effect`를 무시한다(DEAD-1). deprecated `AnimationController`·`useAnimationPlayer`(`hooks`)는 `useCharacterAnimator`로 옮긴 뒤 지운다 |
-| `core/networks` | 4,504 | 수정 | 멀티플레이 WebSocket 클라이언트(`PlayerNetworkManager` 1,006줄 god file), 원격 플레이어, 방문 스냅샷. 서버가 저장소에 없다. `MultiplayerCanvas`가 WebGL 기본 렌더러로 그린다(GPU-1). 방문 적용이 원자적이지 않다(ISO-2). `connect()`가 `characterUrl` 옵션을 무시한다(DEAD-1). transport 추상화(WebTransport)는 후보 |
+| `core/networks` | 4,504 | 수정 | 멀티플레이 WebSocket 클라이언트(`PlayerNetworkManager` 1,006줄 god file), 원격 플레이어, 방문 스냅샷. 서버가 저장소에 없다. `MultiplayerCanvas`가 WebGL 기본 렌더러로 그린다(GPU-1). `connect()`가 `characterUrl` 옵션을 무시한다(DEAD-1). transport 추상화(WebTransport)는 후보 |
 | `core/camera` | 4,503 | 유지 | 카메라 7모드, 충돌(몸 중심에서 탐사, 2026-09-27 수정), 시네마틱. 디버그·프리셋 패널은 에디터용. `cameraOption`의 `fixedPosition`·`offset`·`bounds`는 무시된다(DEAD-1) |
 | `core/world` | 4,027 | 수정 | `GaesupWorld`(= `WorldConfigProvider`, 별칭 `World`), `GaesupWorldContent`, `WorldPhysics`, 탈것. 런타임을 만들지 않아 legacy store로 돈다(LIB-1). `World` 별칭은 삭제 후보. `urls`의 `wheelUrl`·`ridingUrl`·`terrain`·`skybox`는 타입에만 있고 적용되지 않는다(DEAD-1) |
 | `core/character` | 3,661 | 통합 | 캐릭터 도메인·메뉴·크리에이터. `OutfitAvatar`(원시 도형 오버레이)는 `AvatarRuntime`으로 합친다(UP-1) |

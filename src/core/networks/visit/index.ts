@@ -13,6 +13,7 @@ export {
   visitProviderFromSaveSystem,
   type ApplyVisitOptions,
   type SerializeVisitOptions,
+  type VisitApplyResult,
   type VisitRestorePoint,
 } from './serializer';
 export {

@@ -166,18 +166,19 @@ export const progressPlugin = createStoreDomainPlugin<Progress, typeof useProgre
 | API | 설명 |
 |---|---|
 | `serializeVisit(provider, { hostId, hostName?, worldId?, domains?, version?, savedAt? })` | 바인딩에서 방문 스냅샷을 만든다. 기본 도메인 `DEFAULT_VISIT_DOMAINS`(= `WORLD_SNAPSHOT_DOMAINS`) |
-| `applyVisitSnapshot(provider, snapshot, { allowedDomains?, filter?, atomic? })` | `{ applied, skipped }`. 버전이 1이 아니면 모두 건너뛴다 |
-| `captureVisitRestorePoint(provider, keys?)` | 적용 전 로컬 상태를 떠 두고 `restore()`로 되돌린다 |
+| `applyVisitSnapshot(provider, snapshot, { allowedDomains?, filter?, atomic? })` | `VisitApplyResult`: `{ applied, skipped, failed?, unrestored? }`. 버전이 1이 아니면 모두 건너뛴다 |
+| `captureVisitRestorePoint(provider, keys?)` | 적용 전 로컬 상태를 떠 두고 `restore()`로 되돌린다. 복원은 best effort다: 한 도메인이 실패해도 나머지는 복원하고 실패를 `failed`로 알린다 |
 | `visitProviderFromSaveSystem(saveSystem)` | `SaveSystem`을 바인딩 제공자(`() => Iterable<DomainBinding>`)로 |
 | `createLocalVisitChannel()` | 같은 탭 안의 채널(테스트·데모) |
 | `createWebSocketVisitChannel({ send, onMessage })` | 텍스트 전송 위의 채널 |
 | `useVisitRoom(options)` | 채널·바인딩을 묶은 hook |
 
-- 비원자 적용(기본)은 도메인마다 `hydrate`를 부르고, 예외가 난 도메인은 `skipped`에 넣고 계속한다.
-- `atomic: true`는 모든 도메인을 먼저 준비(`prepareHydrate`, 없으면 적용 예약)하고, 하나라도 준비에 실패하면 아무것도 적용하지 않는다(`applied: []`). **그러나 적용 단계에서 중간 도메인이 실패하면 이미 적용한 도메인을 되돌리지 않는다.** 실패한 도메인만 `skipped`에 들어간다(PRD ISO-2에서 고칠 예정). `prepareHydrate`가 없는 도메인은 사전 검증도 되지 않는다.
+- 비원자 적용(기본)은 도메인마다 `hydrate`를 부르고, 예외가 난 도메인은 `skipped`와 `failed`에 넣고 계속한다.
+- `atomic: true`는 전부 아니면 아무것도 아니다. 먼저 도메인마다 적용과 되돌리기를 준비한다(`prepareHydrate`, 없으면 `hydrate` 예약. 되돌리기는 지금 상태를 `serialize()`한 값으로 준비). 준비가 하나라도 실패하면 아무것도 바꾸지 않는다. 적용 중 한 도메인이 던지면 그 도메인(반쯤 적용됐을 수 있다)과 이미 적용한 도메인을 역순으로 되돌리고 `{ applied: [], skipped: 전체, failed: [{ key, error }] }`를 준다. 되돌리기마저 실패한 도메인은 `unrestored`에 이름이 오고 로컬 상태가 섞였다는 뜻이다.
+- `prepareHydrate`가 없는 도메인은 데이터 사전 검증이 없다. 적용 중 실패하면 되돌려지지만, 비싼 `hydrate`가 두 번 돌 수 있다.
 - 와이어 형식: `{ type: 'VisitSnapshot', v: 1, snapshot }`, `{ type: 'VisitLeave', v: 1, hostId }`. 문자열 길이가 5×1024×1024를 넘거나 도메인이 64개를 넘거나 형식이 틀리면 버린다. `onMessage` 콜백에 중계 서버가 인증한 발신자 id(`senderId`)를 넘기면 방 주인이 아닌 발신자의 스냅샷·퇴장을 무시한다. 넘기지 않으면 주인과 사칭을 구분하지 못한다.
 
-`useVisitRoom({ hostId, hostName?, channel, bindings, hostMode = true, autoApply = false, allowedDomains?, isolateLocalWorld = true })`는 `{ remoteSnapshot, lastPublished, publishNow(), acceptRemote(), dismissRemote(), announceLeave(), leaveVisit() }`를 준다. `isolateLocalWorld`면 처음 원격 스냅샷을 적용하기 전에 로컬 상태를 떠 두고 자동 저장을 멈췄다가, `leaveVisit()`이나 주인의 퇴장 때 되돌리고 자동 저장을 푼다. 적용은 항상 `atomic: true`다.
+`useVisitRoom({ hostId, hostName?, channel, bindings, hostMode = true, autoApply = false, allowedDomains?, isolateLocalWorld = true })`는 `{ remoteSnapshot, lastPublished, publishNow(), acceptRemote(), dismissRemote(), announceLeave(), leaveVisit() }`를 준다. `isolateLocalWorld`면 처음 원격 스냅샷을 적용하기 전에 로컬 상태를 떠 두고 자동 저장을 멈췄다가, `leaveVisit()`이나 주인의 퇴장 때 되돌리고 자동 저장을 푼다. 적용은 항상 `atomic: true`이고, `acceptRemote()`는 스냅샷 전체가 적용됐을 때만 `true`다. 첫 적용이 실패하면 자동 저장을 다시 켠다(되돌리기가 빠뜨린 도메인이 있으면 떠 둔 상태로 먼저 복원). 실패는 가장 가까운 런타임의 `reportError`로 `visit:apply`·`visit:rollback`·`visit:restore` source와 도메인 label을 붙여 보고한다.
 
 ```ts
 const visit = useVisitRoom({ hostId: me.id, channel, bindings: visitProviderFromSaveSystem(runtime.save) });
@@ -322,7 +323,6 @@ Node 서버에서 쓸 수 있도록 React·Zustand·React Three를 끌어오지 
 ## 알려진 제한
 
 - 멀티플레이 서버가 저장소에 없다.
-- 방문 스냅샷의 원자적 적용이 중간 실패를 되돌리지 않는다(PRD ISO-2).
 - `worldId` 없이 만든 런타임의 기본 저장은 새로고침 뒤 찾을 수 없다.
 - 도메인 플러그인을 넣지 않은 런타임은 규칙 엔진 상태만 저장한다.
 - 공개 `RemotePlayer`로 원격 아바타를 부드럽게 움직이려면 한 사람씩 구독해야 한다.

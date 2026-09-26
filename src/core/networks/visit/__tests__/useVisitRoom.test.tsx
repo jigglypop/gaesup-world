@@ -1,8 +1,11 @@
-import { StrictMode } from 'react';
+import { StrictMode, type ReactNode } from 'react';
 
 import { act, renderHook } from '@testing-library/react';
 
+import { GaesupRuntimeProvider } from '../../../runtime/context';
+import { createGaesupRuntime } from '../../../runtime/createGaesupRuntime';
 import { isAutoSaveSuspended } from '../../../save/core/autoSaveSuspension';
+import type { SerializedDomainValue } from '../../../save/types';
 import { createLocalVisitChannel, createWebSocketVisitChannel } from '../channel';
 import { serializeVisit } from '../serializer';
 import type { VisitChannel, VisitChannelEvent } from '../types';
@@ -279,5 +282,38 @@ describe('visit room session lifetime', () => {
     expect(isAutoSaveSuspended()).toBe(false);
     unmount();
     channel.close();
+  });
+
+  it('적용 중 두 번째 도메인이 실패하면 모두 되돌리고, 오토세이브를 멈춘 채 두지 않고, 그 월드에 보고한다', async () => {
+    const onError = jest.fn();
+    const runtime = createGaesupRuntime({ onError });
+    await runtime.setup();
+    const channel = createLocalVisitChannel();
+    const keys = ['building', 'npc', 'weather'];
+    const local: Record<string, SerializedDomainValue> = { building: 'home', npc: 'home', weather: 'home' };
+    const bindings = () => keys.map((key) => ({
+      key,
+      serialize: () => local[key],
+      hydrate: (value: SerializedDomainValue) => {
+        if (key === 'npc' && value === 'remote') throw new Error('npc failed');
+        local[key] = value;
+      },
+    }));
+    const remote = serializeVisit(() => keys.map((key) => ({ key, serialize: () => 'remote', hydrate: jest.fn() })), { hostId: 'remote-host' });
+    const wrapper = ({ children }: { children: ReactNode }) => <GaesupRuntimeProvider runtime={runtime}>{children}</GaesupRuntimeProvider>;
+    const { result, unmount } = renderHook(() => useVisitRoom({ channel, hostId: 'local', bindings }), { wrapper });
+    try {
+      act(() => { channel.publish(remote); });
+      let accepted = true;
+      act(() => { accepted = result.current.acceptRemote(); });
+      expect(accepted).toBe(false);
+      expect(local).toEqual({ building: 'home', npc: 'home', weather: 'home' });
+      expect(isAutoSaveSuspended()).toBe(false);
+      expect(onError).toHaveBeenCalledWith(new Error('npc failed'), { source: 'visit:apply', label: 'npc' });
+    } finally {
+      unmount();
+      channel.close();
+      await runtime.dispose();
+    }
   });
 });

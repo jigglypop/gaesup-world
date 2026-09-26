@@ -56,7 +56,7 @@ describe('building plugin', () => {
       const local = useBuildingStore.getState().serialize();
       const snapshot = { kind: 'world', worldId: 'remote', hostId: 'remote', version: 1, savedAt: 0, capturedAt: 0 };
       receive(JSON.stringify({ type: 'VisitSnapshot', v: 1, snapshot: { ...snapshot, domains: { building: {} } } }));
-      expect(results).toEqual([{ applied: [], skipped: ['building'] }]);
+      expect(results).toEqual([{ applied: [], skipped: ['building'], failed: [{ key: 'building', error: new Error('Empty building snapshot') }] }]);
       expect(useBuildingStore.getState().serialize()).toEqual(local);
       receive(JSON.stringify({ type: 'VisitSnapshot', v: 1, snapshot: { ...snapshot, domains: { building: { meshes: [] } } } }));
       expect(results[1]).toEqual({ applied: ['building'], skipped: [] });

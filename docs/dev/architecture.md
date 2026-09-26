@@ -318,7 +318,7 @@ WebGL 전용 경로(GPU-1에서 지울 대상):
 - `PlayerNetworkManager`(`core/PlayerNetworkManager.ts`, 1,006줄): 방 입장·위치 갱신·퇴장·채팅·ping, 재연결(지수 지연, 최대 30초), 끊긴 원격 플레이어 10초 유예, pong이 없으면 소켓을 닫고(코드 4000) 재연결, 피어별 속도 제한, ACK·재시도가 있는 신뢰 메시지, 오프라인 큐, 원격 `modelUrl` 허용 검사.
 - `useMultiplayer`(`hooks/useMultiplayer.ts`): 매니저, `PlayerPositionTracker`(기본 20Hz 추적), `LivePlayerMap`을 묶어 `connect`, `disconnect`, `startTracking`, `sendChat`, 말풍선 상태를 준다. `usePlayerNetwork`는 더 낮은 단계 hook이다.
 - 컴포넌트: `RemotePlayers`·`RemotePlayer`, `PlayerInfoOverlay`, `ConnectionForm`, 완성 장면 `MultiplayerCanvas`.
-- 방문(`visit/`): `serializeVisit`, `applyVisitSnapshot`, `captureVisitRestorePoint`, `visitProviderFromSaveSystem`, 채널 `createLocalVisitChannel`·`createWebSocketVisitChannel`, hook `useVisitRoom`(방문 중 로컬 도메인 백업과 자동 저장 중지). `atomic: true`는 모든 도메인을 먼저 `prepareHydrate`로 검증하지만, 적용 중 한 도메인이 실패하면 이미 적용한 도메인을 되돌리지 않는다(ISO-2).
+- 방문(`visit/`): `serializeVisit`, `applyVisitSnapshot`, `captureVisitRestorePoint`, `visitProviderFromSaveSystem`, 채널 `createLocalVisitChannel`·`createWebSocketVisitChannel`, hook `useVisitRoom`(방문 중 로컬 도메인 백업과 자동 저장 중지). `atomic: true`는 적용과 되돌리기를 모두 먼저 준비하고, 적용 중 실패하면 실패한 도메인과 적용한 도메인을 역순으로 되돌린다(`failed`, `unrestored`). 복귀 지점의 `restore()`는 best effort다(ISO-2).
 - 서버 권한 계약(`adapter/`): `createGameCommand`, `createServerEvent`, `createStateDelta`, `createSnapshotAck`, `createCommandAuthorityRouter`, `MockNetworkAdapter`. `gaesup-world/server-contracts`로 React 없이 쓸 수 있다.
 - DEL-2(`2fcfcece`)에서 서로만 참조하던 NPC 네트워크 층(`NetworkBridge` 등)을 지웠다. `NetworkConfig`는 멀티플레이 클라이언트가 읽는 8개 필드만 남았다.
 
@@ -341,9 +341,8 @@ WebGL 전용 경로(GPU-1에서 지울 대상):
 
 1. **런타임이 모든 것을 즉시 만든다.** 월드마다 45개(즉시 42 + lazy 3)를 만들고, 정지·재개 목록을 `setup()`, `dispose()`, `deactivateGeneration()` 세 곳에 손으로 적는다. 서브시스템 하나를 더하면 세 곳과 타입, 서비스 등록을 함께 고쳐야 한다.
 2. **기본 경로가 legacy다.** `GaesupWorld`가 런타임을 만들지 않고 라이브러리·예제에 `createGaesupRuntime` 호출이 없어, `GaesupWorld`만 쓰는 소비자는 legacy 전역 store로 돌고 개발 모드 경고를 받는다. 정적 store API는 런타임 아래에서도 legacy를 가리킨다(LIB-1).
-3. **방문 적용의 원자성(ISO-2).** 위 [네트워크](#네트워크) 참조.
-4. **렌더링 두 벌(GPU-1)과 해·아바타 두 벌(UP-1).** 위 [렌더링](#렌더링) 표.
-5. **루트 진입점이 에디터를 통째로 재수출한다(LIB-1).** `src/index.ts`의 `export * from './core/editor'`.
+3. **렌더링 두 벌(GPU-1)과 해·아바타 두 벌(UP-1).** 위 [렌더링](#렌더링) 표.
+4. **루트 진입점이 에디터를 통째로 재수출한다(LIB-1).** `src/index.ts`의 `export * from './core/editor'`.
 
 ### 큰 파일
 
