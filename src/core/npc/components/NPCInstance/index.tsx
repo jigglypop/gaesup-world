@@ -134,6 +134,14 @@ const DEFAULT_NPC_VOLUME = {
   radius: 0.32,
   interactionRadius: 1.6,
 } as const;
+const UNIT_SCALE = [1, 1, 1] as const;
+
+/** The body capsule of a volume drawn at `scale`; the talk range stays in world meters. */
+function npcCapsule(volume: { height: number; radius: number; interactionRadius: number }, scale: readonly [number, number, number]) {
+  const radius = volume.radius * Math.max(scale[0], scale[2]);
+  const halfHeight = Math.max(0.05, volume.height * scale[1] * 0.5 - radius);
+  return { radius, height: volume.height * scale[1], halfHeight, y: halfHeight + radius, interactionRadius: Math.max(volume.interactionRadius, radius) };
+}
 
 export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMode, onClick: onClickProp, onSelect }: NPCInstanceProps) {
   const simulation = useNPCSimulation();
@@ -169,10 +177,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   const updateInstance = useNPCStore((state) => state.updateInstance);
 
   const volume = instance.volume ?? DEFAULT_NPC_VOLUME;
-  const colliderHalfHeight = Math.max(0.05, volume.height * 0.5 - volume.radius);
-  const colliderY = colliderHalfHeight + volume.radius;
   const bodyType = 'kinematicPosition';
-  const interactionRadius = Math.max(volume.interactionRadius, volume.radius);
 
   const handlePointerEnter = useCallback((e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
@@ -269,6 +274,8 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   const fullModelUrl = template.fullModelUrl || instance.metadata?.modelUrl;
 
   if (fullModelUrl) {
+    // PhysicsEntity draws the full model unscaled, so its capsule stays unscaled too.
+    const capsule = npcCapsule(volume, UNIT_SCALE);
     return (
       <PhysicsEntity
         ref={bindBody}
@@ -279,7 +286,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
         position={pose?.position ?? instance.position}
         rotation={pose?.rotation ?? instance.rotation}
         rigidbodyType={bodyType}
-        colliderSize={{ height: volume.height, radius: volume.radius }}
+        colliderSize={{ height: capsule.height, radius: capsule.radius }}
         currentAnimation={instance.currentAnimation || 'idle'}
         userData={{
           instanceId: instance.id,
@@ -288,7 +295,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
           npcBrainMode: instance.brain?.mode ?? 'none',
           npcPerceptionEnabled: instance.perception?.enabled ?? false,
         }}
-        colliderChildren={<CapsuleCollider sensor args={[Math.max(0.05, colliderHalfHeight), interactionRadius]} position={[0, colliderY, 0]} />}
+        colliderChildren={<CapsuleCollider sensor args={[capsule.halfHeight, capsule.interactionRadius]} position={[0, capsule.y, 0]} />}
         onCollisionEnter={() => {
           runEvent('onClick');
           if (onClick) onClick();
@@ -305,6 +312,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   }
   
   // mainPartUrl 분기 / fallback 분기는 본문이 동일하여 단일 경로로 합친다.
+  const capsule = npcCapsule(volume, instance.scale);
   return (
     <RigidBody
       ref={bindBody}
@@ -319,11 +327,11 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
         npcPerceptionEnabled: instance.perception?.enabled ?? false,
       }}
     >
-      <CapsuleCollider args={[colliderHalfHeight, volume.radius]} position={[0, colliderY, 0]} />
+      <CapsuleCollider args={[capsule.halfHeight, capsule.radius]} position={[0, capsule.y, 0]} />
       <CapsuleCollider
         sensor
-        args={[Math.max(0.05, colliderHalfHeight), interactionRadius]}
-        position={[0, colliderY, 0]}
+        args={[capsule.halfHeight, capsule.interactionRadius]}
+        position={[0, capsule.y, 0]}
       />
       <NPCVisual bodyRef={rigidBodyRef}><group
         ref={groupRef}

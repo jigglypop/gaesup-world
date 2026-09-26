@@ -20,6 +20,7 @@ export type {
   RuntimePluginTarget,
 } from './core/runtime';
 export {
+  DEFAULT_NPC_SCALE,
   NPCInstance,
   compileNPCBrainBlueprint,
   configureReinforcementAdapter,

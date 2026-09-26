@@ -34,6 +34,9 @@ import {
   NPCEvent
 } from '../types';
 
+/** New NPCs are drawn at this scale: villagers stand a little shorter than the player character. */
+export const DEFAULT_NPC_SCALE = 0.75;
+
 const DEFAULT_NPC_VOLUME: NPCVolumeConfig = {
   height: 1.8,
   radius: 0.32,
@@ -809,7 +812,7 @@ function buildNPCStore(legacyBlueprintRegistry = false, invalidateBrainRequests:
         name: `${template.name} ${Date.now()}`,
         position,
         rotation: [0, 0, 0],
-        scale: [1, 1, 1],
+        scale: [DEFAULT_NPC_SCALE, DEFAULT_NPC_SCALE, DEFAULT_NPC_SCALE],
         ...(template.defaultAnimation ? { currentAnimation: template.defaultAnimation } : {}),
         ...(selectedClothingSetId ? { currentClothingSetId: selectedClothingSetId } : {}),
         ...(customParts.length > 0 ? { customParts } : {}),

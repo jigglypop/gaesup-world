@@ -3,7 +3,7 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useState, type CSSPropertie
 import { Canvas, type RootState } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { CascadedSun, createRenderer, GaesupController, GaesupWorld, GaesupWorldContent, useNPCStore, WorldPhysics, type WorldQuality } from 'gaesup-world';
+import { CascadedSun, createRenderer, DEFAULT_NPC_SCALE, GaesupController, GaesupWorld, GaesupWorldContent, useNPCStore, WorldPhysics, type WorldQuality } from 'gaesup-world';
 import { BuildingController, useBuildingStore } from 'gaesup-world/building';
 import { RemotePlayer, type PlayerState } from 'gaesup-world/network';
 
@@ -47,7 +47,7 @@ function PerfNpcs({ count }: { count: number }) {
       const radius = 8 + (index % 3) * 6;
       const id = `${NPC_TEMPLATE}-${index}`;
       store.addInstance({
-        id, templateId: NPC_TEMPLATE, name: id, position: [Math.cos(angle) * radius, 0, Math.sin(angle) * radius], rotation: [0, 0, 0], scale: [1, 1, 1],
+        id, templateId: NPC_TEMPLATE, name: id, position: [Math.cos(angle) * radius, 0, Math.sin(angle) * radius], rotation: [0, 0, 0], scale: [DEFAULT_NPC_SCALE, DEFAULT_NPC_SCALE, DEFAULT_NPC_SCALE],
         brain: { mode: 'scripted' },
         behavior: { mode: 'wander', speed: 1.4, wanderRadius: 6, waitSeconds: 2, moveAnimation: 'walk', idleAnimation: 'idle' },
       });
