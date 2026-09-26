@@ -7,6 +7,7 @@ import {
   parseRemoteModelUrl,
   PeerRateLimiter,
 } from './remoteInputLimits';
+import { isRecord } from '../../utils/guards';
 import { createUniqueId } from '../../utils/id';
 import { NetworkPayload, PlayerState } from '../types';
 
@@ -954,10 +955,6 @@ function detachHandlers(ws: WebSocket): void {
   ws.onmessage = null;
   ws.onerror = null;
   ws.onclose = null;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 function isBoundedTuple(value: unknown, length: number): value is number[] {

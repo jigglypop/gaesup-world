@@ -1,6 +1,7 @@
 import { StateCreator } from 'zustand';
 
 import type { SaveBlob, SaveSystem } from '../../save';
+import { isRecord } from '../../utils/guards';
 import { SaveLoadManager } from '../persistence/SaveLoadManager';
 import {
   DEFAULT_WORLD_SAVE_ENVIRONMENT,
@@ -179,10 +180,6 @@ function hydrateStores(stores: GaesupStores, world: WorldSaveData): void {
   hydrateBuildingStore(stores.buildingStore, world.buildings);
   hydrateNpcStore(stores.npcStore, world.npcs);
   hydrateCameraStore(stores.cameraStore, world.camera);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function stripJsonExtension(filename: string): string {

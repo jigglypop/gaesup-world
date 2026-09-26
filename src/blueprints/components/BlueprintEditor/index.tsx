@@ -10,6 +10,7 @@ import {
 } from './types';
 import { blueprintRegistry, AnyBlueprint } from '../../';
 import { CAMERA_CONTROLLER_DEFAULT_MODES } from '../../../core/camera/components/CameraController/defaults';
+import { isRecord } from '../../../core/utils/guards';
 import { useSpawnFromBlueprint } from '../../hooks/useSpawnFromBlueprint';
 import type { BlueprintRecord, BlueprintValue } from '../../types';
 import { BlueprintPreview } from '../BlueprintPreview';
@@ -18,9 +19,6 @@ import {
   convertBlueprintToItem,
 } from '../panels/BlueprintPanel/utils';
 import './styles.css';
-
-const isRecord = (value: BlueprintValue | undefined): value is BlueprintRecord =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const setNestedProperty = (
   target: BlueprintRecord,

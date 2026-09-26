@@ -4,13 +4,11 @@ import './styles.css';
 import { BlueprintType, BlueprintCategory, type BlueprintFieldValue } from './types';
 import { convertBlueprintToItem } from './utils';
 import { blueprintRegistry, AnyBlueprint, CharacterBlueprint, VehicleBlueprint, AirplaneBlueprint } from '../../../';
+import { isRecord } from '../../../../core/utils/guards';
 import { createUniqueId } from '../../../../core/utils/id';
 import { useSpawnFromBlueprint } from '../../../hooks/useSpawnFromBlueprint';
 import type { BlueprintRecord, BlueprintValue } from '../../../types';
 import { BLUEPRINT_FIELD_LABELS, BLUEPRINT_TAG_LABELS, BLUEPRINT_TYPE_LABELS } from '../../BlueprintEditor/defaults';
-
-const isRecord = (value: BlueprintValue | AnyBlueprint | undefined): value is BlueprintRecord =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const setNestedProperty = (
   target: BlueprintRecord,
@@ -54,7 +52,6 @@ const setNestedProperty = (
   current[lastKey] = value;
   return true;
 };
-
 
 const blueprintCategories: BlueprintCategory[] = [
   { id: 'characters', name: '캐릭터', type: 'character', count: 0 },
@@ -296,7 +293,7 @@ export const BlueprintPanel: React.FC<BlueprintPanelProps> = ({ className = '', 
           </div>
         );
       } else if (Array.isArray(value)) {
-        if (value.length > 0 && value.every(isRecord)) {
+        if (value.length > 0 && value.every((item): item is BlueprintRecord => isRecord(item))) {
           elements.push(
             <div key={pathKey} className="property-editor__group">
               <div className="property-editor__group-title editor-text">

@@ -4,6 +4,7 @@ import { parseSceneDocument } from './serialization';
 import { sceneEulerToQuaternion, sceneQuaternionToEuler } from './transforms';
 import type { SceneQuaternion } from './transforms';
 import type { SceneDocument, SceneVector3 } from './types';
+import { isRecord } from '../utils/guards';
 
 export type UnitySceneObject = {
   id: string;
@@ -43,9 +44,6 @@ export function exportUnityScene(document: SceneDocument): UnitySceneDocument {
   };
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
-}
 function vector(value: unknown, length: number): value is number[] {
   return Array.isArray(value) && value.length === length && value.every((n: unknown) => typeof n === 'number' && Number.isFinite(n));
 }

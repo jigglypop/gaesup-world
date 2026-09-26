@@ -8,6 +8,7 @@ import type {
   ProjectSettingsIssueCode,
   ProjectSettingsValidationResult,
 } from './types';
+import { isRecord } from '../utils/guards';
 
 const RENDER_BACKENDS = new Set(['auto', 'webgl', 'webgpu']);
 const TONE_MAPPINGS = new Set(['none', 'aces', 'reinhard']);
@@ -228,10 +229,6 @@ function parseJson(input: string): unknown {
   } catch {
     return null;
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function invalid(message: string, code: ProjectSettingsIssueCode, path: string): ParseProjectSettingsResult {

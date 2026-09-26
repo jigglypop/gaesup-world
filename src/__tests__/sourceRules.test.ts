@@ -25,6 +25,10 @@ test('string ids come from createUniqueId, never from Date.now()', () => {
   expect(offenders(/\$\{Date\.now\(\)|Date\.now\(\)\.toString\(/, 'core/utils/id.ts')).toEqual([]);
 });
 
+test('the plain-object guard is defined once, in utils/guards', () => {
+  expect(offenders(/(?:function|const)\s+isRecord\b/, 'core/utils/guards.ts')).toEqual([]);
+});
+
 test('renderer and WebGPU environment checks live only in rendering/webgpu', () => {
   expect(offenders(/\bis(?:WebGPURenderer|WebGPUBackend|WebGLRenderer)\b|\.gpu\b/, 'core/rendering/webgpu.ts')).toEqual([]);
 });

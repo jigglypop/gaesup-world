@@ -1,6 +1,7 @@
 import type { CameraSaveData, NPCSaveData, SaveData, SaveMetadata, WorldSaveData } from './types';
 import { collectSaveDomains } from '../../platform';
 import type { SaveSystem, SerializedDomainValue } from '../../save';
+import { isRecord } from '../../utils/guards';
 
 export const DEFAULT_WORLD_SAVE_ENVIRONMENT: WorldSaveData['environment'] = {
   lighting: {
@@ -9,10 +10,6 @@ export const DEFAULT_WORLD_SAVE_ENVIRONMENT: WorldSaveData['environment'] = {
     directionalPosition: { x: 0, y: 10, z: 0 },
   },
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function cloneSaveValue<T>(value: unknown): T {
   if (typeof structuredClone === 'function') {

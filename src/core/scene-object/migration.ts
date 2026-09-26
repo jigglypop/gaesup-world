@@ -1,6 +1,7 @@
 import { SCENE_DOCUMENT_VERSION } from './core';
 import { parseSceneDocument } from './serialization';
 import type { SceneDocument, SceneValidationIssue } from './types';
+import { isRecord } from '../utils/guards';
 
 export type UnknownSceneDocument = {
   version?: unknown;
@@ -59,7 +60,7 @@ export function migrateSceneDocument(
   targetVersion = SCENE_DOCUMENT_VERSION,
 ): MigrateSceneDocumentResult {
   const raw = typeof input === 'string' ? parseJson(input) : input;
-  if (!isRecord(raw)) {
+  if (!isRecord<UnknownSceneDocument>(raw)) {
     return invalid('Scene document must be an object.');
   }
 
@@ -133,10 +134,6 @@ function parseJson(input: string): unknown {
   } catch {
     return null;
   }
-}
-
-function isRecord(value: unknown): value is UnknownSceneDocument {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function readVersion(document: UnknownSceneDocument): number {

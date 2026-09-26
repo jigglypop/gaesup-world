@@ -11,12 +11,10 @@ import type {
   WorldManifest,
 } from './types';
 import { CONTENT_SCHEMA_VERSION } from './types';
-
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+import { isRecord } from '../utils/guards';
 
 const isAssetRecord = (value: unknown): value is AssetRecord => {
-  if (!isObject(value)) return false;
+  if (!isRecord(value)) return false;
   return typeof value['id'] === 'string' &&
     typeof value['name'] === 'string' &&
     typeof value['kind'] === 'string';
@@ -141,7 +139,7 @@ export class HttpContentBundleSource implements ContentBundleSource {
       throw new Error(`Failed to load content bundle ${id}: ${response.status}`);
     }
     const data = await response.json() as ContentBundle | ContentBundleManifest;
-    const bundle = isObject(data.world) && 'domains' in data.world
+    const bundle = isRecord(data.world) && 'domains' in data.world
       ? data as ContentBundle
       : await loadContentBundleFromManifest(data as ContentBundleManifest, this.fetcher, root);
     const validation = validateContentBundle(bundle);

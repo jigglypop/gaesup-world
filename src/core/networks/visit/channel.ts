@@ -1,4 +1,5 @@
 import type { VisitChannel, VisitChannelEvent, VisitSnapshot } from './types';
+import { isRecord } from '../../utils/guards';
 import { MAX_REMOTE_WIRE_MESSAGE_LENGTH, MAX_VISIT_SNAPSHOT_DOMAINS } from '../core/remoteInputLimits';
 
 class LocalVisitChannelImpl implements VisitChannel {
@@ -62,10 +63,6 @@ const LEAVE_TYPE = 'VisitLeave';
 type WireSnapshot = { type: typeof SNAPSHOT_TYPE; v: number; snapshot: VisitSnapshot };
 type WireLeave = { type: typeof LEAVE_TYPE; v: number; hostId: string };
 type WireMessage = WireSnapshot | WireLeave;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
 
 function isIdentifier(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
