@@ -23,7 +23,6 @@
 
 | ID | 결함 | 위치 |
 |---|---|---|
-| D-6 | visit 채널이 발신자가 적은 hostId를 믿어 VisitLeave·VisitSnapshot 사칭 가능 | `networks/visit` |
 | D-7 | 이벤트 패널 "실행"이 runtime 이벤트를 시드로 교체하고 실제 보상을 지급 | `editor/components/panels/GameplayEventPanel` |
 | D-8 | NPC 자율 이동이 내비게이션 없이 직선으로 움직여 벽을 통과 | `npc/core/NPCSimulation`, `npc/stores/npcStore` |
 

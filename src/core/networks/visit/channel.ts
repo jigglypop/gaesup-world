@@ -51,9 +51,11 @@ export type WebSocketTransport = {
   /**
    * Register a listener for raw incoming text frames. Should return an
    * unsubscribe function. Implementations are expected to filter to the
-   * relevant message types upstream.
+   * relevant message types upstream. Pass `senderId`, the peer the relay
+   * authenticated as the frame's sender, so only a room's host can publish
+   * or close it; without it the channel cannot tell a host from an impostor.
    */
-  onMessage: (cb: (raw: string) => void) => () => void;
+  onMessage: (cb: (raw: string, senderId?: string) => void) => () => void;
 };
 
 const WIRE_VERSION = 1;
@@ -112,9 +114,11 @@ function tryParseWire(raw: string): WireMessage | null {
  */
 export function createWebSocketVisitChannel(transport: WebSocketTransport): VisitChannel {
   const listeners = new Set<(event: VisitChannelEvent) => void>();
-  let unsubscribe: (() => void) | null = transport.onMessage((raw) => {
+  let unsubscribe: (() => void) | null = transport.onMessage((raw, senderId) => {
     const msg = tryParseWire(raw);
     if (!msg) return;
+    const hostId = msg.type === SNAPSHOT_TYPE ? msg.snapshot.hostId : msg.hostId;
+    if (senderId !== undefined && senderId !== hostId) return;
     if (msg.type === SNAPSHOT_TYPE) {
       emit({ type: 'snapshot', snapshot: msg.snapshot });
     } else if (msg.type === LEAVE_TYPE) {
