@@ -171,11 +171,9 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
     this.playerEntityId = entityId;
   }
 
+  /** The entity the local player drives; null while none is mounted (edit mode), never some other entity. */
   getPlayerEntityId(): string | null {
-    if (this.playerEntityId !== null && this.engines.has(this.playerEntityId)) return this.playerEntityId;
-    if (this.playerEntityId !== null) return null;
-    for (const id of this.engines.keys()) return id;
-    return null;
+    return this.playerEntityId !== null && this.engines.has(this.playerEntityId) ? this.playerEntityId : null;
   }
 
   override unregister(id: string): void {

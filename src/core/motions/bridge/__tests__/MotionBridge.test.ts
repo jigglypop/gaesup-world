@@ -149,3 +149,22 @@ describe('MotionBridge reset ownership', () => {
     expect(listener).toHaveBeenCalledWith(beforeReset, ENTITY_ID);
   });
 });
+
+describe('MotionBridge player lookup', () => {
+  it('is null while no player is mounted, whatever else is registered', () => {
+    const bridge = new MotionBridge();
+    const { rigidBody } = createRigidBodyHarness();
+    try {
+      bridge.register('npc', 'character', rigidBody);
+      expect(bridge.getPlayerEntityId()).toBeNull();
+      bridge.register('player', 'character', rigidBody);
+      bridge.setPlayerEntity('player');
+      expect(bridge.getPlayerEntityId()).toBe('player');
+      // Edit mode unmounts the player entity.
+      bridge.unregister('player');
+      expect(bridge.getPlayerEntityId()).toBeNull();
+    } finally {
+      bridge.dispose();
+    }
+  });
+});

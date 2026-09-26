@@ -17,7 +17,8 @@ export function useMotionSetup(
   const bridge = useWorldMotionBridge();
   
   useEffect(() => {
-    if (!rigidBodyRef.current || registeredRef.current || !bridge) return undefined;
+    // Only the body the player drives takes a motion engine; NPC, remote and parked bodies move by their owners.
+    if (!isActive || !rigidBodyRef.current || registeredRef.current || !bridge) return undefined;
 
     bridge.register(
       entityId,
@@ -31,7 +32,7 @@ export function useMotionSetup(
       bridge.unregister(entityId);
       registeredRef.current = false;
     };
-  }, [rigidBodyRef, modeType, entityId, bridge]);
+  }, [rigidBodyRef, modeType, entityId, bridge, isActive]);
 
   useEffect(() => {
     if (!isActive || !bridge) return undefined;
