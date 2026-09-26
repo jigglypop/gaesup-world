@@ -149,6 +149,12 @@ const TRANSIENT_FAILURE_RETRY_MS = 30_000;
 const SERVER_ERROR_STATUS = 500;
 
 let wasmPromise: Promise<GaesupCoreWasmExports | null> | null = null;
+let loaded: GaesupCoreWasmExports | null = null;
+
+/** The module once a load has finished, so code that starts later can use it without waiting a frame. */
+export function getLoadedCoreWasm(): GaesupCoreWasmExports | null {
+  return loaded;
+}
 let retryAfter = 0;
 
 type GaesupWasmGlobal = typeof globalThis & {
@@ -204,7 +210,8 @@ export async function loadCoreWasm(): Promise<GaesupCoreWasmExports | null> {
       if (typeof exports.alloc_f32 !== 'function') return null;
       if (typeof exports.dealloc_f32 !== 'function') return null;
 
-      return exports as GaesupCoreWasmExports;
+      loaded = exports as GaesupCoreWasmExports;
+      return loaded;
     } catch {
       return null;
     }

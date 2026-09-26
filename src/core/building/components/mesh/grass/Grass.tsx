@@ -8,7 +8,7 @@ import { extendOnce } from '@/core/rendering/extendOnce';
 import { shaderMaterial } from '@/core/rendering/legacyDrei';
 import { usePerfStore } from "@core/perf/stores/perfStore";
 import { createToonMaterial, getDefaultToonMode } from "@core/rendering/toon";
-import { loadCoreWasm, type GaesupCoreWasmExports } from "@core/wasm/loader";
+import { getLoadedCoreWasm, loadCoreWasm, type GaesupCoreWasmExports } from "@core/wasm/loader";
 
 import {
   DEFAULT_BLADE_ALPHA_URL,
@@ -209,13 +209,25 @@ function disposeBladeTextures(texture: THREE.Texture, alphaMap: THREE.Texture): 
   if (alphaMap !== getFallbackBladeAlpha()) alphaMap.dispose();
 }
 
+type BladeTextures = { texture: THREE.Texture; alphaMap: THREE.Texture };
+/**
+ * The last pair loaded for each source pair. A chunk that mounts later starts with its own clones (same images) instead
+ * of loading again and rendering a second time; each chunk still owns and disposes the textures it draws.
+ */
+const loadedBladeTextures = new Map<string, BladeTextures>();
+
 function useGrassBladeTextures(textureSources: ReturnType<typeof resolveGrassTextureSources>) {
-  const [textures, setTextures] = useState(() => ({
-    texture: getFallbackBladeDiffuse(),
-    alphaMap: getFallbackBladeAlpha(),
-  }));
+  const key = `${textureSources.bladeDiffuseUrl}|${textureSources.bladeAlphaUrl}`;
+  const [textures, setTextures] = useState(() => {
+    const loaded = loadedBladeTextures.get(key);
+    return loaded
+      ? { key, texture: loaded.texture.clone(), alphaMap: loaded.alphaMap.clone() }
+      : { key: '', texture: getFallbackBladeDiffuse(), alphaMap: getFallbackBladeAlpha() };
+  });
+  const shownKey = textures.key;
 
   useEffect(() => {
+    if (shownKey === key) return undefined;
     let cancelled = false;
 
     Promise.all([
@@ -236,13 +248,14 @@ function useGrassBladeTextures(textureSources: ReturnType<typeof resolveGrassTex
         disposeBladeTextures(texture, alphaMap);
         return;
       }
-      setTextures({ texture, alphaMap });
+      loadedBladeTextures.set(key, { texture, alphaMap });
+      setTextures({ key, texture, alphaMap });
     });
 
     return () => {
       cancelled = true;
     };
-  }, [textureSources.bladeAlphaUrl, textureSources.bladeDiffuseUrl]);
+  }, [key, shownKey, textureSources.bladeAlphaUrl, textureSources.bladeDiffuseUrl]);
 
   useEffect(() => () => disposeBladeTextures(textures.texture, textures.alphaMap), [textures]);
 
@@ -430,8 +443,10 @@ const GrassContent: FC<GrassMeshProps> = memo(
     // WASM-accelerated attribute generation with JS fallback. Loaded once
     // and shared with the central GrassManager so manager-side passes
     // (LOD weight batching) can also benefit.
-    const [wasmModule, setWasmModule] = useState<GaesupCoreWasmExports | null>(null);
+    // A chunk that mounts after the first load starts with the module instead of computing its blades twice.
+    const [wasmModule, setWasmModule] = useState<GaesupCoreWasmExports | null>(getLoadedCoreWasm);
     useEffect(() => {
+      if (wasmModule) return undefined;
       let active = true;
       loadCoreWasm().then((w) => {
         if (!w || !active) return;
@@ -439,7 +454,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
         setGrassManagerWasm(w);
       });
       return () => { active = false; };
-    }, []);
+    }, [wasmModule]);
 
     const attributeData = useMemo(
       () => {

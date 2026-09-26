@@ -18,7 +18,7 @@ jest.mock('../../../../../rendering/tsl/grassMaterial', () => {
     },
   })) };
 });
-jest.mock('@core/wasm/loader', () => ({ loadCoreWasm: async () => null }));
+jest.mock('@core/wasm/loader', () => ({ loadCoreWasm: async () => null, getLoadedCoreWasm: () => null }));
 
 function RendererMode({ nodes, children }: { nodes: boolean; children: ReactNode }) {
   Object.assign(useThree((state) => state.gl), { isWebGPURenderer: nodes });
@@ -103,7 +103,8 @@ test.each([false, true])('grass releases replaced and late textures (nodes: %s)'
     pending.push(() => onLoad?.(texture));
     return texture;
   });
-  const renderGrass = (url: string) => <RendererMode nodes={nodes}><Grass instances={4} bladeDiffuseUrl={url} /></RendererMode>;
+  // URLs unique per run: a pair loaded once is reused by later mounts.
+  const renderGrass = (url: string) => <RendererMode nodes={nodes}><Grass instances={4} bladeDiffuseUrl={`${nodes}-${url}`} /></RendererMode>;
   const renderer = await ReactThreeTestRenderer.create(renderGrass('first.png'));
   await act(async () => { pending.splice(0).forEach((resolve) => resolve()); });
   expect(disposals).toHaveLength(2);
@@ -120,4 +121,28 @@ test.each([false, true])('grass releases replaced and late textures (nodes: %s)'
   expect(disposals).toHaveLength(6);
   disposals.forEach((dispose) => expect(dispose).toHaveBeenCalledTimes(1));
   loader.mockRestore();
+});
+
+test('a chunk mounted after its textures loaded starts with clones of them instead of loading and rendering again', async () => {
+  const pending: Array<() => void> = [];
+  const loader = jest.spyOn(THREE.TextureLoader.prototype, 'load').mockImplementation((_url, onLoad) => {
+    const texture = new THREE.Texture<HTMLImageElement>();
+    pending.push(() => onLoad?.(texture));
+    return texture;
+  });
+  const chunks = (count: number) => (
+    <RendererMode nodes={false}>
+      {Array.from({ length: count }, (_, index) => <Grass key={index} instances={4} bladeDiffuseUrl="reused.png" position={[index * 10, 0, 0]} />)}
+    </RendererMode>
+  );
+  const renderer = await ReactThreeTestRenderer.create(chunks(1));
+  try {
+    await act(async () => { pending.splice(0).forEach((resolve) => resolve()); });
+    loader.mockClear();
+    await renderer.update(chunks(2));
+    expect(loader).not.toHaveBeenCalled();
+  } finally {
+    await renderer.unmount();
+    loader.mockRestore();
+  }
 });
