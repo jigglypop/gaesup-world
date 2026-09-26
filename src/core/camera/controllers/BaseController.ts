@@ -4,7 +4,8 @@ import * as THREE from 'three';
 import { ICameraController, CameraCalcProps, CameraSystemState, CameraSystemConfig } from '../core/types';
 import { activeStateUtils, cameraUtils, resolveCollisionPosition } from '../utils/camera';
 
-const COLLISION_PIVOT_CLEARANCE = 0.05;
+/** Probe start above the target's feet: about a body's center, which physics keeps clear of level geometry. */
+const COLLISION_PIVOT_HEIGHT = 1;
 
 export abstract class BaseController implements ICameraController {
   abstract name: string;
@@ -141,9 +142,9 @@ export abstract class BaseController implements ICameraController {
     );
     if (cameraOption.enableCollision) {
       const margin = cameraOption.collisionMargin ?? 0.5;
-      // The target is the character's feet. Starting the probe there puts it inside the ground it stands on,
-      // which blocks at once and collapses the camera; lift it clear of that surface first.
-      this.collisionPivot.copy(lookAtTarget).y += margin + COLLISION_PIVOT_CLEARANCE;
+      // The target is the character's feet, where ground meshes rise a little above the physics floor and terrace
+      // steps stand beside it; a probe from there blocks at once and collapses the camera into the character.
+      this.collisionPivot.copy(lookAtTarget).y += Math.max(COLLISION_PIVOT_HEIGHT, margin);
       resolveCollisionPosition(
         this.collisionPivot, this.nextPosition, props.scene, margin, props.excludeObjects,
         this.nextPosition, cameraOption.collisionTargets,

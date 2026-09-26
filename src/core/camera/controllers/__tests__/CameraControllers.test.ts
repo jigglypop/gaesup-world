@@ -138,24 +138,39 @@ describe('BaseController', () => {
     expect(blockedProps.camera.position.length()).toBeLessThan(clearProps.camera.position.length());
   });
 
-  it('바닥에 서 있는 타깃(발 위치)에서도 카메라가 발밑으로 무너지지 않아야 합니다', () => {
+  // Ground meshes rise a few centimeters above the physics floor (grass noise, sand relief), and a terrace step can
+  // stand right behind the feet; neither blocks the view from the body.
+  it.each([
+    ['평평한 바닥', 0],
+    ['발 뒤 0.5m의 0.25m 단차', 0.25],
+  ])('바닥에 서 있는 타깃(발 위치)에서도 카메라가 발밑으로 무너지지 않아야 합니다: %s', (_label, stepHeight) => {
     const controller = new TestController();
     const groundedProps = createProps();
     const clearProps = createProps();
     groundedProps.activeState.position.set(0, 0, 0);
     clearProps.activeState.position.set(0, 0, 0);
-    const floor = new THREE.Mesh(new THREE.BoxGeometry(40, 0.04, 40), new THREE.MeshBasicMaterial());
-    floor.position.y = -0.02;
-    groundedProps.scene.add(floor);
+    const meshes = [new THREE.Mesh(new THREE.BoxGeometry(40, 0.04, 40), new THREE.MeshBasicMaterial())];
+    meshes[0]!.position.y = -0.02;
+    if (stepHeight > 0) {
+      const step = new THREE.Mesh(new THREE.BoxGeometry(4, stepHeight, 4), new THREE.MeshBasicMaterial());
+      // The camera sits at (-15, 8, -15) from the target; the step starts 0.5m along that direction.
+      step.position.set(-(0.5 / Math.SQRT2) - 2 / Math.SQRT2, stepHeight / 2, -(0.5 / Math.SQRT2) - 2 / Math.SQRT2);
+      step.rotation.y = Math.PI / 4;
+      meshes.push(step);
+    }
+    for (const mesh of meshes) groundedProps.scene.add(mesh);
+    groundedProps.scene.updateMatrixWorld(true);
 
     for (let i = 0; i < 30; i++) {
-      controller.update(groundedProps, createState(createConfig({ enableCollision: true, collisionMargin: 0.5 })));
+      controller.update(groundedProps, createState(createConfig({ enableCollision: true, collisionMargin: 0.1 })));
       controller.update(clearProps, createState(createConfig({ enableCollision: false })));
     }
 
     expect(groundedProps.camera.position.distanceTo(clearProps.camera.position)).toBeLessThan(1e-6);
-    floor.geometry.dispose();
-    (floor.material as THREE.Material).dispose();
+    for (const mesh of meshes) {
+      mesh.geometry.dispose();
+      (mesh.material as THREE.Material).dispose();
+    }
   });
 
   it('카메라 충돌은 타깃 바로 근처의 자기 모델을 장애물로 보지 않아야 합니다', () => {
