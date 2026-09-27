@@ -2,6 +2,8 @@ import { getDefaultBuildingObject, type BuildingSerializedState, type MeshConfig
 
 /** Grid cell in meters; one character (1.7m) is a little under half a cell. */
 export const CELL = 4;
+/** Bump when the island's layout changes: saves are kept per version, so returning visitors see the new island. */
+export const VILLAGE_VERSION = 2;
 
 /**
  * The island, one character per 4m cell, north at the top.
@@ -92,32 +94,55 @@ function tileAt(x: number, z: number): TileConfig {
   return { ...base, materialId: MATERIAL[kind] ?? 'lawn', ...(raised ? { objectConfig: DIRT } : {}) };
 }
 
-const model = (id: string, catalogId: string, x: number, z: number, rotation = 0): PlacedObject => {
+const model = (id: string, catalogId: string, x: number, z: number, rotation = 0, scale = 1, y = 0): PlacedObject => {
   const item = getDefaultBuildingObject(catalogId)!;
   return {
     id,
     type: 'model',
-    position: { x, y: 0, z },
+    position: { x, y, z },
     rotation,
-    config: { modelId: item.id, modelLabel: item.label, modelScale: item.defaultScale, modelFallbackKind: item.fallbackKind, ...(item.modelUrl ? { modelUrl: item.modelUrl } : {}) },
+    config: { modelId: item.id, modelLabel: item.label, modelScale: item.defaultScale * scale, modelFallbackKind: item.fallbackKind, ...(item.modelUrl ? { modelUrl: item.modelUrl } : {}) },
   };
 };
+
+/** A stable number in [0, 1) per cell and salt, so the woods look the same on every visit. */
+const noise = (x: number, z: number, salt: number) => Math.abs((Math.sin((x * 31 + z * 17 + salt) * 12.9898) * 43758.5453) % 1);
+const FOREST_TREES = ['nature-tree-pine', 'nature-tree-round', 'nature-tree-pine', 'nature-tree-fat', 'nature-tree-thin'];
 
 type TreeKind = NonNullable<NonNullable<PlacedObject['config']>['treeKind']>;
 const tree = (id: string, treeKind: TreeKind, x: number, z: number, size = 4, y = 0): PlacedObject =>
   ({ id, type: treeKind === 'sakura' ? 'sakura' : 'tree', position: { x, y, z }, config: { treeKind, size } });
 
-/** A pine on every forest cell, nudged off the grid so the edge reads as woods, not a row. */
+/**
+ * A low-poly tree on every forest cell, mostly pines, each turned and sized its own way and nudged off the grid so the
+ * edge reads as woods, not a row. Same-model trees draw as one batch.
+ */
 function forest(): PlacedObject[] {
   const trees: PlacedObject[] = [];
   for (let z = 0; z < SIDE; z++) {
     for (let x = 0; x < SIDE; x++) {
       if (cell(x, z) !== 'T') continue;
-      const jitter = (n: number) => (Math.sin((x * 31 + z * 17 + n) * 12.9898) * 43758.5453 % 1) * 1.2;
-      trees.push(tree(`pine-${x}-${z}`, 'pine', at(x) + jitter(1), at(z) + jitter(2), 4.5 + Math.abs(jitter(3)), 1));
+      const kind = FOREST_TREES[Math.floor(noise(x, z, 5) * FOREST_TREES.length)]!;
+      const jitter = (salt: number) => (noise(x, z, salt) - 0.5) * 2.4;
+      trees.push(model(`tree-${x}-${z}`, kind, at(x) + jitter(1), at(z) + jitter(2), noise(x, z, 3) * Math.PI * 2, 0.95 + noise(x, z, 4) * 0.35, 1));
     }
   }
   return trees;
+}
+
+/** Undergrowth where the woods meet the lawn: stumps, ferns and mushrooms on the lawn side of forest cells. */
+function woodsEdge(): PlacedObject[] {
+  const props: PlacedObject[] = [];
+  const kinds = ['nature-fern', 'nature-stump', 'nature-fern', 'nature-mushroom-cluster', 'nature-bush'];
+  for (let z = 1; z < SIDE - 1; z++) {
+    for (let x = 1; x < SIDE - 1; x++) {
+      if (cell(x, z) !== '.' || ![cell(x - 1, z), cell(x + 1, z), cell(x, z - 1)].includes('T')) continue;
+      if (noise(x, z, 9) < 0.45) continue;
+      const kind = kinds[Math.floor(noise(x, z, 10) * kinds.length)]!;
+      props.push(model(`edge-${x}-${z}`, kind, at(x) + (noise(x, z, 11) - 0.5) * 3, at(z) + (noise(x, z, 12) - 0.5) * 3, noise(x, z, 13) * Math.PI * 2));
+    }
+  }
+  return props;
 }
 
 /** The fence around the field, one catalog fence per cell edge. */
@@ -168,14 +193,31 @@ export function createVillage(): BuildingSerializedState {
     { id: 'campfire', type: 'fire', position: { x: at(4), y: 0, z: at(12) }, config: { fireIntensity: 1.2 } },
     { id: 'plaza-flag', type: 'flag', position: { x: at(9) + 1.2, y: 0, z: at(9) - 1.2 }, config: { flagWidth: 1.6, flagHeight: 1, flagStyle: 'flag', primaryColor: '#ff8a65' } },
     { id: 'notice', type: 'billboard', position: { x: at(7), y: 0, z: at(4) + 1.4 }, config: { billboardText: '미니홈피 섬', billboardColor: '#2bb3a3', billboardWidth: 2.2, billboardHeight: 0.8, billboardElevation: 1.3 } },
-    tree('oak-1', 'oak', at(2), at(4)),
-    tree('oak-2', 'oak', at(12), at(4)),
-    tree('oak-3', 'oak', at(6), at(9) + 1),
-    tree('oak-4', 'oak', at(12), at(9), 3.6),
-    tree('maple-1', 'maple', at(1), at(10), 3.6),
+    model('oak-1', 'nature-tree-oak', at(2), at(4), 0.4),
+    model('oak-2', 'nature-tree-round', at(12), at(4), 2.1),
+    model('oak-3', 'nature-tree-oak', at(6), at(9) + 1, 4.2),
+    model('oak-4', 'nature-tree-fat', at(12), at(9), 1.3, 0.9),
+    model('maple-1', 'nature-tree-round', at(1), at(10), 5.5, 0.9),
+    model('pond-tree', 'nature-tree-thin', at(3), at(9), 2.7),
     tree('sakura-1', 'sakura', at(7) - 1, at(7) - 1, 3.4),
     tree('sakura-2', 'sakura', at(2), at(7) - 1.5, 3.2),
-    tree('willow-pond', 'willow', at(3), at(9)),
+    // Pond side: boulders, lilies on the water.
+    model('pond-rock-a', 'nature-rock-round', at(1) + 1.6, at(8) + 2.2, 0.8),
+    model('pond-rock-b', 'nature-rock-wide', at(3) + 1.8, at(7) - 1.4, 2.4),
+    model('lily-a', 'nature-lily', at(1) + 0.6, at(7) + 0.4, 0.3, 2),
+    model('lily-b', 'nature-lily', at(2) - 0.8, at(8) - 0.6, 1.9, 2.4),
+    model('lily-c', 'nature-lily', at(1) - 0.4, at(9) + 0.8, 4.1, 1.8),
+    // Along the paths: bushes and flowers.
+    model('bush-a', 'nature-bush', at(4) + 1.4, at(5) - 1.6, 0.2),
+    model('bush-b', 'nature-bush', at(9) + 1.6, at(6) + 1.2, 1.7, 0.8),
+    model('bush-c', 'nature-bush', at(7) - 1.6, at(10) + 1.2, 3.3),
+    model('flower-a', 'nature-flower-yellow', at(5) - 1.2, at(6) + 1.6),
+    model('flower-b', 'nature-flower-red', at(6) + 1.6, at(7) + 1.5, 1.1),
+    model('flower-c', 'nature-flower-purple', at(9) - 1.4, at(8) + 0.4, 2.2),
+    model('flower-d', 'nature-flower-yellow', at(11) + 1.5, at(6) - 1.3, 0.7),
+    model('rock-path', 'nature-rock-small', at(9) + 1.6, at(10) - 1.2, 0.9),
+    model('log-beach', 'nature-fallen-log', at(6) + 1.2, at(11) - 1.2, 0.6),
+    ...woodsEdge(),
     ...forest(),
   ];
 

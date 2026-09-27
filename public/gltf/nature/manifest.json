@@ -1,0 +1,137 @@
+{
+  "version": "20260912-cute-lowpoly",
+  "provenance": "Original procedural modeling for Choketmon. No third-party meshes or textures.",
+  "generator": "scripts/build-cute-nature.py",
+  "generatorSha256": "f23563d7b82daa7eefce4cd1bbf913a14fabf0e09e35b1becc6a277f803c4c97",
+  "sourceScene": "assets/blender/cute-nature.blend",
+  "design": "Low-poly curved silhouettes, fused cloud canopies, short rooted trunks, rounded stone planes, pastel materials",
+  "axes": "Y-up meters; bottom-center pivot",
+  "assets": [
+    {
+      "id": "tree-round",
+      "file": "tree-round.glb",
+      "triangles": 1758,
+      "bytes": 43756,
+      "sha256": "38e23963e15c8a6a7b1e5e64f53667531841855bff03e20e204ce95c546cc1d8",
+      "height": 4.5863938331604,
+      "dimensions": [
+        3.6195051670074463,
+        2.439942479133606,
+        4.5863938331604
+      ],
+      "materials": 3
+    },
+    {
+      "id": "tree-oak",
+      "file": "tree-oak.glb",
+      "triangles": 2270,
+      "bytes": 59016,
+      "sha256": "27ac207618bfaaf8af916f551b23c698106a01f72ad21c3f95d849726e315127",
+      "height": 4.672984600067139,
+      "dimensions": [
+        3.842280626296997,
+        2.3913387060165405,
+        4.672984600067139
+      ],
+      "materials": 4
+    },
+    {
+      "id": "tree-fat",
+      "file": "tree-fat.glb",
+      "triangles": 1720,
+      "bytes": 42924,
+      "sha256": "3272b84b6d6583f80de21dac0fd58858a055d06a972f94328f198260abee6c84",
+      "height": 4.136394023895264,
+      "dimensions": [
+        3.599236249923706,
+        2.634243369102478,
+        4.136394023895264
+      ],
+      "materials": 3
+    },
+    {
+      "id": "tree-thin",
+      "file": "tree-thin.glb",
+      "triangles": 1766,
+      "bytes": 42916,
+      "sha256": "1a7ab450597d3beb7d4e7c982c39e71d70e6454d5cc2db7f924485e171586be6",
+      "height": 4.6463942527771,
+      "dimensions": [
+        2.880499482154846,
+        2.2194838523864746,
+        4.6463942527771
+      ],
+      "materials": 2
+    },
+    {
+      "id": "tree-pine",
+      "file": "tree-pine.glb",
+      "triangles": 1300,
+      "bytes": 25636,
+      "sha256": "a55a7bb4b4e29365456f64c858afbe7edcb4114b3a46c1695cb7ae75f82943cd",
+      "height": 4.550000190734863,
+      "dimensions": [
+        3.100000023841858,
+        3.0999999046325684,
+        4.550000190734863
+      ],
+      "materials": 2
+    },
+    {
+      "id": "rock-round",
+      "file": "rock-round.glb",
+      "triangles": 528,
+      "bytes": 17084,
+      "sha256": "757c2a0ad0f89fd708ad9f53ddd1b88b6e92b3c7304272729b102d36b168d3b1",
+      "height": 2.186500072479248,
+      "dimensions": [
+        2.700000047683716,
+        1.9994032979011536,
+        2.186500072479248
+      ],
+      "materials": 2
+    },
+    {
+      "id": "rock-wide",
+      "file": "rock-wide.glb",
+      "triangles": 528,
+      "bytes": 17100,
+      "sha256": "0f9699340aa4ca1b63773fa72d0dfc35edb79f7488146e8c80ffd6c1280fccaf",
+      "height": 1.6789999604225159,
+      "dimensions": [
+        3.103858470916748,
+        2.2595620155334473,
+        1.6789999604225159
+      ],
+      "materials": 2
+    },
+    {
+      "id": "rock-tall",
+      "file": "rock-tall.glb",
+      "triangles": 528,
+      "bytes": 17112,
+      "sha256": "ff940ea51c27cc9c77079cfb3ee5c47632b3c0a9379cda573b49129f3132140c",
+      "height": 2.998500108718872,
+      "dimensions": [
+        2.499383330345154,
+        2.057302713394165,
+        2.998500108718872
+      ],
+      "materials": 2
+    },
+    {
+      "id": "fern",
+      "file": "fern.glb",
+      "triangles": 700,
+      "bytes": 23320,
+      "sha256": "d40ba133d107f92b7fd8d800228e853551e47af35454dec0c7ea74bf6752a6c6",
+      "height": 0.4263564795255661,
+      "dimensions": [
+        0.9149423837661743,
+        0.9374500811100006,
+        0.4263564795255661
+      ],
+      "materials": 2
+    }
+  ]
+}

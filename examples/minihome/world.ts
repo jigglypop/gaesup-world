@@ -8,7 +8,7 @@ import {
   type NPCInstanceData,
 } from 'gaesup-world';
 
-import { at, CELL, createVillage } from './village';
+import { at, CELL, createVillage, VILLAGE_VERSION } from './village';
 
 export const asset = (path: string) => `${import.meta.env.BASE_URL}${path}`;
 
@@ -137,7 +137,7 @@ const RULES: GameplayEventBlueprint[] = [
 
 /** The minihome world: its own runtime, so every store is this world's and saves under `minihome`. */
 export function createMinihomeRuntime(): GaesupRuntime {
-  const runtime = createGaesupRuntime({ worldId: 'minihome', plugins: [createBuildingPlugin()] });
+  const runtime = createGaesupRuntime({ worldId: `minihome-v${VILLAGE_VERSION}`, plugins: [createBuildingPlugin()] });
   runtime.buildingStore.getState().hydrate(createVillage());
   const npc = runtime.npcStore.getState();
   for (const resident of RESIDENTS) {

@@ -18,6 +18,8 @@ type ModelObjectProps = {
   fallbackKind?: BuildingModelFallbackKind;
   scale?: number;
   color?: string;
+  /** `all` cascades, the nearest (`near`, default) or none. */
+  shadow?: 'all' | 'near' | 'none';
 };
 
 type ModelObjectState = {
@@ -46,14 +48,21 @@ class ModelErrorBoundary extends React.Component<
   }
 }
 
-function LoadedModel({ url }: { url: string }) {
+function LoadedModel({ url, shadow }: { url: string; shadow: NonNullable<ModelObjectProps['shadow']> }) {
   const { scene } = useGLTF(url) as { scene: THREE.Object3D };
   const clone = useMemo(() => {
     const owned = SkeletonUtils.clone(scene);
     normalizeImportedMaterials(owned, 'prop');
     return owned;
   }, [scene]);
-  useEffect(() => castSubtreeNearShadowOnly(clone), [clone]);
+  useEffect(() => {
+    if (shadow === 'near') return castSubtreeNearShadowOnly(clone);
+    clone.traverse((child) => {
+      child.castShadow = shadow === 'all';
+      child.receiveShadow = true;
+    });
+    return undefined;
+  }, [clone, shadow]);
 
   return <primitive object={clone} />;
 }
@@ -217,7 +226,7 @@ function LampLight({ color }: { color: string }) {
   );
 }
 
-export default function ModelObject({ url, label, fallbackKind, scale = 1, color }: ModelObjectProps) {
+export default function ModelObject({ url, label, fallbackKind, scale = 1, color, shadow = 'near' }: ModelObjectProps) {
   const fallback = <FallbackModel kind={fallbackKind} color={color} />;
 
   useEffect(() => {
@@ -229,7 +238,7 @@ export default function ModelObject({ url, label, fallbackKind, scale = 1, color
       {url ? (
         <ModelErrorBoundary fallback={fallback}>
           <Suspense fallback={fallback}>
-            <LoadedModel url={url} />
+            <LoadedModel url={url} shadow={shadow} />
           </Suspense>
         </ModelErrorBoundary>
       ) : fallback}
