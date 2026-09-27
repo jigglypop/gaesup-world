@@ -139,6 +139,10 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   const selectedWallId = useBuildingStore((s) => s.selectedWallId);
   const selectedTileId = useBuildingStore((s) => s.selectedTileId);
   const selectedBlockId = useBuildingStore((s) => s.selectedBlockId);
+  // Painting and erasing act on the piece clicked; placing selects it.
+  const acting = useBuildingStore((s) => s.buildingTool === 'paint' || s.buildingTool === 'erase');
+  const erasing = useBuildingStore((s) => s.buildingTool === 'erase');
+  const applyToolTo = useBuildingStore((s) => s.applyToolTo);
   const showGrid = useBuildingStore((s) => s.showGrid);
   const gridSize = useBuildingStore((s) => s.gridSize);
   const showSnow = useBuildingStore((s) => s.showSnow);
@@ -166,10 +170,14 @@ export const BuildingSystem = React.memo(function BuildingSystem({
     return visibilityReady ? list.filter((block) => visibleBlockIds.has(block.id)) : list;
   }, [blocks, visibilityReady, visibleBlockIds]);
   // One overlay for every group the edit mode works on: two draws instead of one per tile, wall or block.
+  // Objects join it for the eraser, the only tool that acts on a placed object.
   const editItems = useMemo(
-    () => buildingEditItems(editMode, tileGroupsArray, wallGroupsArray, visibleBlocks),
-    [editMode, tileGroupsArray, wallGroupsArray, visibleBlocks],
+    () => buildingEditItems(editMode, tileGroupsArray, wallGroupsArray, visibleBlocks, erasing ? objects : undefined),
+    [editMode, tileGroupsArray, wallGroupsArray, visibleBlocks, erasing, objects],
   );
+  const pickEdit = acting
+    ? applyToolTo
+    : editMode === 'tile' ? onTileClick : editMode === 'wall' ? onWallClick : editMode === 'object' ? undefined : onBlockClick ?? onBlockDelete;
   // Batched objects draw in a fixed number of calls however many there are, so they are built once from every
   // object and residency changes never rebuild them. Only per-object models follow residency.
   const buckets = useMemo(() => bucketObjects(objects), [objects]);
@@ -267,8 +275,8 @@ export const BuildingSystem = React.memo(function BuildingSystem({
           <EditOverlay
             kind={editMode === 'wall' ? 'marker' : 'wire'}
             items={editItems}
-            selectedId={editMode === 'tile' ? selectedTileId : editMode === 'wall' ? selectedWallId : selectedBlockId}
-            onSelect={editMode === 'tile' ? onTileClick : editMode === 'wall' ? onWallClick : onBlockClick ?? onBlockDelete}
+            selectedId={acting ? null : editMode === 'tile' ? selectedTileId : editMode === 'wall' ? selectedWallId : selectedBlockId}
+            onSelect={pickEdit}
           />
         )}
 

@@ -3,7 +3,7 @@ import { getDefaultBuildingObject, type BuildingSerializedState, type MeshConfig
 /** Grid cell in meters; one character (1.7m) is a little under half a cell. */
 export const CELL = 4;
 /** Bump when the island's layout changes: saves are kept per version, so returning visitors see the new island. */
-export const VILLAGE_VERSION = 5;
+export const VILLAGE_VERSION = 6;
 
 /**
  * The island, one character per 4m cell, north at the top.
@@ -28,8 +28,8 @@ const MAP = [
 const SIDE = MAP.length;
 const HALF = (SIDE * CELL) / 2;
 
-/** Center of cell `index` on either axis. */
-export const at = (index: number) => index * CELL - HALF + CELL / 2;
+/** Center of cell `index` on either axis: on the building grid, so tiles the 꾸미기 tab adds line up with these. */
+export const at = (index: number) => index * CELL - HALF;
 const cell = (x: number, z: number) => MAP[z]?.[x] ?? 's';
 
 /** Where the player starts: the crossroads south of the miniroom. */

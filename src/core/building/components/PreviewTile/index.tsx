@@ -10,6 +10,7 @@ import './styles.css';
 
 export function PreviewTile() {
   const editMode = useBuildingStore((s) => s.editMode);
+  const placing = useBuildingStore((s) => s.buildingTool !== 'paint' && s.buildingTool !== 'erase');
   const hoverPosition = useBuildingStore((s) => s.hoverPosition);
   const checkTilePosition = useBuildingStore((s) => s.checkTilePosition);
   // Occupancy only changes with building data, so these identities key the placement check.
@@ -66,7 +67,7 @@ export function PreviewTile() {
     [cell?.x, cell?.z, cell?.level, currentTileMultiplier, tileGroups, blocks, checkTilePosition],
   );
 
-  if ((editMode !== 'tile' && editMode !== 'object') || !hoverPosition) {
+  if ((editMode !== 'tile' && editMode !== 'object') || !hoverPosition || !placing) {
     return null;
   }
 
@@ -77,7 +78,7 @@ export function PreviewTile() {
   const { x, z } = editMode === 'tile' ? snapTilePosition(hoverPosition, currentTileMultiplier) : hoverPosition;
 
   return (
-    <group position={[x, placementY, z]} rotation={[0, editMode === 'object' ? currentObjectRotation : currentTileRotation, 0]}>
+    <group position={[x, placementY, z]} rotation={[0, editMode === 'object' ? currentObjectRotation : currentTileRotation, 0]} userData={{ intangible: true }}>
       {editMode === 'tile' && (
         currentTileShape === 'round' ? (
           <mesh position={[0, topHeight > 0.02 ? topHeight / 2 : -0.02, 0]}>

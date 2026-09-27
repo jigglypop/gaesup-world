@@ -13,6 +13,7 @@ const OCCUPIED_EMISSIVE_INTENSITY = 0.08;
 
 export function PreviewBlock() {
   const editMode = useBuildingStore((s) => s.editMode);
+  const placing = useBuildingStore((s) => s.buildingTool !== 'paint' && s.buildingTool !== 'erase');
   const hoverPosition = useBuildingStore((s) => s.hoverPosition);
   const checkBlockPosition = useBuildingStore((s) => s.checkBlockPosition);
   // Occupancy only changes with building data, so these identities key the placement check.
@@ -29,7 +30,7 @@ export function PreviewBlock() {
     () => probe !== null && checkBlockPosition({ position: probe, size: { x: sizeCells, y: 1, z: sizeCells } }),
     [cell?.x, cell?.z, cell?.level, sizeCells, tileGroups, blocks, checkBlockPosition],
   );
-  if (editMode !== 'block' || !hoverPosition) return null;
+  if (editMode !== 'block' || !hoverPosition || !placing) return null;
   const width = TILE_CONSTANTS.GRID_CELL_SIZE * sizeCells;
   const height = TILE_CONSTANTS.HEIGHT_STEP;
   const color = isOccupied ? OCCUPIED_COLOR : AVAILABLE_COLOR;
@@ -38,6 +39,7 @@ export function PreviewBlock() {
   return (
     <group
       name="preview-block"
+      userData={{ intangible: true }}
       position={[
         hoverPosition.x - TILE_CONSTANTS.GRID_CELL_SIZE * 0.5 + width * 0.5,
         placementY + height * 0.5,

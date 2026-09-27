@@ -280,19 +280,64 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
   font-weight: 750;
   text-align: center;
 }
-.mh-reset {
+/* 꾸미기: the decorating dock over the island. */
+.mh-decorate {
   position: absolute;
   left: 14px;
+  right: 14px;
   bottom: 14px;
-  z-index: 2;
-  padding: 8px 14px;
-  border-radius: 999px;
+  z-index: 3;
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--mh-radius);
+  background: var(--mh-surface-strong);
   border: 1px solid var(--mh-edge);
-  background: rgba(255, 255, 255, 0.86);
-  font-size: 12px;
-  font-weight: 700;
-  box-shadow: 0 6px 16px rgba(35, 26, 54, 0.14);
+  box-shadow: 0 18px 44px rgba(35, 26, 54, 0.16), var(--mh-shine);
+  backdrop-filter: var(--mh-blur);
 }
+.mh-decorate-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mh-decorate-actions { display: flex; gap: 6px; margin-left: auto; }
+.mh-decorate button:disabled { opacity: 0.4; cursor: default; }
+.mh-done {
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--mh-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(255, 122, 89, 0.32);
+}
+.mh-shelves { display: grid; gap: 6px; }
+/* One row per shelf that scrolls sideways, so the dock stays low over the island. */
+.mh-shelf { display: flex; align-items: center; gap: 5px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; }
+.mh-shelf > span { flex: none; min-width: 48px; color: var(--mh-muted); font-size: 11px; font-weight: 750; }
+.mh-piece {
+  flex: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border: 1px solid var(--mh-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--mh-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.mh-piece:hover { background: #fff; transform: translateY(-1px); }
+.mh-piece[aria-pressed='true'] { background: var(--mh-accent-soft); border-color: var(--mh-accent); color: var(--mh-accent); }
+.mh-piece i { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
+.mh-decorate-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--mh-muted); font-size: 11.5px; }
+.mh-link { padding: 0; border: 0; background: none; color: var(--mh-violet); font: inherit; font-weight: 700; cursor: pointer; }
+.mh-link:hover { text-decoration: underline; }
 
 /* Tabs: Cyworld's index tabs on the frame's edge. */
 .mh-tabs { display: flex; flex-direction: column; gap: 6px; padding-top: 18px; }
@@ -365,9 +410,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
 .mh-phases i { height: 6px; border-radius: 999px; background: linear-gradient(90deg, var(--mh-violet), #ff9a76); min-width: 2px; }
 .mh-phases b { text-align: right; font-weight: 750; font-variant-numeric: tabular-nums; }
 
-.mh-segment { display: grid; grid-template-columns: repeat(4, 1fr); padding: 3px; border-radius: 12px; background: rgba(124, 116, 148, 0.1); }
-.mh-segment button { padding: 7px 0; border: 0; border-radius: 9px; background: transparent; font-size: 12px; font-weight: 700; color: var(--mh-muted); }
-.mh-segment button[aria-checked='true'] { background: #fff; color: var(--mh-text); box-shadow: 0 2px 8px rgba(35, 26, 54, 0.12); }
+/* A segmented control: equal columns however many options, for the status panel and the 꾸미기 dock. */
+.mh-segment { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 3px; border-radius: 12px; background: rgba(124, 116, 148, 0.1); }
+.mh-segment button { padding: 7px 12px; border: 0; border-radius: 9px; background: transparent; font: inherit; font-size: 12px; font-weight: 700; color: var(--mh-muted); cursor: pointer; transition: background 0.15s, color 0.15s; }
+.mh-segment button[aria-checked='true'], .mh-segment button[aria-pressed='true'] { background: #fff; color: var(--mh-text); box-shadow: 0 2px 8px rgba(35, 26, 54, 0.12); }
 
 .mh-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 2px; cursor: pointer; }
 .mh-toggle span { display: grid; gap: 1px; }

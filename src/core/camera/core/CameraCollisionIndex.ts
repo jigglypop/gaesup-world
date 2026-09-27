@@ -31,7 +31,7 @@ export class CameraCollisionIndex {
   private readonly scene: THREE.Scene;
   private readonly allMeshes: THREE.Mesh[] = [];
   private readonly colliderMeshes: THREE.Mesh[] = [];
-  private readonly observed = new Set<THREE.Object3D>();
+  private observed = new Set<THREE.Object3D>();
   private dirty = true;
   private generation = globalGeneration;
   private rebuildCount = 0;
@@ -87,11 +87,10 @@ export class CameraCollisionIndex {
     this.dirty = true;
   };
 
-  private readonly handleChildRemoved = (event: { child: THREE.Object3D }): void => {
+  // three reuses one event object for every removal, and a listener that removes objects while it is dispatched clears
+  // its `child` for the listeners after it: the next rebuild finds what left instead.
+  private readonly handleChildRemoved = (): void => {
     this.dirty = true;
-    event.child.traverse((object) => {
-      if (this.observed.delete(object)) this.unobserve(object);
-    });
   };
 
   private readonly collect = (object: THREE.Object3D): void => {
@@ -112,7 +111,11 @@ export class CameraCollisionIndex {
   private rebuild(): void {
     this.allMeshes.length = 0;
     this.colliderMeshes.length = 0;
+    const previous = this.observed;
+    this.observed = new Set();
     this.scene.traverse(this.collect);
+    // Objects that left the scene stop being watched, however they left.
+    for (const object of previous) if (!this.observed.has(object)) this.unobserve(object);
     this.dirty = false;
     this.generation = globalGeneration;
     this.rebuildCount++;

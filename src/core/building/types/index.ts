@@ -128,6 +128,8 @@ export type BuildingTreeKind =
   | 'cypress'
   | 'dead';
 export type PlacedObjectType = 'tree' | 'sakura' | 'flag' | 'fire' | 'billboard' | 'model';
+/** What a click does in building edit mode: place a new piece, paint the tile or wall clicked, or erase the piece clicked. */
+export type BuildingTool = 'place' | 'paint' | 'erase';
 export type TileShapeType = 'box' | 'stairs' | 'round' | 'ramp';
 export type BuildingModelFallbackKind =
   | 'door'

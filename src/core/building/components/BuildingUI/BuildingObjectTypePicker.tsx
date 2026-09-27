@@ -25,7 +25,8 @@ export function BuildingObjectTypePicker({ ui }: { ui: BuildingUIState }) {
               onClick={() => {
                 setSelectedPlacedObjectType('model');
                 setSelectedModelObjectId(item.id);
-                setModelScale(item.defaultScale);
+                // Placing multiplies the catalog's own scale by this one: 1 is the catalog size.
+                setModelScale(1);
                 setModelColor(item.defaultColor);
                 setModelUrl(item.modelUrl ?? '');
               }}

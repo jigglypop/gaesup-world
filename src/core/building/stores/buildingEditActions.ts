@@ -1,3 +1,4 @@
+import { defaultTileObjectConfig } from './buildingModelActions';
 import type { BuildingGet, BuildingSet, BuildingStore } from './buildingStoreTypes';
 import { ensureTileCategory, ensureTileGroupInCategory, installTilePreset, installWallPreset } from './catalogInstall';
 import {
@@ -14,11 +15,51 @@ export function createBuildingEditActions(set: BuildingSet, get: BuildingGet) {
   return {
     setEditMode: (mode) =>
       set((state) => {
+        // The grid is an editing aid: it comes with edit mode and goes when editing ends.
+        if (mode !== 'none') state.showGrid = true;
+        else if (state.editMode !== 'none') state.showGrid = false;
         state.editMode = mode;
-        if (mode !== 'none') {
-          state.showGrid = true;
-        }
       }),
+
+    setBuildingTool: (tool) =>
+      set((state) => {
+        state.buildingTool = tool;
+        state.selectedTileId = null;
+        state.selectedWallId = null;
+        state.selectedBlockId = null;
+      }),
+
+    applyToolTo: (id) => {
+      const state = get();
+      const { buildingTool: tool, editMode } = state;
+      if (tool === 'place') return;
+      const erase = tool === 'erase';
+      if (editMode === 'object' || editMode === 'block') {
+        if (!erase) return;
+        if (editMode === 'object') state.removeObject(id);
+        else state.removeBlock(id);
+        return;
+      }
+      if (editMode === 'tile') {
+        const group = [...state.tileGroups.values()].find((entry) => entry.tiles.some((tile) => tile.id === id));
+        if (!group) return;
+        if (erase) return state.removeTile(group.id, id);
+        const floor = state.selectedTileGroupId ? state.tileGroups.get(state.selectedTileGroupId) : undefined;
+        const materialId = state.currentTileMaterialId ?? floor?.floorMeshId;
+        const objectType = state.selectedTileObjectType;
+        const objectConfig = defaultTileObjectConfig(objectType, state.currentTerrainColor, state.currentTerrainAccentColor);
+        state.updateTile(group.id, id, { ...(materialId ? { materialId } : {}), objectType, ...(objectConfig ? { objectConfig } : {}) });
+        return;
+      }
+      if (editMode === 'wall') {
+        const group = [...state.wallGroups.values()].find((entry) => entry.walls.some((wall) => wall.id === id));
+        if (!group) return;
+        if (erase) return state.removeWall(group.id, id);
+        const target = state.selectedWallGroupId;
+        if (target && target !== group.id && state.wallGroups.has(target)) state.moveWallToGroup(id, target);
+        state.updateWall(target && state.wallGroups.has(target) ? target : group.id, id, { wallKind: state.currentWallKind });
+      }
+    },
 
     setShowGrid: (show) =>
       set((state) => {

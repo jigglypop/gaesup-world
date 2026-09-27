@@ -1,12 +1,12 @@
 import type * as THREE from 'three';
 
 import { tileWorldSize } from '../../model/footprint';
-import type { BuildingBlockConfig, TileConfig, TileGroupConfig, WallConfig, WallGroupConfig } from '../../types';
+import type { BuildingBlockConfig, PlacedObject, TileConfig, TileGroupConfig, WallConfig, WallGroupConfig } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { getBlockTransform } from '../BlockSystem/layout';
 
 export type EditOverlayItem = { id: string; position: THREE.Vector3Tuple; scale: THREE.Vector3Tuple };
-export type EditOverlayMode = 'tile' | 'wall' | 'block';
+export type EditOverlayMode = 'tile' | 'wall' | 'block' | 'object';
 
 /** A wire box a little inside the tile, tall enough to see on flat ground. */
 export function tileEditItem(tile: TileConfig): EditOverlayItem {
@@ -27,15 +27,28 @@ export function blockEditItem(block: BuildingBlockConfig): EditOverlayItem {
   return { id: block.id, position, scale: [scale[0] * 0.82, scale[1] * 0.82, scale[2] * 0.82] };
 }
 
-/** The overlay items of every group the edit mode works on; none outside tile, wall and block editing. */
+/** A wire box around a placed object, as wide as a tree's crown or a character-sized prop. */
+export function objectEditItem(object: PlacedObject): EditOverlayItem {
+  const size = object.config?.size ?? 1.2;
+  const height = Math.max(1.4, size * 0.9);
+  const { x, y, z } = object.position;
+  return { id: object.id, position: [x, y + height / 2, z], scale: [size, height, size] };
+}
+
+/**
+ * The overlay items of every group the edit mode works on; none outside tile, wall and block editing. Objects show only
+ * when `objects` is passed, which the erase tool does.
+ */
 export function buildingEditItems(
   mode: string,
   tileGroups: readonly TileGroupConfig[],
   wallGroups: readonly WallGroupConfig[],
   blocks: readonly BuildingBlockConfig[],
+  objects: readonly PlacedObject[] = [],
 ): EditOverlayItem[] {
   if (mode === 'tile') return tileGroups.flatMap((group) => group.tiles.map(tileEditItem));
   if (mode === 'wall') return wallGroups.flatMap((group) => group.walls.map(wallEditItem));
   if (mode === 'block') return blocks.map(blockEditItem);
+  if (mode === 'object') return objects.map(objectEditItem);
   return [];
 }

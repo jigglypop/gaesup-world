@@ -1,9 +1,10 @@
 import './minihome.css';
 
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { DialogBox, GaesupWorld, InteractionPrompt, ToastHost, useAmbientBgm, useAutoSave, useGameTime, useLoadOnMount } from 'gaesup-world';
 
+import { Decorate } from './Decorate';
 import { Guestbook } from './Guestbook';
 import { minimeOf, Profile } from './Profile';
 import { Scene, type SceneSettings } from './Scene';
@@ -13,11 +14,7 @@ import { createVillage } from './village';
 import { createMinihomeRuntime, modelUrl, type MinimeModel } from './world';
 import { WorldLoading } from './WorldLoading';
 
-// The editor panel loads only when the 꾸미기 tab opens.
-const BuildingUI = lazy(() => import('gaesup-world/building').then((module) => ({ default: module.BuildingUI })));
-
-/** A fixed, north-facing high angle, like a diorama seen from the south. */
-/** A left drag turns the view as a right drag does; a left click without a drag walks there. */
+/** A north-facing high angle, like a diorama seen from the south; a left drag turns it, a left click walks there. */
 const CAMERA = { type: 'thirdPerson', xDistance: -4, yDistance: 10, zDistance: -10, fov: 42, dragOrbit: 'all' } as const;
 
 type Tab = 'home' | 'decorate' | 'guestbook';
@@ -63,6 +60,11 @@ export default function Minihome() {
   const urls = useMemo(() => ({ characterUrl: modelUrl(minime) }), [minime]);
   const changeSettings = useCallback((next: Partial<SceneSettings>) => setSettings((current) => ({ ...current, ...next })), [setSettings]);
   const resetIsland = () => runtime.buildingStore.getState().hydrate(createVillage());
+  // A finished room is saved at once rather than at the next autosave.
+  const finishDecorating = () => {
+    runtime.save.save().catch((error: unknown) => console.error(error));
+    setTab('home');
+  };
   const me = minimeOf(minime);
 
   return (
@@ -103,21 +105,18 @@ export default function Minihome() {
                   <Clock />
                   <span className="mh-chip">🏝️ 미니홈피 섬</span>
                 </div>
-                <div className="mh-keys">
-                  {KEYS.map(([key, label]) => (
-                    <span key={key}><kbd>{key}</kbd>{label}</span>
-                  ))}
-                </div>
+                {tab !== 'decorate' && (
+                  <div className="mh-keys">
+                    {KEYS.map(([key, label]) => (
+                      <span key={key}><kbd>{key}</kbd>{label}</span>
+                    ))}
+                  </div>
+                )}
               </div>
               <InteractionPrompt enabled={tab === 'home'} />
               <DialogBox />
               <ToastHost position="top-center" />
-              {tab === 'decorate' && (
-                <Suspense fallback={null}>
-                  <BuildingUI onClose={() => setTab('home')} />
-                  <button className="mh-reset" onClick={resetIsland}>섬 처음 모습으로</button>
-                </Suspense>
-              )}
+              {tab === 'decorate' && <Decorate onDone={finishDecorating} onReset={resetIsland} />}
               {tab === 'guestbook' && <Guestbook author="개숲이" emoji={me.emoji} onClose={() => setTab('home')} />}
             </main>
 

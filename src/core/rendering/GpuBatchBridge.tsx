@@ -138,7 +138,10 @@ export function GpuBatchBridge({
       for (const child of [...object.children]) remove(child);
     };
     const added = (event: { child: Object3D }) => add(event.child);
-    const removed = (event: { child: Object3D }) => remove(event.child);
+    // three reuses one event object, and a listener that removes objects during its dispatch clears `child`.
+    const removed = (event: { child: Object3D | null }) => {
+      if (event.child) remove(event.child);
+    };
     add(group);
     tick.current = (matrix, coordinateSystem, reversed) => {
       frustum.setFromProjectionMatrix(matrix, coordinateSystem, reversed);

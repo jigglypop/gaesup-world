@@ -28,6 +28,8 @@ const LOOKS = {
   ],
 } as const;
 const SELECTED_SCALE = { wire: 1, marker: 1.28 } as const;
+/** Editor helpers are not scenery: the camera's collision passes through them. */
+const EDITOR_HELPER = { intangible: true };
 
 function createMaterial(kind: EditOverlayKind, selected: boolean): THREE.Material {
   const look = LOOKS[kind][selected ? 1 : 0];
@@ -78,7 +80,7 @@ export function EditOverlay({ kind, items, selectedId = null, onSelect }: EditOv
   const selectedScale = SELECTED_SCALE[kind];
 
   return (
-    <group name="building-edit-overlay">
+    <group name="building-edit-overlay" userData={EDITOR_HELPER}>
       {others.length > 0 && (
         <instancedMesh key={capacity} ref={meshRef} args={[geometry, materials[0], capacity]} onClick={pick} />
       )}

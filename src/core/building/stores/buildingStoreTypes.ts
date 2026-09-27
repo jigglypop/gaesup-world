@@ -4,6 +4,7 @@ import type { BuildingSpatialIndex } from './spatialIndex';
 import type {
   BuildingBlockConfig,
   BuildingSerializedState,
+  BuildingTool,
   BuildingSystemState,
   BuildingTreeKind,
   BuildingWallKind,
@@ -33,6 +34,15 @@ export interface BuildingStore extends BuildingSystemState {
 
   hoverPosition: Position3D | null;
   setHoverPosition: (position: Position3D | null) => void;
+
+  /**
+   * What a click does in the edit mode: `place` new pieces (default); `paint` the tile clicked with the current floor
+   * and ground cover, or the wall clicked with the current wall type and kind; `erase` the piece clicked, objects too.
+   */
+  buildingTool: BuildingTool;
+  setBuildingTool: (tool: BuildingTool) => void;
+  /** Paints or erases the piece of the current edit mode with this id, as the tool says; nothing for `place`. */
+  applyToolTo: (id: string) => void;
 
   currentTileMultiplier: number;
   setTileMultiplier: (multiplier: number) => void;

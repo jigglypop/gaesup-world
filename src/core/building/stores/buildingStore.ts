@@ -53,6 +53,7 @@ export function createBuildingStore() {
     selectedWallId: null,
     selectedTileId: null,
     selectedBlockId: null,
+    buildingTool: 'place',
     currentFlagWidth: 1.5,
     currentFlagHeight: 1.0,
     currentFlagImageUrl: '',

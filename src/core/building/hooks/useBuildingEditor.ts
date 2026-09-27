@@ -89,14 +89,15 @@ export function useBuildingEditor() {
   const setSelectedBlockId = useBuildingStore((s) => s.setSelectedBlockId);
   const setHoverPosition = useBuildingStore((s) => s.setHoverPosition);
 
-  const raycastGround = useCallback(() => {
+  /** The ground point under the pointer, snapped to the building grid or, given `step`, to that finer one. */
+  const raycastGround = useCallback((step?: number) => {
     _vec2.set(mouseRef.current.x, mouseRef.current.y);
     raycaster.setFromCamera(_vec2, camera);
-    if (raycaster.ray.intersectPlane(_groundPlane, _intersection)) {
-      return snapPosition({ x: _intersection.x, y: 0, z: _intersection.z });
-    }
-    return null;
-  }, [camera, raycaster, snapPosition]);
+    if (!raycaster.ray.intersectPlane(_groundPlane, _intersection)) return null;
+    const point = { x: _intersection.x, y: 0, z: _intersection.z };
+    if (!step || !buildingStore.getState().snapToGrid) return snapPosition(point);
+    return { x: Math.round(point.x / step) * step, y: 0, z: Math.round(point.z / step) * step };
+  }, [buildingStore, camera, raycaster, snapPosition]);
 
   /**
    * Box-style stacking hover: snaps to the XZ grid first, then asks the store
@@ -134,7 +135,9 @@ export function useBuildingEditor() {
     const mode = buildingStore.getState().editMode;
     if (mode === 'tile' || mode === 'block' || mode === 'npc') {
       setHoverPosition(raycastStackable());
-    } else if (mode === 'wall' || mode === 'object') {
+    } else if (mode === 'object') {
+      setHoverPosition(raycastGround(TILE_CONSTANTS.OBJECT_SNAP_SIZE));
+    } else if (mode === 'wall') {
       setHoverPosition(raycastGround());
     } else {
       setHoverPosition(null);
@@ -165,7 +168,8 @@ export function useBuildingEditor() {
   const placeTile = useCallback(() => {
     const {
       editMode: mode,
-      selectedTileGroupId: groupId,
+      selectedTileGroupId,
+      tileGroups,
       checkTilePosition,
       getSupportHeightAt,
       currentTileMultiplier,
@@ -174,6 +178,9 @@ export function useBuildingEditor() {
       currentTileRotation,
       hoverPosition,
     } = buildingStore.getState();
+    // A selected group the world's own data no longer has gives way to the world's first group.
+    const known = !selectedTileGroupId || !tileGroups || tileGroups.has(selectedTileGroupId);
+    const groupId = known ? selectedTileGroupId : tileGroups.keys().next().value ?? selectedTileGroupId;
     if (mode !== 'tile' || !groupId || !hoverPosition) return;
 
     // Stacking semantics:
@@ -274,6 +281,10 @@ export function useBuildingEditor() {
       currentModelColor,
     } = buildingStore.getState();
     if (mode !== 'object' || selectedPlacedObjectType === 'none' || !hoverPosition) return;
+    // One object to a spot: a click where one stands does not stack another on it.
+    const spot = TILE_CONSTANTS.OBJECT_SNAP_SIZE / 2;
+    if (buildingStore.getState().objects.some((object) =>
+      Math.abs(object.position.x - hoverPosition.x) < spot && Math.abs(object.position.z - hoverPosition.z) < spot)) return;
 
     let tileY = 0;
     const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;

@@ -178,7 +178,8 @@ export const plaza: BuildingSerializedState = {
 
 | 영역 | 필드 / 액션 |
 |---|---|
-| 모드 | `editMode`: `'none' \| 'world' \| 'wall' \| 'tile' \| 'block' \| 'object' \| 'npc'`. `setEditMode(mode)`(`none`이 아니면 격자를 켠다), `isInEditMode()` |
+| 모드 | `editMode`: `'none' \| 'world' \| 'wall' \| 'tile' \| 'block' \| 'object' \| 'npc'`. `setEditMode(mode)`(`none`이 아니면 격자를 켜고, 편집을 마치면 끈다), `isInEditMode()` |
+| 도구 | `buildingTool`: `'place'`(기본) \| `'paint'` \| `'erase'`, `setBuildingTool(tool)`(선택을 푼다), `applyToolTo(id)`: 지금 모드의 조각을 칠하거나 지운다. 칠하기는 타일에 `currentTileMaterialId`(없으면 선택한 바닥 그룹의 재질)와 `selectedTileObjectType` 덮개를, 벽에 선택한 벽 그룹과 `currentWallKind`를 준다. 지우기는 오브젝트·타일·벽·블록 모두 |
 | 격자 | `setShowGrid`, `setGridSize`(기본 100m), `setSnapToGrid`(기본 켬), `snapPosition(position)` |
 | 커서 | `hoverPosition`, `setHoverPosition` |
 | 타일 | `currentTileMultiplier` / `setTileMultiplier`(패널은 1–4), `currentTileHeight` / `setTileHeight`(0–6 정수, 계단·경사는 최소 1), `currentTileShape` / `setTileShape`, `currentTileRotation` / `setTileRotation`, `currentTileMaterialId` / `setCurrentTileMaterialId`, `selectedTileObjectType` / `setSelectedTileObjectType`(지형별 기본 색도 바꾼다), `setTerrainColors(color, accent?)` |
@@ -192,21 +193,21 @@ export const plaza: BuildingSerializedState = {
 
 `BuildingController`가 편집 모드에서 캔버스 입력을 받는다(`src/core/building/hooks/useBuildingEditor.ts`).
 
-- 커서: 마우스 광선을 y=0 평면과 교차시키고 스냅한다. `tile`·`block`·`npc` 모드는 그 자리의 쌓기 높이를 `y`로 쓴다.
-- 좌클릭(3px 넘게 끌면 무시, 연속 배치 간격 150ms)이 모드에 따라 배치한다.
+- 커서: 마우스 광선을 y=0 평면과 교차시키고 스냅한다(4m 격자, `object` 모드는 1m 격자 `OBJECT_SNAP_SIZE`). `tile`·`block`·`npc` 모드는 그 자리의 쌓기 높이를 `y`로 쓴다.
+- 좌클릭(3px 넘게 끌면 무시, 연속 배치 간격 150ms)이 `place` 도구일 때 모드에 따라 배치한다. `paint`·`erase` 도구는 아무것도 놓지 않고, 강조 표시를 누른 조각에 `applyToolTo`를 부른다. 배치 미리보기는 `place` 도구에서만 보인다.
 
 | 모드 | 클릭 결과 |
 |---|---|
 | `wall` | 선택된 벽 그룹에 `currentWallRotation`·`currentWallKind`로 벽 추가. 같은 변에 벽이 있으면 무시 |
 | `tile` | `box`·`round`는 쌓기 높이 + `currentTileHeight`, `stairs`·`ramp`는 높이 `max(1, currentTileHeight)`로 타일 추가. 겹치면 무시 |
 | `block` | `currentTileMultiplier`×1×`currentTileMultiplier` 블록 추가. 겹치면 무시 |
-| `object` | 선택된 종류의 오브젝트를 그 자리 가장 높은 타일 위에 추가 |
+| `object` | 선택된 종류의 오브젝트를 그 자리 가장 높은 타일 위에 추가. 그 1m 칸에 오브젝트가 이미 있으면 무시 |
 | `npc` | `NPCSystem`이 처리한다. 템플릿을 고른 상태면 NPC 생성, NPC를 고른 상태면 그곳으로 이동(Shift+클릭은 생성) |
 | `world` | 배치 없음. 환경 설정만 |
 
-- 키: 방향키가 `wall`·`tile`·`object` 모드의 회전을 0°/90°/180°/270°로 정하고, `tile`·`block` 모드에서 Q/E가 높이를 1단계 내리고 올린다.
+- 키: 방향키가 `wall`·`tile`·`object` 모드의 회전을 0°/90°/180°/270°로 정하고 R이 90°씩 더 돌린다. `tile`·`block` 모드에서 Q/E가 높이를 1단계 내리고 올린다.
 - 에디터 패널의 타일 프리셋·커스텀 타일을 캔버스로 끌어다 놓으면 `tile` 모드로 바꾸고 그 자리에 놓는다(`BUILDING_TILE_PRESET_DRAG_TYPE`, `BUILDING_TILE_GROUP_DRAG_TYPE`).
-- 편집 중 기존 타일·벽·블록의 강조 표시를 클릭하면 선택된다(같은 모드일 때). 삭제는 패널 버튼(또는 `remove*` 액션)으로 한다.
+- 편집 중 기존 타일·벽·블록의 강조 표시를 클릭하면 `place` 도구에서는 선택되고(같은 모드일 때), `paint`·`erase` 도구에서는 칠하거나 지운다. `erase` 도구의 `object` 모드는 오브젝트마다 와이어 상자를 띄운다. 강조 표시와 미리보기는 카메라 충돌에서 빠진다(`userData.intangible`).
 - 편집 모드(`none` 외)에서는 조작 캐릭터가 사라지고 키 입력이 막힌다.
 - 콜라이더: 타일은 항상, 벽은 `wall` 모드가 아닐 때, 블록은 `block` 모드가 아닐 때 만든다(편집 중 클릭을 막지 않도록). 같은 높이·1칸·직각 타일은 사각형으로 합쳐 콜라이더 수를 줄인다.
 - 그리기: 네이티브 WebGPU에서는 재질별 인스턴스 배치를 GPU에 상주시키고(`GpuBatchBridge`), 아니면 `BuildingVisibilityDriver`가 그룹 단위로 컬링한다. 자세한 내용은 [rendering.md](rendering.md).
@@ -276,7 +277,7 @@ import { Editor } from 'gaesup-world/editor';
 
 ### `BuildingUI` (`gaesup-world/building`)
 
-에디터 셸 없이 쓰는 가벼운 떠 있는 건축 패널이다. props: `onClose?`, `canEdit?`(기본 `true`), `npcPanel?`(기본 `false`), `extensionPanel?`.
+에디터 셸 없이 쓰는 가벼운 떠 있는 건축 패널이다. props: `onClose?`, `canEdit?`(기본 `true`), `npcPanel?`(기본 `false`), `extensionPanel?`. 편집 모드에서만 보이고 스스로 편집을 시작하는 버튼은 없으므로, 올린 쪽이 `setEditMode`로 편집을 켠다. 예제 minihome의 꾸미기 탭은 이 패널 대신 같은 store 액션(`setEditMode`, `setBuildingTool`, 카탈로그·프리셋 선택)으로 만든 자체 도크를 쓴다.
 
 ## 저장
 

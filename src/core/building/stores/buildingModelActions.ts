@@ -16,7 +16,7 @@ import type { TileConfig, TileObjectType, WallConfig, WallGroupConfig } from '..
 
 const DEFAULT_GRASS_DENSITY = 90;
 
-function defaultTileObjectConfig(
+export function defaultTileObjectConfig(
   objectType: TileObjectType | undefined,
   terrainColor: string,
   terrainAccentColor: string,
