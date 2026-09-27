@@ -368,6 +368,7 @@ function NPCTalkTarget({ npcId, label, treeId }: { npcId: string; label: string;
 - 런타임 월드: `runtime.gameplayEvents`(엔진)와 `runtime.gameplayEventRegistry`(조건·액션 처리기). `setup()` 전과 저장 복원 중에는 멈춰 있고, 상태가 저장 키 `gameplay-events`로 자동 저장된다. `showDialog`는 그 월드의 대화 store, `toast`는 토스트, `emit`은 플러그인 이벤트 버스(`runtime.plugins.context.events`)로 간다.
 - 직접 만들기: `new GameplayEventEngine({ blueprints?, registry?, state?, now? })`(`gaesup-world` 또는 `gaesup-world/gameplay`). 레지스트리를 주지 않으면 전역 기본 레지스트리를 쓰고, 이 경로의 `showDialog`는 legacy 전역 대화 store로 간다.
 - 토스트는 `<ToastHost />`(props `position` 기본 `'top-right'`, `max` 기본 5)가 있어야 보인다. 토스트 store는 월드 구분 없는 전역 하나다(`notify(kind, text)`로 직접 띄울 수도 있다).
+- 테마: `DialogBox`·`InteractionPrompt`·`ToastHost`는 CSS 변수로 모양을 바꾼다. 지정하지 않으면 어두운 글래스 기본값이다. `--gaesup-ui-font`, `--gaesup-ui-surface`(배경), `--gaesup-ui-text`, `--gaesup-ui-border`, `--gaesup-ui-control`(버튼 배경), `--gaesup-ui-accent`·`--gaesup-ui-accent-text`(화자·키 배지), `--gaesup-ui-accent-strong`(선택지 번호), `--gaesup-ui-shadow`, `--gaesup-ui-radius`, `--gaesup-ui-blur`, 토스트 종류별 배경 `--gaesup-toast-info|success|warn|error`. 세 컴포넌트는 `position: fixed`라, `transform`이 있는 조상(예: `transform: translateZ(0)`인 무대) 안에 두면 그 조상 기준으로 놓인다. minihome의 `minihome.css`가 밝은 글래스 테마 예시다.
 
 ### 블루프린트 `GameplayEventBlueprint`
 
