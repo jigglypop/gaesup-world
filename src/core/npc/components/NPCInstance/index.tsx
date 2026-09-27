@@ -14,6 +14,7 @@ import { useClipTransition } from '../../../animation/hooks/useClipTransition';
 import { useSharedAnimations } from '../../../animation/hooks/useSharedAnimations';
 import type { ImportedMaterialPolicy } from '../../../assets/materialPolicy';
 import { CompileGate } from '../../../rendering/CompileGate';
+import { useContactShadow } from '../../../rendering/lighting/ContactShadows';
 import { castSubtreeNearShadowOnly } from '../../../rendering/sky/nearShadow';
 import { useSceneToon } from '../../../rendering/useSceneToon';
 import { useEngineFrame } from '../../../runtime/frame';
@@ -426,7 +427,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
         args={[capsule.halfHeight, capsule.interactionRadius]}
         position={[0, capsule.y, 0]}
       />
-      <NPCVisual id={instance.id} height={capsule.height} bodyRef={rigidBodyRef}><group
+      <NPCVisual id={instance.id} height={capsule.height} radius={capsule.radius} bodyRef={rigidBodyRef}><group
         ref={groupRef}
         scale={instance.scale}
         {...(onClick
@@ -460,13 +461,15 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
 /** Characters never block the camera or other ray probes, matching `PhysicsEntity`. */
 const INTANGIBLE = { intangible: true };
 
-function NPCVisual({ id, height, bodyRef, children }: {
+function NPCVisual({ id, height, radius, bodyRef, children }: {
   id: string;
   height: number;
+  radius: number;
   bodyRef: React.RefObject<RapierRigidBody | null>;
   children: React.ReactNode;
 }) {
   const visual = useWorldPhysicsInterpolation(bodyRef);
   useNPCView(id, visual, height);
+  useContactShadow(visual, Math.max(0.35, radius * 1.5));
   return <group ref={visual} userData={INTANGIBLE}>{children}</group>;
 }

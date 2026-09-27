@@ -30,7 +30,7 @@ ESM(`import`)과 CJS(`require`) 둘 다 있다. 진입점 목록의 원본은 `p
 
 | 영역 | 주요 이름 |
 |---|---|
-| 월드 조립 | `GaesupWorld`(= `WorldConfigProvider`, 별칭 `World`), `GaesupWorldContent`, `WorldPhysics`, `GaesupController`(= `ControllerWrapper`), `createRenderer`, `isWebGPUAvailable`, `CascadedSun`, `DynamicSky`, `DynamicFog`, `IdleFrameRate`, `QualityProfileProvider`, `useQualityProfile` |
+| 월드 조립 | `GaesupWorld`(= `WorldConfigProvider`, 별칭 `World`), `GaesupWorldContent`, `WorldPhysics`, `GaesupController`(= `ControllerWrapper`), `createRenderer`, `isWebGPUAvailable`, `CascadedSun`, `DynamicSky`, `DynamicFog`, `LightingZone`, `ContactShadows`, `useContactShadow`, `IdleFrameRate`, `QualityProfileProvider`, `useQualityProfile` |
 | 런타임·프레임 | `createGaesupRuntime`, `GaesupRuntimeProvider`, `useGaesupRuntime`, `useEngineFrame`, `FRAME_PHASES`, `useWorldPhysicsStep` |
 | 월드 store | `useGaesupStore`, `useGaesupStoreApi`, `createGaesupStore` |
 | 캐릭터·탈것 | `useStateSystem`, `usePlayerPosition`, `useGaesupController`, `Rideable`, `RideableUI`, `useRideable`, `useTeleport`, `TeleportMarker`, `TeleportOnClick` |

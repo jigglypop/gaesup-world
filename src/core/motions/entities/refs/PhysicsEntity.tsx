@@ -21,6 +21,7 @@ import { useWorldPhysicsInterpolation } from '@core/simulation/physicsContext';
 
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
+import { useContactShadow } from '../../../rendering/lighting/ContactShadows';
 import { useSceneToon } from '../../../rendering/useSceneToon';
 import { useGltfAndSize } from '../../hooks';
 import { useScopedStateManager } from '../../hooks/useStateSystem';
@@ -207,6 +208,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         y: bodyHalfHeight + bodyRadius,
       };
     }, [props.colliderSize, props.componentType, size.x, size.y, size.z, scaleX, scaleY, scaleZ]);
+    // A soft shadow at the feet where `ContactShadows` draws them (indoors, or where no shadow map is drawn).
+    useContactShadow(interpolatedVisual, Math.max(0.35, collider.radius * 1.5));
 
     useEffect(() => {
       if (!props.currentAnimation) return;

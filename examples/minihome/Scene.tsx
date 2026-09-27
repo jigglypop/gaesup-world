@@ -4,20 +4,28 @@ import { Canvas } from '@react-three/fiber';
 
 import {
   CascadedSun,
+  ContactShadows,
   createRenderer,
   GaesupController,
   GaesupWorldContent,
   GameplayArea,
   IdleFrameRate,
   InteractionTracker,
+  LightingZone,
   SkyEnvironment,
   WorldPhysics,
+  type LightingProfile,
   type WorldQuality,
 } from 'gaesup-world';
 import { BuildingController } from 'gaesup-world/building';
 
 import { SPAWN } from './village';
 import { AREAS } from './world';
+
+const MINIROOM = AREAS.find((area) => area.id === 'miniroom')!;
+/** Inside the miniroom most daylight stays out; a warm fill and the ceiling lamp light the room. */
+const ROOM_LIGHT: LightingProfile = { sun: 0.3, fill: 0.72, sky: '#ffe8d2', ground: '#8a6d58', environment: 0.45 };
+const ROOM_LAMP = { color: '#ffcf8f', intensity: 9, distance: 10, height: 3 };
 
 export type SceneSettings = {
   quality: WorldQuality;
@@ -44,6 +52,8 @@ export function Scene({ quality, postProcessing, idleThrottle }: SceneSettings) 
           </WorldPhysics>
           <InteractionTracker />
           {AREAS.map((area) => <GameplayArea key={area.id} {...area} />)}
+          <LightingZone center={MINIROOM.center} size={MINIROOM.size} profile={ROOM_LIGHT} lamp={ROOM_LAMP} />
+          <ContactShadows />
         </GaesupWorldContent>
       </Suspense>
     </Canvas>

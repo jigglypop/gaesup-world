@@ -64,6 +64,8 @@ export type { DynamicSkyProps, SkyKeyframe } from './rendering/sky';
 export { CascadedSun } from './rendering/sky/CascadedSun';
 export type { CascadedSunProps, CascadedSunQuality } from './rendering/sky/CascadedSun';
 export { createSkyEnvironmentTexture, SkyEnvironment } from './rendering/sky/SkyEnvironment';
+export { ContactShadows, LightingZone, useContactShadow } from './rendering/lighting';
+export type { ContactShadowsProps, LightingProfile, LightingZoneProps } from './rendering/lighting';
 export type { SkyEnvironmentProps } from './rendering/sky/SkyEnvironment';
 export { ColorGrade } from './rendering/postprocess/ColorGrade';
 export type { ColorGradeProps, GradePreset } from './rendering/postprocess/ColorGrade';

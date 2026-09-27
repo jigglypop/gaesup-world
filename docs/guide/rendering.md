@@ -184,6 +184,21 @@ export function ShadowAware() {
 - 해 방향은 약 0.2° 이상 바뀔 때만 옮긴다. 분 단위로 그림자 맵이 흔들리지 않게 하기 위해서다.
 - 그림자는 cascade 없이 한 장이다.
 
+### 조명 구역: `LightingZone`
+
+`<LightingZone center size profile lamp? blendSeconds? />`(루트 export, `src/core/rendering/lighting`)는 조명 볼륨이다. 플레이어(런타임 `stateManager`의 활성 캐릭터)가 상자 안에 있으면 장면의 빛을 `profile` 쪽으로 `blendSeconds`(기본 0.6초)에 걸쳐 섞고, 나가면 되돌린다. 언리얼의 post process volume처럼 값을 덮어쓰는 방식이다.
+
+- `profile: LightingProfile`: `sun`(directional 빛 세기 배율), `fill`(hemisphere·ambient 빛 세기 배율), `sky`·`ground`(그 색이 향할 색), `environment`(`scene.environmentIntensity` 배율). 첫 구역이 섞이기 시작할 때의 값을 기준으로 곱하고, 마지막 구역이 빠지면 그 값으로 되돌린다. 구역이 겹치면 가장 많이 섞인 구역이 정한다.
+- `lamp: { color?, intensity, distance?, height? }`: 구역 안의 점광원(바닥에서 `height`, 기본 2.6m). 처음부터 세기 0으로 장면에 있어 들어갈 때 빛 개수가 바뀌지 않으므로 셰이더를 다시 만들지 않는다. 그림자는 없다.
+- 예제 미니룸: 해 30%, 따뜻한 반구광 72%, 환경광 45%, 천장 등 하나.
+
+### 접지 그림자: `ContactShadows`
+
+`<ContactShadows max? opacity? always? />`는 `useContactShadow(ref, radius)`로 등록한 캐릭터의 발밑에 부드러운 원판 그림자를 그린다. 플레이어(`PhysicsEntity`)와 NPC는 이미 등록한다. 인스턴스 하나라 draw 하나이고, 카메라에서 가까운 `max`(기본 32)개까지 그린다.
+
+- 기본은 조명 구역이 섞인 만큼만 보인다. 실내에서 해가 줄어 해 그림자가 흐려질 때 캐릭터를 바닥에 붙여 준다. 밖에서는 그리지 않는다(draw 0). 그림자 맵을 전혀 그리지 않는 장면이면 `always`를 켠다.
+- 캐릭터가 높이를 0.15초 넘게 유지해야 그 높이를 바닥으로 본다. 점프하면 바닥에 남은 원판이 높이에 따라 작아진다(2.5m에서 사라짐).
+
 ## 안개: `DynamicFog`
 
 게임 시간과 날씨로 `scene.fog`(`THREE.Fog`)를 조절한다(`src/core/rendering/fog/DynamicFog.tsx`). `Canvas` 안 어디에나 한 번 둔다.
