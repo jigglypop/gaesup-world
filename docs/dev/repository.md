@@ -242,10 +242,11 @@ npm 스크립트 전체와 검증 체인은 [verification.md](verification.md)�
 | `lib/devServer.cjs` | 빈 포트에 Vite dev/preview 띄우기, `GAESUP_PROBE_URL`, WebGPU Chrome 실행, 페이지 오류 수집 | `browser-smoke.cjs`, 측정([measurement.md](measurement.md)) |
 | `performance/inventory.mjs` | `src/core` 모듈 정적 인벤토리(frame·구독·직렬화·GPU·할당 표지 수) → `.artifacts/performance/inventory/<시각>/` | `audit:core`, CI checks(산출물 업로드) |
 | `performance/source-identity.mjs` | 소스·설정·잠금 파일의 내용 해시와 환경 정보 | `inventory.mjs` |
-| `assets/cli.mjs` | 생산 자산 CLI: `doctor`, `generate`, `resume`, `build`, `validate`, `approve`, `publish` | `assets:production` |
+| `assets/cli.mjs` | 생산 자산 CLI: `doctor`, `generate`, `resume`, `build`, `validate`, `approve`, `publish`, 인물용 `optimize --preset figure`(`--matte`, `--dilate`, `--budget`, `--texel-density`, `--add-clip 이름 --from 기증.glb#클립`), `inspect [파일·폴더…]`(PASS/FAIL, `--render`로 Blender 검토 시트, `--json`), `generate-character <id>`(`--views`로 참고 그림, Tripo 생성, `--dry-run`, `--publish`). 키는 환경 변수나 git 무시된 `.env`의 `TRIPO_API_KEY`·`OPENAI_API_KEY` | `assets:production` |
 | `assets/import-kaykit.mjs` | KayKit CC0 참조 자산을 받아 `public/gltf/kaykit`에 정리 | `assets:references` |
 | `assets/build.mjs`, `meshy.mjs`, `publish.mjs`, `contract.mjs`, `export.py`, `test-fixtures.mjs` | Blender 빌드·검증, Meshy 호출, 게시, 라이브러리 계약(`src/core/assets/production/index.ts`를 트랜스파일해 그대로 실행), headless Blender 스크립트, 테스트 GLB | CLI 내부 |
-| `assets/*.test.mjs`(2개) | 자산 도구 테스트(`node --test`) | `test:asset-tools` → `verify`, CI jest |
+| `assets/figure.mjs`, `inspect.mjs`, `tripo.mjs`, `render-figure.py` | 인물 preset(dedup·prune·resample·meshopt, rest-pose 스텁 제거, `--matte`면 MR 맵 제거, 삼각형 예산 simplify, 클립 이름 정규화, 법선 맵 절반 크기 무손실 WebP, UV 섬 dilation, 다른 리그의 idle 이식), 인물 검사(`inspectFigure`), Tripo 캐릭터 생성(재개 가능한 후보), Blender 검토 시트 | CLI 내부 |
+| `assets/*.test.mjs`(3개) | 자산 도구 테스트(`node --test`) | `test:asset-tools` → `verify`, CI jest |
 | `release/run.mjs` | semantic-release 실행, 릴리스 manifest(`.artifacts/release/manifest.json`) | CI release |
 | `release/registry.mjs` | npm 레지스트리에 버전이 보일 때까지 기다리고 tarball 무결성 확인 | CI release |
 | `release/consumer.mjs` | 레지스트리 tarball로 `verify-package-consumer.cjs` 실행(무결성 고정, receipt) | CI release |

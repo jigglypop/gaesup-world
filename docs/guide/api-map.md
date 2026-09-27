@@ -104,7 +104,7 @@ ESM(`import`)과 CJS(`require`) 둘 다 있다. 진입점 목록의 원본은 `p
 
 ### `gaesup-world/assets`
 
-`useAssetStore`, `useAssetStoreApi`, `createAssetStore`, `selectAssetsByKind`, `selectAssetsBySlot`, `GLTFAssetCache`, `gltfAssetCache`, `HttpAssetSource`, `ManifestAssetSource`, `SEED_ASSETS`, `AssetPreviewCanvas`, `inspectModel`, `validateModelStats`, `DEFAULT_ASSET_IMPORT_LIMITS`, `validateAssetManifest`, `assetPublicationBlockers`, `assetManifestToRecord`, `ASSET_BUDGET_PROFILES`, `collectAssetReferences`, `findMissingAssetReferences`, `buildAssetDependencyGraph`, `assetToMeshConfig`, `createScopedAssetMeshConfig`, `createScopedBuildingMeshId`, `assetApprovalSubject`. 자산 카탈로그 store는 지금 모듈 전역이다(PRD ISO-1).
+`useAssetStore`, `useAssetStoreApi`, `createAssetStore`, `selectAssetsByKind`, `selectAssetsBySlot`, `GLTFAssetCache`, `gltfAssetCache`, `HttpAssetSource`, `ManifestAssetSource`, `SEED_ASSETS`, `AssetPreviewCanvas`, `inspectModel`, `validateModelStats`, `DEFAULT_ASSET_IMPORT_LIMITS`, `inspectFigure`(리그 인물 검사: 핵심 뼈, 가중치, +Z 방향, 움직이는 클립, idle·걷기에서 팔 내림, 예산), `DEFAULT_FIGURE_LIMITS`, `smoothSeamNormals`(UV 이음선에서 갈라진 법선을 주름 각도 안에서 평균), `validateAssetManifest`, `assetPublicationBlockers`, `assetManifestToRecord`, `ASSET_BUDGET_PROFILES`, `collectAssetReferences`, `findMissingAssetReferences`, `buildAssetDependencyGraph`, `assetToMeshConfig`, `createScopedAssetMeshConfig`, `createScopedBuildingMeshId`, `assetApprovalSubject`. 자산 카탈로그 store는 지금 모듈 전역이다(PRD ISO-1).
 
 ### `gaesup-world/avatar`
 

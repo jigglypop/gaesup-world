@@ -1,24 +1,77 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { lstat, mkdir, readFile, realpath } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { lstat, mkdir, readdir, readFile, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { buildDelivery, validateDeliveryGlb } from './build.mjs';
 import { contract } from './contract.mjs';
+import { buildFigureFile } from './figure.mjs';
+import { formatReport, inspectFile, renderSheets } from './inspect.mjs';
 import { generateCandidate, resumeCandidate, writeJson } from './meshy.mjs';
 import { publishAsset } from './publish.mjs';
+import { drawViews, generateCharacter, planCharacter } from './tripo.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const WORK = path.join(ROOT, '.asset-work');
+// Provider keys come from the environment or the git-ignored .env, never from manifests.
+if (existsSync(path.join(ROOT, '.env'))) process.loadEnvFile(path.join(ROOT, '.env'));
 const BLENDER =
   process.env.GAESUP_BLENDER ?? 'C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe';
-const [command, ...args] = process.argv.slice(2);
+const [command, ...rest] = process.argv.slice(2);
+const FLAGS = new Set(['--matte', '--dilate', '--render', '--dry-run', '--publish', '--json']);
+/** Positional arguments, and `--name value` options (`--flag` alone for FLAGS). */
+const args = [];
+const options = {};
+function parseArguments() {
+  for (let index = 0; index < rest.length; index++) {
+    const arg = rest[index];
+    if (!arg.startsWith('--')) args.push(arg);
+    else if (FLAGS.has(arg)) options[arg.slice(2)] = true;
+    else if (index + 1 < rest.length) options[arg.slice(2)] = rest[++index];
+    else throw new Error(`${arg} needs a value`);
+  }
+}
 const json = async (file) => JSON.parse(await readFile(file, 'utf8'));
 const required = (index) => {
   if (!args[index]) throw new Error(`Missing argument ${index + 1}`);
   return args[index];
 };
+const number = (name) => {
+  if (options[name] === undefined) return undefined;
+  const value = Number(options[name]);
+  if (!(value > 0)) throw new Error(`--${name} needs a positive number`);
+  return value;
+};
+const print = (value) => process.stdout.write(`${typeof value === 'string' ? value : JSON.stringify(value, null, 2)}\n`);
+
+/** GLB paths from arguments; a directory stands for the GLBs directly inside it. */
+async function glbFiles(paths) {
+  const files = [];
+  for (const entry of paths) {
+    if (!(await stat(entry)).isDirectory()) files.push(entry);
+    else for (const name of (await readdir(entry)).sort()) if (name.endsWith('.glb')) files.push(path.join(entry, name));
+  }
+  return files;
+}
+
+/** Inspects figures, prints one PASS/FAIL block each and, with --render, writes Blender review sheets. */
+async function inspectFigures(files) {
+  const reports = [];
+  for (const file of files) {
+    const report = await inspectFile(file);
+    reports.push(report);
+    if (!options.json) print(formatReport(file, report));
+  }
+  if (options.json) print(files.map((file, index) => ({ file, ...reports[index] })));
+  if (options.render) {
+    const sheets = await renderSheets(files, path.resolve(options.out ?? path.join(WORK, 'inspection')), BLENDER);
+    if (!options.json) print(`sheets: ${sheets.join(', ')}`);
+  }
+  if (reports.some((report) => report.verdict === 'fail')) process.exitCode = 1;
+  return reports;
+}
 
 async function inspect(directory) {
   const manifest = await json(path.join(directory, 'manifest.json'));
@@ -59,6 +112,7 @@ async function inspect(directory) {
 }
 
 async function main() {
+  parseArguments();
   if (command === 'doctor') {
     const version = spawnSync(BLENDER, ['--background', '--version'], {
       encoding: 'utf8',
@@ -72,6 +126,8 @@ async function main() {
               ? version.stdout.split('\n')[0]
               : 'unavailable; set GAESUP_BLENDER',
           meshyCredentials: Boolean(process.env.MESHY_API_KEY),
+          tripoCredentials: Boolean(process.env.TRIPO_API_KEY),
+          openaiCredentials: Boolean(process.env.OPENAI_API_KEY),
           blenderMcp: 'not verified: connect through MCP client',
           meshopt: 'available',
           ktx2: 'encoder not configured',
@@ -173,8 +229,56 @@ async function main() {
     );
     return;
   }
+  if (command === 'optimize') {
+    if (options.preset !== 'figure') throw new Error('optimize needs --preset figure');
+    if (options['add-clip'] && !options.from) throw new Error('--add-clip needs --from donor.glb#Clip');
+    print(
+      await buildFigureFile(required(0), required(1), {
+        matte: Boolean(options.matte),
+        dilate: Boolean(options.dilate),
+        budget: number('budget'),
+        texelDensity: number('texel-density'),
+        addClip: options['add-clip'] && { name: options['add-clip'], from: options.from, poseRef: options['pose-ref'] },
+      }),
+    );
+    return;
+  }
+  if (command === 'inspect') {
+    await inspectFigures(await glbFiles(args.length ? args : [path.join(ROOT, 'public', 'gltf')]));
+    return;
+  }
+  if (command === 'generate-character') {
+    const id = required(0);
+    const directory = path.join(WORK, 'characters');
+    if (options['dry-run']) {
+      print(await planCharacter({ directory, id }));
+      return;
+    }
+    if (options.views !== undefined) {
+      const views = await drawViews({ directory, id, description: options.views, style: options.style, apiKey: process.env.OPENAI_API_KEY });
+      print({ views, next: 'review the views, then run generate-character again without --views' });
+      return;
+    }
+    const result = await generateCharacter({
+      directory,
+      id,
+      apiKey: process.env.TRIPO_API_KEY,
+      log: (line) => process.stdout.write(`${line}\n`),
+      inspect: async (file) => (await inspectFigures([file]))[0],
+      publish:
+        options.publish &&
+        (async (file) => {
+          const target = path.join(ROOT, 'public', 'gltf', `${id}.glb`);
+          await buildFigureFile(file, target, { matte: true });
+          if ((await inspectFigures([target]))[0].verdict !== 'pass') throw new Error(`${target} failed inspection`);
+          return path.relative(ROOT, target);
+        }),
+    });
+    print({ file: result.file, verdict: result.report.verdict, published: result.published });
+    return;
+  }
   throw new Error(
-    'Usage: cli.mjs doctor | generate <category> <image> <approval.json> | resume <job.json> | build <source.blend> <output> <specification.json> | validate <directory> | approve <directory> <gate> <evidence.json> | publish <directory>',
+    'Usage: cli.mjs doctor | generate <category> <image> <approval.json> | resume <job.json> | build <source.blend> <output> <specification.json> | validate <directory> | approve <directory> <gate> <evidence.json> | publish <directory> | optimize <input.glb> <output.glb> --preset figure [--matte] [--dilate] [--budget n] [--texel-density px/m] [--add-clip idle --from donor.glb#Clip --pose-ref walk] | inspect [glb|directory ...] [--render] [--out dir] [--json] | generate-character <id> [--views "<description>" [--style image]] [--dry-run] [--publish] [--render]',
   );
 }
 

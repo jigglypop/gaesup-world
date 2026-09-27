@@ -12,6 +12,14 @@ import sharp from 'sharp';
 import { contract } from './contract.mjs';
 import { writeJson } from './meshy.mjs';
 
+/** glTF IO with every extension and Meshopt, as the asset tools read and write. */
+export async function createIO() {
+  await Promise.all([MeshoptDecoder.ready, MeshoptEncoder.ready]);
+  return new NodeIO()
+    .registerExtensions(ALL_EXTENSIONS)
+    .registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'meshopt.encoder': MeshoptEncoder });
+}
+
 export async function validateGlb(bytes) {
   const result = await validator.validateBytes(new Uint8Array(bytes), { maxIssues: 1000 });
   if (result.issues.numErrors > 0)
@@ -20,10 +28,7 @@ export async function validateGlb(bytes) {
 }
 
 export async function validateDeliveryGlb(bytes) {
-  await MeshoptDecoder.ready;
-  const io = new NodeIO()
-    .registerExtensions(ALL_EXTENSIONS)
-    .registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
+  const io = await createIO();
   const document = await io.readBinary(new Uint8Array(bytes));
   const compression = document
     .getRoot()
@@ -35,10 +40,7 @@ export async function validateDeliveryGlb(bytes) {
 }
 
 export async function buildDelivery(directory, specification) {
-  await Promise.all([MeshoptDecoder.ready, MeshoptEncoder.ready]);
-  const io = new NodeIO()
-    .registerExtensions(ALL_EXTENSIONS)
-    .registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'meshopt.encoder': MeshoptEncoder });
+  const io = await createIO();
   const artifacts = [];
   const lods = [];
   const reports = [];
