@@ -2,15 +2,14 @@ import { Euler, Quaternion } from 'three';
 
 import { resolveNPCBrainDecision, type NPCBrainAdapterRegistry } from './brain';
 import { NPCPerceptionIndex } from './NPCPerceptionIndex';
+import { routeSteps, type Point } from './routing';
 import { npcDecisionPhase, npcUnit } from './wander';
-import type { NavigationAgentSize, NavigationSystem } from '../../navigation/NavigationSystem';
-import { createNPCNavigationRoute } from '../../navigation/NPCNavigationAdapter';
+import type { NavigationSystem } from '../../navigation/NavigationSystem';
 import type { AnimationClockLoop } from '../../simulation/AnimationClockLoop';
 import type { FixedTick } from '../../simulation/FixedStepClock';
 import type { NPCAction, NPCDecisionEntry, NPCInstance } from '../types';
 import type { NPCBodyPort, NPCSimulationStore } from '../types/simulation';
 
-type Point = [number, number, number];
 type Pose = {
   position: Point; rotation: Point;
   sourcePosition: Point; sourceRotation: Point;
@@ -40,8 +39,6 @@ const ATTENTION_TURN_SPEED = Math.PI / 0.3;
 /** Glances swing on a period of about 18 s, looking to one side while the swing passes ±0.55. */
 const GLANCE_RATE = 0.35;
 const GLANCE_SWING = 0.55;
-/** How far, in grid cells, a route looks for free ground around a start or target inside an obstacle. */
-const FREE_GROUND_RINGS = 3;
 /** Salts of an NPC's deterministic draws. */
 const GESTURE_TIME = 1;
 const GESTURE_CLIP = 2;
@@ -53,28 +50,6 @@ export type NPCGesture = { clip: string; at: number; greeting: boolean };
 /** The shortest signed turn from `from` to `to`, in radians. */
 function turnBetween(from: number, to: number): number {
   return Math.atan2(Math.sin(to - from), Math.cos(to - from));
-}
-
-/** `point` when the agent may stand there, else the center of the nearest free cell within a few cells, if any. */
-function freeGround(navigation: NavigationSystem, point: Point, size: NavigationAgentSize): Point | undefined {
-  if (navigation.isWalkable(point[0], point[2], size)) return point;
-  const [cx, cz] = navigation.worldToGrid(point[0], point[2]);
-  let best: Point | undefined;
-  let bestDistance = Infinity;
-  for (let ring = 1; ring <= FREE_GROUND_RINGS && !best; ring++) {
-    for (let dz = -ring; dz <= ring; dz++) {
-      for (let dx = -ring; dx <= ring; dx++) {
-        if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
-        const [x, , z] = navigation.gridToWorld(cx + dx, cz + dz, point[1]);
-        const distance = (x - point[0]) ** 2 + (z - point[2]) ** 2;
-        if (distance < bestDistance && navigation.isWalkable(x, z, size)) {
-          best = [x, point[1], z];
-          bestDistance = distance;
-        }
-      }
-    }
-  }
-  return best;
 }
 
 /** Actions the simulation applies itself: speech is transient and a turn uses the live pose, not the stored one. */
@@ -462,29 +437,11 @@ export class NPCSimulation {
     pose.nextGesture = this.now + every * (0.75 + 0.5 * npcUnit(instance.id, GESTURE_TIME, pose.gestures));
   }
 
-  /**
-   * The points to walk toward waypoint `index`: the grid's route around walls once navigation is ready, the straight
-   * segment before that. An NPC standing inside an obstacle's cells first steps out to free ground, and a waypoint
-   * inside one is reached at the nearest free ground; one the grid cannot reach at all gets no points and is skipped.
-   */
+  /** The points to walk toward waypoint `index` (`routeSteps`), kept until the NPC moves on; a waypoint without any is skipped. */
   private route(instance: NPCInstance, pose: Pose, waypoints: Point[], index: number): Point[] {
     const cached = this.routes.get(instance.id);
     if (cached && cached.waypoints === waypoints && cached.index === index) return cached.steps;
-    const target = waypoints[index]!;
-    const navigation = this.navigation;
-    let steps: Point[] = [[...target]];
-    if (navigation?.isReady) {
-      const size = instance.volume ? { agentRadius: instance.volume.radius * Math.max(instance.scale[0], instance.scale[2]) } : {};
-      const from = freeGround(navigation, pose.position, size);
-      const to = freeGround(navigation, target, size);
-      const path = from && to ? createNPCNavigationRoute(navigation, { id: instance.id, position: [...from], ...size }, to, { includeStart: true }) : [];
-      steps = path.slice(1).map(([x, y, z]): Point => [x, y, z]);
-      const end = steps[steps.length - 1] ?? path[0];
-      if (from && to && end) {
-        if (Math.hypot(end[0] - to[0], end[2] - to[2]) > 1e-6) steps.push([...to]);
-        if (from !== pose.position) steps.unshift([...from]);
-      }
-    }
+    const steps = routeSteps(this.navigation, instance, pose.position, waypoints[index]!);
     this.routes.set(instance.id, { waypoints, index, steps });
     return steps;
   }
