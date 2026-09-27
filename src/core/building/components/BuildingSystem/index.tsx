@@ -24,8 +24,8 @@ import { FireBatch, type FireBatchEntry } from '../mesh/fire';
 import { FlagBatch } from '../mesh/flag';
 import { GrassDriver } from '../mesh/grass/GrassDriver';
 import ModelObject from '../mesh/model';
-import { ModelBatch, type ModelShadow } from '../mesh/model/batch';
 import { LampLightPool, LampRegistry, LampRegistryContext } from '../mesh/model/lampPool';
+import { StaticModels, type StaticModelGroup } from '../mesh/model/static';
 import { SakuraBatch, type SakuraTreeEntry } from '../mesh/sakura';
 import { Snow } from '../mesh/snow';
 import Ocean from '../mesh/water';
@@ -47,11 +47,9 @@ type ObjectBuckets = {
   model: PlacedObject[];
 };
 
-type ModelGroup = { url: string; objects: PlacedObject[]; shadow: ModelShadow };
-
-/** Models with a GLB, grouped by it so each group draws as one batch; the catalog item sets the shadow. */
-function groupModels(objects: PlacedObject[]): ModelGroup[] {
-  const groups = new Map<string, ModelGroup>();
+/** Models with a GLB, grouped by it for static drawing; the catalog item sets the shadow. */
+function groupModels(objects: PlacedObject[]): StaticModelGroup[] {
+  const groups = new Map<string, StaticModelGroup>();
   for (const object of objects) {
     const url = object.config?.modelUrl;
     if (!url) continue;
@@ -178,7 +176,8 @@ export const BuildingSystem = React.memo(function BuildingSystem({
     () => (visibilityReady ? buckets.model.filter((object) => visibleObjectIds.has(object.id)) : buckets.model),
     [buckets.model, visibilityReady, visibleObjectIds],
   );
-  // Outside the editor, GLB models draw in batches; while editing they stay single so each can be picked and moved.
+  // Outside the editor, GLB models draw as static geometry, merged or instanced; while editing they stay single so each
+  // can be picked and moved.
   const batching = editMode === 'none';
   const modelGroups = useMemo(() => (batching ? groupModels(residentModels) : []), [batching, residentModels]);
   const modelObjects = useMemo(
@@ -283,11 +282,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
           </Suspense>
         )}
 
-        {modelGroups.map((group) => (
-          <Suspense key={group.url} fallback={null}>
-            <CompileGate><ModelBatch url={group.url} objects={group.objects} shadow={group.shadow} /></CompileGate>
-          </Suspense>
-        ))}
+        {modelGroups.length > 0 && <StaticModels groups={modelGroups} />}
 
         {modelObjects.map((obj) => (
           <group

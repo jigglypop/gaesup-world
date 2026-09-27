@@ -214,8 +214,9 @@ export function customLoop(draw: (time: number) => void) {
 ### 인스턴싱과 draw 수
 
 - 건축 타일·벽·블록은 재질별 `InstancedMesh` 배치로 그린다. WebGPU 백엔드에서는 `GpuBatchBridge`가 이 배치를 compute로 컬링하고 간접 draw로 그린다. 그 밖의 렌더러에서는 `BuildingVisibilityDriver`가 카메라 거리로 그릴 그룹을 고른다.
-- 벚꽃·나무, 깃발, 불, 간판은 개수와 상관없이 종류마다 고정된 수의 draw로 그린다. 모델 오브젝트(`type: 'model'`)는 오브젝트마다 draw가 늘어난다.
-- NPC는 카메라에서 120m(보이던 NPC는 135m)보다 멀면 화면에서 내린다. 시뮬레이션은 거리와 상관없이 모든 NPC를 돌린다.
+- 벚꽃·나무, 깃발, 불, 간판은 개수와 상관없이 종류마다 고정된 수의 draw로 그린다.
+- GLB 모델 오브젝트는 에디터 밖에서 32m 칸마다 한 메시로 합치거나 GLB마다 인스턴싱한다([rendering.md](rendering.md#정적-모델-병합)). 예제 섬에서 모델 draw가 62에서 12로(모든 pass 합), 프레임 draw가 185에서 136으로 줄었다(2026-09-27). `modelUrl`이 없는 대체 도형과 편집 중인 모델은 오브젝트마다 그린다.
+- NPC는 카메라에서 120m(보이던 NPC는 135m)보다 멀면 화면에서 내리고, 화면 밖 NPC는 숨기며, `maxVisible`로 가까운 순 상한을 둔다. 시뮬레이션은 거리와 상관없이 모든 NPC를 돌린다.
 - 저장소 측정에서 작은 마을은 draw 81(`render()` 호출 6)이었다.
 
 ## 번들 크기

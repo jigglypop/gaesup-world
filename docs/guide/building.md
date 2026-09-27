@@ -116,7 +116,7 @@
 | `billboard` | `billboardText`, `billboardImageUrl`, `billboardColor`, `billboardWidth`, `billboardHeight`, `billboardScale`, `billboardOffsetY`, `billboardElevation`, `billboardIntensity` | |
 | `model` | `modelUrl`, `modelScale`, `modelColor`, `modelFallbackKind`, `modelLabel`, `modelId` | GLB를 읽는 동안·실패했을 때·`modelUrl`이 없을 때 원시 도형 대체물을 그린다 |
 
-`modelFallbackKind`: `door` · `window` · `fence` · `lamp` · `chair` · `table` · `bed` · `storage` · `mailbox` · `crafting` · `shop` · `generic`(기본). `modelColor`는 대체 도형에만 칠해진다. `lamp` 대체 도형은 풀링된 점광원을 켠다(GLB를 불러온 조명 모델에는 빛이 없다). 나무·깃발·불·간판은 종류별로 묶어 그리고, 모델은 오브젝트마다 그린다. 오브젝트에는 **물리 콜라이더가 없다**(캐릭터가 통과한다). 대신 내비게이션 장애물로는 들어간다.
+`modelFallbackKind`: `door` · `window` · `fence` · `lamp` · `chair` · `table` · `bed` · `storage` · `mailbox` · `crafting` · `shop` · `generic`(기본). `modelColor`는 대체 도형에만 칠해진다. `lamp` 대체 도형은 풀링된 점광원을 켠다(GLB를 불러온 조명 모델에는 빛이 없다). 나무·깃발·불·간판은 종류별로 묶어 그린다. GLB 모델은 에디터 밖에서 정적 지오메트리로 그린다. 무늬 없는 모델은 32m 칸마다 한 메시로 합치고, 텍스처·투명 재질 모델과 많이 복사한 모델은 GLB마다 인스턴싱한다([rendering.md](rendering.md#정적-모델-병합)). 편집 중에는 하나씩 골라 옮길 수 있게 오브젝트마다 그린다. 오브젝트에는 **물리 콜라이더가 없다**(캐릭터가 통과한다). 대신 내비게이션 장애물로는 들어간다.
 
 ### 예시
 
