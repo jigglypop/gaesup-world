@@ -2,65 +2,72 @@ import * as THREE from 'three';
 
 let _sharedWaterNormals: THREE.DataTexture | null = null;
 
-function noise2(x: number, y: number): number {
-  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123;
-  return s - Math.floor(s);
+/** Octaves of lattice cells per tile; whole numbers keep every octave periodic over the texture. */
+const OCTAVES = [
+  { period: 4, amplitude: 0.5 },
+  { period: 8, amplitude: 0.26 },
+  { period: 16, amplitude: 0.13 },
+  { period: 32, amplitude: 0.06 },
+] as const;
+/** Mean tilt of the encoded normals (|xy|); materials scale it down to taste. */
+const MEAN_SLOPE = 0.2;
+
+function hash(x: number, y: number, seed: number): number {
+  let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(seed + 1, 1442695041);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-function smoothNoise(x: number, y: number): number {
+const fade = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
+
+/** Gradient noise on a `period`-cell lattice that wraps, so the unit square tiles without a seam. */
+function periodicNoise(u: number, v: number, period: number, seed: number): number {
+  const x = u * period;
+  const y = v * period;
   const xi = Math.floor(x);
   const yi = Math.floor(y);
-  const xf = x - xi;
-  const yf = y - yi;
-  const u = xf * xf * (3 - 2 * xf);
-  const v = yf * yf * (3 - 2 * yf);
-  const a = noise2(xi, yi);
-  const b = noise2(xi + 1, yi);
-  const c = noise2(xi, yi + 1);
-  const d = noise2(xi + 1, yi + 1);
-  return THREE.MathUtils.lerp(
-    THREE.MathUtils.lerp(a, b, u),
-    THREE.MathUtils.lerp(c, d, u),
-    v,
-  );
+  const dot = (ix: number, iy: number) => {
+    const angle = hash(((ix % period) + period) % period, ((iy % period) + period) % period, seed) * Math.PI * 2;
+    return Math.cos(angle) * (x - ix) + Math.sin(angle) * (y - iy);
+  };
+  const sx = fade(x - xi);
+  const top = THREE.MathUtils.lerp(dot(xi, yi), dot(xi + 1, yi), sx);
+  const bottom = THREE.MathUtils.lerp(dot(xi, yi + 1), dot(xi + 1, yi + 1), sx);
+  return THREE.MathUtils.lerp(top, bottom, fade(y - yi));
 }
 
-function waterHeight(x: number, y: number): number {
+function waterHeight(u: number, v: number): number {
   let value = 0;
-  let amp = 0.58;
-  let freq = 1.15;
-  for (let i = 0; i < 5; i += 1) {
-    value += smoothNoise(x * freq + 17.3 * i, y * freq - 9.1 * i) * amp;
-    freq *= 2.03;
-    amp *= 0.48;
-  }
-  value += Math.sin(x * 8.2 + y * 1.7) * 0.06;
-  value += Math.cos(y * 7.1 - x * 2.4) * 0.05;
+  for (let i = 0; i < OCTAVES.length; i++) value += periodicNoise(u, v, OCTAVES[i]!.period, i) * OCTAVES[i]!.amplitude;
   return value;
 }
 
+/** A tileable ripple normal map shared by every water surface; both render paths sample it in world space. */
 export function getSharedWaterNormals(size = 128): THREE.DataTexture {
   if (_sharedWaterNormals) return _sharedWaterNormals;
-  const data = new Uint8Array(size * size * 4);
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      const i = (y * size + x) * 4;
-      const u = x / size;
-      const v = y / size;
-      const e = 1 / size;
-      const hL = waterHeight(u - e, v);
-      const hR = waterHeight(u + e, v);
-      const hD = waterHeight(u, v - e);
-      const hU = waterHeight(u, v + e);
-      const nx = (hL - hR) * 1.15;
-      const ny = (hD - hU) * 1.15;
-      const nz = 1.0;
-      const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
-      data[i] = Math.round((nx / len * 0.5 + 0.5) * 255);
-      data[i + 1] = Math.round((ny / len * 0.5 + 0.5) * 255);
-      data[i + 2] = Math.round((nz / len * 0.5 + 0.5) * 255);
-      data[i + 3] = 255;
+  const heights = new Float32Array(size * size);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) heights[y * size + x] = waterHeight(x / size, y / size);
+  const at = (x: number, y: number) => heights[(((y + size) % size) * size) + ((x + size) % size)]!;
+  const slopes = new Float32Array(size * size * 2);
+  let total = 0;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const i = (y * size + x) * 2;
+      slopes[i] = at(x - 1, y) - at(x + 1, y);
+      slopes[i + 1] = at(x, y - 1) - at(x, y + 1);
+      total += Math.hypot(slopes[i]!, slopes[i + 1]!);
     }
+  }
+  const scale = total > 0 ? (MEAN_SLOPE * size * size) / total : 0;
+  const data = new Uint8Array(size * size * 4);
+  for (let i = 0; i < size * size; i++) {
+    const nx = slopes[i * 2]! * scale;
+    const ny = slopes[i * 2 + 1]! * scale;
+    const length = Math.hypot(nx, ny, 1);
+    data[i * 4] = Math.round((nx / length * 0.5 + 0.5) * 255);
+    data[i * 4 + 1] = Math.round((ny / length * 0.5 + 0.5) * 255);
+    data[i * 4 + 2] = Math.round((1 / length * 0.5 + 0.5) * 255);
+    data[i * 4 + 3] = 255;
   }
 
   const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
@@ -74,4 +81,3 @@ export function getSharedWaterNormals(size = 128): THREE.DataTexture {
   _sharedWaterNormals = texture;
   return texture;
 }
-

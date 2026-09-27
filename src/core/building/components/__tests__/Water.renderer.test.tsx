@@ -86,12 +86,14 @@ test('a removed suspended surface does not create a material when loading finish
   factory.mockImplementation(createMaterial);
 });
 
-test('WebGPU draws realistic water with the node-safe fallback, never the WebGL-only mirror Water', async () => {
+test('WebGPU draws lit node water, never the WebGL-only mirror Water', async () => {
   const renderer = await ReactThreeTestRenderer.create(<RendererMode nodes><Ocean toon={false} /></RendererMode>);
   await renderer.advanceFrames(3, 1 / 30);
   expect(renderer.scene.findAll((node) => node.instance instanceof Water)).toHaveLength(0);
-  const surfaces = renderer.scene.findAll((node) => node.instance instanceof THREE.Mesh
-    && node.instance.material instanceof THREE.MeshPhysicalMaterial && node.instance.material.normalMap !== null);
+  const factory = jest.mocked(createToonWaterMaterial);
+  expect(factory).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ toon: false }));
+  const { material } = factory.mock.results.at(-1)!.value as ReturnType<typeof createToonWaterMaterial>;
+  const surfaces = renderer.scene.findAll((node) => node.instance instanceof THREE.Mesh && node.instance.material === material);
   expect(surfaces.map((node) => (node.instance as THREE.Mesh).visible)).toEqual([true]);
   await renderer.unmount();
 });

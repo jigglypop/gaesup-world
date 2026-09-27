@@ -80,7 +80,7 @@
 - 그룹: `{ id, name, floorMeshId, tiles }`.
 - 타일: `{ id, position, tileGroupId, materialId?, size?, rotation?, shape?, objectType?, objectConfig?, cell?, footprint? }`. `materialId`가 있으면 그룹의 `floorMeshId` 대신 쓴다. `cell`·`footprint`는 store가 채운다.
 - `shape`: `'box'`(기본) · `'stairs'` · `'round'` · `'ramp'`.
-- `objectType`(지형 덮개): `'none'` · `'grass'` · `'water'` · `'sand'` · `'snowfield'`. **`box` 타일에만 그려진다.** 잔디는 인스턴스 풀잎, 물은 인접 물 타일을 묶은 수면, 모래·눈밭은 전용 지면이다.
+- `objectType`(지형 덮개): `'none'` · `'grass'` · `'water'` · `'sand'` · `'snowfield'`. **`box` 타일에만 그려진다.** 잔디는 인스턴스 풀잎, 물은 인접 물 타일을 묶은 수면(물가 필드로 둑·젖은 모래·거품·수심을 그린다), 모래·눈밭은 전용 지면이다.
 - `objectConfig`: `grassDensity`(m²당 풀잎, 기본 90), `terrainColor`, `terrainAccentColor`.
 
 ### 벽 `WallGroupConfig` / `WallConfig`

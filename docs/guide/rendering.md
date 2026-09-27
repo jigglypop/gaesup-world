@@ -297,7 +297,7 @@ export function ToonBox() {
 | `Grass` | `group` props + `width`(4), `density`(m²당 잎 수), `instances`, `maxInstances`(18000), `cells`, `cellSize`(1), `ground`(true), `lod`, `center`, `options`(`bW`·`bH`·`joints`), 색·텍스처 URL, `toon` | 캔버스에 `GrassDriver`가 하나 있어야 바람·밟힘·거리 LOD·절두체 컬링이 돈다. 잎 수에 전역 `usePerfStore`의 `instanceScale`을 곱한다. 잎 데이터는 WASM, 없으면 JS로 만든다 |
 | `GrassDriver` | 없음 | 모든 잔디를 한 `effects` 콜백으로 갱신한다. `BuildingController`는 이미 하나 올린다 |
 | `GrassManagerProvider` | `value`(`createGrassManager()`) | 런타임 없는 독립 장면에서 잔디 관리자를 따로 둘 때 |
-| `Water` | `size`(16), `width`, `depth`, `shore`(네 변 모래톱, 기본 모두), `lod`, `center`, `followCamera`(false), `normalMap`, `toon`, `brightness`(1) | 노드 렌더러: 툰이면 TSL 물, 아니면 반사 없는 반투명 면. classic WebGL: 툰이면 GLSL, 아니면 three-stdlib 거울 물(반사 렌더 타깃 192~384px) |
+| `Water` | `size`(16), `width`, `depth`, `field`(기본 월드 물가 필드, `null`이면 끔), `shore`(deprecated, 필드가 없을 때만 쓰는 네 변 물가), `lod`(`far`만 쓴다), `center`, `followCamera`(false, 카메라를 따르는 열린 바다), `normalMap`, `toon`, `brightness`(1) | 물가 필드로 둑 → 젖은 모래 → 얕은 물 → 깊은 물과 거품선을 그린다. 노드 렌더러: 툰이면 unlit, 아니면 PBR 노드 재질. classic WebGL: 필드가 있거나 툰이면 GLSL, 둘 다 아니면 three-stdlib 거울 물(반사 렌더 타깃 192~384px) |
 | `Fire` | `intensity`(1.5), `width`(1), `height`(1.5), `color`(`#ffffff`) | 위치 prop이 없으므로 `group`으로 감싼다 |
 | `Sakura` / `SakuraBatch` | `size`(4), `toon` / `trees`(`SakuraTreeEntry[]`: `position`, `size`, `treeKind`, `blossomColor`, `barkColor`), `toon` | `treeKind`: `sakura`·`oak`·`pine`·`maple`·`birch`·`willow`·`cypress`·`dead` |
 | `Sand` / `SandBatch`, `Snowfield` / `SnowfieldBatch` | `size`(4), `toon`, `color`, `accentColor` / `entries`, `toon` | 일반 재질이라 두 렌더러가 같다 |
@@ -305,6 +305,8 @@ export function ToonBox() {
 | `Billboard` | `text`, `imageUrl`, `width`, `height`, `scale`, `color`, `elevation`, `intensity`, `toon` | 글자는 캔버스 텍스처로 그린다 |
 
 - 깃발 컴포넌트는 export되지 않는다. 깃발은 오브젝트 `type: 'flag'`(`config.flagWidth`·`flagHeight`·`flagStyle`·`flagTexture`)로 `BuildingController`가 그린다.
+- 물가 필드(`useShoreField()`, `createShoreField(source)`): 물 타일과 `worldSurface: 'water'` 월드의 열린 바다를 1m 텍셀로 래스터화해 흐린 물 덮임 값이다(땅 0, 물가 0.5, 열린 물 1). 월드마다 하나를 모든 물이 함께 쓰고, 타일이 바뀔 때만 프레임당 최대 4ms씩 나눠 다시 만든다. 격자는 타일이 놓인 위상을 따르므로 스냅 격자 밖에 손으로 놓은 타일에도 물가선이 맞는다. 셰이더는 `field.texture`를 `(world.xz - field.transform.xy) * field.transform.zw`에서 읽는다.
+- 물 재질은 안개와 톤 매핑을 받는다. 물결 노멀맵은 주기적이라 이음선이 없다. 카메라에서 40m 안은 물결·거품이 움직이고 52m 밖은 단순한 면이다(히스테리시스). 물 타일 묶음은 둘레 띠 없이 메시 하나다.
 - 잔디·물·불·깃발·벚꽃·눈·날씨의 GLSL 경로는 PRD GPU-1에서 지운다.
 
 ```tsx
