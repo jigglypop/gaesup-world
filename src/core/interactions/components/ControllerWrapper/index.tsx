@@ -22,18 +22,17 @@ export function ControllerWrapper(props: ControllerWrapperProps) {
         : {}
     ),
   };
+  // The ground plane rides with the character; the destination marker and path are drawn in the world, not under it.
   return (
-    <EntityController props={rest}>
-      <>
-        {clickToMove && (
-          <>
-            <GroundClicker clickerOptions={resolvedClickerOptions} />
-            <Clicker />
-          </>
-        )}
-        {children}
-      </>
-    </EntityController>
+    <>
+      <EntityController props={rest}>
+        <>
+          {clickToMove && <GroundClicker clickerOptions={resolvedClickerOptions} />}
+          {children}
+        </>
+      </EntityController>
+      {clickToMove && <Clicker />}
+    </>
   );
 }
 

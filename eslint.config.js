@@ -59,6 +59,7 @@ export default tseslint.config(
             'colorWrite',
             'decay',
             'dispose',
+            'depthTest',
             'depthWrite',
             'distance',
             'emissive',

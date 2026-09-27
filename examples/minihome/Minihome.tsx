@@ -17,7 +17,8 @@ import { WorldLoading } from './WorldLoading';
 const BuildingUI = lazy(() => import('gaesup-world/building').then((module) => ({ default: module.BuildingUI })));
 
 /** A fixed, north-facing high angle, like a diorama seen from the south. */
-const CAMERA = { type: 'thirdPerson', xDistance: -4, yDistance: 10, zDistance: -10, fov: 42 } as const;
+/** A left drag turns the view as a right drag does; a left click without a drag walks there. */
+const CAMERA = { type: 'thirdPerson', xDistance: -4, yDistance: 10, zDistance: -10, fov: 42, dragOrbit: 'all' } as const;
 
 type Tab = 'home' | 'decorate' | 'guestbook';
 const TABS: { id: Tab; label: string }[] = [
@@ -25,7 +26,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'decorate', label: '꾸미기' },
   { id: 'guestbook', label: '방명록' },
 ];
-const KEYS = [['WASD', '이동'], ['Shift', '달리기'], ['Space', '점프'], ['E', '대화']] as const;
+const KEYS = [['WASD', '이동'], ['클릭', '가기'], ['드래그', '시점'], ['Shift', '달리기'], ['Space', '점프'], ['E', '대화']] as const;
 
 function Clock() {
   const time = useGameTime();

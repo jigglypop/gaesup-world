@@ -29,6 +29,19 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
   return tagName === 'input' || tagName === 'textarea' || tagName === 'select' || target.isContentEditable;
 };
 
+/**
+ * A primary press that orbited is not a click: the click it ends in stops at the window, before the canvas or any
+ * object handler sees it. The browser sends that click right after the mouseup, before the next task.
+ */
+function swallowClick(): void {
+  const swallow = (event: MouseEvent) => {
+    event.stopPropagation();
+    event.preventDefault();
+  };
+  window.addEventListener('click', swallow, { capture: true, once: true });
+  setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 0);
+}
+
 export function useCamera(enableMouse = true) {
   const inputScope = useWorldInputScope();
   const inputActions = useWorldInputActions();
@@ -41,6 +54,10 @@ export function useCamera(enableMouse = true) {
   const setCameraOption = useGaesupStore((state) => state.setCameraOption);
   const mode = useGaesupStore((state) => state.mode);
   const isInEditMode = useBuildingStore((state) => state.isInEditMode());
+  const editModeRef = useRef(isInEditMode);
+  useLayoutEffect(() => {
+    editModeRef.current = isInEditMode;
+  }, [isInEditMode]);
   const inputBackend = useInputBackend();
 
   // Keep refs for event handlers to avoid re-registering listeners on every option change.
@@ -165,6 +182,7 @@ export function useCamera(enableMouse = true) {
     }
     const canvas = gl.domElement;
 
+    let orbitButton = -1;
     let orbitButtonMask = 0;
     let pointerStartX = 0;
     let pointerStartY = 0;
@@ -188,20 +206,24 @@ export function useCamera(enableMouse = true) {
     const handleMouseDown = (event: MouseEvent) => {
       if (!inputScope.isEnabled()) return;
       if (isEditableTarget(event.target)) return;
-      // Primary clicks belong to world interaction and editor selection.
-      if (event.button !== 1 && event.button !== 2) return;
+      // Primary presses belong to world interaction and editor selection, unless their drags orbit too.
+      const primary = event.button === 0;
+      if (primary ? cameraOptionRef.current?.dragOrbit !== 'all' || editModeRef.current : event.button !== 1 && event.button !== 2) return;
 
-      event.preventDefault();
+      if (!primary) event.preventDefault();
       orbitPointerActiveRef.current = true;
-      orbitButtonMask = event.button === 1 ? 4 : 2;
+      orbitButton = event.button;
+      orbitButtonMask = [1, 4, 2][event.button] ?? 0;
       pointerStartX = pointerLastX = event.clientX;
       pointerStartY = pointerLastY = event.clientY;
       dragging = false;
     };
 
     const handleMouseUp = (event: MouseEvent) => {
-      if (event.button !== 1 && event.button !== 2) return;
+      if (event.button !== orbitButton) return;
+      if (event.button === 0 && dragging) swallowClick();
       orbitPointerActiveRef.current = false;
+      orbitButton = -1;
       dragging = false;
     };
 
@@ -239,6 +261,7 @@ export function useCamera(enableMouse = true) {
     const clearOrbitKeyState = () => {
       orbitModifierKeysRef.current.clear();
       orbitPointerActiveRef.current = false;
+      orbitButton = -1;
       orbitButtonMask = 0;
       dragging = false;
     };

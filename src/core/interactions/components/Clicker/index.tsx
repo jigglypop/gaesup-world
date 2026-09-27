@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { PathLine } from './PathLine';
 import { TargetMarker } from './TargetMarker';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
-import { useClickNavigationRoute } from '../../../navigation/hooks/useNavigation';
+import { useClickNavigationRoute, useNavigationSystem } from '../../../navigation/hooks/useNavigation';
 import { useEngineFrame } from '../../../runtime/frame';
 import { useGaesupStore } from '../../../stores/gaesupStore';
 import type { AutomationAction } from '../../core/types';
@@ -17,6 +17,7 @@ const REACH_DISTANCE = 1.0;
 
 export function Clicker() {
   const { getClickNavigationRoute, subscribeClickNavigationRoute } = useClickNavigationRoute();
+  const navigation = useNavigationSystem();
   const actions = useGaesupStore(useShallow((state) => state.automation?.queue.actions ?? EMPTY_ACTIONS));
   const currentIndex = useGaesupStore((state) => state.automation?.queue.currentIndex ?? 0);
   const mouseTarget = useGaesupStore((state) => state.interaction.mouse.target);
@@ -60,9 +61,15 @@ export function Clicker() {
   useEngineFrame(
     'lateUpdate',
     () => {
-      const showMarker = isActive && playerPosition.distanceTo(mouseTarget) >= REACH_DISTANCE;
+      // The marker stands on the ground at the route's end, where the click was, not at the waypoint walked to now.
+      const route = getClickNavigationRoute();
+      const destination = route[route.length - 1] ?? mouseTarget;
+      const showMarker = isActive && Math.hypot(destination.x - playerPosition.x, destination.z - playerPosition.z) >= REACH_DISTANCE;
       const marker = markerRef.current;
-      if (marker) marker.visible = showMarker;
+      if (marker) {
+        marker.visible = showMarker;
+        if (showMarker) marker.position.set(destination.x, navigation.sampleHeight(destination.x, destination.z), destination.z);
+      }
       pathPointsRef.current = showMarker ? markerPath : queuePath;
     },
     { label: 'interactions:clicker' },
@@ -70,7 +77,7 @@ export function Clicker() {
 
   return (
     <group>
-      <group ref={markerRef} position={mouseTarget} visible={false}>
+      <group ref={markerRef} visible={false}>
         <TargetMarker />
       </group>
 

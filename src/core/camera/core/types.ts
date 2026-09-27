@@ -56,6 +56,12 @@ export interface CameraOption {
   bounds?: CameraBounds;
   /** Where the `fixed` camera stands. */
   fixedPosition?: THREE.Vector3;
+  /**
+   * Buttons whose drag orbits the camera: `secondary` (default) the right and middle ones; `all` the primary one too,
+   * outside building edit mode. A primary press that turns into a drag ends in no click, so it neither moves a
+   * click-to-move character nor clicks what it started on.
+   */
+  dragOrbit?: 'secondary' | 'all';
 }
 
 export type CameraOptionType = CameraOption;

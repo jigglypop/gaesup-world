@@ -2,10 +2,11 @@ import { memo } from 'react';
 
 import * as THREE from 'three';
 
+/** A ring on the ground at the destination, drawn over the grass, and a bead above it. */
 export const TargetMarker = memo(() => (
   <group>
-    <mesh>
-      <sphereGeometry args={[0.2, 16, 16]} />
+    <mesh position={[0, 0.35, 0]}>
+      <sphereGeometry args={[0.16, 16, 16]} />
       <meshStandardMaterial
         color="#00ff88"
         emissive="#00ff88"
@@ -14,12 +15,13 @@ export const TargetMarker = memo(() => (
         opacity={0.9}
       />
     </mesh>
-    <mesh rotation={[Math.PI / 2, 0, 0]}>
-      <ringGeometry args={[0.3, 0.5, 8]} />
-      <meshStandardMaterial
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} renderOrder={2}>
+      <ringGeometry args={[0.3, 0.5, 32]} />
+      <meshBasicMaterial
         color="#00ff88"
         transparent
-        opacity={0.6}
+        opacity={0.75}
+        depthTest={false}
         side={THREE.DoubleSide}
       />
     </mesh>

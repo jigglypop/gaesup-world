@@ -163,7 +163,8 @@ function useCameraMode() {
 
 ### 마우스·게임패드 궤도와 줌
 
-- 우클릭 또는 가운데 버튼 드래그(4px 넘게), 또는 Ctrl을 누른 채 캔버스 위에서 마우스를 움직이면 궤도가 돈다. 좌클릭은 월드 상호작용·편집 선택용이라 궤도에 쓰지 않는다. 피치는 -0.65 ~ 0.85 rad로 묶인다.
+- 우클릭 또는 가운데 버튼 드래그(4px 넘게), 또는 Ctrl을 누른 채 캔버스 위에서 마우스를 움직이면 궤도가 돈다. 피치는 -0.65 ~ 0.85 rad로 묶인다.
+- 좌클릭은 기본으로 월드 상호작용·편집 선택용이다. 카메라 옵션 `dragOrbit: 'all'`(월드의 `cameraOption`으로도 준다)이면 편집 모드 밖에서 왼쪽 드래그도 궤도를 돌린다. 드래그로 끝난 누름은 클릭 이벤트가 창에서 멈춰, 클릭 이동도 NPC·오브젝트 클릭도 되지 않는다. 움직이지 않은 누름은 그대로 클릭이다. 예제 minihome이 켠다.
 - 휠은 `zoom`을 바꾼다(거리 배율, 아래로 굴리면 멀어짐). `enableZoom: false`면 꺼진다.
 - `mode.controller === 'gamepad'`이고 런타임 월드면 오른쪽 스틱이 궤도를 돌린다(`lookSpeed` 기본 2.5).
 - 캔버스 우클릭 메뉴는 막힌다.
@@ -215,7 +216,7 @@ function useCameraMode() {
 | E | 상호작용 대상 실행, 대화 넘기기 | `InteractionPrompt`/`useInteractionKey`, `DialogBox` |
 | Esc | 카메라 포커스 해제, 대화 닫기 | `enableFocus`일 때, `DialogBox` |
 | 1–9 | 대화 선택지 | `DialogBox` |
-| 우클릭·가운데 드래그, Ctrl+마우스 | 카메라 궤도 | |
+| 우클릭·가운데 드래그, Ctrl+마우스 | 카메라 궤도 | `dragOrbit: 'all'`이면 왼쪽 드래그도 |
 | 휠 | 카메라 줌 | `enableZoom` |
 | 방향키, Q/E | 회전, 타일 높이 | 건축 편집 모드에서만([building.md](building.md)) |
 | Z, R | 키보드 상태만 기록한다 | 기본 동작 없음 |
@@ -283,9 +284,10 @@ const runtime = createGaesupRuntime({ gamepad: { deadzone: 0.2, bindings: { Y: '
 
 ## 클릭 이동
 
-`clickToMove`를 켜면 `GroundClicker`(캐릭터에 붙은 보이지 않는 1000×1000m 평면)와 `Clicker`(목표 표식·경로 선)가 올라간다(`src/core/interactions/components/GroundClicker/index.tsx`, `src/core/hooks/useClicker/index.ts`).
+`clickToMove`를 켜면 `GroundClicker`(캐릭터에 붙어 따라다니는 보이지 않는 1000×1000m 평면)와, 캐릭터 밖 월드 좌표에 그리는 `Clicker`(목표 표식·경로 선)가 올라간다(`src/core/interactions/components/GroundClicker/index.tsx`, `src/core/hooks/useClicker/index.ts`).
 
-- 바닥을 누른 지점까지 `NavigationSystem`(WASM A*) 경로를 만든다. 평면은 `pointerdown`을 받으며 마우스 버튼을 구분하지 않는다. 직선으로 보이면 경로 없이 곧장 가고, 경로를 못 찾으면 장애물이 전혀 없을 때만 직선으로 간다.
+- 왼쪽 버튼 클릭(누른 채 4px 넘게 움직이지 않은 것)만 이동한다. 평면이 받은 광선을 내비게이션 높이를 따라 걸어 처음 만나는 땅을 목적지로 삼으므로, 올라간 타일을 누르면 그 윗면이 찍힌다. 바위·연못처럼 설 수 없는 곳을 누르면 캐릭터가 오는 쪽의 가장 가까운 설 수 있는 곳(내비게이션 칸 둘 안)으로 간다.
+- 그 지점까지 `NavigationSystem`(WASM A*) 경로를 만든다. 직선으로 보이면 경로 없이 곧장 가고, 경로를 못 찾으면 장애물이 전혀 없을 때만 직선으로 간다. 표식은 지금 걷는 경유점이 아니라 목적지의 땅 위에 서고, 풀 위로 보이게 그린다.
 - 장애물은 건축 데이터에서 온다. `BuildingController`가 올리는 `NPCSystem` 안의 `BuildingNavigationObstacleDriver`가 벽(문·아치 제외)·블록·오브젝트를 막힘으로, 타일을 높이로 넣는다. `BuildingController` 없이는 장애물이 없다.
 - Alt·Ctrl·Meta·Shift를 누른 클릭은 무시한다(`TeleportOnClick` 같은 도구용). 카메라 포커스 중 클릭은 포커스만 푼다.
 - 이동 중에는 목적지에 닿을 때까지 마우스 목표가 방향을 정하고 키보드 방향은 무시된다. 게임패드 이동 입력은 경로를 취소한다.

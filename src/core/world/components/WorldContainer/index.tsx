@@ -91,6 +91,7 @@ function WorldConfiguration(props: WorldContainerProps) {
     if (option.maxZoom !== undefined) nextOption.maxZoom = option.maxZoom;
     if (option.zoomSpeed !== undefined) nextOption.zoomSpeed = option.zoomSpeed;
     if (option.enableCollision !== undefined) nextOption.enableCollision = option.enableCollision;
+    if (option.dragOrbit !== undefined) nextOption.dragOrbit = option.dragOrbit;
     if (option.smoothness !== undefined) {
       nextOption.smoothing = {
         position: option.smoothness,

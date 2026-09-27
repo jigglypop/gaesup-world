@@ -76,3 +76,29 @@ test('camera configuration uses this commit, not stale passive-effect refs', () 
   expect(mockUpdateConfig).toHaveBeenLastCalledWith(expect.objectContaining({ mode: 'thirdPerson', zoom: 1 }));
   hook.unmount();
 });
+
+test('with dragOrbit all, a primary drag ends in no click while a primary click still clicks', () => {
+  Object.assign(mockOptions, { dragOrbit: 'all' });
+  document.body.append(mockCanvas);
+  const clicks = jest.fn();
+  document.body.addEventListener('click', clicks);
+  const view = renderHook(() => useCamera());
+  try {
+    fireEvent.mouseDown(mockCanvas, { button: 0, buttons: 1, clientX: 10, clientY: 10 });
+    fireEvent.mouseMove(window, { buttons: 1, clientX: 40, clientY: 12 });
+    fireEvent.mouseMove(window, { buttons: 1, clientX: 80, clientY: 14 });
+    fireEvent.mouseUp(window, { button: 0, clientX: 80, clientY: 14 });
+    fireEvent.click(mockCanvas, { button: 0 });
+    expect(clicks).not.toHaveBeenCalled();
+
+    fireEvent.mouseDown(mockCanvas, { button: 0, buttons: 1, clientX: 10, clientY: 10 });
+    fireEvent.mouseUp(window, { button: 0, clientX: 11, clientY: 10 });
+    fireEvent.click(mockCanvas, { button: 0 });
+    expect(clicks).toHaveBeenCalledTimes(1);
+  } finally {
+    view.unmount();
+    document.body.removeEventListener('click', clicks);
+    mockCanvas.remove();
+    delete (mockOptions as { dragOrbit?: string }).dragOrbit;
+  }
+});

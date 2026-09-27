@@ -22,6 +22,7 @@ export type WorldCameraOption = Pick<CameraOptionType,
   | 'maxZoom'
   | 'zoomSpeed'
   | 'enableCollision'
+  | 'dragOrbit'
 > & {
   type: CameraType;
   /** Orbit distance the x/z distances default to (15). */
