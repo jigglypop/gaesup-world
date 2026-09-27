@@ -4,6 +4,14 @@ const DB_NAME = 'gaesup-save';
 const DB_VERSION = 1;
 const STORE = 'slots';
 
+/**
+ * Longest an open or a request may take. A database another tab keeps open at an older version blocks the open
+ * forever, and a wedged storage backend never ends a transaction; past these a save fails instead of hanging.
+ */
+export const INDEXED_DB_TIMEOUT_MS = { open: 5000, request: 8000 } as const;
+
+const timeoutError = (what: string, ms: number) => new Error(`IndexedDB ${what} did not finish within ${ms} ms`);
+
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (typeof indexedDB === 'undefined') {
@@ -11,14 +19,21 @@ function openDb(): Promise<IDBDatabase> {
       return;
     }
     const req = indexedDB.open(DB_NAME, DB_VERSION);
+    const timer = setTimeout(() => reject(timeoutError('open', INDEXED_DB_TIMEOUT_MS.open)), INDEXED_DB_TIMEOUT_MS.open);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) {
         db.createObjectStore(STORE);
       }
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      clearTimeout(timer);
+      resolve(req.result);
+    };
+    req.onerror = () => {
+      clearTimeout(timer);
+      reject(req.error);
+    };
   });
 }
 
@@ -66,9 +81,25 @@ export class IndexedDBAdapter implements SaveAdapter {
     return new Promise<T>((resolve, reject) => {
       try {
         const tx = db.transaction(STORE, mode);
-        tx.onabort = () => reject(tx.error ?? new Error('Save transaction aborted'));
+        // A transaction that never ends gives up, and the connection it hung on is dropped for the next operation.
+        const timer = setTimeout(() => {
+          this.forget(connection);
+          reject(timeoutError('request', INDEXED_DB_TIMEOUT_MS.request));
+          try {
+            tx.abort();
+          } catch {
+            // Already finished or never started.
+          }
+        }, INDEXED_DB_TIMEOUT_MS.request);
+        tx.onabort = () => {
+          clearTimeout(timer);
+          reject(tx.error ?? new Error('Save transaction aborted'));
+        };
         const request = fn(tx.objectStore(STORE));
-        tx.oncomplete = () => resolve(request.result);
+        tx.oncomplete = () => {
+          clearTimeout(timer);
+          resolve(request.result);
+        };
       } catch (error) {
         // A closing connection cannot start transactions; the next operation reopens.
         this.forget(connection);

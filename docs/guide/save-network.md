@@ -47,7 +47,7 @@
 
 | 어댑터 | 저장 위치 |
 |---|---|
-| `IndexedDBAdapter` | DB `gaesup-save`, 오브젝트 스토어 `slots`, 키는 슬롯 이름 |
+| `IndexedDBAdapter` | DB `gaesup-save`, 오브젝트 스토어 `slots`, 키는 슬롯 이름. 연결 하나를 모든 작업이 함께 쓴다. 열기가 5초, 요청이 8초 안에 끝나지 않으면(다른 탭이 옛 버전 연결을 쥐고 있거나 저장소가 멈춤) 트랜잭션을 중단하고 실패로 끝내며, 다음 작업은 연결을 새로 연다 |
 | `LocalStorageAdapter` | `localStorage`의 `gaesup:save:<slot>`(JSON) |
 | `NamespacedSaveAdapter(adapter, namespace)` | 슬롯 이름 앞에 `world:<encodeURIComponent(namespace)>:`를 붙여 월드별로 나눈다 |
 

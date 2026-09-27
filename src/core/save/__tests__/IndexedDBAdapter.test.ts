@@ -1,4 +1,4 @@
-import { IndexedDBAdapter } from '../adapters/IndexedDBAdapter';
+import { INDEXED_DB_TIMEOUT_MS, IndexedDBAdapter } from '../adapters/IndexedDBAdapter';
 
 test.each(['read', 'list', 'remove'] as const)('propagates %s failures instead of reporting success', async (operation) => {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'indexedDB');
@@ -95,6 +95,36 @@ test('a failed open does not poison later operations', async () => {
     void adapter.read('main').catch(() => undefined);
     expect(open).toHaveBeenCalledTimes(2);
   } finally {
+    if (descriptor) Object.defineProperty(globalThis, 'indexedDB', descriptor);
+    else Reflect.deleteProperty(globalThis, 'indexedDB');
+  }
+});
+
+test('an open another tab blocks and a transaction that never ends fail instead of hanging', async () => {
+  jest.useFakeTimers();
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'indexedDB');
+  const blob = { version: 1, savedAt: 0, domains: {} };
+  try {
+    // Nothing ever answers the open: an older connection elsewhere blocks it.
+    Object.defineProperty(globalThis, 'indexedDB', { configurable: true, value: { open: () => ({}) } });
+    const blocked = new IndexedDBAdapter().write('main', blob);
+    const blockedRejection = expect(blocked).rejects.toThrow('open did not finish');
+    await jest.advanceTimersByTimeAsync(INDEXED_DB_TIMEOUT_MS.open);
+    await blockedRejection;
+
+    // The database opens, but the transaction never completes or aborts on its own.
+    const abort = jest.fn();
+    const transaction = { objectStore: () => ({ put: () => ({ result: 'main' }) }), abort, error: null };
+    const openRequest = { result: { transaction: () => transaction }, onsuccess: undefined as (() => void) | undefined };
+    Object.defineProperty(globalThis, 'indexedDB', { configurable: true, value: { open: () => openRequest } });
+    const stuck = new IndexedDBAdapter().write('main', blob);
+    const stuckRejection = expect(stuck).rejects.toThrow('request did not finish');
+    openRequest.onsuccess?.();
+    await jest.advanceTimersByTimeAsync(INDEXED_DB_TIMEOUT_MS.request);
+    await stuckRejection;
+    expect(abort).toHaveBeenCalled();
+  } finally {
+    jest.useRealTimers();
     if (descriptor) Object.defineProperty(globalThis, 'indexedDB', descriptor);
     else Reflect.deleteProperty(globalThis, 'indexedDB');
   }
