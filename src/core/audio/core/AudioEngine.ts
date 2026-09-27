@@ -191,14 +191,15 @@ class AudioEngine {
   }
 
   private fadeOut(source: AudioScheduledSourceNode, gain: GainNode, seconds: number): void {
-    const t = this.ctx!.currentTime;
-    gain.gain.cancelScheduledValues(t);
-    gain.gain.setValueAtTime(gain.gain.value, t);
-    gain.gain.linearRampToValueAtTime(0, t + seconds);
     try {
+      const t = this.ctx!.currentTime;
+      gain.gain.cancelScheduledValues(t);
+      gain.gain.setValueAtTime(gain.gain.value, t);
+      gain.gain.linearRampToValueAtTime(0, t + seconds);
       source.stop(t + seconds);
     } catch {
-      this.releaseSource(source);
+      // Where the fade cannot be scheduled the music stops at once; stopping never throws into a cleanup.
+      this.stopSource(source);
     }
   }
 
