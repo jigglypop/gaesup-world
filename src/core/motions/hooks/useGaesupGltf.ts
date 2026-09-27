@@ -62,7 +62,8 @@ export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult =
     [url, isValidUrl, storeApi],
   );
 
-  return { gltf, size, setSize, getSize };
+  // The result keeps the three-stdlib GLTF type it had under drei; three's loader fills the same fields.
+  return { gltf: gltf as unknown as GltfAndSizeResult['gltf'], size, setSize, getSize };
 };
 
 export const useGaesupGltf = (): GaesupGltfUtils => {
