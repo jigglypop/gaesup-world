@@ -42,6 +42,9 @@ const SHADOW_QUALITY: Record<CascadedSunQuality, ShadowQuality> = {
   high: { cascades: 4, mapSize: 2048, maxFar: 220, lightMargin: 140, updateHz: { near: 30, far: 15 } },
 };
 
+/** Shadow redraw rates while `quality="auto"` finds frames held back by the CPU (`cpuBound`). */
+const CPU_BOUND_SHADOW_HZ = { near: 15, far: 5 } as const;
+
 type ShadowNodeSlot = { shadowNode?: CSMShadowNode };
 type CascadeLights = { lights?: { shadow: THREE.LightShadow }[] };
 
@@ -148,7 +151,11 @@ export function CascadedSun({
   const resolvedMaxFar = maxFar ?? preset.maxFar;
   const resolvedLightMargin = lightMargin ?? preset.lightMargin;
   const resolvedMapSize = shadowMapSize ?? preset.mapSize;
-  const { near: nearHz, far: farHz } = resolveUpdateHz(updateHz, preset.updateHz);
+  const rates = resolveUpdateHz(updateHz, preset.updateHz);
+  // While frames wait on the CPU, fewer shadow redraws mean fewer draws.
+  const cpuBound = useGaesupStore((state) => state.cpuBound);
+  const nearHz = cpuBound ? Math.min(rates.near, CPU_BOUND_SHADOW_HZ.near) : rates.near;
+  const farHz = cpuBound ? Math.min(rates.far, CPU_BOUND_SHADOW_HZ.far) : rates.far;
   const webgpu = rendererKind(renderer) === 'webgpu';
   const mapCount = webgpu ? resolvedCascades : 1;
   const schedule = useMemo(() => createShadowSchedule(mapCount, { near: nearHz, far: farHz }), [mapCount, nearHz, farHz]);

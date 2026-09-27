@@ -76,7 +76,7 @@ function Toggle({ label, hint, checked, onChange }: { label: string; hint: strin
 /** Every number the engine reports about this world, plus the switches that move them. */
 export function StatusPanel({ settings, onChange }: { settings: SceneSettings; onChange: (next: Partial<SceneSettings>) => void }) {
   const report = usePerformanceReport(500);
-  const { frames, render, engine, phases, memory, shadow } = report;
+  const { frames, render, engine, phases, memory, shadow, resolution, gpuMs, cpuBound } = report;
   const [history, setHistory] = useState<number[]>([]);
   useEffect(() => {
     if (frames.fps > 0) setHistory((previous) => [...previous.slice(1 - HISTORY), frames.fps]);
@@ -131,6 +131,25 @@ export function StatusPanel({ settings, onChange }: { settings: SceneSettings; o
       <Section title="렌더링">
         <div className="mh-metrics">
           <Metric label="Draw call" value={number(render.calls)} tone={grade(render.calls, 250, 600)} hint="한 프레임의 그리기 명령 수." />
+          <Metric
+            label="GPU 시간"
+            value={gpuMs === null ? '–' : number(gpuMs, 1)}
+            unit={gpuMs === null ? '' : 'ms'}
+            tone={gpuMs === null ? undefined : grade(gpuMs, 12, 16.7)}
+            hint="GPU가 한 프레임을 그린 시간(WebGPU 타임스탬프). 16.7ms를 넘으면 60fps를 못 지켜요."
+          />
+          <Metric
+            label="해상도"
+            value={resolution ? `${number(resolution.pixelRatio, 2)}×` : '–'}
+            tone={resolution && resolution.pixelRatio < resolution.maxPixelRatio ? 'warn' : undefined}
+            hint={resolution?.adaptive ? `자동 품질: 프레임이 밀리면 픽셀 비율을 낮추고, 여유가 생기면 ${number(resolution.maxPixelRatio, 1)}×까지 되돌려요.` : '품질 설정이 정한 픽셀 비율이에요.'}
+          />
+          <Metric
+            label="CPU 여유"
+            value={cpuBound ? '부족' : '충분'}
+            tone={cpuBound ? 'warn' : 'good'}
+            hint="GPU는 한가한데 프레임이 밀리면 CPU 병목이에요. 그동안 그림자를 덜 자주 다시 그리고 가까운 주민 8명만 그려요."
+          />
           <Metric label="삼각형" value={compact(render.triangles)} tone={grade(render.triangles, 1.5e6, 4e6)} />
           <Metric label="지오메트리" value={number(engine.geometries)} />
           <Metric label="텍스처" value={number(engine.textures)} />

@@ -31,6 +31,15 @@ export type ShadowState = {
   farHz: number;
 };
 
+/** The canvas resolution a quality profile set. */
+export type ResolutionState = {
+  /** Pixel ratio the canvas draws at now. */
+  pixelRatio: number;
+  /** The profile's ratio: `quality="auto"` lowers the canvas under load and raises it back up to this. */
+  maxPixelRatio: number;
+  adaptive: boolean;
+};
+
 export interface PerformanceState {
   performance: {
     render: RenderState;
@@ -39,6 +48,18 @@ export interface PerformanceState {
   /** Null while no shadow-casting sun is mounted. */
   shadow: ShadowState | null;
   setShadow: (shadow: ShadowState | null) => void;
+  /** Null while no quality profile sizes the canvas. */
+  resolution: ResolutionState | null;
+  setResolution: (resolution: ResolutionState | null) => void;
+  /** GPU milliseconds of recent frames from timestamp queries; null where the renderer cannot measure them. */
+  gpuMs: number | null;
+  setGpuMs: (gpuMs: number | null) => void;
+  /**
+   * `quality="auto"` found frames held back by the CPU. Systems shed CPU work while it is set: the sun redraws its
+   * shadow maps less often and `NPCSystem` draws only the nearest residents.
+   */
+  cpuBound: boolean;
+  setCpuBound: (cpuBound: boolean) => void;
   setPerformance: (performance: {
     render: RenderState;
     engine: EngineState;

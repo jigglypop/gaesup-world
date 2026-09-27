@@ -70,7 +70,17 @@ classic 경로와 비교할 때는 `<Canvas gl={createLegacyRenderer}>`로 강�
 | `medium` | 1.5 | 1024 | 켬, preset `balanced` | 0.7 |
 | `low` | 1.0 | 512 | 끔 | 0.4 |
 
-- 실제 픽셀 비율은 `min(profile.pixelRatio, MAX_QUALITY_PIXEL_RATIO(1.5), devicePixelRatio)`다. 후처리와 셰이딩 비용이 픽셀 수에 비례하기 때문이다. `Canvas`가 다시 렌더되며 자기 `dpr`(기본 `[1, 2]`)을 적용해도 profile 값으로 되돌린다.
+- 실제 픽셀 비율은 `min(profile.pixelRatio, MAX_QUALITY_PIXEL_RATIO(1.5), devicePixelRatio)`다. 후처리와 셰이딩 비용이 픽셀 수에 비례하기 때문이다. `Canvas`가 다시 렌더되며 자기 `dpr`(기본 `[1, 2]`)을 적용해도 profile 값으로 되돌린다. `quality="auto"`면 이 값이 상한이고 부하에 따라 그 아래로 내려간다(아래).
+
+### 자동 해상도와 CPU 부하
+
+`quality="auto"`인 월드는 브라우저 프레임(rAF 간격)을 2초 창으로 보고 캔버스를 조절한다(`src/core/perf/adaptive.ts`). 캔버스가 그린 프레임이 아니라 브라우저 프레임을 보므로, `IdleFrameRate`가 유휴 때 일부러 덜 그려도 느린 것으로 보지 않는다.
+
+- GPU 시간: `createRenderer`는 어댑터에 `timestamp-query`가 있으면 `trackTimestamp`를 켠다. 품질 profile이 있는 월드는 0.5초마다 타임스탬프를 읽어 월드 store `gpuMs`에 넣는다.
+- 창이 48fps(60의 80%) 밑이고 GPU가 프레임의 60% 이상을 쓰면(타임스탬프가 없으면 언제나) GPU 병목이다. 픽셀 비용은 비율의 제곱이므로 `비율 × √(fps / 60)`으로 한 번에 낮춘다(최소 한 단계 0.1, 최저 0.7). 바꾼 뒤 2초는 크기 변경 멈춤을 판단에서 뺀다.
+- 창이 밀리는데 GPU가 한가하면 CPU 병목이다. 해상도는 그대로 두고 월드 store `cpuBound`를 켠다. 그동안 `CascadedSun`은 그림자 맵을 가까운 것 15Hz, 먼 것 5Hz로 다시 그리고, `NPCSystem`은 가까운 주민 8명만 그린다(시뮬레이션은 모두 돈다).
+- 화면이 보여 준 최고 속도의 95%를 넘는 창이면 `cpuBound`를 끄고, 마지막 변경 뒤 8초가 지났으면 0.1 올린다. 타임스탬프가 있으면 커진 화면에서도 GPU가 프레임 예산의 80% 안에 들 때만 올려 오르내림을 막는다.
+- 페이지를 다시 보이거나 월드가 올라온 뒤 3초는 판단하지 않는다. 고정 tier(`quality="high"` 등)는 조절하지 않는다.
 
 `auto` 감지(`classifyTier`): GPU 이름은 캔버스 렌더러에서 읽는다(WebGPU 어댑터 정보, 또는 WebGL `WEBGL_debug_renderer_info`). 코어 수(`hardwareConcurrency`, 없으면 4), 메모리(`deviceMemory`, 없으면 4GB), 모바일 UA를 함께 본다.
 
@@ -363,7 +373,6 @@ export function Scenery() {
 - 해가 `CascadedSun`·`DynamicSky` 두 벌이다(UP-1). `DynamicSky`에는 cascade 그림자가 없다.
 - classic WebGL 잔디(`Grass`)는 월드 `quality`를 직접 따르지 않는다(GPU-1에서 GLSL 경로와 함께 지운다).
 - 깃발 컴포넌트는 export되지 않는다.
-- GPU 시간(timestamp query)을 재는 곳이 없다(PERF).
 
 ## 관련 문서
 

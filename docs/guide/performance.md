@@ -27,6 +27,9 @@
 | `performance.engine.geometries`, `textures`, `programs` | 살아 있는 geometry, texture, 셰이더 프로그램 수 |
 | `performance.engine.allocatedBytesEstimate` | 렌더러가 센 할당량 추정. GPU 메모리 사용량이 아니다 |
 | `framePhases` | `FRAME_PHASES` 단계별 프레임당 평균 CPU ms(샘플 창 0.25초). 단계 시간 측정은 production이 아닐 때만 켜지므로 production에서는 계속 `null`이다 |
+| `gpuMs` | 최근 프레임의 GPU ms. `createRenderer`가 어댑터에 `timestamp-query`가 있으면 켜는 타임스탬프 쿼리를 0.5초마다 읽어 부드럽게 한 값이다. 품질 profile이 있을 때(`GaesupWorldContent quality`) 채우고, 재지 못하면 `null` |
+| `resolution` | `{ pixelRatio, maxPixelRatio, adaptive }`: 캔버스의 지금 픽셀 비율과 profile의 상한. `quality="auto"`면 `adaptive`가 true다 |
+| `cpuBound` | `quality="auto"`가 CPU 병목(프레임이 밀리는데 GPU는 한가함)을 찾은 동안 true. 그동안 해는 그림자를 덜 자주 다시 그리고 `NPCSystem`은 가까운 주민만 그린다 |
 
 ```tsx
 import { useEffect } from 'react';
@@ -130,7 +133,8 @@ export async function measureWindow(runtime: GaesupRuntime, ms: number) {
 - `<Canvas dpr={resolveQualityDpr('auto')}>`로 첫 프레임부터 맞는 크기로 그린다.
 - 실행 중에 낮추려면 `usePerfStore.getState().setTier('low')`, 다시 감지하려면 `resetAuto()`를 부른다. `quality="auto"`인 월드와 잔디가 따른다. `usePerfStore`는 페이지 전역이다.
 - tier를 `quality="low"`처럼 고정하면 월드 profile이 바뀌고 노드 렌더러의 잔디도 따른다. classic WebGL 잔디만 전역 `usePerfStore`를 읽으므로 `setTier`도 함께 부른다.
-- 엔진은 느린 프레임을 보고 tier를 스스로 내리지 않는다. 필요하면 `runtime.stats`나 월드 store 값으로 판단해 `setTier`를 부른다.
+- `quality="auto"`는 tier는 그대로 두고 부하를 따라 조절한다([rendering.md](rendering.md#자동-해상도와-cpu-부하)). 2초 창의 브라우저 프레임이 48fps 밑이면 GPU가 바쁠 때 픽셀 비율을 픽셀 수가 60fps에 맞는 값으로 낮추고(최저 0.7), GPU가 한가하면 CPU 병목으로 보고 그림자 갱신을 15/5Hz로, 그리는 주민을 가까운 8명으로 줄인다. 다시 57fps를 넘으면 8초마다 0.1씩 되돌린다.
+- tier 자체를 바꾸려면 `runtime.stats`나 월드 store 값으로 판단해 `setTier`를 부른다.
 
 ## 입력이 없을 때 fps 낮추기: `IdleFrameRate`
 
@@ -245,7 +249,6 @@ export function customLoop(draw: (time: number) => void) {
 
 | 공백 | PRD |
 |---|---|
-| GPU 시간(timestamp query, `trackTimestamp`)을 재지 않는다 | PERF |
 | 게임 화면용 성능 HUD가 없다. `PerformancePanel`은 에디터 패널이고 FPS를 자체 rAF로 따로 잰다 | PERF |
 | `IdleFrameRate`가 기본 장착되지 않는다 | PERF |
 | classic WebGL 잔디가 월드 `quality`를 따르지 않는다 | GPU-1 |

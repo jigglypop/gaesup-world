@@ -172,8 +172,8 @@ export async function createRenderer(props: RendererProps): Promise<AnyRenderer>
     context?: unknown;
   };
   void context;
-  const renderer = await initWebGPURenderer(
-    (powerPreference === 'default' ? restProps : { ...restProps, powerPreference }) as unknown as WebGPURendererParameters,
-  );
+  // GPU timestamps where the adapter has them: `quality="auto"` tells GPU-bound frames from CPU-bound ones by them.
+  const parameters = { trackTimestamp: true, ...restProps, ...(powerPreference === 'default' ? {} : { powerPreference }) };
+  const renderer = await initWebGPURenderer(parameters as unknown as WebGPURendererParameters);
   return renderer ? installDisposalCompatibility(renderer) : createLegacyRenderer(props);
 }

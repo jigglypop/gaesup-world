@@ -7,7 +7,7 @@ import type { PerfTier } from './types';
 import { countNearOnlyCasters } from '../rendering/sky/nearShadow';
 import { useGaesupRuntime } from '../runtime/runtimeContext';
 import { useGaesupStore } from '../stores/gaesupStore';
-import type { EngineState, FramePhaseTimings, RenderState, ShadowState } from '../stores/slices/performance/types';
+import type { EngineState, FramePhaseTimings, RenderState, ResolutionState, ShadowState } from '../stores/slices/performance/types';
 
 export type FrameTimeSummary = { fps: number; avgMs: number; p50Ms: number; p95Ms: number; maxMs: number };
 
@@ -27,6 +27,12 @@ export type PerformanceReport = {
   tier: PerfTier;
   /** The sun's shadow maps and how many casters draw into the nearest cascade only; null without a shadow sun. */
   shadow: (ShadowState & { nearOnlyCasters: number }) | null;
+  /** The canvas pixel ratio and its ceiling; null while no quality profile sizes the canvas. */
+  resolution: ResolutionState | null;
+  /** GPU milliseconds of recent frames (WebGPU timestamp queries); null where they are not measured. */
+  gpuMs: number | null;
+  /** Frames held back by the CPU while `quality="auto"` watches; shadows and residents shed work meanwhile. */
+  cpuBound: boolean;
 };
 
 const EMPTY_FRAMES: FrameTimeSummary = { fps: 0, avgMs: 0, p50Ms: 0, p95Ms: 0, maxMs: 0 };
@@ -63,6 +69,9 @@ export function usePerformanceReport(intervalMs = 500): PerformanceReport {
   const { render, engine } = useGaesupStore(useShallow((state) => state.performance));
   const phases = useGaesupStore((state) => state.framePhases);
   const shadow = useGaesupStore((state) => state.shadow);
+  const resolution = useGaesupStore((state) => state.resolution);
+  const gpuMs = useGaesupStore((state) => state.gpuMs);
+  const cpuBound = useGaesupStore((state) => state.cpuBound);
   const tier = usePerfStore((state) => state.profile.tier);
   const [timing, setTiming] = useState<Timing>({ frames: EMPTY_FRAMES, drawnFps: null, fixedTicksPerSecond: null, memory: null, nearOnlyCasters: 0 });
 
@@ -102,5 +111,5 @@ export function usePerformanceReport(intervalMs = 500): PerformanceReport {
   }, [intervalMs, runtime]);
 
   const { nearOnlyCasters, ...rest } = timing;
-  return { ...rest, render, engine, phases, tier, shadow: shadow ? { ...shadow, nearOnlyCasters } : null };
+  return { ...rest, render, engine, phases, tier, shadow: shadow ? { ...shadow, nearOnlyCasters } : null, resolution, gpuMs, cpuBound };
 }
