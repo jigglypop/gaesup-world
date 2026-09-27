@@ -10,9 +10,9 @@ import { NPCInstance } from '../index';
 const mockModel: { loaded: boolean; pending: Promise<void>; gltf?: { scene: THREE.Group; animations: THREE.AnimationClip[] } } = {
   loaded: false, pending: Promise.resolve(),
 };
-jest.mock('@react-three/drei', () => ({
+jest.mock('../../../../assets/useGLTFAsset', () => ({
   // Like the loader's cache, every call for a loaded model returns the same result.
-  useGLTF: () => {
+  useGLTFAsset: () => {
     if (!mockModel.loaded) throw mockModel.pending;
     const three = jest.requireActual<typeof import('three')>('three');
     return (mockModel.gltf ??= { scene: new three.Group(), animations: [] });

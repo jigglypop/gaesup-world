@@ -1,6 +1,6 @@
 import React, { Suspense, useCallback, useRef, useEffect, useMemo, useState } from 'react';
 
-import { useGLTF, useAnimations } from '@react-three/drei';
+import { useAnimations } from '@react-three/drei';
 import { CapsuleCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
@@ -8,6 +8,7 @@ import { SkeletonUtils } from 'three-stdlib';
 import { Text } from '@/core/rendering/legacyDrei';
 import { useSharedFrame, type SharedFrameChannel } from '@core/runtime/frame';
 
+import { useGLTFAsset } from '../../assets/useGLTFAsset';
 import { GaesupErrorBoundary } from '../../error';
 import { releaseObject } from '../../rendering/release';
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
@@ -100,7 +101,7 @@ const RemotePlayerContent = React.memo(function RemotePlayerContent({
   const nameTagSize = config?.rendering?.nameTagSize || 0.5;
   
   // 모델 로드
-  const { scene, animations } = useGLTF(modelUrl);
+  const { scene, animations } = useGLTFAsset(modelUrl);
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   useEffect(() => () => releaseObject(clone), [clone]);
   const { actions } = useAnimations(animations, animationRootRef);

@@ -1,11 +1,12 @@
-import React, { Suspense, useContext, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { Suspense, useContext, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
-import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import { LampRegistryContext } from './lampPool';
+import { AssetBoundary } from '../../../../assets/AssetBoundary';
 import { normalizeImportedMaterials } from '../../../../assets/materialPolicy';
+import { useGLTFAsset } from '../../../../assets/useGLTFAsset';
 import { releaseObject } from '../../../../rendering/release';
 import { castSubtreeNearShadowOnly } from '../../../../rendering/sky/nearShadow';
 import type { BuildingModelFallbackKind } from '../../../types';
@@ -23,34 +24,8 @@ type ModelObjectProps = {
   shadow?: 'all' | 'near' | 'none';
 };
 
-type ModelObjectState = {
-  failed: boolean;
-};
-
-class ModelErrorBoundary extends React.Component<
-  { fallback: React.ReactNode; children: React.ReactNode },
-  ModelObjectState
-> {
-  override state: ModelObjectState = { failed: false };
-
-  static getDerivedStateFromError(): ModelObjectState {
-    return { failed: true };
-  }
-
-  override componentDidUpdate(prevProps: { children: React.ReactNode }): void {
-    if (prevProps.children !== this.props.children && this.state.failed) {
-      this.setState({ failed: false });
-    }
-  }
-
-  override render(): React.ReactNode {
-    if (this.state.failed) return this.props.fallback;
-    return this.props.children;
-  }
-}
-
 function LoadedModel({ url, shadow }: { url: string; shadow: NonNullable<ModelObjectProps['shadow']> }) {
-  const { scene } = useGLTF(url) as { scene: THREE.Object3D };
+  const { scene } = useGLTFAsset(url);
   const clone = useMemo(() => {
     const owned = SkeletonUtils.clone(scene);
     normalizeImportedMaterials(owned, 'prop');
@@ -230,19 +205,14 @@ function LampLight({ color }: { color: string }) {
 
 export default function ModelObject({ url, label, fallbackKind, scale = 1, color, shadow = 'near' }: ModelObjectProps) {
   const fallback = <FallbackModel kind={fallbackKind} color={color} />;
-
-  useEffect(() => {
-    if (url) useGLTF.preload(url);
-  }, [url]);
-
   return (
     <group name={label ?? 'building-model-object'} scale={[scale, scale, scale]}>
       {url ? (
-        <ModelErrorBoundary fallback={fallback}>
+        <AssetBoundary source={url} fallback={fallback}>
           <Suspense fallback={fallback}>
             <LoadedModel url={url} shadow={shadow} />
           </Suspense>
-        </ModelErrorBoundary>
+        </AssetBoundary>
       ) : fallback}
     </group>
   );

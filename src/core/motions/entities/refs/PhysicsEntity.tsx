@@ -9,7 +9,6 @@ import {
   type ForwardedRef,
 } from 'react';
 
-import { useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
 import { CapsuleCollider, RapierRigidBody, RigidBody, euler, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -22,6 +21,7 @@ import { useWorldPhysicsInterpolation } from '@core/simulation/physicsContext';
 
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
+import { useGLTFAsset } from '../../../assets/useGLTFAsset';
 import { useContactShadow } from '../../../rendering/lighting/ContactShadows';
 import { releaseObject } from '../../../rendering/release';
 import { useSceneToon } from '../../../rendering/useSceneToon';
@@ -99,7 +99,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const url = useDeferredValue(props.url);
     const { size } = useGltfAndSize({ url: url || '' });
     const modelUrl = url?.trim() ? url : EMPTY_GLTF_DATA_URI;
-    const { scene, animations } = useGLTF(modelUrl);
+    const { scene, animations } = useGLTFAsset(modelUrl);
     const { actions, ref: animationRef } = useSharedAnimations(animations, undefined, props.animationCullRadius);
     const activeAnimationRef = useRef<string | undefined>(undefined);
 

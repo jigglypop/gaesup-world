@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from 'react';
 
-import { useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
@@ -9,6 +8,7 @@ import { useAnimationPlayer } from '@hooks/useAnimationPlayer';
 
 import { RigidPartRef } from './RigidPartRef';
 import { ModelRendererProps, PartsGroupRefProps } from './types';
+import { useGLTFAsset } from '../../../assets/useGLTFAsset';
 import { resolveSharedSkeletonBinding } from '../../../character/skeleton';
 
 export function ModelRenderer({ nodes, color, colorNodeNames, skeleton, url, excludeNodeNames }: ModelRendererProps) {
@@ -151,7 +151,7 @@ export function PartsGroupRef(props: PartsGroupRefProps) {
 }
 
 function SkinnedPartRef({ url, isActive, color, skeleton }: PartsGroupRefProps) {
-  const { scene } = useGLTF(url) as { scene: THREE.Object3D };
+  const { scene } = useGLTFAsset(url);
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes } = useGraph(clone);
   return (

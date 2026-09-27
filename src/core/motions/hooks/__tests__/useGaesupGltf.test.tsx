@@ -1,8 +1,8 @@
-import { useGLTF } from '@react-three/drei';
 import { act, renderHook } from '@testing-library/react';
 import * as THREE from 'three';
 
 import { gltfAssetCache } from '../../../assets/GLTFAssetCache';
+import { useGLTFAsset } from '../../../assets/useGLTFAsset';
 import { setDefaultToonMode } from '../../../rendering/toon';
 import { useGaesupGltf, useGltfAndSize } from '../useGaesupGltf';
 
@@ -18,8 +18,8 @@ const mockStore = {
 };
 const mockGltfs = new Map<string, MockGltf>();
 
-jest.mock('@react-three/drei', () => ({
-  useGLTF: jest.fn((url: string) => {
+jest.mock('../../../assets/useGLTFAsset', () => ({
+  useGLTFAsset: jest.fn((url: string) => {
     if (url.startsWith('data:')) return { animations: [], scene: new THREE.Group() };
     const gltf = mockGltfs.get(url);
     if (!gltf) throw new Error(`Missing mock GLTF: ${url}`);
@@ -61,7 +61,7 @@ describe('useGltfAndSize source ownership', () => {
 
   test.each([undefined, '', '   '])('uses a valid empty GLTF for missing URL %s', url => {
     const { result } = renderHook(() => useGltfAndSize(url === undefined ? {} : { url }));
-    const requested = jest.mocked(useGLTF).mock.calls.at(-1)![0] as string;
+    const requested = jest.mocked(useGLTFAsset).mock.calls.at(-1)![0] as string;
     expect(JSON.parse(decodeURIComponent(requested.split(',')[1]!)).asset.version).toBe('2.0');
     expect(result.current.size.toArray()).toEqual([1, 1, 1]);
     expect(mockSetSizes).not.toHaveBeenCalled();

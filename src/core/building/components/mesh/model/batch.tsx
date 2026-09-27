@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
-import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 import { normalizeImportedMaterials } from '../../../../assets/materialPolicy';
+import { useGLTFAsset } from '../../../../assets/useGLTFAsset';
 import { castNearShadowOnly } from '../../../../rendering/sky/nearShadow';
 import type { BuildingObjectCatalogItem } from '../../../catalog/objects';
 import type { PlacedObject } from '../../../types';
@@ -68,7 +68,7 @@ export function ModelBatch({ url, objects, scale = 1, shadow = 'near' }: {
   scale?: number;
   shadow?: ModelShadow;
 }) {
-  const { scene } = useGLTF(url) as { scene: THREE.Object3D };
+  const { scene } = useGLTFAsset(url);
   const parts = useMemo(() => {
     // A shallow clone shares geometry; its materials take the prop policy (no stray metal) like single models do.
     const owned = scene.clone(true);

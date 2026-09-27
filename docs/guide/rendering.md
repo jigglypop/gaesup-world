@@ -21,6 +21,8 @@ R3F `Canvas`의 `gl`에 넘기는 비동기 팩토리다(`src/core/rendering/web
 
 월드에서 영영 내려가는 복제 모델(플레이어·NPC·건축 모델·원격 플레이어)은 `releaseObject`로 뼈 텍스처와 객체별 렌더 객체(three r186 `Object3D.dispose`)를 해제한다. 캐시된 모델과 함께 쓰는 지오메트리·재질은 캐시가 가진다.
 
+코어는 모든 GLB를 `gltfAssetCache` 하나로 불러온다(컴포넌트는 `useGLTFAsset`, 명령형 코드와 아바타는 `acquire`). 한 모델은 한 번만 받고, 쓰는 쪽이 있는 동안 유지한다. 모두 놓으면 최근에 놓인 24개(`GLTF_RETAINED`)까지 남겨 되돌아갈 때 바로 그리고, 넘치면 가장 오래전에 놓인 모델의 지오메트리·재질·텍스처를 해제한다. 다운로드는 3개씩(`GLTF_CONCURRENCY`) 돌고, 탭이 보이는 시간으로 30초 안에 오지 않으면 끊는다. 실패한 모델은 쉬는 동안 곧바로 실패를 돌려주고, 5초(`GLTF_RETRY_MS`)부터 실패할 때마다 두 배로(최대 1분) 쉰 뒤 다시 받는다. 건축 모델과 NPC 부위는 실패한 동안 대체 도형을 그리다가 다시 불러온다. Draco 압축 GLB는 drei `useGLTF`처럼 gstatic 디코더로 푼다.
+
 `shadows="percentage"`를 쓰는 이유: R3F의 `shadows`(`true`)는 `PCFSoftShadowMap`을 고르는데 three r186은 이 방식을 없애고 경고와 함께 `PCFShadowMap`으로 바꾼다. `"percentage"`는 처음부터 `PCFShadowMap`이다.
 
 브라우저별 WebGPU 기본 지원 현황은 계속 바뀌므로 여기서 다루지 않는다. 판단은 실행 중 감지(`isWebGPUAvailable`)로 한다.

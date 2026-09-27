@@ -117,7 +117,7 @@ export function World() {
 1. `<GaesupWorld urls={{ characterUrl }}>`: `WorldConfigProvider`가 `characterUrl`(짧은 별칭 `character`도 받고, 둘 다 있으면 긴 이름이 이긴다)을 커밋 뒤 effect에서 월드 store의 `setUrls`로 넣는다.
 2. 월드 store `urls.characterUrl`: `useGaesupStore((s) => s.urls)`로 읽을 수 있다.
 3. `GaesupController` → `EntityController`: `mode.type`이 `character`이면 `urls.characterUrl`을 모델로 쓴다. URL이 비어 있는 동안(첫 커밋 직후)과 건축 편집 모드(`editMode !== 'none'`)에서는 아무것도 그리지 않는다.
-4. `PhysicsEntity`가 drei `useGLTF`로 GLB를 불러온다. 로딩 중에는 가장 가까운 `Suspense`가 받는다.
+4. `PhysicsEntity`가 `useGLTFAsset`(공유 캐시 `gltfAssetCache`)으로 GLB를 불러온다. 로딩 중에는 가장 가까운 `Suspense`가 받는다.
 
 - 나중에 모델을 바꾸려면 새 `urls`로 다시 렌더하거나, 월드 안 컴포넌트에서 `const setUrls = useGaesupStore((s) => s.setUrls)`로 받아 `setUrls({ characterUrl })`를 부른다.
 - `WorldConfigProvider`는 store의 URL 네 개(`characterUrl`·`vehicleUrl`·`airplaneUrl`·`ridingUrl`, 앞의 셋은 별칭 `character`·`vehicle`·`airplane`)를 넣는다.

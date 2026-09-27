@@ -45,8 +45,8 @@ jest.mock('@core/animation/hooks/useSharedAnimations', () => ({
   useSharedAnimations: () => ({ actions: {}, ref: { current: null } }),
 }));
 
-jest.mock('@react-three/drei', () => ({
-  useGLTF: (url: string) => {
+jest.mock('../../../../assets/useGLTFAsset', () => ({
+  useGLTFAsset: (url: string) => {
     const gltf = mockGltfs.get(url);
     if (!gltf) throw new Error(`Missing mock GLTF: ${url}`);
     return gltf;

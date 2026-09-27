@@ -14,9 +14,9 @@ const mockInterpolated: unknown[][] = [];
 jest.mock('@core/animation/hooks/useSharedAnimations', () => ({
   useSharedAnimations: () => ({ actions: {}, ref: { current: null } }),
 }));
-jest.mock('@react-three/drei', () => {
+jest.mock('../../../../assets/useGLTFAsset', () => {
   const three = jest.requireActual<typeof import('three')>('three');
-  return { useGLTF: () => ({ scene: new three.Group(), animations: [] }) };
+  return { useGLTFAsset: () => ({ scene: new three.Group(), animations: [] }) };
 });
 jest.mock('@react-three/fiber', () => ({ useGraph: () => ({ nodes: {}, materials: {} }) }));
 jest.mock('@react-three/rapier', () => {

@@ -7,7 +7,8 @@ import { AssetPreviewCanvas } from '../components/AssetPreviewCanvas';
 
 let mockScene: THREE.Group;
 jest.mock('@react-three/fiber', () => ({ Canvas: ({ children }: { children: ReactNode }) => children }));
-jest.mock('@react-three/drei', () => ({ OrbitControls: () => null, useGLTF: (url: string) => {
+jest.mock('@react-three/drei', () => ({ OrbitControls: () => null }));
+jest.mock('../useGLTFAsset', () => ({ useGLTFAsset: (url: string) => {
   if (url === '/broken.glb') throw new Error('Failed to fetch model');
   return { scene: mockScene };
 } }));

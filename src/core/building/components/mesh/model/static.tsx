@@ -1,6 +1,5 @@
 import { memo, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { useGLTF } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import type * as THREE from 'three';
 import { attribute } from 'three/tsl';
@@ -8,6 +7,7 @@ import { MeshStandardNodeMaterial } from 'three/webgpu';
 
 import { ModelBatch } from './batch';
 import { bakeModel, layoutStaticModels, mergeStaticModels, sameStaticCell, type BakedModel, type StaticCell, type StaticLayout, type StaticModelGroup } from './merge';
+import { useGLTFAsset } from '../../../../assets/useGLTFAsset';
 import { CompileGate } from '../../../../rendering/CompileGate';
 import { castNearShadowOnly } from '../../../../rendering/sky/nearShadow';
 import { rendererKind } from '../../../../rendering/webgpu';
@@ -34,7 +34,7 @@ function cellMaterial(side: THREE.Side): MeshStandardNodeMaterial {
 
 /** Loads one model and reports its bake, in its own Suspense so a model still loading hides no other. */
 function BakeModel({ url, onBake }: { url: string; onBake: Report }) {
-  const { scene } = useGLTF(url) as unknown as { scene: THREE.Object3D };
+  const { scene } = useGLTFAsset(url);
   useLayoutEffect(() => {
     onBake(url, bakeModel(scene));
     return () => onBake(url, undefined);

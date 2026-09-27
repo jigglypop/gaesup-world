@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo } from 'react';
 
-import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 import { GltfAndSizeOptions, GltfAndSizeResult, GaesupGltfUtils, ResourceUrlsType } from './types';
 import { gltfAssetCache } from '../../assets/GLTFAssetCache';
+import { useGLTFAsset } from '../../assets/useGLTFAsset';
 import { useGaesupStore, useGaesupStoreApi } from '../../stores/gaesupStore';
 
 const defaultSize = new THREE.Vector3(1, 1, 1);
@@ -25,7 +25,7 @@ export const useGltfAndSize = ({ url }: GltfAndSizeOptions): GltfAndSizeResult =
   const setSizes = useGaesupStore((state) => state.setSizes);
   const isValidUrl = Boolean(url?.trim());
   const safeUrl = isValidUrl ? url! : EMPTY_GLTF_URL;
-  const gltf = useGLTF(safeUrl);
+  const gltf = useGLTFAsset(safeUrl);
   const calculateSize = useCallback(
     () => (isValidUrl && gltf.scene ? calculateSizeFromScene(gltf.scene) : defaultSize.clone()),
     [gltf.scene, isValidUrl],

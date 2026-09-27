@@ -1,8 +1,9 @@
-import { useAnimations, useGLTF } from '@react-three/drei';
+import { useAnimations } from '@react-three/drei';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
+import { useGLTFAsset } from '../../../assets/useGLTFAsset';
 import { frameScheduler, getSharedFrameEntryCount } from '../../../runtime/frame';
 import type { PlayerState } from '../../types';
 import { RemotePlayer } from '../RemotePlayer';
@@ -19,7 +20,9 @@ jest.mock('three', () => {
 jest.mock('@react-three/drei', () => ({
   Text: 'Text',
   useAnimations: jest.fn(() => ({ actions: {}, ref: undefined })),
-  useGLTF: jest.fn(() => ({
+}));
+jest.mock('../../../assets/useGLTFAsset', () => ({
+  useGLTFAsset: jest.fn(() => ({
     animations: [],
     scene: { traverse: jest.fn() },
   })),
@@ -64,7 +67,7 @@ const PLAYER_STATE: PlayerState = {
 };
 
 describe('RemotePlayer', () => {
-  const mockedUseGLTF = jest.mocked(useGLTF);
+  const mockedUseGLTF = jest.mocked(useGLTFAsset);
 
   beforeEach(() => {
     mockedUseGLTF.mockClear();
@@ -225,7 +228,7 @@ describe('RemotePlayer', () => {
       });
       return cloned;
     });
-    mockedUseGLTF.mockReturnValue({ scene: source, animations: [] } as unknown as ReturnType<typeof useGLTF>);
+    mockedUseGLTF.mockReturnValue({ scene: source, animations: [] } as unknown as ReturnType<typeof useGLTFAsset>);
     let renderer: ReactTestRenderer | undefined;
     try {
       act(() => { renderer = create(<RemotePlayer playerId="bones" state={PLAYER_STATE} characterUrl="/first.glb" />); });
@@ -233,7 +236,7 @@ describe('RemotePlayer', () => {
       expect(ownedDisposals[0]).not.toHaveBeenCalled();
       const replacement = new THREE.Group();
       replacement.add(source);
-      mockedUseGLTF.mockReturnValue({ scene: replacement, animations: [] } as unknown as ReturnType<typeof useGLTF>);
+      mockedUseGLTF.mockReturnValue({ scene: replacement, animations: [] } as unknown as ReturnType<typeof useGLTFAsset>);
       act(() => { renderer?.update(<RemotePlayer playerId="bones" state={PLAYER_STATE} characterUrl="/second.glb" />); });
       expect(ownedDisposals).toHaveLength(2);
       expect(ownedDisposals[0]).toHaveBeenCalledTimes(1);
@@ -265,7 +268,7 @@ describe('RemotePlayer', () => {
     const originalArray = (clonedScene.children[1] as THREE.Mesh).material;
     jest.mocked(SkeletonUtils.clone).mockReturnValueOnce(clonedScene);
     const originalLoader = mockedUseGLTF.getMockImplementation();
-    mockedUseGLTF.mockReturnValue({ scene, animations: [] } as unknown as ReturnType<typeof useGLTF>);
+    mockedUseGLTF.mockReturnValue({ scene, animations: [] } as unknown as ReturnType<typeof useGLTFAsset>);
     let renderer: ReactTestRenderer | undefined;
     try {
       act(() => { renderer = create(<RemotePlayer playerId="tint" state={{ ...PLAYER_STATE, color: '#ff0000' }} characterUrl="/tint.glb" />); });

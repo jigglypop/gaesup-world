@@ -29,7 +29,7 @@ NPC·대화 API는 루트 `gaesup-world`에만 있다. 런타임 없이(legacy) 
 | `baseParts`, `clothingParts`, `accessoryParts?` | `NPCPart[]`. `fullModelUrl`이 없을 때 부위를 조립해 그린다 |
 | `defaultAnimation?`, `defaultClothingSet?` | |
 
-`NPCPart`: `{ id, type: 'body' | 'hair' | 'top' | 'bottom' | 'shoes' | 'glasses' | 'hat' | 'accessory' | 'weapon', url, position?, rotation?, scale?, color?, category?, metadata? }`. 부위 GLB는 각자 애니메이션을 재생하며, 불러오지 못하면 반투명 상자로 대신한다.
+`NPCPart`: `{ id, type: 'body' | 'hair' | 'top' | 'bottom' | 'shoes' | 'glasses' | 'hat' | 'accessory' | 'weapon', url, position?, rotation?, scale?, color?, category?, metadata? }`. 부위 GLB는 각자 애니메이션을 재생하며, 불러오지 못하면 반투명 상자로 대신하다가 다시 불러온다.
 
 그리는 경로는 두 가지다(`src/core/npc/components/NPCInstance/index.tsx`). `fullModelUrl`(또는 인스턴스 `metadata.modelUrl`)이 있으면 물리 엔티티 한 개(키네마틱 캡슐)로, 없으면 부위 목록(템플릿 부위 + 의상 세트 + `customParts`, 같은 `type`은 교체)으로 그린다.
 

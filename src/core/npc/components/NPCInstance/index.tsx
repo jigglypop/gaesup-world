@@ -1,6 +1,5 @@
 import React, { Suspense, useRef, useEffect, useLayoutEffect, useMemo, useCallback, useState } from 'react';
 
-import { useGLTF } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
 import { CapsuleCollider, RigidBody, RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -12,7 +11,9 @@ import { NPCPresence } from './NPCPresence';
 import { NPCPartMeshProps, NPCInstanceProps } from './types';
 import { useClipTransition } from '../../../animation/hooks/useClipTransition';
 import { useSharedAnimations } from '../../../animation/hooks/useSharedAnimations';
+import { AssetBoundary } from '../../../assets/AssetBoundary';
 import type { ImportedMaterialPolicy } from '../../../assets/materialPolicy';
+import { useGLTFAsset } from '../../../assets/useGLTFAsset';
 import { CompileGate } from '../../../rendering/CompileGate';
 import { useContactShadow } from '../../../rendering/lighting/ContactShadows';
 import { castSubtreeNearShadowOnly } from '../../../rendering/sky/nearShadow';
@@ -34,35 +35,6 @@ type PointerHandlers = {
   click?: () => void;
 };
 type GroupWithHandlers = THREE.Group & { __handlers?: PointerHandlers };
-
-type NPCPartErrorBoundaryProps = NPCPartMeshProps & {
-  children: React.ReactNode;
-};
-
-type NPCPartErrorBoundaryState = {
-  hasError: boolean;
-};
-
-class NPCPartErrorBoundary extends React.Component<NPCPartErrorBoundaryProps, NPCPartErrorBoundaryState> {
-  override state: NPCPartErrorBoundaryState = { hasError: false };
-
-  static getDerivedStateFromError(): NPCPartErrorBoundaryState {
-    return { hasError: true };
-  }
-
-  override componentDidUpdate(prevProps: NPCPartErrorBoundaryProps) {
-    if (this.state.hasError && prevProps.part.url !== this.props.part.url) {
-      this.setState({ hasError: false });
-    }
-  }
-
-  override render() {
-    if (this.state.hasError) {
-      return <NPCPartFallbackMesh part={this.props.part} instanceId={this.props.instanceId} />;
-    }
-    return this.props.children;
-  }
-}
 
 function NPCPartFallbackMesh({ part }: NPCPartMeshProps) {
   return (
@@ -89,7 +61,7 @@ function resolveNPCAssetUrl(url: string): string {
 
 function NPCPartGltfMesh({ part, currentAnimation, transition, cullRadius, materialPolicy = 'keep', onClips, height, onFit }: NPCPartMeshProps) {
   const assetUrl = useMemo(() => resolveNPCAssetUrl(part.url), [part.url]);
-  const gltf = useGLTF(assetUrl);
+  const gltf = useGLTFAsset(assetUrl);
   const figure = useMemo(() => cloneNPCFigure(gltf.scene, materialPolicy), [gltf, materialPolicy]);
   const prepared = useMemo(() => prepareNPCClips(gltf.scene, gltf.animations), [gltf]);
   // Casts into the nearest shadow cascade only; the renderer's objects for this copy are freed when it goes.
@@ -125,11 +97,11 @@ function NPCPartMesh(props: NPCPartMeshProps) {
   const hasUrl = !!part.url && part.url.trim() !== '';
   if (!hasUrl) return <NPCPartFallbackMesh part={part} instanceId={instanceId} />;
   return (
-    <NPCPartErrorBoundary part={part} instanceId={instanceId} currentAnimation={props.currentAnimation}>
+    <AssetBoundary source={part.url} fallback={<NPCPartFallbackMesh part={part} instanceId={instanceId} />}>
       <NPCModelGate>
         <NPCPartGltfMesh {...props} />
       </NPCModelGate>
-    </NPCPartErrorBoundary>
+    </AssetBoundary>
   );
 }
 

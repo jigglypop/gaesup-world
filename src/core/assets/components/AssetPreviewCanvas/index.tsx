@@ -1,12 +1,12 @@
 import { Component, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
-import { OrbitControls, useGLTF } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import { releaseObject } from '../../../rendering/release';
 import type { AssetRecord } from '../../types';
+import { useGLTFAsset } from '../../useGLTFAsset';
 
 export type AssetPreviewCanvasProps = {
   asset?: AssetRecord;
@@ -42,7 +42,7 @@ class PreviewBoundary extends Component<PreviewBoundaryProps, { failed: boolean 
 }
 
 function ModelPreview({ url }: { url: string }) {
-  const { scene } = useGLTF(url) as { scene: THREE.Object3D };
+  const { scene } = useGLTFAsset(url);
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   useEffect(() => () => releaseObject(clone), [clone]);
 

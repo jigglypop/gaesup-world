@@ -11,9 +11,9 @@ const mockBodies: MockBody[] = [];
 jest.mock('@core/animation/hooks/useSharedAnimations', () => ({
   useSharedAnimations: () => ({ actions: {}, ref: { current: null } }),
 }));
-jest.mock('@react-three/drei', () => {
+jest.mock('../../../../assets/useGLTFAsset', () => {
   const three = jest.requireActual<typeof import('three')>('three');
-  return { useGLTF: () => ({ scene: new three.Group(), animations: [] }) };
+  return { useGLTFAsset: () => ({ scene: new three.Group(), animations: [] }) };
 });
 jest.mock('@react-three/fiber', () => ({ useGraph: () => ({ nodes: {}, materials: {} }) }));
 // Like rapier: the body is created in a passive effect, handed to the ref, and removed from the world on cleanup.

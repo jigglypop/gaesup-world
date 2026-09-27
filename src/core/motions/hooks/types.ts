@@ -1,9 +1,8 @@
 import { RefObject } from 'react';
 
-import type { useGLTF } from '@react-three/drei';
-import type { ObjectMap } from '@react-three/fiber';
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 import type { AnimatorControllerDefinition } from '../../animation/core/animator/types';
 import type { AnimationType } from '../../animation/core/types';
@@ -13,11 +12,8 @@ export type ResourceUrlsType = Record<string, string | undefined>;
 
 export type GltfAndSizeOptions = { url?: string };
 
-type LoadedGltf = ReturnType<typeof useGLTF<string>>;
-type LegacyCompatibleGltf = Omit<LoadedGltf, keyof ObjectMap>;
-
 export type GltfAndSizeResult = {
-  gltf: LegacyCompatibleGltf;
+  gltf: GLTF;
   size: THREE.Vector3;
   setSize: (newSize: THREE.Vector3, keyName?: string) => void;
   getSize: (keyName?: string) => THREE.Vector3 | null;

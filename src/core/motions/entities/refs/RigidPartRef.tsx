@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react';
 
-import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 import type { PartsGroupRefProps } from './types';
+import { useGLTFAsset } from '../../../assets/useGLTFAsset';
 import type { CharacterBoneAttachment } from '../../../character/attachments';
 import { findAttachmentBone, updateBoneAttachmentMatrix } from '../../../character/boneAttachment';
 import { useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
@@ -15,7 +15,7 @@ type RigidPartRefProps = PartsGroupRefProps & { attachment: CharacterBoneAttachm
 const BONE_ATTACHMENT_FRAME: SharedFrameChannel = { phase: 'lateUpdate', label: 'character:bone-attachments' };
 
 export function RigidPartRef({ url, color, skeleton, attachment }: RigidPartRefProps) {
-  const { scene } = useGLTF(url);
+  const { scene } = useGLTFAsset(url);
   const follower = useRef<THREE.Group>(null);
   const bone = useMemo(() => findAttachmentBone(skeleton, attachment.bone), [skeleton, attachment.bone]);
   const { clone, ownedMaterials, hasSkin } = useMemo(() => {

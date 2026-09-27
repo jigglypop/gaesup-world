@@ -329,7 +329,7 @@ WebGL 전용 경로(GPU-1에서 지울 대상):
 | 전역 | 위치 | 영향 |
 |---|---|---|
 | 페이지 기본 오류 보고 | `src/core/utils/reportError.ts`의 `reportError`·`sink` | 런타임이 없는 경계와, setup 전·dispose 뒤의 런타임 보고가 쓴다. `setErrorSink`는 이 기본값만 바꾼다 |
-| glTF 캐시 | `src/core/assets/GLTFAssetCache.ts`의 `gltfAssetCache` | 모델 캐시 공유 |
+| glTF 캐시 | `src/core/assets/GLTFAssetCache.ts`의 `gltfAssetCache` | 모델과 보존 목록(최근 24개)을 모든 월드가 같이 쓴다 |
 | 자동 저장 중지 카운터 | `src/core/save/core/autoSaveSuspension.ts` | 방문 중 중지가 모든 월드에 걸린다 |
 | legacy store | `lazyScopedStore`의 정적 API, `lazyStore` 6개 | [store 범위](#store-범위) |
 | 전역 프레임 스케줄러 | `frameScheduler`(`src/core/runtime/frame/FrameScheduler.ts`) | 캔버스 밖 등록과 `createFrameDriver` 기본값 |

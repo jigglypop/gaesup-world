@@ -1,5 +1,6 @@
 export * from './api';
 export * from './GLTFAssetCache';
+export { useGLTFAsset } from './useGLTFAsset';
 export * from './materialPolicy';
 export * from './building';
 export * from './types';
