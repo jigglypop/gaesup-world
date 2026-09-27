@@ -24,7 +24,7 @@ export type NPCSystemProps = {
 };
 
 const cull = { frustum: new Frustum(), matrix: new Matrix4(), sphere: new Sphere() };
-/** Residents drawn while `quality="auto"` finds frames held back by the CPU (`cpuBound`), nearest first. */
+/** Residents drawn, nearest first, while `quality="auto"` finds frames held back by the CPU; the simulation runs them all. */
 const CPU_BOUND_VISIBLE_NPCS = 8;
 
 /** Subscribes to one NPC, so a change to another NPC never reaches this subtree. */
@@ -38,9 +38,7 @@ const NPCInstanceSlot = memo(function NPCInstanceSlot({ id, isEditMode, onSelect
 });
 
 export function NPCSystem({ maxVisible = Infinity }: NPCSystemProps = {}) {
-  // While frames wait on the CPU only the nearest residents draw; the simulation keeps running for all of them.
-  const cpuBound = useGaesupStore((state) => state.cpuBound);
-  const visibleLimit = cpuBound ? Math.min(maxVisible, CPU_BOUND_VISIBLE_NPCS) : maxVisible;
+  const visibleLimit = useGaesupStore((state) => (state.cpuBound ? Math.min(maxVisible, CPU_BOUND_VISIBLE_NPCS) : maxVisible));
   const simulation = useNPCSimulation();
   const gl = useThree((state) => state.gl);
   const getThreeState = useThree((state) => state.get);
