@@ -100,6 +100,8 @@ function Villagers() {
 - 모델 클립 준비(`NPCInstance`가 모델마다 한 번): 걷기·달리기 클립의 루트 이동을 빼고(`makeClipInPlace`), 클립이 키를 안 준 뼈를 idle 첫 자세로 고정해(`holdUnkeyedTracks`) 전환 중 T자 자세가 나오지 않는다. 첫 클립은 weight 1로 시작하고 이후 전환은 crossfade로 합이 1이다(`useClipTransition`). 서 있는 NPC들은 idle 위상과 속도(0.9–1.1배)가 달라 함께 숨 쉬지 않는다.
 - 템플릿 `height`(m)를 주면 모델을 idle 자세 기준 그 키로 맞추고 발을 땅에 붙인다. `materialPolicy: 'figure'`는 생성형 인물을 매트로 그린다([rendering.md](rendering.md)).
 - 화면 밖 NPC는 몸 캡슐 크기의 구로 판정해 숨기고(그림자 draw도 빠진다), 카메라에서 30m 넘는 NPC의 애니메이션은 15Hz로 진행한다. 보이는 NPC가 움직이면 캔버스 스케줄러에 활동을 알려 `IdleFrameRate`가 매 프레임 그린다.
+- 이름표: 캔버스 안에 `<Nameplates max? maxOnTouch? range? />`를 두면 NPC의 `name`이 머리 위 화면 좌표 이름표로 뜬다(`useNameplate(ref, name, height)`로 다른 캐릭터도 등록한다). 캔버스 옆 DOM 한 겹에 이름표를 두고 위치만 옮겨 React 렌더가 없다. 카메라에서 가까운 순으로 `max`(기본 6, 터치 화면 3)개, `range`(기본 28m) 안만 보이고 마지막 1/4 구간에서 흐려진다. 더 가까운 이름표를 가리는 이름표는 빈자리가 날 때까지 숨는다. 모양은 `--gaesup-ui-*` 테마 변수를 따른다.
+- 발밑 그림자: NPC는 `useContactShadow`로 등록되어, `ContactShadows`가 있으면 조명 구역 안에서 발밑 원판 그림자가 생긴다([rendering.md](rendering.md#접지-그림자-contactshadows)).
 
 ## 두뇌 `brain`
 

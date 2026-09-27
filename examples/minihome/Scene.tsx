@@ -12,6 +12,7 @@ import {
   IdleFrameRate,
   InteractionTracker,
   LightingZone,
+  Nameplates,
   SkyEnvironment,
   WorldPhysics,
   type LightingProfile,
@@ -54,6 +55,7 @@ export function Scene({ quality, postProcessing, idleThrottle }: SceneSettings) 
           {AREAS.map((area) => <GameplayArea key={area.id} {...area} />)}
           <LightingZone center={MINIROOM.center} size={MINIROOM.size} profile={ROOM_LIGHT} lamp={ROOM_LAMP} />
           <ContactShadows />
+          <Nameplates />
         </GaesupWorldContent>
       </Suspense>
     </Canvas>

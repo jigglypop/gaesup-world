@@ -19,6 +19,7 @@ import { castSubtreeNearShadowOnly } from '../../../rendering/sky/nearShadow';
 import { useSceneToon } from '../../../rendering/useSceneToon';
 import { useEngineFrame } from '../../../runtime/frame';
 import { useWorldPhysicsInterpolation } from '../../../simulation/physicsContext';
+import { useNameplate } from '../../../ui/components/Nameplates';
 import type { NPCGesture } from '../../core/NPCSimulation';
 import { npcDecisionPhase, npcUnit } from '../../core/wander';
 import { useNPCSimulation } from '../../hooks/useNPCSimulation';
@@ -427,7 +428,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
         args={[capsule.halfHeight, capsule.interactionRadius]}
         position={[0, capsule.y, 0]}
       />
-      <NPCVisual id={instance.id} height={capsule.height} radius={capsule.radius} bodyRef={rigidBodyRef}><group
+      <NPCVisual id={instance.id} name={instance.name} height={capsule.height} radius={capsule.radius} bodyRef={rigidBodyRef}><group
         ref={groupRef}
         scale={instance.scale}
         {...(onClick
@@ -461,8 +462,9 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
 /** Characters never block the camera or other ray probes, matching `PhysicsEntity`. */
 const INTANGIBLE = { intangible: true };
 
-function NPCVisual({ id, height, radius, bodyRef, children }: {
+function NPCVisual({ id, name, height, radius, bodyRef, children }: {
   id: string;
+  name: string | undefined;
   height: number;
   radius: number;
   bodyRef: React.RefObject<RapierRigidBody | null>;
@@ -471,5 +473,6 @@ function NPCVisual({ id, height, radius, bodyRef, children }: {
   const visual = useWorldPhysicsInterpolation(bodyRef);
   useNPCView(id, visual, height);
   useContactShadow(visual, Math.max(0.35, radius * 1.5));
+  useNameplate(visual, name, height + 0.35);
   return <group ref={visual} userData={INTANGIBLE}>{children}</group>;
 }
