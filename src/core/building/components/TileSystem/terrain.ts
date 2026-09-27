@@ -35,10 +35,12 @@ type TileBounds = {
   segments: number;
 };
 
+/**
+ * How far a cover's surface stands over its tile top at the tile's edge, where a side closes the gap. Sand and snow
+ * settle to the ground at their open edges, so they need none.
+ */
 const TERRAIN_COVER_EDGE_LIFT: Partial<Record<NonNullable<TileLike['objectType']>, number>> = {
   grass: 0.05,
-  sand: 0.065,
-  snowfield: 0.055,
   water: 0.055,
 };
 

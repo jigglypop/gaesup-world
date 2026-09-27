@@ -39,6 +39,17 @@ export function borderDistance(mask: number, lx: number, lz: number, size: numbe
   return edge;
 }
 
+/** 0 on the open border of a layer's cells, rising to 1 `reach` meters in: raised covers settle to the ground there. */
+export function edgeTaper(mask: number, lx: number, lz: number, size: number, reach: number): number {
+  return mask === ALL_NEIGHBORS ? 1 : smooth(0, reach, borderDistance(mask, lx, lz, size));
+}
+
+/** The neighbor masks of square cells among themselves, keyed by center. */
+export function cellMasks(centers: readonly (readonly [number, number, number])[]): number[] {
+  const keys = new Set(centers.map(([x, z]) => cellKey(x, z)));
+  return centers.map(([x, z, size]) => neighborMask(x, z, size, (nx, nz) => keys.has(cellKey(nx, nz))));
+}
+
 /** A stable number in [0, 1) for a point, the same on every client. */
 export function hash2(a: number, b: number): number {
   let h = Math.imul(Math.round(a * 1024) | 0, 0x27d4eb2d) ^ Math.imul(Math.round(b * 1024) | 0, 0x165667b1);

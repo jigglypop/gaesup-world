@@ -82,8 +82,8 @@
 - 그룹: `{ id, name, floorMeshId, tiles }`.
 - 타일: `{ id, position, tileGroupId, materialId?, size?, rotation?, shape?, objectType?, objectConfig?, cell?, footprint? }`. `materialId`가 있으면 그룹의 `floorMeshId` 대신 쓴다. `cell`·`footprint`는 store가 채운다.
 - `shape`: `'box'`(기본) · `'stairs'` · `'round'` · `'ramp'`.
-- `objectType`(지형 덮개): `'none'` · `'grass'` · `'water'` · `'sand'` · `'snowfield'` · `'dirt'`. **`box` 타일에만 그려진다.** 잔디는 인스턴스 풀잎, 물은 인접 물 타일을 묶은 수면(물가 필드로 둑·젖은 모래·거품·수심을 그린다), 모래·눈밭은 전용 지면이다. 모래 사구와 눈 더미는 월드 좌표의 시드 고정 노이즈라 이웃 타일과 턱 없이 이어지고 새로고침해도 같다.
-- `dirt`(흙길)는 타일 바닥 재질 위에 덮는 흙이다. 가장자리가 같은 높이의 이웃 타일로 0.35m쯤 번지고, 둥근 모서리와 불규칙한 선으로 흐려져 타일 사각형이 보이지 않는다. 흙길 타일에는 잔디 층이 자라지 않는다. 그룹의 첫 흙길 타일 색이 길 전체 색이고, 타일 그룹마다 draw 하나다.
+- `objectType`(지형 덮개): `'none'` · `'grass'` · `'water'` · `'sand'` · `'snowfield'` · `'dirt'`. **`box` 타일에만 그려진다.** 잔디는 인스턴스 풀잎, 물은 인접 물 타일을 묶은 수면(물가 필드로 둑·젖은 모래·거품·수심을 그린다), 모래·눈밭은 전용 지면이다. 모래 사구와 눈 더미는 월드 좌표의 시드 고정 노이즈라 이웃 타일과 턱 없이 이어지고 새로고침해도 같다. 같은 덮개가 아닌 쪽 가장자리에서는 1.4m에 걸쳐 바닥까지 내려앉고, 흙길처럼 같은 높이 이웃 타일로 모래·눈 색이 불규칙하게 번져 해변과 잔디밭 경계에 곧은 선이 없다.
+- `dirt`(흙길)는 타일 바닥 재질 위에 덮는 흙이다(모래·눈밭의 번짐과 같은 덮개 한 겹, 덮개마다 draw 하나). 가장자리가 같은 높이의 이웃 타일로 0.35m쯤 번지고, 둥근 모서리와 불규칙한 선으로 흐려져 타일 사각형이 보이지 않는다. 흙길 타일에는 잔디 층이 자라지 않는다. 그룹의 첫 흙길 타일 색이 길 전체 색이고, 타일 그룹마다 draw 하나다.
 - `objectConfig`: `grassDensity`(m²당 풀잎, 기본 90), `terrainColor`, `terrainAccentColor`(모래·눈밭·흙길 색).
 
 ### 벽 `WallGroupConfig` / `WallConfig`

@@ -1,6 +1,6 @@
 import type * as THREE from 'three';
 
-import { buildDirtCover, DIRT_COVER, type GroundSquare } from '../dirt';
+import { buildDirtCover, COVER_COLORS, coverSpreads, DIRT_COVER, type GroundSquare } from '../dirt';
 import { ALL_NEIGHBORS, borderDistance } from '../grid';
 
 const square = (x: number, z: number, y = 0): GroundSquare => ({ x, y, z, size: 4 });
@@ -59,4 +59,17 @@ test('a cover is the same on every build and rounds the corners of the path', ()
   // Diagonally off a corner the distance is to the corner itself, which rounds the border.
   expect(borderDistance(~(1 << 7) & ALL_NEIGHBORS, 1.5, 1.5, 4)).toBeCloseTo(Math.SQRT1_2);
   expect(borderDistance(ALL_NEIGHBORS, 0, 0, 4)).toBe(Infinity);
+});
+
+test('each cover spreads with its first painted colors or its defaults, never onto water', () => {
+  const tile = (id: string, x: number, objectType?: 'dirt' | 'sand' | 'water', terrainColor?: string) => ({
+    id, tileGroupId: 'g', size: 1, position: { x, y: 0, z: 0 },
+    ...(objectType ? { objectType } : {}), ...(terrainColor ? { objectConfig: { terrainColor } } : {}),
+  });
+  const spreads = coverSpreads([tile('a', 0, 'sand'), tile('b', 4, 'dirt', '#aa8855'), tile('c', 8), tile('d', 12, 'water')]);
+  expect(spreads.map((spread) => spread.cover)).toEqual(['dirt', 'sand']);
+  const [dirt, sand] = spreads;
+  expect(dirt!.color).toBe('#aa8855');
+  expect(sand!.color).toBe(COVER_COLORS.sand.color);
+  expect(sand!.ground.map((square) => square.x)).toEqual([4, 8]);
 });

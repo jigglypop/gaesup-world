@@ -4,7 +4,7 @@ import * as THREE from 'three';
 
 import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
 
-import { worldNoise as noise2D } from '../../terrain/grid';
+import { cellMasks, edgeTaper, worldNoise as noise2D } from '../../terrain/grid';
 
 const disableRaycast = () => undefined;
 
@@ -46,6 +46,9 @@ function hash01(value: number): number {
   const x = Math.sin(value * 91.7 + 173.3) * 43758.5453123;
   return x - Math.floor(x);
 }
+
+/** Meters over which drifts settle to the ground at a field's open edge. */
+const EDGE_TAPER = 1.4;
 
 /** Drift height over the tile top at world (x, z): one field across every tile, so neighbors meet without a step. */
 function getSnowHeight(x: number, z: number): number {
@@ -134,13 +137,20 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
   const indices = new Uint32Array(totalIdx);
 
   let vOff = 0, iOff = 0;
+  const masks = cellMasks(entries.map((entry) => [entry.position[0], entry.position[2], entry.size] as const));
+  /** The surface over tile `index` at local (lx, lz): drifts over a thin base, both settling toward open edges. */
+  const surfaceY = (index: number, lx: number, lz: number) => {
+    const entry = entries[index]!;
+    const taper = edgeTaper(masks[index]!, lx, lz, entry.size, EDGE_TAPER);
+    return entry.position[1] + 0.01 + (0.035 + getSnowHeight(lx + entry.position[0], lz + entry.position[2])) * taper;
+  };
 
   for (let ei = 0; ei < entries.length; ei++) {
     const e = entries[ei];
     const segs = segList[ei];
     if (!e || segs === undefined) continue;
     const s = e.size;
-    const ox = e.position[0], oy = e.position[1] + 0.045, oz = e.position[2];
+    const ox = e.position[0], oz = e.position[2];
     const baseColor = new THREE.Color(e.color ?? '#dcecff');
     const accentColor = new THREE.Color(e.accentColor ?? '#ffffff');
     const tmpColor = new THREE.Color();
@@ -152,11 +162,11 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
         const vi = vOff + iz * (segs + 1) + ix;
         const lx = (ix / segs - 0.5) * s;
         const lz = (iz / segs - 0.5) * s;
-        const y = getSnowHeight(lx + ox, lz + oz);
+
         const tint = 0.5 + 0.5 * noise2D((lx + ox) * 0.16 - 2.4, (lz + oz) * 0.16 + 7.2);
         const vi3 = vi * 3;
         pos[vi3] = lx + ox;
-        pos[vi3 + 1] = y + oy;
+        pos[vi3 + 1] = surfaceY(ei, lx, lz);
         pos[vi3 + 2] = lz + oz;
         tmpColor.copy(baseColor).lerp(accentColor, tint * 0.55).multiplyScalar(0.9 + tint * 0.1);
         col[vi3] = tmpColor.r;
@@ -187,8 +197,8 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
       const sampleZ = side === 'north' ? -s * 0.5 - 0.02 : side === 'south' ? s * 0.5 + 0.02 : (z0 + z1) * 0.5;
       if (hasCoverAt(entries, ox + sampleX, oz + sampleZ, e.position[1], ei)) return;
 
-      const topA = e.position[1] + 0.045 + getSnowHeight(ox + x0, oz + z0);
-      const topB = e.position[1] + 0.045 + getSnowHeight(ox + x1, oz + z1);
+      const topA = surfaceY(ei, x0, z0);
+      const topB = surfaceY(ei, x1, z1);
       const tintA = 0.5 + 0.5 * noise2D((ox + x0) * 0.16 - 2.4, (oz + z0) * 0.16 + 7.2);
       const tintB = 0.5 + 0.5 * noise2D((ox + x1) * 0.16 - 2.4, (oz + z1) * 0.16 + 7.2);
       const colorA = baseColor.clone().lerp(accentColor, tintA * 0.55).multiplyScalar(0.9 + tintA * 0.1);
@@ -235,7 +245,7 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
     const sc = sparkleList[ei];
     if (!e || sc === undefined) continue;
     const s = e.size;
-    const ox = e.position[0], oy = e.position[1] + 0.045, oz = e.position[2];
+    const ox = e.position[0], oz = e.position[2];
     const baseColor = new THREE.Color(e.color ?? '#dcecff');
     const accentColor = new THREE.Color(e.accentColor ?? '#ffffff');
     const tmpColor = new THREE.Color();
@@ -248,9 +258,9 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
       const lz = hash01(i * 3.97 + 1.9 + seed) * s - s * 0.5;
       const lift = hash01(i * 5.41 + 2.2 + seed);
       const tint = hash01(i * 7.13 + 3.1 + seed);
-      const y = getSnowHeight(lx + ox, lz + oz) + 0.016 + lift * 0.02;
+      const y = surfaceY(ei, lx, lz) + 0.016 + lift * 0.02;
       sPos[gi] = lx + ox;
-      sPos[gi + 1] = y + oy;
+      sPos[gi + 1] = y;
       sPos[gi + 2] = lz + oz;
       tmpColor.copy(baseColor).lerp(accentColor, 0.6 + tint * 0.4);
       sCol[gi] = tmpColor.r;

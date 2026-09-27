@@ -7,10 +7,7 @@ import { MeshStandardNodeMaterial, type Node } from 'three/webgpu';
 
 import { getDefaultToonMode, getToonGradient } from '../../../rendering/toon';
 import { rendererKind } from '../../../rendering/webgpu';
-import { buildDirtCover, type GroundSquare } from '../../terrain/dirt';
-
-/** Warm packed earth when the tiles name no colors. */
-export const DIRT_COLORS = { color: '#dcbb86', accent: '#b98f5c' } as const;
+import { buildDirtCover, type CoverSpread } from '../../terrain/dirt';
 
 const disableRaycast = () => undefined;
 const covers = new Map<string, THREE.Material>();
@@ -35,13 +32,13 @@ function nodeDirtMaterial(): THREE.Material {
   return material;
 }
 
-function dirtMaterial(node: boolean, toon: boolean): THREE.Material {
-  const key = `${node}:${toon}`;
+function dirtMaterial(detail: boolean, toon: boolean): THREE.Material {
+  const key = `${detail}:${toon}`;
   let material = covers.get(key);
   if (!material) {
     material = toon
       ? new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: getToonGradient(4) })
-      : node ? nodeDirtMaterial() : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
+      : detail ? nodeDirtMaterial() : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
     // The cover fades over the floor: blended, no depth writes, drawn a hair above it.
     Object.assign(material, { transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
     material.name = 'dirt-cover';
@@ -51,28 +48,21 @@ function dirtMaterial(node: boolean, toon: boolean): THREE.Material {
 }
 
 /**
- * Dirt path tiles (`objectType: 'dirt'`) drawn as one soft cover over their floor: packed earth whose edge wanders onto
- * the neighboring tiles and fades out, with rounded corners. One draw for a tile group; it receives shadows.
+ * A cover's soft layer over its tiles (`coverSpreads`): packed earth over dirt paths, whose edge wanders onto the
+ * neighboring tiles and fades out with rounded corners, and the same fringe of sand or snow around a beach or snowfield.
+ * One draw for each cover of a tile group; it receives shadows. On node renderers dirt adds fine grit and pebbles.
  */
-export function DirtCover({ dirt, ground, color, accent, toon }: {
-  dirt: readonly GroundSquare[];
-  ground: readonly GroundSquare[];
-  color?: string | undefined;
-  accent?: string | undefined;
-  toon?: boolean | undefined;
-}) {
+export function DirtCover({ spread, toon }: { spread: CoverSpread; toon?: boolean | undefined }) {
   const node = rendererKind(useThree((state) => state.gl)) !== 'webgl';
-  const geometry = useMemo(
-    () => buildDirtCover({ dirt, ground, color: color ?? DIRT_COLORS.color, accent: accent ?? DIRT_COLORS.accent }),
-    [dirt, ground, color, accent],
-  );
+  const { squares, ground, color, accent } = spread;
+  const geometry = useMemo(() => buildDirtCover({ dirt: squares, ground, color, accent }), [squares, ground, color, accent]);
   useEffect(() => () => geometry?.dispose(), [geometry]);
   if (!geometry) return null;
   return (
     <mesh
       name="dirt-cover"
       geometry={geometry}
-      material={dirtMaterial(node, toon ?? getDefaultToonMode())}
+      material={dirtMaterial(node && spread.cover === 'dirt', toon ?? getDefaultToonMode())}
       receiveShadow
       raycast={disableRaycast}
       userData={{ nonInteractive: true }}

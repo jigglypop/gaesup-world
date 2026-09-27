@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 
 import { ALL_NEIGHBORS, borderDistance, cellKey, neighborMask, smooth, valueNoise } from './grid';
+import { tileWorldSize } from '../model/footprint';
+import type { TileConfig } from '../types';
 
 /** The top square of a box tile: center, top height and side, in meters. */
 export type GroundSquare = { x: number; y: number; z: number; size: number };
@@ -13,6 +15,41 @@ export type DirtCoverInput = {
   color: THREE.ColorRepresentation;
   accent: THREE.ColorRepresentation;
 };
+
+/** Covers whose edge spreads softly onto their flat neighbors. */
+export type SpreadCover = 'dirt' | 'sand' | 'snowfield';
+
+/** Each cover's colors when its tiles name none. */
+export const COVER_COLORS: Record<SpreadCover, { color: string; accent: string }> = {
+  dirt: { color: '#dcbb86', accent: '#b98f5c' },
+  sand: { color: '#b89b66', accent: '#e0c27a' },
+  snowfield: { color: '#dcecff', accent: '#ffffff' },
+};
+
+export type CoverSpread = { cover: SpreadCover; squares: GroundSquare[]; ground: GroundSquare[]; color: string; accent: string };
+
+/**
+ * For each cover among `tiles`: its box tiles, the other flat tiles its edge may spread onto (water keeps its own
+ * shore), and the colors of its first tile that names some.
+ */
+export function coverSpreads(tiles: readonly TileConfig[]): CoverSpread[] {
+  return (Object.keys(COVER_COLORS) as SpreadCover[]).flatMap((cover) => {
+    const squares: GroundSquare[] = [];
+    const ground: GroundSquare[] = [];
+    let colors: { color: string; accent: string } | undefined;
+    for (const tile of tiles) {
+      if ((tile.shape ?? 'box') !== 'box' || tile.objectType === 'water') continue;
+      const square = { x: tile.position.x, y: tile.position.y, z: tile.position.z, size: tileWorldSize(tile) };
+      if (tile.objectType !== cover) ground.push(square);
+      else {
+        squares.push(square);
+        const { terrainColor, terrainAccentColor } = tile.objectConfig ?? {};
+        if (!colors && terrainColor) colors = { color: terrainColor, accent: terrainAccentColor ?? terrainColor };
+      }
+    }
+    return squares.length ? [{ cover, squares, ground, ...(colors ?? COVER_COLORS[cover]) }] : [];
+  });
+}
 
 export const DIRT_COVER = {
   /** Vertex spacing (m): fine enough for the edge to wander. */
