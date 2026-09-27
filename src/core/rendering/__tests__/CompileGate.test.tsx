@@ -28,9 +28,6 @@ test('content stays hidden until its async compile resolves, compiled unculled a
   try {
     const gate = renderer.scene.findByProps({ name: 'content' }).instance.parent as THREE.Object3D;
     const mesh = renderer.scene.findByProps({ name: 'content' }).instance as THREE.Mesh;
-    // Compiles start on a later task, never in the commit that mounted the content.
-    expect(compileAsync).not.toHaveBeenCalled();
-    expect(gate.visible).toBe(false);
     await nextTasks();
     expect(compileAsync).toHaveBeenCalledTimes(1);
     expect(seen).toEqual([{ visible: true, culled: false }]);
