@@ -228,10 +228,12 @@ describe('WebGPU renderer factory', () => {
     const disposable = created as unknown as DisposableRenderer;
 
     expect(created).toBe(renderer);
+    // GPU timestamps are asked for; the backend keeps them only where the adapter has timestamp queries.
     expect(WebGPURenderer).toHaveBeenCalledWith({
       alpha: true,
       canvas,
       powerPreference: 'high-performance',
+      trackTimestamp: true,
     });
     expect(renderer.init).toHaveBeenCalledTimes(1);
     expect(webGLRenderer).not.toHaveBeenCalled();
@@ -295,7 +297,7 @@ describe('WebGPU renderer factory', () => {
       powerPreference: 'default',
     })) as unknown as DisposableRenderer;
 
-    expect(WebGPURenderer).toHaveBeenCalledWith({ canvas: expect.any(HTMLCanvasElement) });
+    expect(WebGPURenderer).toHaveBeenCalledWith({ canvas: expect.any(HTMLCanvasElement), trackTimestamp: true });
     expect(() => created.forceContextLoss()).toThrow(disposeError);
     expect(() => created.dispose()).not.toThrow();
     expect(nativeDispose).toHaveBeenCalledTimes(1);
