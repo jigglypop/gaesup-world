@@ -12,6 +12,21 @@ export interface Rotation3D {
   z: number;
 }
 
+/** How blades look: `lawn` is short, soft and pastel; `tall` is broad, stiff and deeper green with a light crown. */
+export type GrassProfile = 'lawn' | 'tall';
+
+/** Grass a mesh grows on the box tiles that use it. Node renderers only; the classic WebGL path skips it. */
+export type MeshGrassConfig = {
+  /** Candidate blades per m² before the quality tier scales them; the ragged border thins them. Lawn 16, tall 52. */
+  density?: number;
+  /** Average blade height in meters. Lawn 0.25, tall 0.55. */
+  height?: number;
+  /** Defaults to `lawn`. */
+  profile?: GrassProfile;
+  /** Ground tint the blades take at their roots. Defaults to the mesh color, or a lawn green for textured meshes. */
+  color?: string;
+};
+
 export interface MeshConfig {
   id: string;
   assetId?: string;
@@ -33,6 +48,11 @@ export interface MeshConfig {
   metalness?: number;
   opacity?: number;
   transparent?: boolean;
+  /**
+   * Grows a grass layer on every box tile that uses this mesh. Tall-grass tiles (`objectType: 'grass'`) on such a mesh
+   * keep its surface instead of the painted meadow ground.
+   */
+  grass?: MeshGrassConfig;
 }
 
 export type BuildingWallKind = 'solid' | 'window' | 'door' | 'arch' | 'half' | 'railing' | 'glass';

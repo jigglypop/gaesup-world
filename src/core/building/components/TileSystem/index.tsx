@@ -1,4 +1,4 @@
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import * as THREE from 'three';
 
@@ -330,9 +330,14 @@ export const TileSystem = memo(function TileSystem({
     [snowfieldTiles],
   );
 
+  // Tall-grass tiles, and on node renderers every box tile whose mesh grows a grass layer.
+  const grassMeshOf = useCallback(
+    (tile: TileLike) => meshes.get(getTileMaterialId(tile, tileGroup.floorMeshId)),
+    [meshes, tileGroup.floorMeshId],
+  );
   const grassTiles = useMemo(
-    () => tileGroup.tiles.filter((t) => t.objectType === 'grass' && getTileShape(t) === 'box'),
-    [tileGroup.tiles],
+    () => tileGroup.tiles.filter((t) => getTileShape(t) === 'box' && (t.objectType === 'grass' || grassMeshOf(t)?.grass)),
+    [tileGroup.tiles, grassMeshOf],
   );
 
   // water shore mask 계산은 인접한 water 타일만 알면 충분하므로
@@ -521,7 +526,7 @@ export const TileSystem = memo(function TileSystem({
           </group>
         ))}
         
-        {grassTiles.length > 0 && <GrassChunks tiles={grassTiles} />}
+        {grassTiles.length > 0 && <GrassChunks tiles={grassTiles} meshOf={grassMeshOf} />}
 
         {sandEntries.length > 0 && <SandBatch entries={sandEntries} />}
 

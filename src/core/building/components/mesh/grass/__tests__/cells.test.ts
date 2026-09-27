@@ -1,13 +1,14 @@
 import { placeGrassOnCells } from '../cells';
 
-test('a single grass batch fills only selected cells and LOD prefixes cover every cell', () => {
+test('a single grass batch fills only selected cells, edge to edge, and LOD prefixes cover every cell', () => {
   const cells = [[-3.5, 2.5], [4.5, -5.5], [6.5, 7.5]] as const;
   const offsets = new Float32Array(900);
   placeGrassOnCells(offsets, cells, 1);
   for (let blade = 0; blade < 300; blade++) {
     const [x, z] = cells[blade % cells.length]!;
-    expect(Math.abs(offsets[blade * 3]! - x)).toBeLessThan(0.46);
-    expect(Math.abs(offsets[blade * 3 + 2]! - z)).toBeLessThan(0.46);
+    // Blades reach the cell's edge, so neighboring cells meet without a gap.
+    expect(Math.abs(offsets[blade * 3]! - x)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(offsets[blade * 3 + 2]! - z)).toBeLessThanOrEqual(0.5);
     expect(offsets[blade * 3 + 1]).toBe(0);
   }
   const expanded = new Float32Array(1200);

@@ -3,7 +3,7 @@ import { getDefaultBuildingObject, type BuildingSerializedState, type MeshConfig
 /** Grid cell in meters; one character (1.7m) is a little under half a cell. */
 export const CELL = 4;
 /** Bump when the island's layout changes: saves are kept per version, so returning visitors see the new island. */
-export const VILLAGE_VERSION = 2;
+export const VILLAGE_VERSION = 3;
 
 /**
  * The island, one character per 4m cell, north at the top.
@@ -51,9 +51,9 @@ const scatter = (count: number, seed: number, draw: (x: number, y: number, i: nu
     return draw(Math.round(r(1) * 120) + 4, Math.round(r(2) * 120) + 4, i);
   }).join('');
 
+// One even green: a checker per tile made the whole island read as a board. The lawn layer's blades carry the detail.
 const LAWN = svg(
-  '<path d="M0 0h64v64H0zM64 64h64v64H64z" fill="#97d56f"/>' +
-    scatter(22, 1, (x, y) => `<path d="M${x} ${y}l-2 -5M${x} ${y}l2 -5" stroke="#76b852" stroke-width="2" stroke-linecap="round"/>`),
+  scatter(14, 1, (x, y) => `<path d="M${x} ${y}l-2 -5M${x} ${y}l2 -5" stroke="#80bf5b" stroke-width="2" stroke-linecap="round"/>`),
   '#8ccd65',
 );
 const PATH = svg(scatter(26, 2, (x, y, i) => `<circle cx="${x}" cy="${y}" r="${1.5 + (i % 3)}" fill="${i % 2 ? '#e3c894' : '#fbeccc'}"/>`), '#f0dcaa');
@@ -72,7 +72,7 @@ const FIELD = svg(
 const PLANKS = svg([0, 32, 64, 96].map((y, i) => `<rect y="${y}" width="128" height="31" fill="${i % 2 ? '#d9ab73' : '#d3a36a'}"/><path d="M${40 + i * 24} ${y}v31" stroke="#b98a52" stroke-width="2"/>`).join(''), '#b98a52');
 
 const MESHES: MeshConfig[] = [
-  { id: 'lawn', color: '#ffffff', mapTextureUrl: LAWN, roughness: 0.95 },
+  { id: 'lawn', color: '#ffffff', mapTextureUrl: LAWN, roughness: 0.95, grass: { profile: 'lawn', color: '#86c460' } },
   { id: 'path', color: '#ffffff', mapTextureUrl: PATH, roughness: 1 },
   { id: 'flowers', color: '#ffffff', mapTextureUrl: FLOWERS, roughness: 0.9 },
   { id: 'field', color: '#ffffff', mapTextureUrl: FIELD, roughness: 1 },

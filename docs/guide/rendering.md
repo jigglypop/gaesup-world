@@ -88,7 +88,7 @@ classic 경로와 비교할 때는 `<Canvas gl={createLegacyRenderer}>`로 강�
 | `CascadedSun` | `quality`를 주지 않았으면 `tier`로 그림자 preset(아래 표) |
 | `DynamicSky` | `shadowMapSize`를 주지 않았으면 `shadowMapSize` |
 | `GaesupWorldContent postProcessing` | `postprocess`가 false면 올리지 않는다. preset을 주지 않았으면 `low`→`performance`, `medium`→`balanced`, `high`→`quality` |
-| 잔디(`Grass`) | `instanceScale`. 단, 월드 profile이 아니라 전역 `usePerfStore`의 profile을 읽는다. `quality="low"`처럼 tier를 고정해도 잔디는 `usePerfStore`(감지 전 기본 `medium`)를 따르므로 `usePerfStore.getState().setTier('low')`도 함께 부른다 |
+| 잔디 | `instanceScale`로 잎 수와 월드 잔디 예산을 곱한다. 노드 렌더러의 잔디는 월드 profile을, 없으면 전역 `usePerfStore`를 읽는다. classic WebGL 잔디(`Grass`)는 전역 `usePerfStore`(감지 전 기본 `medium`)만 읽으므로, `quality="low"`처럼 tier를 고정하면 `usePerfStore.getState().setTier('low')`도 함께 부른다 |
 
 ### 관련 API
 
@@ -336,7 +336,7 @@ export function Scenery() {
 
 ## 팁
 
-- 잔디가 가장 비싸다. 잎 수는 대략 `grassDensity`(기본 90) × 타일 면적(4m 타일이면 16m²) × `instanceScale`이다. 타일의 `objectConfig.grassDensity`를 낮추는 것이 가장 효과가 크다. 수치는 [performance.md](performance.md)에 있다.
+- 잔디는 월드마다 profile별 예산(잔디밭 28,000잎, 긴 풀 16,000잎, `instanceScale` 1 기준) 안에서 그린다. 줄이려면 메시 `grass.density`나 타일 `objectConfig.grassDensity`, tier를 낮춘다. 수치는 [performance.md](performance.md)에 있다.
 - 그림자 비용은 다시 그리는 cascade 수 × 캐스터 수다. `updateHz`를 낮추거나 `CascadedSun quality="low"`로 줄이고, 그림자가 필요 없는 장식 메시는 `castShadow`를 끄고, 작은 물체는 `castNearShadowOnly`로 가장 가까운 cascade에만 넣는다.
 - classic WebGL의 거울 물은 반사 장면을 한 번 더 그린다. 툰 모드나 WebGPU에서는 이 반사 pass가 없다.
 - 후처리 `quality="performance"`는 TRAA와 AO를 끄고 bloom과 채도만 남긴다. AO는 `aoResolutionScale`로 해상도를 낮출 수 있다.
@@ -347,7 +347,7 @@ export function Scenery() {
 - WebGPU가 없으면 `WebGPURenderer`의 WebGL2 백엔드가 아니라 classic `WebGLRenderer`와 GLSL 경로로 그린다(GPU-1에서 바뀐다).
 - `ColorGrade`·`LutOverlay`·`ToonOutlines`와 GLSL 재질 경로가 남아 있다(GPU-1).
 - 해가 `CascadedSun`·`DynamicSky` 두 벌이다(UP-1). `DynamicSky`에는 cascade 그림자가 없다.
-- 잔디 밀도는 월드 `quality`를 직접 따르지 않는다. 품질 tier별 잔디 밀도는 PRD PERF 항목이다.
+- classic WebGL 잔디(`Grass`)는 월드 `quality`를 직접 따르지 않는다(GPU-1에서 GLSL 경로와 함께 지운다).
 - 깃발 컴포넌트는 export되지 않는다.
 - GPU 시간(timestamp query)을 재는 곳이 없다(PERF).
 

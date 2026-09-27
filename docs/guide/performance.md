@@ -129,7 +129,7 @@ export async function measureWindow(runtime: GaesupRuntime, ms: number) {
 
 - `<Canvas dpr={resolveQualityDpr('auto')}>`로 첫 프레임부터 맞는 크기로 그린다.
 - 실행 중에 낮추려면 `usePerfStore.getState().setTier('low')`, 다시 감지하려면 `resetAuto()`를 부른다. `quality="auto"`인 월드와 잔디가 따른다. `usePerfStore`는 페이지 전역이다.
-- tier를 `quality="low"`처럼 고정하면 월드 profile은 바뀌지만 잔디는 전역 `usePerfStore`를 읽는다. 잔디까지 줄이려면 `setTier`도 함께 부른다.
+- tier를 `quality="low"`처럼 고정하면 월드 profile이 바뀌고 노드 렌더러의 잔디도 따른다. classic WebGL 잔디만 전역 `usePerfStore`를 읽으므로 `setTier`도 함께 부른다.
 - 엔진은 느린 프레임을 보고 tier를 스스로 내리지 않는다. 필요하면 `runtime.stats`나 월드 store 값으로 판단해 `setTier`를 부른다.
 
 ## 입력이 없을 때 fps 낮추기: `IdleFrameRate`
@@ -194,13 +194,16 @@ export function customLoop(draw: (time: number) => void) {
 
 ### 잔디와 삼각형
 
-잔디가 삼각형의 대부분을 만든다.
+노드 렌더러(`webgpu`, `webgpu-fallback`)의 잔디는 바람 잔디 층이다.
 
-- 잎 수 ≈ `grassDensity`(m²당, 기본 90) × 잔디 타일 면적 × `instanceScale`(tier 배율). 4m 타일 하나는 16m²라 기본 밀도에서 잎 1,440개(배율 1)다.
-- 잎 하나는 삼각형 10개다(`options.joints` 기본 5단 × 2).
-- 예제 마을은 144칸 중 96칸이 잔디다. 배율 1이면 잎 138,240개이고, 모두 화면에 들어오고 거리 LOD로 줄기 전이면 메인 pass에서 삼각형 약 138만 개다. 그림자 pass가 가장 가까운 cascade에서 잔디를 한 번 더 그린다. 저장소 측정의 프레임 전체 삼각형은 230만 개였다.
-- 잔디 타일은 8×8 타일 청크로 묶여 청크마다 draw 하나이고, 청크 단위로 거리 LOD와 절두체 컬링을 한다(`GrassDriver`).
-- 줄이는 순서: 타일의 `objectConfig.grassDensity`를 낮춘다 → tier를 낮춘다(`setTier`) → 잔디 타일 수를 줄인다.
+- 긴 풀 타일(`objectType: 'grass'`)과, 메시에 `grass`가 있는 `box` 타일이 4×4 타일 층으로 묶여 층마다 draw 하나다. 잔디밭(`lawn`)은 m²당 후보 16, 긴 풀(`tall`)은 타일이 90(메시 `tall`은 52)이다. 경계는 거리장과 노이즈로 불규칙하게 성기고, 잎은 군집을 이룬다.
+- 월드마다 profile별 예산이 있다. 잔디밭 28,000잎, 긴 풀 16,000잎이고 월드 품질 profile의 `instanceScale`을 곱한다. 층은 거리 곡선(잔디밭은 22m까지 전부, 60m부터 없음. 긴 풀은 26m/64m)만큼 요청하고, 합이 예산을 넘으면 모든 층이 같은 비율로 줄인다.
+- 잎 순서는 저불일치 수열이라 앞부분만 그려도 층 전체에 고르게 퍼진다. 셰이더가 그리는 범위의 마지막 잎들을 줄여 없애므로 줌아웃할 때 튀지 않는다.
+- 잎 관절은 카메라 거리로 5개(18m 안)·3개(36m 안)·2개다. 긴 풀은 6m 더 멀리까지 유지한다. 잎 하나는 삼각형 2 × 관절 − 1개다.
+- 잎은 그림자를 받기만 하고 드리우지 않는다. 배치는 프레임당 2ms씩 나눠 만들고, 같은 타일이면 모든 클라이언트에서 같다.
+- 예제 섬(2026-09-27, 1600×900, DPR 1.5): 시작 위치에서 잔디 삼각형 약 24만(모든 pass), 크게 줌아웃하면 약 8만.
+- classic WebGL은 긴 풀 타일만 8×8 타일 청크의 예전 잔디(`Grass`)로 그린다. 잎 수 ≈ `grassDensity`(기본 90) × 면적 × `instanceScale`이고 잎 하나가 삼각형 10개다.
+- 줄이는 순서: 메시 `grass.density`나 타일 `objectConfig.grassDensity`를 낮춘다 → tier를 낮춘다(`setTier`) → 잔디 타일 수를 줄인다.
 
 ### 그림자
 
@@ -244,7 +247,7 @@ export function customLoop(draw: (time: number) => void) {
 | GPU 시간(timestamp query, `trackTimestamp`)을 재지 않는다 | PERF |
 | 게임 화면용 성능 HUD가 없다. `PerformancePanel`은 에디터 패널이고 FPS를 자체 rAF로 따로 잰다 | PERF |
 | `IdleFrameRate`가 기본 장착되지 않는다 | PERF |
-| 잔디 밀도가 품질 tier(월드 `quality`)를 따르지 않는다 | PERF |
+| classic WebGL 잔디가 월드 `quality`를 따르지 않는다 | GPU-1 |
 | 건물 편집 증분 갱신, 내비게이션 변경 영역만 갱신, NPC 비가시 시뮬레이션 예산, 장면 전체 순회 제거 | PERF |
 | 트리셰이킹(`preserveModules`), 루트에서 에디터 분리 | LIB-1 |
 | 업스케일(TAAU/FSR) 품질 tier | UP-1 |

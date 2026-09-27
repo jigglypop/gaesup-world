@@ -33,6 +33,17 @@ export type GrassTileHandle = {
   apply: (state: GrassTileRenderState) => void;
 };
 
+/** Deferred grass work, such as a blade layout, stepped nearest to the camera first within the frame budget. */
+export type GrassBuild = {
+  /** World point the camera distance is measured to. */
+  center: THREE.Vector3;
+  /** Works until `deadline` (a `performance.now()` time); true once finished. */
+  step: (deadline: number) => boolean;
+};
+
+/** Milliseconds of builds a tick runs. */
+const BUILD_BUDGET_MS = 2;
+
 export type GrassTileRenderState = {
   /** True when the tile should be rendered at all this frame. */
   visible: boolean;
@@ -71,6 +82,7 @@ export class GrassManager {
   constructor(private readonly sources: GrassManagerSources = legacySources) {}
   private nextId = 1;
   private tiles = new Map<number, GrassTileHandle>();
+  private builds = new Set<GrassBuild>();
   private orderedTiles: GrassTileHandle[] = [];
   private orderDirty = true;
   private enabled = true;
@@ -103,7 +115,30 @@ export class GrassManager {
   isEnabled(): boolean { return this.enabled; }
 
   dispose(): void {
-    this.suspend(); this.tiles.clear(); this.orderedTiles = []; this.orderDirty = true;
+    this.suspend(); this.tiles.clear(); this.builds.clear(); this.orderedTiles = []; this.orderDirty = true;
+  }
+
+  /** Queues `build` for the ticks, which spend at most `BUILD_BUDGET_MS` each on builds. Returns the cancel. */
+  schedule(build: GrassBuild): () => void {
+    this.builds.add(build);
+    return () => { this.builds.delete(build); };
+  }
+
+  private runBuilds(camera: THREE.Vector3): void {
+    const deadline = performance.now() + BUILD_BUDGET_MS;
+    do {
+      let next: GrassBuild | undefined;
+      let nearest = Infinity;
+      for (const build of this.builds) {
+        const distance = build.center.distanceToSquared(camera);
+        if (distance < nearest) { nearest = distance; next = build; }
+      }
+      if (!next) return;
+      let done = true;
+      try { done = next.step(deadline); }
+      catch (error) { logger.error('Grass build failed', { error }); }
+      if (done) this.builds.delete(next);
+    } while (this.builds.size > 0 && performance.now() < deadline);
   }
 
   private hide(tile: GrassTileHandle): void {
@@ -166,6 +201,7 @@ export class GrassManager {
     this.lastElapsedTime = args.elapsedTime;
     this.lastCameraPosition.copy(args.cameraPosition); this.lastFrustum.copy(args.frustum);
 
+    if (this.builds.size > 0) this.runBuilds(args.cameraPosition);
     this.refreshTrample(args.delta);
 
     const wind = this.computeWindScale();

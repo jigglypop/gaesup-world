@@ -1,7 +1,6 @@
 import { FC, lazy, memo, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { useThree } from "@react-three/fiber";
-import { createNoise2D } from "simplex-noise";
 import * as THREE from "three";
 
 import { extendOnce } from '@/core/rendering/extendOnce';
@@ -18,6 +17,7 @@ import {
 import { placeGrassOnCells } from './cells';
 import fragmentShader from "./frag.glsl";
 import { GrassDepthMaterial } from './GrassDepthMaterial';
+import { meadowLift, MEADOW, paintMeadow } from './ground';
 import { setGrassManagerWasm, type GrassTileRenderState } from "./manager";
 import { GrassMaterialInstance, GrassMeshProps } from "./type";
 import { useGrassManager } from "./useGrassManager";
@@ -97,10 +97,6 @@ export function getGrassGroundMaterial(toon: boolean): THREE.Material {
   return _grassGroundPbr;
 }
 
-const noise2D = createNoise2D();
-const GROUND_LIGHT = new THREE.Color('#5a7a35');
-const GROUND_ACCENT = new THREE.Color('#7a8e3a');
-const GROUND_DIRT = new THREE.Color('#5b4628');
 /** Blades never stop the camera or other ray probes. */
 const GRASS_USER_DATA = { intangible: true };
 
@@ -127,54 +123,26 @@ const GrassMaterial = shaderMaterial(
 const extendGrassMaterial = extendOnce({ GrassMaterial });
 const NodeGrassMaterial = lazy(() => import('./NodeGrassMaterial'));
 
-function getYPosition(x: number, z: number): number {
-  return 0.05 * noise2D(x / 50, z / 50) + 0.05 * noise2D(x / 100, z / 100);
-}
+const getYPosition = meadowLift;
 
-/** Lifts ground vertices onto the noise field and paints meadow patches, dirt scuffs included. */
-function paintGround(geometry: THREE.BufferGeometry, baseColor: THREE.Color, accentColor: THREE.Color): void {
-  const positions = geometry.getAttribute("position") as THREE.BufferAttribute;
-  const colors = new Float32Array(positions.count * 3);
-  const tmp = new THREE.Color();
-  for (let k = 0; k < positions.count; k++) {
-    const x = positions.getX(k);
-    const z = positions.getZ(k);
-    positions.setY(k, positions.getY(k) + getYPosition(x, z));
-
-    // Two-octave noise gives natural patchiness; an extra tight noise
-    // sprinkles dirt scuffs so the ground reads as a real meadow.
-    const n0 = 0.5 + 0.5 * noise2D(x * 0.18, z * 0.18);
-    const n1 = 0.5 + 0.5 * noise2D(x * 0.04 + 11.3, z * 0.04 - 7.7);
-    const n2 = 0.5 + 0.5 * noise2D(x * 0.55 - 3.1, z * 0.55 + 9.4);
-
-    const tint = THREE.MathUtils.clamp(n0 * 0.65 + n1 * 0.45, 0, 1);
-    tmp.copy(baseColor).multiplyScalar(0.58 + tint * 0.42).lerp(accentColor, n1 * 0.28);
-    if (n2 > 0.86) {
-      tmp.lerp(GROUND_DIRT, (n2 - 0.86) * 4.0);
-    }
-
-    const ci = k * 3;
-    colors[ci]     = tmp.r;
-    colors[ci + 1] = tmp.g;
-    colors[ci + 2] = tmp.b;
-  }
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  geometry.computeVertexNormals();
-}
-
-/** Noise-lifted, vertex-colored meadow ground under the given cells as one indexed geometry (one draw). */
+/**
+ * Noise-lifted, vertex-colored meadow ground under the given cells as one indexed geometry (one draw). `originX` and
+ * `originZ` place the cells in the world, where the meadow's noise is read.
+ */
 export function createGrassGround(
-  cells: ReadonlyArray<readonly [number, number, number?]>,
+  cells: ReadonlyArray<readonly [number, number, number?, number?]>,
   cellSize: number,
   groundColor?: string,
   groundAccentColor?: string,
+  originX = 0,
+  originZ = 0,
 ): THREE.BufferGeometry {
   const geometry = createCellGround(cells, cellSize);
-  paintGround(geometry, new THREE.Color(groundColor ?? GROUND_LIGHT), new THREE.Color(groundAccentColor ?? GROUND_ACCENT));
+  paintMeadow(geometry, new THREE.Color(groundColor ?? MEADOW.base), new THREE.Color(groundAccentColor ?? MEADOW.accent), originX, originZ);
   return geometry;
 }
 
-function createCellGround(cells: ReadonlyArray<readonly [number, number, number?]>, cellSize: number): THREE.BufferGeometry {
+function createCellGround(cells: ReadonlyArray<readonly [number, number, number?, number?]>, cellSize: number): THREE.BufferGeometry {
   const segments = Math.max(2, Math.min(16, Math.round(cellSize * 1.5)));
   const plane = new THREE.PlaneGeometry(cellSize, cellSize, segments, segments).rotateX(-Math.PI / 2);
   const source = plane.getAttribute("position");
@@ -416,8 +384,8 @@ const GrassContent: FC<GrassMeshProps> = memo(
     const maxCellHeight = useMemo(() => cells?.reduce((max, cell) => Math.max(max, Math.abs(cell[2] ?? 0)), 0) ?? 0, [cells]);
     const useToon = toon ?? getDefaultToonMode();
     const groundMat = getGrassGroundMaterial(useToon);
-    const baseGroundColor = useMemo(() => new THREE.Color(groundColor ?? GROUND_LIGHT), [groundColor]);
-    const accentGroundColor = useMemo(() => new THREE.Color(groundAccentColor ?? GROUND_ACCENT), [groundAccentColor]);
+    const baseGroundColor = useMemo(() => new THREE.Color(groundColor ?? MEADOW.base), [groundColor]);
+    const accentGroundColor = useMemo(() => new THREE.Color(groundAccentColor ?? MEADOW.accent), [groundAccentColor]);
     const tipBladeColor = useMemo(
       () => new THREE.Color(bladeTipColor ?? '#8fbc5a'),
       [bladeTipColor],
@@ -481,7 +449,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
       const gg = cells
         ? createCellGround(cells, cellSize)
         : new THREE.PlaneGeometry(width, width, groundSegs, groundSegs).rotateX(-Math.PI / 2);
-      paintGround(gg, baseGroundColor, accentGroundColor);
+      paintMeadow(gg, baseGroundColor, accentGroundColor);
       return gg;
     }, [accentGroundColor, baseGroundColor, width, cells, cellSize, ground]);
     // Blade shadows are finer than a far cascade's texels: only the nearest cascade draws them.
