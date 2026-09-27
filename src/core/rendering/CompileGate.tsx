@@ -157,6 +157,26 @@ export function compileSceneAsync(renderer: unknown, scene: Scene, camera: Camer
   return canCompileAsync(renderer) && compilesAhead(renderer) ? compileSubtreeAsync(renderer, scene, camera, scene) : null;
 }
 
+let compiling = 0;
+const compileListeners = new Set<() => void>();
+
+function countCompile(delta: number): void {
+  compiling += delta;
+  for (const listener of compileListeners) listener();
+}
+
+/** Gates still compiling their content ahead of its first draw, on every canvas; load progress waits for them. */
+export function pendingCompiles(): number {
+  return compiling;
+}
+
+export function subscribeCompiles(listener: () => void): () => void {
+  compileListeners.add(listener);
+  return () => {
+    compileListeners.delete(listener);
+  };
+}
+
 /**
  * Keeps first-time content hidden until its pipelines are built asynchronously, instead of stalling the frame that
  * first draws it on synchronous shader and pipeline creation. Place it inside the Suspense boundary of the content,
@@ -179,14 +199,23 @@ export function CompileGate({ children }: { children: ReactNode }) {
       return compileSubtreeAsync(gl, root, camera, scene)
         .then(() => (active && sceneTargets.get(gl) !== target ? compile() : undefined));
     };
+    let counted = true;
+    const settle = () => {
+      if (!counted) return;
+      counted = false;
+      countCompile(-1);
+    };
+    countCompile(1);
     compile()
       .catch(() => undefined)
       .finally(() => {
         if (active) root.visible = true;
+        settle();
       });
     return () => {
       active = false;
       root.visible = true;
+      settle();
     };
     // Compiles once per mount (camera swaps do not re-hide content); later edits reuse these pipelines.
   }, [gl, scene]);

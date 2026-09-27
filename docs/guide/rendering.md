@@ -312,6 +312,7 @@ export function ToonBox() {
 - 장면을 그리는 대상(후처리 pass의 렌더 타깃)과, `WebGPURenderer`에서는 그림자 cascade마다 따로 컴파일한다.
 - 후처리 pass가 MRT를 쓰면(TRAA나 AO가 켜진 `balanced`·`quality` preset) 미리 컴파일하지 못한다. three가 나중 작업에서 MRT 없이 셰이더를 만들기 때문이다. 이때 콘텐츠는 바로 보이고 처음 그릴 때 컴파일된다. `performance` preset이나 후처리가 없으면 미리 컴파일한다(`src/core/rendering/CompileGate.tsx`의 `compilesAhead`).
 - three r185·r186이고 렌더러에 `compileAsync`가 있을 때만 동작한다. 그 밖에서는 바로 보인다.
+- 컴파일 중인 문의 수는 모든 캔버스를 합쳐 센다. `useWorldLoadProgress()`(루트 export)가 그것과 three 기본 로딩 매니저(drei `useProgress`)를 묶어 로딩 화면용 값 `{ stage: 'assets' | 'shaders' | 'ready', progress, loaded, total, item }`을 준다. 파일이 진행률의 80%, 컴파일이 나머지 20%이고, 새 파일이 나타나도 진행률은 뒤로 가지 않는다. 로딩과 컴파일이 멈추고 0.4초가 지나면(아무것도 불러오지 않는 월드는 1.5초) `ready`가 되고, 그 뒤 나중에 불러오는 에셋으로는 되돌아가지 않는다. 예제는 이 값으로 섬이 조각조각 나타나는 동안 무대를 덮는다.
 
 ## 건축 비주얼 컴포넌트
 

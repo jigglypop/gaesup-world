@@ -17,4 +17,5 @@ export { readRendererStats } from './rendererStats';
 export { summarizeFrameTimes, usePerformanceReport } from './report';
 export type { FrameTimeSummary, PerformanceReport } from './report';
 export { createIdleFrameGate, IdleFrameRate, type IdleFrameRateProps } from './idle';
+export { useWorldLoadProgress, type WorldLoadProgress, type WorldLoadStage } from './loadProgress';
 export type { RendererInfoSource, RendererStats, RendererCounterScope } from './rendererStats';

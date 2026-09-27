@@ -11,6 +11,7 @@ import { StatusPanel } from './StatusPanel';
 import { countVisit, useStored } from './stored';
 import { createVillage } from './village';
 import { createMinihomeRuntime, modelUrl, type MinimeModel } from './world';
+import { WorldLoading } from './WorldLoading';
 
 // The editor panel loads only when the 꾸미기 tab opens.
 const BuildingUI = lazy(() => import('gaesup-world/building').then((module) => ({ default: module.BuildingUI })));
@@ -95,6 +96,7 @@ export default function Minihome() {
               <div className="mh-canvas">
                 <Scene {...settings} />
               </div>
+              <WorldLoading />
               <div className="mh-hud">
                 <div className="mh-hud-top">
                   <Clock />

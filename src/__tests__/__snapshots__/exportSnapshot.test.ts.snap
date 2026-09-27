@@ -947,6 +947,7 @@ exports[`runtime export snapshot . export 목록 1`] = `
   "useWeatherTicker",
   "useWorldInputActions",
   "useWorldInputScope",
+  "useWorldLoadProgress",
   "useWorldObjectStore",
   "useWorldObjectStoreApi",
   "useWorldPhysicsInterpolation",

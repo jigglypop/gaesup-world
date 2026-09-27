@@ -241,6 +241,20 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
   box-shadow: 0 14px 40px rgba(35, 26, 54, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
 }
 .mh-canvas { position: absolute; inset: 0; }
+/* Over the canvas until the island's first complete frame, then fades. */
+.mh-world-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: linear-gradient(160deg, rgba(226, 243, 255, 0.94), rgba(246, 236, 255, 0.94));
+  transition: opacity 0.6s ease;
+}
+.mh-world-loading.is-done { opacity: 0; pointer-events: none; }
+.mh-progress { width: 200px; height: 6px; border-radius: 999px; overflow: hidden; background: rgba(118, 104, 170, 0.14); }
+.mh-progress i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #ff9a76, #b18cff); transition: width 0.3s ease; }
 .mh-hud { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 14px; }
 .mh-hud-top { display: flex; gap: 8px; }
 .mh-keys {
