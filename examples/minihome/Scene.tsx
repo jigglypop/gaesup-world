@@ -14,6 +14,7 @@ import {
   LightingZone,
   Nameplates,
   SkyEnvironment,
+  useRendererRecovery,
   WorldPhysics,
   type LightingProfile,
   type WorldQuality,
@@ -37,8 +38,10 @@ export type SceneSettings = {
 
 /** The island canvas: the player, the village, its residents and the rule engine's trigger areas. */
 export function Scene({ quality, postProcessing, idleThrottle }: SceneSettings) {
+  // A lost GPU device remounts the canvas with a fresh renderer; the island's state lives outside it.
+  const canvasKey = useRendererRecovery();
   return (
-    <Canvas shadows="percentage" gl={createRenderer} camera={{ position: [SPAWN[0], 14, SPAWN[2] + 12], fov: 38 }}>
+    <Canvas key={canvasKey} shadows="percentage" gl={createRenderer} camera={{ position: [SPAWN[0], 14, SPAWN[2] + 12], fov: 38 }}>
       <color attach="background" args={['#8fd3ee']} />
       {/* Daylight: sky and bounced ground fill, a warm sun, and a small sky map for PBR reflections. */}
       <hemisphereLight args={['#eaf6ff', '#6f8a57', 1.22]} />

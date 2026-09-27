@@ -6,6 +6,7 @@ import { SkeletonUtils } from 'three-stdlib';
 
 import { LampRegistryContext } from './lampPool';
 import { normalizeImportedMaterials } from '../../../../assets/materialPolicy';
+import { releaseObject } from '../../../../rendering/release';
 import { castSubtreeNearShadowOnly } from '../../../../rendering/sky/nearShadow';
 import type { BuildingModelFallbackKind } from '../../../types';
 
@@ -55,6 +56,7 @@ function LoadedModel({ url, shadow }: { url: string; shadow: NonNullable<ModelOb
     normalizeImportedMaterials(owned, 'prop');
     return owned;
   }, [scene]);
+  useEffect(() => () => releaseObject(clone), [clone]);
   useEffect(() => {
     if (shadow === 'near') return castSubtreeNearShadowOnly(clone);
     clone.traverse((child) => {

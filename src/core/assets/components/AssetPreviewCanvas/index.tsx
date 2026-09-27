@@ -5,6 +5,7 @@ import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
+import { releaseObject } from '../../../rendering/release';
 import type { AssetRecord } from '../../types';
 
 export type AssetPreviewCanvasProps = {
@@ -43,11 +44,7 @@ class PreviewBoundary extends Component<PreviewBoundaryProps, { failed: boolean 
 function ModelPreview({ url }: { url: string }) {
   const { scene } = useGLTF(url) as { scene: THREE.Object3D };
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
-  useEffect(() => () => {
-    clone.traverse((object) => {
-      if (object instanceof THREE.SkinnedMesh) object.skeleton.dispose();
-    });
-  }, [clone]);
+  useEffect(() => () => releaseObject(clone), [clone]);
 
   return (
     <group scale={0.85} position={[0, -0.65, 0]}>

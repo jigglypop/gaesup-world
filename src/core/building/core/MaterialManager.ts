@@ -112,7 +112,7 @@ export class MaterialManager {
     if (color) texture.colorSpace = THREE.SRGBColorSpace;
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
-    texture.needsUpdate = true;
+    // The loader marks the texture for upload when its image arrives; marking it before leaves a version with no image.
     this.textures.set(url, texture);
     return texture;
   }

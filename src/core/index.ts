@@ -195,7 +195,8 @@ export { GaesupWorldContent } from './world/components/WorldContainer';
 export { WorldConfigProvider } from './world/components/WorldContainer';
 export { ControllerWrapper as GaesupController } from './interactions/components/ControllerWrapper';
 
-export { createRenderer, createLegacyRenderer, isWebGPUAvailable } from './rendering/webgpu';
+export { createRenderer, createLegacyRenderer, isWebGPUAvailable, RENDERER_LOST_EVENT } from './rendering/webgpu';
+export { useRendererRecovery } from './rendering/recovery';
 export { Grid as LegacyGrid } from './rendering/legacyDrei';
 export {
   createToonMaterial,

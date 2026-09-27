@@ -114,6 +114,14 @@ function installDisposalCompatibility(renderer: WebGPURenderer): WebGPURendererW
   return renderer as WebGPURendererWithContextLoss;
 }
 
+/** Dispatched on `window` when a renderer from `createRenderer` loses its device; `useRendererRecovery` listens. */
+export const RENDERER_LOST_EVENT = 'gaesup:renderer-lost';
+
+function isWindows(): boolean {
+  const nav = (globalThis as { navigator?: Navigator & { userAgentData?: { platform?: string } } }).navigator;
+  return nav?.userAgentData?.platform === 'Windows' || /Windows/.test(nav?.userAgent ?? '');
+}
+
 /**
  * Check WebGPU availability (cached after first call).
  */
@@ -173,7 +181,16 @@ export async function createRenderer(props: RendererProps): Promise<AnyRenderer>
   };
   void context;
   // GPU timestamps where the adapter has them: `quality="auto"` tells GPU-bound frames from CPU-bound ones by them.
-  const parameters = { trackTimestamp: true, ...restProps, ...(powerPreference === 'default' ? {} : { powerPreference }) };
+  // Windows ignores the power preference and warns about it, so it is left out there.
+  const preference = powerPreference === 'default' || isWindows() ? {} : { powerPreference };
+  const parameters = { trackTimestamp: true, ...restProps, ...preference };
   const renderer = await initWebGPURenderer(parameters as unknown as WebGPURendererParameters);
-  return renderer ? installDisposalCompatibility(renderer) : createLegacyRenderer(props);
+  if (!renderer) return createLegacyRenderer(props);
+  const installed = installDisposalCompatibility(renderer);
+  // A lost device (driver reset, GPU switch) takes every GPU resource with it; the canvas owner remounts on this event.
+  installed.onDeviceLost = (info) => {
+    logger.warn(`WebGPU device lost: ${info.message}`);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(RENDERER_LOST_EVENT, { detail: info }));
+  };
+  return installed;
 }

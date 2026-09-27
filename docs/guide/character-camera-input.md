@@ -40,6 +40,7 @@ prop 타입은 `Omit<PhysicsEntityProps, 'url' | 'isActive' | 'componentType'> &
 | `excludeBaseNodes` | `string[]` | 없음 | 숨길 기본 모델 노드 이름(부품과 겹칠 때) |
 | `modelHierarchy` | `boolean` | `false` | 가져온 리그의 계층·재질을 그대로 둔다 |
 | `modelYawOffset` | `number` | 0 | 모델 정면 보정. glTF 모델은 +Z가 정면이라 필요 없다. −Z를 보는 모델이면 `Math.PI` |
+| (모델 교체) | | | `url`을 바꾸면 새 모델을 불러오는 동안 이전 모델이 그대로 보이고(`useDeferredValue`), 새 모델이 준비되면 바뀐다. 이전 모델의 복제본은 해제된다 |
 | `animatorController` | `AnimatorControllerDefinition` | 기본 캐릭터 애니메이터 | 상태 머신. 기본은 클립 `idle`·`walk`·`run`(blend)·`jump`·`fall`·`ride`를 찾고 없는 클립은 건너뛴다 |
 | `enableKeyboard` | `boolean` | `true` | 키보드 이동 입력 |
 | `clickToMove` | `boolean` | `false` | 바닥 클릭 이동. 아래 [클릭 이동](#클릭-이동) |

@@ -1,8 +1,9 @@
-import { AnimationClip, Box3, type Mesh, type Object3D, type SkinnedMesh } from 'three';
+import { AnimationClip, Box3, type Mesh, type Object3D } from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
 import { applyClipPose, findClipKey, holdUnkeyedTracks, makeClipInPlace } from '../../../animation/core/clips';
 import { normalizeImportedMaterials, type ImportedMaterialPolicy } from '../../../assets/materialPolicy';
+import { releaseObject } from '../../../rendering/release';
 
 /** Clips an NPC walks or runs with; their root motion is removed, since the simulation moves the NPC. */
 const MOVE_CLIP = /walk|run|jog|sprint/i;
@@ -42,12 +43,7 @@ export function prepareNPCClips(scene: Object3D, animations: readonly AnimationC
 
 /** Frees what the renderer holds for a clone (render objects, bone textures); geometry and materials stay with the source. */
 export function disposeNPCFigure(root: Object3D): void {
-  const skeletons = new Set<SkinnedMesh['skeleton']>();
-  root.traverse((object) => {
-    if ((object as SkinnedMesh).isSkinnedMesh) skeletons.add((object as SkinnedMesh).skeleton);
-  });
-  skeletons.forEach((skeleton) => skeleton.dispose());
-  root.traverse((object) => object.dispose());
+  releaseObject(root);
 }
 
 /**

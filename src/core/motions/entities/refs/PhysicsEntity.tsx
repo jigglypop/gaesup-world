@@ -1,6 +1,7 @@
 import {
   forwardRef,
   useCallback,
+  useDeferredValue,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -22,6 +23,7 @@ import { useWorldPhysicsInterpolation } from '@core/simulation/physicsContext';
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
 import { useContactShadow } from '../../../rendering/lighting/ContactShadows';
+import { releaseObject } from '../../../rendering/release';
 import { useSceneToon } from '../../../rendering/useSceneToon';
 import { useGltfAndSize } from '../../hooks';
 import { useScopedStateManager } from '../../hooks/useStateSystem';
@@ -93,8 +95,10 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       if (previous !== null && previous !== forwardedRef && rigidBodyRef.current) assignRef(forwardedRef, rigidBodyRef.current);
       return () => assignRef(forwardedRef, null);
     }, [forwardedRef]);
-    const { size } = useGltfAndSize({ url: props.url || '' });
-    const modelUrl = props.url?.trim() ? props.url : EMPTY_GLTF_DATA_URI;
+    // A new model loads behind the one on screen: while it suspends React keeps showing the previous model.
+    const url = useDeferredValue(props.url);
+    const { size } = useGltfAndSize({ url: url || '' });
+    const modelUrl = url?.trim() ? url : EMPTY_GLTF_DATA_URI;
     const { scene, animations } = useGLTF(modelUrl);
     const { actions, ref: animationRef } = useSharedAnimations(animations, undefined, props.animationCullRadius);
     const activeAnimationRef = useRef<string | undefined>(undefined);
@@ -130,6 +134,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       normalizeImportedMaterials(owned, materialPolicy);
       return owned;
     }, [scene, materialPolicy]);
+    useEffect(() => () => releaseObject(clone), [clone]);
     useLayoutEffect(() => {
       if (!props.modelHierarchy) return;
       clone.traverse((node) => {

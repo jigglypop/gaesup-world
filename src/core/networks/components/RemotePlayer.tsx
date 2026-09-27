@@ -9,6 +9,7 @@ import { Text } from '@/core/rendering/legacyDrei';
 import { useSharedFrame, type SharedFrameChannel } from '@core/runtime/frame';
 
 import { GaesupErrorBoundary } from '../../error';
+import { releaseObject } from '../../rendering/release';
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
 import { logger } from '../../utils/logger';
 import { isTrustedRemoteModelUrl } from '../core/remoteInputLimits';
@@ -101,11 +102,7 @@ const RemotePlayerContent = React.memo(function RemotePlayerContent({
   // 모델 로드
   const { scene, animations } = useGLTF(modelUrl);
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
-  useEffect(() => () => {
-    clone.traverse((object) => {
-      if (object instanceof THREE.SkinnedMesh) object.skeleton.dispose();
-    });
-  }, [clone]);
+  useEffect(() => () => releaseObject(clone), [clone]);
   const { actions } = useAnimations(animations, animationRootRef);
   const currentAnimRef = useRef<string | null>(null);
   const currentActionRef = useRef<THREE.AnimationAction | null>(null);
