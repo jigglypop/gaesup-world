@@ -193,7 +193,7 @@ export function customLoop(draw: (time: number) => void) {
 | `quality` | 켬 | 켬 | 16 | 1.0 | 켬 | velocity, normal(MRT, MSAA 끔) |
 
 - 비용은 픽셀 수에 비례하므로 픽셀 비율 상한(1.5)이 함께 효과를 낸다. AO만 줄이려면 `aoResolutionScale`·`aoSamples`를 낮춘다.
-- MRT를 쓰는 preset에서는 `CompileGate`가 파이프라인을 미리 만들지 못해 새 콘텐츠가 처음 그려지는 프레임에 멈출 수 있다([rendering.md](rendering.md)).
+- 후처리를 켜면 장면을 pass 대상으로 먼저 컴파일한 뒤 넘겨받는다(MRT preset 포함, [rendering.md](rendering.md#첫-프레임-멈춤-방지-compilegate)). 넘겨받는 프레임에는 후처리 pass 자신의 파이프라인(TRAA·GTAO·bloom·출력)을 만드느라 0.7초 안팎 한 번 멈춘다.
 - 첫 로드는 `GaesupWorldContent`의 월드 전체를 `CompileGate`가 12ms 조각으로 나눠 컴파일한 뒤 보여 준다. 예제 섬에서 첫 프레임의 450~900ms long task가 사라졌다([rendering.md](rendering.md#첫-프레임-멈춤-방지-compilegate)).
 - classic WebGL 경로는 `@react-three/postprocessing`의 `EffectComposer`(외곽선 + 색보정)를 쓴다.
 
@@ -225,7 +225,9 @@ export function customLoop(draw: (time: number) => void) {
 - NPC는 카메라에서 120m(보이던 NPC는 135m)보다 멀면 화면에서 내리고, 화면 밖 NPC는 숨기며, `maxVisible`로 가까운 순 상한을 둔다. 시뮬레이션은 거리와 상관없이 모든 NPC를 돌린다.
 - 저장소 측정에서 작은 마을은 draw 81(`render()` 호출 6)이었다.
 
-### 예제 섬 전후(2026-09-28, dev, 헤드리스 Chrome WebGPU, 1600×900)
+### 예제 섬 전후(2026-09-28, 헤드리스 Chrome WebGPU, 1600×900)
+
+앞 여섯 줄은 dev 서버, 후처리 두 줄은 production 빌드를 같은 시각에 번갈아 두 번씩 잰 값이다.
 
 | 측정 | 전 | 후 |
 |---|---|---|
@@ -235,6 +237,8 @@ export function customLoop(draw: (time: number) => void) {
 | 바닥 칠하기·지우기 | long task 59 / 54ms | 없음 / 없음 |
 | 새 재질 바닥 놓기 | long task 61ms, 최악 프레임 200ms | long task 없음, 최악 프레임 100ms |
 | 처음 놓는 GLB 소품 | long task 102ms | 93~100ms(모델 불러오기·해석, 남음) |
+| 후처리 켜기(`quality` preset) | 최장 작업 1.17~1.29s, 최장 프레임 5.9~6.6s, 12초 동안 150~218프레임 | 최장 작업 0.19~0.21s, 최장 프레임 0.67~0.78s, 603~609프레임 |
+| 후처리 켠 채 첫 로드 | 준비 11.0~11.7s, 최장 작업 0.73~0.87s | 준비 6.2~6.8s, 최장 작업 0.08~0.15s |
 
 ## 번들 크기
 

@@ -14,11 +14,8 @@ type TargetedRenderer = {
   getMRT(): unknown;
   setMRT(mrt: unknown): void;
 };
-/**
- * Where a pass draws the scene (postprocessing): its render target and MRT outputs, and how deep in nested renders it
- * draws (a pass inside the output render draws at depth 1). Together they select the pipelines the scene is drawn with.
- */
-export type SceneRenderTarget = { renderTarget: unknown; mrt: unknown; depth: number };
+/** Where a pass draws the scene (postprocessing): its render target and MRT outputs select the scene's pipelines. */
+export type SceneRenderTarget = { renderTarget: unknown; mrt: unknown };
 
 /** The target each renderer draws the scene into; a gate compiles again when it changes. */
 export const sceneTargets = new WeakMap<object, SceneRenderTarget>();
@@ -33,13 +30,6 @@ export function canCompileAsync(renderer: unknown): renderer is AsyncCompiler {
   // Verified against the revisions whose compileAsync collects render objects synchronously before its first await.
   return isGpuBatchRevision() && typeof (renderer as Partial<AsyncCompiler> | null)?.compileAsync === 'function';
 }
-
-/**
- * Whether content can compile ahead for where the scene is drawn. three builds the shaders on later tasks, reading the
- * render target and MRT from the renderer, which by then shows the canvas: a pass with extra outputs would get, and keep,
- * shaders without them, so its content compiles as it first draws.
- */
-const compilesAhead = (renderer: object) => !sceneTargets.get(renderer)?.mrt;
 
 const canSwitchTargets = (renderer: object): renderer is TargetedRenderer =>
   typeof (renderer as Partial<TargetedRenderer>).setRenderTarget === 'function'
@@ -60,24 +50,65 @@ function withTarget<T>(renderer: TargetedRenderer, target: unknown, mrt: unknown
 }
 
 type RenderContexts = { get(target?: unknown, mrt?: unknown, depth?: number): unknown };
+type NodeBuilds = { getForRender(renderObject: object): unknown; getForRenderAsync(renderObject: object): Promise<unknown> };
+type PassRenderer = TargetedRenderer & { _renderContexts?: Partial<RenderContexts>; _nodes?: Partial<NodeBuilds> };
+
+/** Render contexts of passes with extra outputs, and the target and outputs their objects' shaders are built for. */
+const passContexts = new WeakMap<object, SceneRenderTarget>();
+const buildingForPasses = new WeakSet<object>();
 
 /**
- * Runs `compile` with render contexts looked up at `depth`. three keys a context by how deep in nested renders it draws
- * and compileAsync always asks for depth 0, so a pass or shadow map drawn inside another render would get pipelines
- * built for a context it never uses.
+ * three builds a compiled object's shaders on later tasks, reading the render target and MRT from the renderer, which
+ * by then draws to the canvas: a pass with extra outputs would get, and keep, shaders without them. Objects compiled for
+ * such a pass build at once instead, with the renderer set to the pass. False where the renderer's internals differ.
  */
-function atDepth<T>(renderer: object, depth: number, compile: () => T): T {
-  const contexts = (renderer as { _renderContexts?: RenderContexts })._renderContexts;
-  if (!contexts || depth === 0) return compile();
-  const get = contexts.get;
-  contexts.get = function (this: RenderContexts, target?: unknown, mrt?: unknown) {
-    return get.call(this, target, mrt, depth);
+function buildsForPasses(renderer: object): renderer is PassRenderer {
+  if (!canSwitchTargets(renderer)) return false;
+  const { _renderContexts: contexts, _nodes: nodes } = renderer as PassRenderer;
+  if (typeof contexts?.get !== 'function' || typeof nodes?.getForRender !== 'function' || typeof nodes.getForRenderAsync !== 'function')
+    return false;
+  if (buildingForPasses.has(nodes)) return true;
+  buildingForPasses.add(nodes);
+  const build = nodes.getForRender;
+  const buildLater = nodes.getForRenderAsync;
+  nodes.getForRenderAsync = function (this: NodeBuilds, renderObject: object) {
+    const pass = passContexts.get((renderObject as { context: object }).context);
+    return pass
+      ? Promise.resolve(withTarget(renderer, pass.renderTarget, pass.mrt, () => build.call(this, renderObject)))
+      : buildLater.call(this, renderObject);
   };
-  try {
-    return compile();
-  } finally {
-    contexts.get = get;
-  }
+  return true;
+}
+
+/** Marks the render context `target` draws the scene with, so objects compiled for it build for its outputs. */
+function registerPass(renderer: PassRenderer, target: SceneRenderTarget): void {
+  const context = renderer._renderContexts?.get?.(target.renderTarget, target.mrt);
+  if (typeof context === 'object' && context !== null) passContexts.set(context, target);
+}
+
+/** Whether content can compile ahead for where the scene is drawn: a pass with extra outputs needs `buildsForPasses`. */
+const compilesAhead = (renderer: object) => !sceneTargets.get(renderer)?.mrt || buildsForPasses(renderer);
+
+/** Targets drawn with one render context at every nesting depth; see `drawAtAnyDepth`. */
+const anyDepth = new WeakSet<object>();
+const keyingByTarget = new WeakSet<object>();
+
+/**
+ * three keys a render context by how deep in nested renders it draws, and how deep a pass or a shadow map draws depends
+ * on what draws it: a postprocessing pass sits inside the passes that read it, and a shadow map inside whatever draws
+ * the scene. Content compiled ahead for such a target would get pipelines for a context it never draws with. The targets
+ * compiled for here use one context at every depth instead; none is ever drawn inside a render into itself.
+ */
+function drawAtAnyDepth(renderer: object, target: unknown): void {
+  const contexts = (renderer as { _renderContexts?: Partial<RenderContexts> })._renderContexts;
+  if (typeof contexts?.get !== 'function' || typeof target !== 'object' || target === null) return;
+  anyDepth.add(target);
+  if (keyingByTarget.has(contexts)) return;
+  keyingByTarget.add(contexts);
+  const get = contexts.get;
+  contexts.get = function (this: RenderContexts, renderTarget?: unknown, mrt?: unknown, depth?: number) {
+    return get.call(this, renderTarget, mrt, anyDepth.has(renderTarget as object) ? 0 : depth);
+  };
 }
 
 /** One cascade of a cascaded sun: its node draws casters with the light's shadow material into its map. */
@@ -102,10 +133,10 @@ const isDrawable = (object: Object3D) => {
 };
 
 /**
- * Compiles the shadow pipelines of `root` as each cascade draws it: into the cascade's map at `depth`, without MRT, with
- * the light's shadow material overriding the object's. Drawables that cast no shadow sit the call out.
+ * Compiles the shadow pipelines of `root` as each cascade draws it: into the cascade's map, without MRT, with the light's
+ * shadow material overriding the object's. Drawables that cast no shadow sit the call out.
  */
-function compileShadowsAsync(renderer: AsyncCompiler & TargetedRenderer, root: Object3D, scene: Scene, depth: number): Promise<unknown>[] {
+function compileShadowsAsync(renderer: AsyncCompiler & TargetedRenderer, root: Object3D, scene: Scene): Promise<unknown>[] {
   const cascades = shadowCascades(scene);
   if (cascades.length === 0) return [];
   const idle: Object3D[] = [];
@@ -118,7 +149,8 @@ function compileShadowsAsync(renderer: AsyncCompiler & TargetedRenderer, root: O
   try {
     return cascades.map((cascade) => {
       scene.overrideMaterial = cascade.getShadowMaterial();
-      return withTarget(renderer, cascade.shadowMap, null, () => atDepth(renderer, depth, () => renderer.compileAsync(root, cascade.shadow.camera, scene)));
+      drawAtAnyDepth(renderer, cascade.shadowMap);
+      return withTarget(renderer, cascade.shadowMap, null, () => renderer.compileAsync(root, cascade.shadow.camera, scene));
     });
   } finally {
     scene.overrideMaterial = override;
@@ -152,7 +184,7 @@ function withGatesShown<T>(read: () => T): T {
 
 /**
  * Starts an async compile of `root` with `scene`'s lights while it is visible and unculled for that one call: for the
- * target the scene is drawn into and for the shadow cascades, which draw it one render deeper.
+ * target the scene is drawn into and for the shadow cascades.
  */
 export function compileSubtreeAsync(renderer: AsyncCompiler, root: Object3D, camera: Camera, scene: Scene): Promise<unknown> {
   if (!compilesAhead(renderer)) return Promise.resolve();
@@ -167,12 +199,15 @@ export function compileSubtreeAsync(renderer: AsyncCompiler, root: Object3D, cam
   try {
     return withGatesShown(() => {
       const target = sceneTargets.get(renderer);
-      const depth = target?.depth ?? 0;
       const switchable = canSwitchTargets(renderer) ? renderer : null;
+      if (target && switchable) {
+        drawAtAnyDepth(renderer, target.renderTarget);
+        if (target.mrt) registerPass(switchable, target);
+      }
       const main = target && switchable
-        ? withTarget(switchable, target.renderTarget, target.mrt, () => atDepth(renderer, depth, () => renderer.compileAsync(root, camera, scene)))
+        ? withTarget(switchable, target.renderTarget, target.mrt, () => renderer.compileAsync(root, camera, scene))
         : renderer.compileAsync(root, camera, scene);
-      const shadows = switchable ? compileShadowsAsync(switchable, root, scene, depth + 1) : [];
+      const shadows = switchable ? compileShadowsAsync(switchable, root, scene) : [];
       return shadows.length > 0 ? Promise.all([main, ...shadows]) : main;
     });
   } finally {
@@ -257,9 +292,12 @@ export async function compileInSlices(
   }
 }
 
-/** Compiles the whole scene for where it is drawn and its shadows; null when it cannot compile ahead. */
+/**
+ * Compiles the whole scene for where it is drawn and its shadows, a drawable at a time so their pipelines build side
+ * by side; null when it cannot compile ahead.
+ */
 export function compileSceneAsync(renderer: unknown, scene: Scene, camera: Camera): Promise<unknown> | null {
-  return canCompileAsync(renderer) && compilesAhead(renderer) ? compileSubtreeAsync(renderer, scene, camera, scene) : null;
+  return canCompileAsync(renderer) && compilesAhead(renderer) ? compileInSlices(renderer, scene, camera, scene) : null;
 }
 
 let compiling = 0;

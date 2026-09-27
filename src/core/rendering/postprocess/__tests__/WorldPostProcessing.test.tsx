@@ -1,5 +1,5 @@
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { PerspectiveCamera, Scene } from 'three';
+import { BoxGeometry, Mesh, MeshBasicMaterial, PerspectiveCamera, Scene } from 'three';
 
 const mockGl = { isWebGPURenderer: true, render: jest.fn() };
 const mockScene = new Scene();
@@ -97,19 +97,26 @@ describe('WorldPostProcessing ownership', () => {
   it('takes over drawing once the scene is compiled for its pass, and draws the scene directly until then', async () => {
     let finish!: () => void;
     Object.assign(mockGl, { compileAsync: jest.fn(() => new Promise<void>((resolve) => { finish = resolve; })) });
+    // The scene compiles a drawable at a time, each on a later task.
+    const tasks = () => act(async () => { for (let i = 0; i < 3; i++) await new Promise((resolve) => setTimeout(resolve, 0)); });
+    const content = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+    mockScene.add(content);
     let view: ReactTestRenderer;
     try {
       await act(async () => { view = create(<WorldPostProcessing />); });
+      await tasks();
       mockFrame();
       expect(mockGl.render).toHaveBeenCalledWith(mockScene, mockCamera);
       expect(mockPipeline.render).not.toHaveBeenCalled();
-      await act(async () => { finish(); });
+      finish();
+      await tasks();
       mockGl.render.mockClear();
       mockFrame();
       expect(mockPipeline.render).toHaveBeenCalledTimes(1);
       expect(mockGl.render).not.toHaveBeenCalled();
     } finally {
       act(() => view!.unmount());
+      mockScene.remove(content);
       delete (mockGl as { compileAsync?: unknown }).compileAsync;
     }
   });

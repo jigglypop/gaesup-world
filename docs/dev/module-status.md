@@ -19,7 +19,7 @@
 | `core/scene-object` | 3,430 | 유지 | 에디터 저작 모델(명령, 계층, 프리팹 오버라이드). 건축 store와 별개의 월드 모델이라 둘의 관계를 문서화해야 한다 |
 | `core/interactions` | 3,424 | 유지 | 상호작용 대상, 자동화, 입력 브리지. `InteractionTracker`는 자동으로 올라가지 않아 월드에 직접 둬야 한다. `AutomationSystem`(593)과 `InteractionBridge`(591)가 크다 |
 | `blueprints` | 3,332 | 유지 | 전사·마법사·카트 정의와 별도 ECS·에디터. 코어 소비자는 `useBlueprintEntity` 하나. 사용자가 삭제를 승인하지 않아 유지(2026-09-27) |
-| `core/rendering` | 3,025 | 통합 | `createRenderer`, TSL 재질, `CompileGate`, `GpuBatchBridge`, 해·안개·후처리. WebGL 전용 `ColorGrade`·`LutOverlay`·`ToonOutlines`(GPU-1), 해 두 벌 → `SunLight`(UP-1). WebGPU 어댑터가 없으면 classic `WebGLRenderer`로 떨어진다(GPU-1). `CompileGate`는 MRT 후처리(`balanced`·`quality` preset)에서 미리 컴파일하지 못한다 |
+| `core/rendering` | 3,025 | 통합 | `createRenderer`, TSL 재질, `CompileGate`, `GpuBatchBridge`, 해·안개·후처리. WebGL 전용 `ColorGrade`·`LutOverlay`·`ToonOutlines`(GPU-1), 해 두 벌 → `SunLight`(UP-1). WebGPU 어댑터가 없으면 classic `WebGLRenderer`로 떨어진다(GPU-1). `CompileGate`는 MRT 후처리도 pass 대상·출력으로 미리 컴파일한다(three 내부 `_renderContexts`·`_nodes`에 기댐) |
 | `core/animation` | 2,640 | 유지 | `AnimatorRuntime`(Unity식 상태 머신), 공유 애니메이션 |
 | `core/ui` | 2,015 | 유지 | 토스트, 말풍선, 미니맵, UI 시스템 |
 | `core/input` | 1,756 | 수정 | 입력 액션, 키보드·게임패드·터치. 조작 캐릭터의 키는 기본 입력 액션 표에서 파생한다(방향키·양쪽 Shift). 프로젝트 설정의 입력 바인딩은 아직 연결되지 않았다(LIB-1) |

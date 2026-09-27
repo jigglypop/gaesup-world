@@ -196,9 +196,8 @@ function NodeWorldPostProcessing({
             tsl.saturation(gradedColor.add(bloom.rgb), saturationValue),
             sceneColor.a,
           );
-          // New content compiles for the pass that draws the scene (inside the output render, so one level deep), not
-          // for the canvas it never renders to.
-          setSceneRenderTarget(gl as unknown as WebGPURenderer, { renderTarget: scenePass.renderTarget, mrt: scenePass.getMRT(), depth: 1 });
+          // New content compiles for the pass that draws the scene and its outputs, not for the canvas it never renders to.
+          setSceneRenderTarget(gl as unknown as WebGPURenderer, { renderTarget: scenePass.renderTarget, mrt: scenePass.getMRT() });
           // The pass takes over drawing once the scene's pipelines for it and for its shadows are built; switching first
           // would build all of them on the frames after. Until then the scene keeps drawing directly.
           const takeOver = pipeline;

@@ -68,7 +68,7 @@ test('content compiles for the target a pass draws the scene into, and again if 
   try {
     const gate = renderer.scene.findByProps({ name: 'content' }).instance.parent as THREE.Object3D;
     await nextTasks();
-    setSceneRenderTarget(gl as Parameters<typeof setSceneRenderTarget>[0], { renderTarget: 'scene-pass', mrt: null, depth: 1 });
+    setSceneRenderTarget(gl as Parameters<typeof setSceneRenderTarget>[0], { renderTarget: 'scene-pass', mrt: null });
     finishes[0]!();
     await nextTasks();
     expect(compiledFor).toEqual([[null, null], ['scene-pass', null]]);
@@ -83,11 +83,21 @@ test('content compiles for the target a pass draws the scene into, and again if 
   }
 });
 
-test('a subtree compiles at the nesting depth its pass draws at, and for each shadow cascade one render deeper', async () => {
-  const calls: { target: unknown; mrt: unknown; depth: number | undefined; override: unknown; hidden: string[] }[] = [];
-  let target: unknown = null;
-  let mrt: unknown = null;
-  const contexts = { get: jest.fn((_target?: unknown, _mrt?: unknown, depth?: number) => depth) };
+/** Render contexts keyed like three's: by target, outputs and how deep in nested renders they draw. */
+function renderContexts() {
+  const contexts = new Map<string, { target: unknown; mrt: unknown; depth: number }>();
+  const ids = new Map<unknown, number>();
+  const id = (value: unknown) => (ids.has(value) ? ids.get(value)! : ids.set(value, ids.size).get(value)!);
+  return {
+    get(target: unknown = null, mrt: unknown = null, depth = 0) {
+      const key = `${id(target)}-${id(mrt)}-${depth}`;
+      if (!contexts.has(key)) contexts.set(key, { target, mrt, depth });
+      return contexts.get(key)!;
+    },
+  };
+}
+
+function shadowedScene() {
   const scene = new THREE.Scene();
   const root = new THREE.Group();
   const caster = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
@@ -102,10 +112,21 @@ test('a subtree compiles at the nesting depth its pass draws at, and for each sh
   const sun = new THREE.DirectionalLight();
   sun.castShadow = true;
   const shadowMaterial = new THREE.MeshBasicMaterial();
-  Object.assign(sun.shadow, { shadowNode: { _shadowNodes: [{ shadowMap: 'cascade-0', shadow: { camera: sun.shadow.camera }, getShadowMaterial: () => shadowMaterial }] } });
+  const cascadeMap = { name: 'cascade-0' };
+  Object.assign(sun.shadow, { shadowNode: { _shadowNodes: [{ shadowMap: cascadeMap, shadow: { camera: sun.shadow.camera }, getShadowMaterial: () => shadowMaterial }] } });
   scene.add(sun);
+  return { scene, root, flat, shadowMaterial, cascadeMap };
+}
+
+test('a pass and the shadow maps compiled for draw with one render context at every depth, and the cascades compile with the shadow material', async () => {
+  const { scene, root, flat, shadowMaterial, cascadeMap } = shadowedScene();
+  const calls: { target: unknown; override: unknown; hidden: string[] }[] = [];
+  let target: unknown = null;
+  let mrt: unknown = null;
+  const scenePass = { name: 'scene-pass' };
+  const elsewhere = { name: 'elsewhere' };
   const renderer = {
-    _renderContexts: contexts,
+    _renderContexts: renderContexts(),
     getRenderTarget: () => target,
     setRenderTarget: (next: unknown) => { target = next; },
     getMRT: () => mrt,
@@ -115,28 +136,71 @@ test('a subtree compiles at the nesting depth its pass draws at, and for each sh
   renderer.compileAsync.mockImplementation(async () => {
     const hidden: string[] = [];
     root.traverse((object) => { if (!object.visible) hidden.push(object.name || object.type); });
-    calls.push({ target, mrt, depth: contexts.get(target, mrt) as number | undefined, override: scene.overrideMaterial, hidden });
+    calls.push({ target, override: scene.overrideMaterial, hidden });
   });
-  setSceneRenderTarget(renderer, { renderTarget: 'scene-pass', mrt: null, depth: 1 });
+  setSceneRenderTarget(renderer, { renderTarget: scenePass, mrt: null });
   try {
     await compileSubtreeAsync(renderer, root, new THREE.PerspectiveCamera(), scene);
     expect(calls).toEqual([
-      { target: 'scene-pass', mrt: null, depth: 1, override: null, hidden: [] },
-      { target: 'cascade-0', mrt: null, depth: 2, override: shadowMaterial, hidden: ['flat'] },
+      { target: scenePass, override: null, hidden: [] },
+      { target: cascadeMap, override: shadowMaterial, hidden: ['flat'] },
     ]);
     expect([target, mrt, scene.overrideMaterial, flat.visible]).toEqual([null, null, null, true]);
+    // A postprocessing pass draws inside the passes that read it, and a shadow map inside whatever draws the scene.
+    const contexts = renderer._renderContexts;
+    expect(contexts.get(scenePass, null, 2)).toBe(contexts.get(scenePass, null, 0));
+    expect(contexts.get(cascadeMap, null, 3)).toBe(contexts.get(cascadeMap, null, 1));
+    expect(contexts.get(elsewhere, null, 1)).not.toBe(contexts.get(elsewhere, null, 0));
   } finally {
     setSceneRenderTarget(renderer, null);
   }
 });
 
-test('a pass with extra outputs is not compiled ahead: content shows at once and the pass takes over at once', async () => {
+test('objects compiled for a pass with extra outputs build at once for its target and outputs; the rest build later as three does', async () => {
+  const { scene, root, cascadeMap } = shadowedScene();
+  let target: unknown = null;
+  let mrt: unknown = null;
+  const scenePass = { name: 'scene-pass' };
+  const outputs = { name: 'outputs' };
+  const built: { context: unknown; target: unknown; mrt: unknown; later: boolean }[] = [];
+  const renderer = {
+    _renderContexts: renderContexts(),
+    _nodes: {
+      getForRender: (renderObject: { context: unknown }) => { built.push({ context: renderObject.context, target, mrt, later: false }); },
+      getForRenderAsync: async (renderObject: { context: unknown }) => { built.push({ context: renderObject.context, target, mrt, later: true }); },
+    },
+    getRenderTarget: () => target,
+    setRenderTarget: (next: unknown) => { target = next; },
+    getMRT: () => mrt,
+    setMRT: (next: unknown) => { mrt = next; },
+    // Like three: the context is looked up at once, the shaders are built on a later task with the renderer back on the canvas.
+    compileAsync: jest.fn(async () => {
+      const context = renderer._renderContexts.get(target, mrt);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await renderer._nodes.getForRenderAsync({ context });
+    }),
+  };
+  setSceneRenderTarget(renderer, { renderTarget: scenePass, mrt: outputs });
+  try {
+    await compileSubtreeAsync(renderer, root, new THREE.PerspectiveCamera(), scene);
+    const contexts = renderer._renderContexts;
+    expect(built).toEqual([
+      { context: contexts.get(scenePass, outputs), target: scenePass, mrt: outputs, later: false },
+      { context: contexts.get(cascadeMap, null), target: null, mrt: null, later: true },
+    ]);
+    expect([target, mrt]).toEqual([null, null]);
+  } finally {
+    setSceneRenderTarget(renderer, null);
+  }
+});
+
+test('a pass with extra outputs is not compiled ahead where its node builds cannot follow it: content shows at once and the pass takes over at once', async () => {
   const compileAsync = jest.fn(() => Promise.resolve());
   let gl: object = {};
   function Patch() {
     gl = Object.assign(useThree((state) => state.gl), { compileAsync });
     // three builds the shaders on later tasks with the renderer back on the canvas, so they would lack these outputs.
-    setSceneRenderTarget(gl as Parameters<typeof setSceneRenderTarget>[0], { renderTarget: 'scene-pass', mrt: 'outputs', depth: 1 });
+    setSceneRenderTarget(gl as Parameters<typeof setSceneRenderTarget>[0], { renderTarget: 'scene-pass', mrt: 'outputs' });
     return null;
   }
   const renderer = await ReactThreeTestRenderer.create(
@@ -161,7 +225,8 @@ test('alike drawables compile once, lights under the hidden gate light them, and
   let gate: THREE.Object3D | null = null;
   const compileAsync = jest.fn((root: THREE.Object3D) => {
     compiled.push(root.name);
-    gateShown.push(Boolean(gate?.visible));
+    // The drawable's parent is the gate; a compile can start before the test has looked the gate up.
+    gateShown.push(Boolean(root.parent?.visible));
     return new Promise<void>((resolve) => { finishes.push(resolve); });
   });
   function Patch() {

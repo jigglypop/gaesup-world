@@ -251,7 +251,7 @@ export function TimeOfDayLights() {
 
 - `webgpu`·`webgpu-fallback`: TSL `RenderPipeline`이다. 장면 pass(TRAA·AO를 쓰면 velocity·normal MRT, 이때 MSAA 끔) → TRAA → GTAO를 색에 곱함 → bloom 더함 → 채도. `three/webgpu`, `three/tsl`, `BloomNode`·`TRAANode`·`GTAONode` addon을 켤 때 동적으로 불러온다.
 - 카메라가 5m 넘게 튀거나 크게 돌거나 투영이 바뀌면 TRAA 이력을 스스로 버린다.
-- MRT를 쓰지 않는 `performance` preset이면 장면 파이프라인을 먼저 컴파일한 뒤 렌더를 넘겨받고, 그 전까지는 장면을 직접 그린다. TRAA나 AO를 쓰면 바로 넘겨받는다(아래 `CompileGate` 참고).
+- 장면 파이프라인을 그릴 것마다 나눠 먼저 컴파일한 뒤 렌더를 넘겨받고, 그 전까지는 장면을 직접 그린다(MRT preset 포함, 아래 `CompileGate` 참고). 넘겨받는 프레임에 후처리 pass 자신의 셰이더(TRAA·GTAO·bloom·출력, 약 10개)는 동기로 만든다.
 - `useFrame` priority 1로 캔버스 렌더를 소유한다. 다른 `EffectComposer`나 렌더 소유자를 같은 캔버스에 두지 않는다.
 - `webgl`(classic): props를 무시하고 `ToonOutlines` + `ColorGrade`(`@react-three/postprocessing`) 조합을 올린다.
 
@@ -318,8 +318,8 @@ export function ToonBox() {
 - 숨은 문 안의 빛(해, 방 조명)도 컴파일에는 들어간다. three가 보이는 것에서만 빛과 cascade를 모으므로 컴파일하는 동안만 숨은 문을 보이게 둔다.
 - `GpuBatchBridge`의 GPU 배치 메시는 원래 메시를 대신하기 전에 컴파일한다.
 - 예제 섬(개발 서버, 헤드리스 Chrome WebGPU)에서 첫 로드의 렌더 long task가 450~900ms 하나에서 80ms 넘는 것 없음으로 줄었다(모듈 평가 150ms 한 번은 남는다, 2026-09-27).
-- 장면을 그리는 대상(후처리 pass의 렌더 타깃)과, `WebGPURenderer`에서는 그림자 cascade마다 따로 컴파일한다.
-- 후처리 pass가 MRT를 쓰면(TRAA나 AO가 켜진 `balanced`·`quality` preset) 미리 컴파일하지 못한다. three가 나중 작업에서 MRT 없이 셰이더를 만들기 때문이다. 이때 콘텐츠는 바로 보이고 처음 그릴 때 컴파일된다. `performance` preset이나 후처리가 없으면 미리 컴파일한다(`src/core/rendering/CompileGate.tsx`의 `compilesAhead`).
+- 장면을 그리는 대상(후처리 pass의 렌더 타깃)과, `WebGPURenderer`에서는 그림자 cascade마다 따로 컴파일한다. three는 렌더 컨텍스트를 중첩 깊이로도 나누는데, 후처리 pass는 그것을 읽는 pass(TRAA·bloom) 안에서, 그림자 맵은 장면을 그리는 렌더 안에서 그려져 깊이가 설정마다 다르다. 그래서 컴파일하는 pass 타깃과 그림자 맵은 어느 깊이에서나 한 컨텍스트를 쓴다(`drawAtAnyDepth`). 후처리를 켜도 그림자 파이프라인은 다시 만들지 않는다.
+- 후처리 pass가 MRT를 쓰면(TRAA나 AO가 켜진 `balanced`·`quality` preset) three가 나중 작업에서 셰이더를 만들 때 렌더러의 대상·MRT를 읽어 출력 없는 셰이더가 된다. 그 pass로 컴파일한 객체는 셰이더를 그 대상·MRT를 건 채 바로 만든다(`buildsForPasses`). 객체 하나를 한 작업에서 만들어 무거운 재질은 50~100ms 작업이 된다. 렌더러 내부가 다르면(r185·r186 밖) 예전처럼 처음 그릴 때 컴파일된다.
 - three r185·r186이고 렌더러에 `compileAsync`가 있을 때만 동작한다. 그 밖에서는 바로 보인다.
 - 컴파일 중인 문의 수는 모든 캔버스를 합쳐 센다. `useWorldLoadProgress()`(루트 export)가 그것과 three 기본 로딩 매니저(drei `useProgress`)를 묶어 로딩 화면용 값 `{ stage: 'assets' | 'shaders' | 'ready', progress, loaded, total, item }`을 준다. 파일이 진행률의 80%, 컴파일이 나머지 20%이고, 새 파일이 나타나도 진행률은 뒤로 가지 않는다. 로딩과 컴파일이 멈추고 0.4초가 지나면(아무것도 불러오지 않는 월드는 1.5초) `ready`가 되고, 그 뒤 나중에 불러오는 에셋으로는 되돌아가지 않는다. 예제는 이 값으로 섬이 조각조각 나타나는 동안 무대를 덮는다.
 
