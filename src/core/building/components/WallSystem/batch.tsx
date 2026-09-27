@@ -17,10 +17,58 @@ export type WallBatch = {
 
 const DEFAULT_WALL_MESH: MeshConfig = { id: 'default', color: '#000000' };
 
+/** Index ranges of a box's faces in three's order (+x, −x, +y, −y, +z, −z), by the wall material each one takes. */
+const FACE_GROUPS = [
+  { from: 0, to: 24, materialIndex: 0 },
+  { from: 24, to: 30, materialIndex: 4 },
+  { from: 30, to: 36, materialIndex: 5 },
+] as const;
+
+/**
+ * Boxes, each moved to its `position`, as one geometry of three groups: every box's four edge faces, then the fronts
+ * (+z), then the backs (−z). `getWallMaterials` gives all edges one material, so a batch draws three times a pass
+ * (shadow passes too) instead of six times per box.
+ */
+export function createWallPartsGeometry(
+  boxes: readonly { size: readonly [number, number, number]; position?: readonly [number, number, number] }[],
+): THREE.BufferGeometry {
+  const parts = boxes.map(({ size, position }) => {
+    const box = new THREE.BoxGeometry(size[0], size[1], size[2]);
+    if (position) box.translate(position[0], position[1], position[2]);
+    return box;
+  });
+  const geometry = new THREE.BufferGeometry();
+  const vertices = parts.reduce((sum, part) => sum + part.getAttribute('position').count, 0);
+  for (const name of ['position', 'normal', 'uv']) {
+    const itemSize = parts[0]!.getAttribute(name).itemSize;
+    const array = new Float32Array(vertices * itemSize);
+    let offset = 0;
+    for (const part of parts) {
+      array.set(part.getAttribute(name).array, offset);
+      offset += part.getAttribute(name).array.length;
+    }
+    geometry.setAttribute(name, new THREE.BufferAttribute(array, itemSize));
+  }
+  const index: number[] = [];
+  for (const { from, to, materialIndex } of FACE_GROUPS) {
+    const start = index.length;
+    let base = 0;
+    for (const part of parts) {
+      const source = part.index!.array;
+      for (let i = from; i < to; i++) index.push(source[i]! + base);
+      base += part.getAttribute('position').count;
+    }
+    geometry.addGroup(start, index.length - start, materialIndex);
+  }
+  geometry.setIndex(index);
+  for (const part of parts) part.dispose();
+  return geometry;
+}
+
 /** A wall centered on its own box; each instance moves it to `wallBox(wall)`. */
-export function createWallGeometry(): THREE.BoxGeometry {
+export function createWallGeometry(): THREE.BufferGeometry {
   const { WIDTH, HEIGHT, THICKNESS } = TILE_CONSTANTS.WALL_SIZES;
-  return new THREE.BoxGeometry(WIDTH, HEIGHT, THICKNESS);
+  return createWallPartsGeometry([{ size: [WIDTH, HEIGHT, THICKNESS] }]);
 }
 
 export function getWallMaterialKey(wall: WallConfig): string {
@@ -56,7 +104,7 @@ export function getWallMaterials(
   ];
 }
 
-/** Six identical face materials draw as one material: one draw instead of one per BoxGeometry group. */
+/** Six identical face materials draw as one material: one draw instead of one per geometry group. */
 export function faceMaterial(materials: THREE.Material[]): THREE.Material | THREE.Material[] {
   return materials.every((entry) => entry === materials[0]) ? materials[0]! : materials;
 }
@@ -67,7 +115,7 @@ export function WallBatchMesh({
   onWallClick,
 }: {
   batch: WallBatch;
-  geometry: THREE.BoxGeometry;
+  geometry: THREE.BufferGeometry;
   onWallClick?: (wallId: string) => void;
 }) {
   const instancedRef = useRef<THREE.InstancedMesh | null>(null);

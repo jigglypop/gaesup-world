@@ -3,10 +3,10 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import type { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { faceMaterial, getWallMaterials } from './batch';
+import { createWallPartsGeometry, faceMaterial, getWallMaterials } from './batch';
 import type { MaterialManager } from '../../core/MaterialManager';
 import { wallBox, wallKindOf, wallPieces, type WallPiece } from '../../model/footprint';
-import type { MeshConfig, WallConfig, WallGroupConfig } from '../../types';
+import type { BuildingWallKind, MeshConfig, WallConfig, WallGroupConfig } from '../../types';
 import { useInstanceCapacity } from '../BuildingBatches/capacity';
 
 const DEFAULT_GLASS_MESH: MeshConfig = {
@@ -27,10 +27,14 @@ function getDoorMaterial(manager: MaterialManager, meshes: Map<string, MeshConfi
   });
 }
 
-/** Every wall with the same piece of the same shape and material: one InstancedMesh of that piece. */
+/**
+ * Every wall of one kind whose pieces of one role (a window's four frame bars, a door's leaf) share a material: one
+ * InstancedMesh drawing all those pieces as one geometry.
+ */
 export type WallPieceBatch = {
   key: string;
-  piece: WallPiece;
+  role: WallPiece['role'];
+  pieces: readonly WallPiece[];
   walls: WallConfig[];
   material: THREE.Material | THREE.Material[];
 };
@@ -38,7 +42,18 @@ export type WallPieceBatch = {
 const materialKey = (material: THREE.Material | THREE.Material[]) =>
   Array.isArray(material) ? material.map((entry) => entry.uuid).join('|') : material.uuid;
 
-/** The frames, glass and doors of the non-solid walls, grouped by piece and material. */
+const ROLES: readonly WallPiece['role'][] = ['frame', 'glass', 'door'];
+const rolePieces = new Map<string, readonly WallPiece[]>();
+
+/** The pieces of one role of a wall kind: the same array every time, so a batch keeps its geometry across edits. */
+function piecesOf(kind: BuildingWallKind, role: WallPiece['role']): readonly WallPiece[] {
+  const shape = `${kind}:${role}`;
+  let pieces = rolePieces.get(shape);
+  if (!pieces) rolePieces.set(shape, pieces = wallPieces(kind).filter((piece) => piece.role === role));
+  return pieces;
+}
+
+/** The frames, glass and doors of the non-solid walls, grouped by kind, role and material. */
 export function buildWallPieceBatches(
   walls: readonly { wall: WallConfig; group: WallGroupConfig }[],
   wallGroups: Map<string, WallGroupConfig>,
@@ -54,37 +69,36 @@ export function buildWallPieceBatches(
       glass: manager.getMaterial(DEFAULT_GLASS_MESH),
       door: getDoorMaterial(manager, meshes, group),
     };
-    for (const piece of wallPieces(kind)) {
-      const material = byRole[piece.role];
-      const key = `${kind}:${piece.key}:${materialKey(material)}`;
+    for (const role of ROLES) {
+      const pieces = piecesOf(kind, role);
+      if (pieces.length === 0) continue;
+      const material = byRole[role];
+      const key = `${kind}:${role}:${materialKey(material)}`;
       let batch = batches.get(key);
-      if (!batch) batches.set(key, batch = { key, piece, walls: [], material });
+      if (!batch) batches.set(key, batch = { key, role, pieces, walls: [], material });
       batch.walls.push(wall);
     }
   }
   return [...batches.values()];
 }
 
-const pieceMatrix = new THREE.Matrix4();
-const pieceOffset = new THREE.Matrix4();
+const wallMatrix = new THREE.Matrix4();
 
-/** One piece of many walls, each placed where the wall stands. A click selects the wall of the piece hit. */
+/** The pieces of many walls, each set placed where its wall stands. A click selects the wall of the piece hit. */
 export function WallPieceBatchMesh({ batch, onWallClick }: { batch: WallPieceBatch; onWallClick?: (wallId: string) => void }) {
   const ref = useRef<THREE.InstancedMesh | null>(null);
   const capacity = useInstanceCapacity(batch.walls.length);
-  const [width, height, depth] = batch.piece.size;
-  const geometry = useMemo(() => new THREE.BoxGeometry(width, height, depth), [width, height, depth]);
+  // The pieces sit in the wall's frame, so an instance is the wall's own transform.
+  const geometry = useMemo(() => createWallPartsGeometry(batch.pieces), [batch.pieces]);
   useEffect(() => () => geometry.dispose(), [geometry]);
 
   useLayoutEffect(() => {
     const mesh = ref.current;
     if (!mesh) return;
-    const [x, y, z] = batch.piece.position;
-    pieceOffset.makeTranslation(x, y, z);
     batch.walls.forEach((wall, index) => {
       const { center, rotationY } = wallBox(wall);
-      pieceMatrix.makeRotationY(rotationY).setPosition(center[0], wall.position.y, center[2]).multiply(pieceOffset);
-      mesh.setMatrixAt(index, pieceMatrix);
+      wallMatrix.makeRotationY(rotationY).setPosition(center[0], wall.position.y, center[2]);
+      mesh.setMatrixAt(index, wallMatrix);
     });
     mesh.count = batch.walls.length;
     mesh.instanceMatrix.needsUpdate = true;
@@ -104,7 +118,7 @@ export function WallPieceBatchMesh({ batch, onWallClick }: { batch: WallPieceBat
       ref={ref}
       args={[geometry, batch.material, capacity]}
       // Glass lets the sun through; an opaque shadow would black out the room behind it.
-      castShadow={batch.piece.role !== 'glass'}
+      castShadow={batch.role !== 'glass'}
       receiveShadow
       {...(onWallClick ? { onClick: handleClick } : {})}
     />
