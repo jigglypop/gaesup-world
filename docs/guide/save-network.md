@@ -203,7 +203,7 @@ visit.leaveVisit();          // 내 월드로 돌아온다
 | `logLevel`, `logToConsole` | `'warn'`, `true` | |
 | `enableRateLimit`, `maxMessagesPerSecond` | `true`, 100 | 원격 사람마다 PlayerUpdate·Chat을 초당 이 수로 제한(토큰 버킷) |
 | `websocket` | `{ url: 'ws://localhost:8090', reconnectAttempts: 5, reconnectDelay: 1000, pingInterval: 30000 }` | |
-| `tracking` | `{ updateRate: 20, velocityThreshold: 0.5, sendRateLimit: 50, interpolationSpeed: 0.15 }` | 전송 Hz, 달리기 판정 속도, 전송 최소 간격(ms), 원격 보간 |
+| `tracking` | `{ updateRate: 20, velocityThreshold: 0.5, sendRateLimit: 50, interpolationSpeed: 0.15 }` | 전송 Hz, 달리기 판정 속도, 전송 최소 간격(ms), 원격 보간. 소켓에 64KB 넘게 밀려 있으면 위치 갱신은 보내지 않고 최신 값으로 합쳐 두었다가 비워진 뒤 한 번만 보낸다 |
 | `rendering` | `{ nameTagHeight: 3.5, nameTagSize: 0.5, characterScale: 1 }` | 원격 아바타 표시 |
 
 ### `useMultiplayer({ config, characterUrl?, rigidBodyRef? })`

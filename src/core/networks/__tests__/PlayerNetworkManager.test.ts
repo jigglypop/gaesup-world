@@ -15,6 +15,7 @@ class MockWebSocket {
   onmessage: ((ev: MessageEvent) => void) | null = null;
   onerror: ((ev: Event) => void) | null = null;
   sentMessages: string[] = [];
+  bufferedAmount = 0;
 
   constructor(public url: string) {
     MockWebSocket.lastCreated = this;
@@ -253,6 +254,27 @@ describe('PlayerNetworkManager', () => {
       expect(lastUpdate.state.position).toEqual([2, 0, 0]);
 
       jest.useRealTimers();
+    });
+
+    test('a socket with a backlog holds updates and sends only the latest once it drains', () => {
+      jest.useFakeTimers();
+      try {
+        manager = new PlayerNetworkManager({ url: 'ws://localhost:9999', roomId: 'room', playerName: 'p', playerColor: '#fff', sendRateLimit: 50 });
+        manager.connect();
+        jest.advanceTimersByTime(5);
+        const ws = MockWebSocket.lastCreated!;
+        const updates = () => ws.sentMessages.filter((m) => JSON.parse(m).type === 'Update');
+        ws.bufferedAmount = 200_000;
+        for (let x = 1; x <= 5; x++) manager.updateLocalPlayer({ position: [x, 0, 0] });
+        jest.advanceTimersByTime(200);
+        expect(updates()).toHaveLength(0);
+        ws.bufferedAmount = 0;
+        jest.advanceTimersByTime(60);
+        expect(updates()).toHaveLength(1);
+        expect(ws.parseSentMessage(-1).state.position).toEqual([5, 0, 0]);
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     test('Join carries the model; Updates repeat name, color, model and animation only on change per connection', () => {

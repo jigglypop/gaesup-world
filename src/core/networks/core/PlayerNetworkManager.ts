@@ -79,6 +79,10 @@ const MAX_RECONNECT_DELAY_MS = 30_000;
 /** Application close code for a socket abandoned after a missed pong. */
 const PONG_TIMEOUT_CLOSE_CODE = 4000;
 
+/** Bytes a socket may still hold before position updates wait for it to drain, and how long they wait then. */
+const MAX_BUFFERED_UPDATE_BYTES = 64 * 1024;
+const BACKLOG_RETRY_MS = 50;
+
 export class PlayerNetworkManager {
   private ws: WebSocket | null = null;
   private url: string;
@@ -410,9 +414,11 @@ export class PlayerNetworkManager {
     const ws = this.ws;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
-    // The only send-rate limit on the Update path; excess updates coalesce instead of being dropped.
+    // The only send-rate limit on the Update path; excess updates coalesce instead of being dropped. A socket still
+    // holding a backlog waits too: updates supersede each other, so a slow link sends only the latest once it drains.
     const now = Date.now();
-    if (this.updateRateLimitMs <= 0 || now - this.lastUpdateSentAt >= this.updateRateLimitMs) {
+    const backedUp = ws.bufferedAmount > MAX_BUFFERED_UPDATE_BYTES;
+    if (!backedUp && (this.updateRateLimitMs <= 0 || now - this.lastUpdateSentAt >= this.updateRateLimitMs)) {
       this.lastUpdateSentAt = now;
       const payload = this.pendingUpdate;
       this.pendingUpdate = null;
@@ -423,7 +429,9 @@ export class PlayerNetworkManager {
 
     // Schedule a flush at the next permitted time.
     if (this.updateFlushTimer) return;
-    const delay = Math.max(0, this.updateRateLimitMs - (now - this.lastUpdateSentAt));
+    const delay = backedUp
+      ? Math.max(this.updateRateLimitMs, BACKLOG_RETRY_MS)
+      : Math.max(0, this.updateRateLimitMs - (now - this.lastUpdateSentAt));
     this.updateFlushTimer = setTimeout(() => {
       this.updateFlushTimer = null;
       const p = this.pendingUpdate;
