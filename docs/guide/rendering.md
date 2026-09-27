@@ -17,7 +17,7 @@ R3F `Canvas`의 `gl`에 넘기는 비동기 팩토리다(`src/core/rendering/web
 3. true면 `three/webgpu`를 동적 import해 `WebGPURenderer`를 만들고 `await renderer.init()`을 기다린다. R3F가 넘기는 `canvas`·`antialias`·`alpha` 등은 그대로 전달하고 `powerPreference: 'default'`는 뺀다. Windows에서는 브라우저가 `powerPreference`를 무시하고 경고하므로 늘 뺀다. `trackTimestamp: true`를 함께 넘겨 어댑터에 `timestamp-query`가 있으면 GPU 시간을 잰다. 모듈이나 생성자를 쓸 수 없으면 classic `WebGLRenderer`로 돌아간다. `init()`이 실패하면 백엔드를 정리하고 예외를 그대로 던진다(캔버스 생성이 실패한다).
 4. `WebGPURenderer`는 `init()` 중 WebGPU 장치를 얻지 못하면 스스로 WebGL2 백엔드로 바꾼다. `createRenderer`는 어댑터를 먼저 확인하므로 이 경우는 드물다.
 5. 만든 렌더러의 `dispose`를 한 번만 돌게 하고 `forceContextLoss`를 붙여, 캔버스가 내려갈 때 R3F가 렌더러를 해제하게 한다.
-6. 장치를 잃으면(드라이버 재설정, GPU 전환) 경고를 남기고 `window`에 `RENDERER_LOST_EVENT`를 보낸다. 캔버스를 올린 쪽이 `<Canvas key={useRendererRecovery()} ...>`로 두면 0.3초 뒤 새 렌더러와 장치로 캔버스가 다시 올라온다. 월드 상태는 캔버스 밖 런타임에 있어 그대로 이어지고, 셰이더를 새 장치에 다시 준비하는 몇 초 뒤부터 매 프레임 그린다.
+6. 장치를 잃으면(드라이버 재설정, GPU 전환) 경고를 남기고 `window`에 `RENDERER_LOST_EVENT`를 보낸다. 캔버스를 올린 쪽이 `<Canvas key={useRendererRecovery()} ...>`로 두면 0.3초 뒤 새 렌더러와 장치로 캔버스가 다시 올라온다. 월드 상태는 캔버스 밖 런타임에 있어 그대로 이어지고(플레이어는 잃기 전 자리 위에서 다시 내려선다), 셰이더를 새 장치에 다시 준비하는 몇 초 뒤부터 매 프레임 그린다.
 
 월드에서 영영 내려가는 복제 모델(플레이어·NPC·건축 모델·원격 플레이어)은 `releaseObject`로 뼈 텍스처와 객체별 렌더 객체(three r186 `Object3D.dispose`)를 해제한다. 캐시된 모델과 함께 쓰는 지오메트리·재질은 캐시가 가진다.
 
