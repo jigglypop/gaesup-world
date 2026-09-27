@@ -1,4 +1,4 @@
-import React, { Suspense, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Group } from 'three';
 
@@ -10,6 +10,7 @@ import { GpuBatchBridge } from '../../../rendering/GpuBatchBridge';
 import { WeatherEffect } from '../../../weather';
 import { getDefaultBuildingObject } from '../../catalog/objects';
 import { useBuildingStore } from '../../stores/buildingStore';
+import { scatterDecor } from '../../terrain/scatter';
 import type { BuildingBlockConfig, BuildingTreeKind, PlacedObject } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
 import { useBuildingVisibilityStore } from '../../visibility/store';
@@ -73,6 +74,7 @@ function resolveTreeKind(object: PlacedObject): BuildingTreeKind {
 }
 
 const EMPTY_BLOCKS: readonly BuildingBlockConfig[] = [];
+const EMPTY_OBJECTS: readonly PlacedObject[] = [];
 
 const EMPTY_BUCKETS: ObjectBuckets = {
   sakura: [],
@@ -176,10 +178,22 @@ export const BuildingSystem = React.memo(function BuildingSystem({
     () => (visibilityReady ? buckets.model.filter((object) => visibleObjectIds.has(object.id)) : buckets.model),
     [buckets.model, visibilityReady, visibleObjectIds],
   );
+  // Decoration the meshes scatter over the resident tiles; unchanged pieces keep their objects, so their cells hold.
+  const scatterCache = useRef<ReadonlyMap<string, PlacedObject>>(new Map());
+  const scattered = useMemo(
+    () => scatterDecor(tileGroupsArray, meshes, objects ?? EMPTY_OBJECTS, scatterCache.current),
+    [tileGroupsArray, meshes, objects],
+  );
+  useEffect(() => {
+    scatterCache.current = new Map(scattered.map((object) => [object.id, object]));
+  }, [scattered]);
   // Outside the editor, GLB models draw as static geometry, merged or instanced; while editing they stay single so each
-  // can be picked and moved.
+  // can be picked and moved. Scattered decoration is not editable and stays static.
   const batching = editMode === 'none';
-  const modelGroups = useMemo(() => (batching ? groupModels(residentModels) : []), [batching, residentModels]);
+  const modelGroups = useMemo(
+    () => groupModels(batching ? [...residentModels, ...scattered] : scattered),
+    [batching, residentModels, scattered],
+  );
   const modelObjects = useMemo(
     () => (batching ? residentModels.filter((object) => !object.config?.modelUrl) : residentModels),
     [batching, residentModels],

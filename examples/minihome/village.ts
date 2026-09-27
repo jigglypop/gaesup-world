@@ -1,9 +1,9 @@
-import { getDefaultBuildingObject, type BuildingSerializedState, type MeshConfig, type PlacedObject, type TileConfig, type WallConfig } from 'gaesup-world/building';
+import { getDefaultBuildingObject, type BuildingSerializedState, type MeshConfig, type MeshScatterConfig, type PlacedObject, type TileConfig, type WallConfig } from 'gaesup-world/building';
 
 /** Grid cell in meters; one character (1.7m) is a little under half a cell. */
 export const CELL = 4;
 /** Bump when the island's layout changes: saves are kept per version, so returning visitors see the new island. */
-export const VILLAGE_VERSION = 4;
+export const VILLAGE_VERSION = 5;
 
 /**
  * The island, one character per 4m cell, north at the top.
@@ -70,8 +70,17 @@ const FIELD = svg(
 );
 const PLANKS = svg([0, 32, 64, 96].map((y, i) => `<rect y="${y}" width="128" height="31" fill="${i % 2 ? '#d9ab73' : '#d3a36a'}"/><path d="M${40 + i * 24} ${y}v31" stroke="#b98a52" stroke-width="2"/>`).join(''), '#b98a52');
 
+/** Flowers, stones and shrubs along the roads, and now and then a mushroom or fern out on the lawn. */
+const LAWN_DECOR: MeshScatterConfig[] = [
+  {
+    models: ['nature-flower-yellow', 'nature-flower-red', 'nature-flower-purple', 'nature-flower-yellow', 'nature-rock-small', 'nature-bush'],
+    density: 0.9, near: 'dirt', margin: 0.35, within: 1.7, clump: 0.7, scale: [0.7, 1.1],
+  },
+  { models: ['nature-mushroom-cluster', 'nature-rock-flat', 'nature-fern'], density: 0.05, clump: 0.5, scale: [0.7, 1] },
+];
+
 const MESHES: MeshConfig[] = [
-  { id: 'lawn', color: '#ffffff', mapTextureUrl: LAWN, roughness: 0.95, grass: { profile: 'lawn', color: '#86c460' } },
+  { id: 'lawn', color: '#ffffff', mapTextureUrl: LAWN, roughness: 0.95, grass: { profile: 'lawn', color: '#86c460' }, scatter: LAWN_DECOR },
   { id: 'flowers', color: '#ffffff', mapTextureUrl: FLOWERS, roughness: 0.9 },
   { id: 'field', color: '#ffffff', mapTextureUrl: FIELD, roughness: 1 },
   { id: 'floor', color: '#ffffff', mapTextureUrl: PLANKS, roughness: 0.7 },

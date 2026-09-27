@@ -27,6 +27,28 @@ export type MeshGrassConfig = {
   color?: string;
 };
 
+/**
+ * Decoration a mesh scatters over its plain box tiles (no terrain cover), drawn as static models: the same on every
+ * client and rebuilt only when tiles or meshes change.
+ */
+export type MeshScatterConfig = {
+  /** Catalog model ids; each placement takes one of them. */
+  models: string[];
+  /** Candidate placements per m² (a jittered grid); the band, patches and placed objects thin them. */
+  density: number;
+  /** Only beside tiles with this terrain cover, such as `'dirt'` for roadside flowers. */
+  near?: TileObjectType;
+  /** Meters from those tiles' edge the band spans. Defaults 0.3 to 1.6. */
+  margin?: number;
+  within?: number;
+  /** 0 spreads evenly; toward 1 placements gather in patches. */
+  clump?: number;
+  /** Scale range on top of the catalog scale. Defaults to [0.8, 1.2]. */
+  scale?: [number, number];
+  /** Another layout with the same rule. */
+  seed?: number;
+};
+
 export interface MeshConfig {
   id: string;
   assetId?: string;
@@ -53,6 +75,8 @@ export interface MeshConfig {
    * keep its surface instead of the painted meadow ground.
    */
   grass?: MeshGrassConfig;
+  /** Decoration scattered over the plain box tiles that use this mesh. */
+  scatter?: MeshScatterConfig[];
 }
 
 export type BuildingWallKind = 'solid' | 'window' | 'door' | 'arch' | 'half' | 'railing' | 'glass';
