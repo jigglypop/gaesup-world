@@ -71,9 +71,11 @@
 
 ### `MeshConfig`
 
-`{ id, color?, material?: 'STANDARD' | 'GLASS' | 'METAL', textureUrl?, mapTextureUrl?, normalTextureUrl?, roughness?, metalness?, opacity?, transparent?, materialParams?, assetId?, grass? }`. 최상위 값이 `materialParams`보다 우선하고, 텍스처는 `mapTextureUrl` → `textureUrl` → `materialParams.mapTextureUrl` 순이다. `GLASS`는 투과 재질이 되고 `METAL`은 표준 재질에 `metalness`를 그대로 쓴다. 기본값은 색 `#ffffff`, roughness 0.5, metalness 0이며, toon 모드(`setDefaultToonMode`)면 toon 재질로 바뀐다. 가리킨 id가 `meshes`에 없으면 벽은 검정(`#000000`)으로 그린다. 출처 `src/core/building/core/MaterialManager.ts`.
+`{ id, color?, material?: 'STANDARD' | 'GLASS' | 'METAL', textureUrl?, mapTextureUrl?, normalTextureUrl?, roughness?, metalness?, opacity?, transparent?, materialParams?, assetId?, grass?, scatter? }`. 최상위 값이 `materialParams`보다 우선하고, 텍스처는 `mapTextureUrl` → `textureUrl` → `materialParams.mapTextureUrl` 순이다. `GLASS`는 투과 재질이 되고 `METAL`은 표준 재질에 `metalness`를 그대로 쓴다. 기본값은 색 `#ffffff`, roughness 0.5, metalness 0이며, toon 모드(`setDefaultToonMode`)면 toon 재질로 바뀐다. 가리킨 id가 `meshes`에 없으면 벽은 검정(`#000000`)으로 그린다. 출처 `src/core/building/core/MaterialManager.ts`.
 
 `grass: { profile?, density?, height?, color? }`를 주면 이 메시를 쓰는 모든 `box` 타일에 잔디 층이 자란다(노드 렌더러만, classic WebGL은 건너뛴다). `profile`은 `lawn`(기본, 짧고 부드러운 잔디, m²당 후보 16, 평균 0.25m)이나 `tall`(넓고 뻣뻣한 풀, 52, 0.55m)이다. `color`는 잎 뿌리의 지면 색이고, 없으면 메시 색(텍스처 메시는 잔디 초록)이다. 이 메시 위의 긴 풀 타일(`objectType: 'grass'`)은 칠한 초원 지면 대신 메시 표면을 그대로 둔다. 비용은 [performance.md](performance.md#잔디와-삼각형)에 있다.
+
+`scatter: MeshScatterConfig[]`는 이 메시를 쓰는 덮개 없는 `box` 타일에 장식을 흩뿌린다. 규칙마다 `models`(카탈로그 모델 id, 하나씩 고른다), `density`(m²당 후보, 흔들린 격자), `near`(이 덮개 타일 옆 띠에만, 예: `'dirt'`면 길가), `margin`·`within`(띠 범위, 기본 0.3~1.6m), `clump`(0 고르게, 1에 가까울수록 무리 지음), `scale`(카탈로그 크기에 곱할 범위, 기본 0.8~1.2), `seed`를 준다. 배치 오브젝트에서 1.2m 안에는 두지 않는다. 결과는 편집할 수 없는 모델로, 편집 중에도 정적 모델 칸에 합쳐 그린다([rendering.md](rendering.md#정적-모델-병합)). 같은 타일이면 모든 클라이언트에서 같고, 상주하는 타일 그룹에만 뿌린다.
 
 ### 타일 `TileGroupConfig` / `TileConfig`
 
