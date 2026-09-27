@@ -1,11 +1,14 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 
-import { AnimationMixer, Frustum, Matrix4, Object3D, Sphere, type AnimationAction, type AnimationClip, type Camera } from 'three';
+import { AnimationMixer, Frustum, Matrix4, Object3D, Sphere, Vector3, type AnimationAction, type AnimationClip, type Camera } from 'three';
 
 import { useSharedFrame, type SharedFrameChannel } from '../../runtime/frame';
 
 /** Every mixer advances in this one entry, after physics presentation and before bone attachments and cameras. */
 export const ANIMATION_MIXER_FRAME: SharedFrameChannel = { phase: 'animation', label: 'animation:mixers' };
+
+/** A mixer beyond its far distance advances at most this often; at that size on screen the steps do not show. */
+const FAR_MIXER_SECONDS = 1 / 15;
 
 export type SharedAnimations = {
   ref: RefObject<Object3D | null>;
@@ -15,31 +18,31 @@ export type SharedAnimations = {
   actions: Record<string, AnimationAction | null>;
 };
 
-const view = { frustum: new Frustum(), matrix: new Matrix4(), bounds: new Sphere() };
+const view = { frustum: new Frustum(), matrix: new Matrix4(), bounds: new Sphere(), eye: new Vector3() };
 
-/** Whether a sphere of `radius` around the object's origin is inside the camera's view. */
-function inView(object: Object3D, camera: Camera, radius: number): boolean {
+/** Whether a sphere of `radius` around `view.bounds.center` is inside the camera's view. */
+function inView(camera: Camera, radius: number): boolean {
   view.matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
   view.frustum.setFromProjectionMatrix(view.matrix, camera.coordinateSystem, camera.reversedDepth);
-  object.getWorldPosition(view.bounds.center);
   view.bounds.radius = radius;
   return view.frustum.intersectsSphere(view.bounds);
 }
 
-/**
- * drei `useAnimations` with the mixers of all instances advanced by one shared frame entry in the `animation`
- * phase, instead of one R3F subscriber per instance running after the engine phases.
- *
- * With `cullRadius` the mixer only advances while a sphere of that radius around the root is in the camera's view;
- * the time skipped off screen is applied in one step when the root comes back.
- */
 /** Common clip spellings of exported models, by lowercase name, mapped to the engine's clip names. */
 const CANONICAL_CLIP_NAMES: Readonly<Record<string, string>> = {
   idle: 'idle', walk: 'walk', walking: 'walk', run: 'run', running: 'run',
   jump: 'jump', jumping: 'jump', fall: 'fall', falling: 'fall',
 };
 
-export function useSharedAnimations(clips: AnimationClip[], root?: Object3D | RefObject<Object3D | null>, cullRadius?: number): SharedAnimations {
+/**
+ * drei `useAnimations` with the mixers of all instances advanced by one shared frame entry in the `animation`
+ * phase, instead of one R3F subscriber per instance running after the engine phases.
+ *
+ * With `cullRadius` the mixer only advances while a sphere of that radius around the root is in the camera's view;
+ * the time skipped off screen is applied in one step when the root comes back. Beyond `farDistance` from the camera
+ * it advances at 15 Hz.
+ */
+export function useSharedAnimations(clips: AnimationClip[], root?: Object3D | RefObject<Object3D | null>, cullRadius?: number, farDistance?: number): SharedAnimations {
   const ref = useRef<Object3D | null>(null);
   const [rootRef] = useState<RefObject<Object3D | null>>(() => (root ? (root instanceof Object3D ? { current: root } : root) : ref));
   const [mixer] = useState(() => new AnimationMixer(undefined as unknown as Object3D));
@@ -70,11 +73,15 @@ export function useSharedAnimations(clips: AnimationClip[], root?: Object3D | Re
   const skipped = useRef(0);
   useSharedFrame(ANIMATION_MIXER_FRAME, (delta, _elapsed, { camera }) => {
     const target = rootRef.current;
-    if (cullRadius !== undefined && target && !inView(target, camera, cullRadius)) {
-      skipped.current += delta;
-      return;
+    // A frame clock that jumps back must not rewind the mixers: negative time runs every clip before its start.
+    skipped.current += Math.max(0, delta || 0);
+    if (target && (cullRadius !== undefined || farDistance !== undefined)) {
+      target.getWorldPosition(view.bounds.center);
+      if (cullRadius !== undefined && !inView(camera, cullRadius)) return;
+      if (farDistance !== undefined && skipped.current < FAR_MIXER_SECONDS
+        && view.bounds.center.distanceToSquared(view.eye.setFromMatrixPosition(camera.matrixWorld)) > farDistance * farDistance) return;
     }
-    mixer.update(delta + skipped.current);
+    mixer.update(skipped.current);
     skipped.current = 0;
   });
   useEffect(() => {

@@ -42,26 +42,57 @@ export type Resident = {
   behavior: Behavior;
 };
 
-const wander = (radius: number, speed = 1.1): Behavior =>
-  ({ mode: 'wander', speed, wanderRadius: radius, waitSeconds: 3, moveAnimation: 'walk', idleAnimation: 'idle' });
-const stay: Behavior = { mode: 'idle', speed: 1, idleAnimation: 'idle' };
-const patrol: Behavior = {
-  mode: 'patrol', speed: 1.4, loop: true, moveAnimation: 'walk', idleAnimation: 'idle',
-  waypoints: [[at(2), 0, at(5)], [at(8), 0, at(5)], [at(8), 0, at(11)], [at(8), 0, at(5)], [at(11), 0, at(5)]],
-};
+type Point = [number, number];
 
-/** The island's residents, each at the model's authored size (adults 1.7m, children 1m). */
+/** What every resident does: turns smoothly, looks around while standing, waves at whoever talks to them. */
+const manner = {
+  turnSpeed: 5, glance: 0.5, greetAnimation: 'wave', gestures: { clips: ['wave'], everySeconds: 18 },
+  moveAnimation: 'walk', idleAnimation: 'idle',
+} satisfies Partial<Behavior>;
+
+const wander = (radius: number, speed = 1.1): Behavior =>
+  ({ ...manner, mode: 'wander', speed, wanderRadius: radius, waitSeconds: 2, pauseSeconds: 1.5 });
+const stay: Behavior = { ...manner, mode: 'idle', speed: 1 };
+/** Walks a loop of `points` for good, resting a moment at the last one. */
+const patrol = (points: Point[], speed = 1.4): Behavior =>
+  ({ ...manner, mode: 'patrol', speed, loop: true, pauseSeconds: 1, waitSeconds: 0.5, waypoints: points.map(([x, z]) => [x, 0, z]) });
+/** Walks `points` there and back again, resting at either end: a zigzag when the points alternate sides. */
+const pace = (points: Point[], speed = 1, pause = 2): Behavior =>
+  ({ ...manner, mode: 'patrol', speed, loop: false, pauseSeconds: pause, waitSeconds: 0.5, waypoints: points.map(([x, z]) => [x, 0, z]) });
+
+/**
+ * The island's residents, each at the model's authored size (adults 1.7m, children 1m), spread over the island on
+ * their own routes: the officer walks the main road, his helper circles the plaza, the others pace their corners.
+ */
 export const RESIDENTS: Resident[] = [
   { id: 'seonsaeng', name: '윤 선생님', model: 'teacher', emoji: '👩‍🏫', intro: '섬 안내를 맡고 있어요', spot: [at(7) + 1.5, at(4) + 1], line: '궁금한 게 있으면 물어보세요!', behavior: stay },
-  { id: 'doyun', name: '도윤', model: 'docter', emoji: '👨‍⚕️', intro: '섬 보건소 원장님', spot: [at(6), at(4)], line: '어서 와요! 이야기 좀 할까요?', behavior: wander(3, 0.9) },
-  { id: 'hana', name: '하나', model: 'nurse', emoji: '👩‍⚕️', intro: '꽃밭 산책러', spot: [at(6), at(6)], line: '오늘도 물 많이 마셔요 💧', behavior: wander(4) },
+  {
+    id: 'doyun', name: '도윤', model: 'docter', emoji: '👨‍⚕️', intro: '섬 보건소 원장님', spot: [at(5), at(4)], line: '어서 와요! 이야기 좀 할까요?',
+    behavior: pace([[at(5), at(4)], [at(7), at(5)], [at(8), at(7)], [at(9), at(9)]], 1),
+  },
+  { id: 'hana', name: '하나', model: 'nurse', emoji: '👩‍⚕️', intro: '꽃밭 산책러', spot: [at(5), at(6)], line: '오늘도 물 많이 마셔요 💧', behavior: wander(4) },
   { id: 'sangin', name: '상인 아저씨', model: 'man', emoji: '🧑‍🍳', intro: '가판대 주인', spot: [at(10), at(4) - 1.8], line: '구경하고 가요~ 오늘은 떨이!', behavior: stay },
-  { id: 'sani', name: '산이', model: 'mountain', emoji: '🧑‍🌾', intro: '텃밭 가꾸는 산악인', spot: [at(12), at(8)], line: '올해 토마토 농사는 대풍이에요!', behavior: wander(2, 0.8) },
-  { id: 'sungyeong', name: '김 순경', model: 'police', emoji: '👮', intro: '마을 순찰 담당', spot: [at(2), at(5)], line: '섬은 오늘도 평화롭습니다!', behavior: patrol },
-  { id: 'kkoma', name: '꼬마 순경', model: 'police2', emoji: '🧒', intro: '김 순경의 조수', spot: [at(9), at(10)], line: '나도 커서 경찰이 될 거야!', behavior: wander(3, 1.3) },
-  { id: 'minjun', name: '민준', model: 'boy', emoji: '👦', intro: '달리기 1등 꼬마', spot: [at(6), at(10)], line: '나 잡아 봐라~!', behavior: wander(6, 2.2) },
-  { id: 'seoa', name: '서아', model: 'glass', emoji: '👧', intro: '연못 관찰 일지 작성 중', spot: [at(3), at(7)], line: '연못에 물고기가 살까?', behavior: wander(2, 0.7) },
-  { id: 'bada', name: '바다', model: 'fish', emoji: '🐟', intro: '해변 지킴이', spot: [at(5), at(12)], line: '파도 소리 들려? 쏴아~', behavior: wander(4, 0.8) },
+  {
+    id: 'sani', name: '산이', model: 'mountain', emoji: '🧑‍🌾', intro: '텃밭 가꾸는 산악인', spot: [at(10) - 1, at(7) - 1], line: '올해 토마토 농사는 대풍이에요!',
+    behavior: pace([[at(10) - 1, at(7) - 1], [at(11) + 1, at(7)], [at(10) - 1, at(8)], [at(11) + 1, at(8) + 1]], 0.8, 1.5),
+  },
+  {
+    id: 'sungyeong', name: '김 순경', model: 'police', emoji: '👮', intro: '마을 순찰 담당', spot: [at(2), at(5)], line: '섬은 오늘도 평화롭습니다!',
+    behavior: patrol([[at(2), at(5)], [at(8), at(5)], [at(8), at(11)], [at(8), at(5)], [at(11), at(5)]]),
+  },
+  {
+    id: 'kkoma', name: '꼬마 순경', model: 'police2', emoji: '🧒', intro: '김 순경의 조수', spot: [at(7), at(9)], line: '나도 커서 경찰이 될 거야!',
+    behavior: patrol([[at(7), at(9)], [at(9), at(9) + 1], [at(9), at(11)], [at(7), at(11)]], 1.6),
+  },
+  { id: 'minjun', name: '민준', model: 'boy', emoji: '👦', intro: '달리기 1등 꼬마', spot: [at(6), at(10)], line: '나 잡아 봐라~!', behavior: wander(7, 2.2) },
+  {
+    id: 'seoa', name: '서아', model: 'glass', emoji: '👧', intro: '연못 관찰 일지 작성 중', spot: [at(3), at(7)], line: '연못에 물고기가 살까?',
+    behavior: pace([[at(3), at(7)], [at(3) + 1.2, at(8)], [at(3), at(9)], [at(3) + 1.2, at(10)]], 0.7),
+  },
+  {
+    id: 'bada', name: '바다', model: 'fish', emoji: '🐟', intro: '해변 지킴이', spot: [at(2), at(12)], line: '파도 소리 들려? 쏴아~',
+    behavior: pace([[at(2), at(12)], [at(6), at(12) + 1], [at(10), at(12)], [at(13), at(12) + 1]], 0.9),
+  },
 ];
 
 const DIALOGS: DialogTree[] = [
@@ -142,7 +173,7 @@ export function createMinihomeRuntime(): GaesupRuntime {
   const npc = runtime.npcStore.getState();
   for (const resident of RESIDENTS) {
     npc.addTemplate({
-      id: resident.id, name: resident.name, category: 'humanoid', defaultAnimation: 'idle', clothingParts: [],
+      id: resident.id, name: resident.name, category: 'humanoid', defaultAnimation: 'idle', clothingParts: [], materialPolicy: 'figure',
       baseParts: [{ id: `${resident.id}-body`, type: 'body', url: modelUrl(resident.model), position: [0, 0, 0] }],
     });
     npc.addInstance({

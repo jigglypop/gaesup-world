@@ -1,9 +1,10 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 import { useThree } from '@react-three/fiber';
+import { Frustum, Matrix4, Sphere } from 'three';
 import { useShallow } from 'zustand/react/shallow';
 
-import { useEngineFrame } from '@core/runtime/frame';
+import { useCanvasFrameScheduler, useEngineFrame } from '@core/runtime/frame';
 
 import { BuildingNavigationObstacleDriver } from '../../../building/components/BuildingNavigationObstacleDriver';
 import { useBuildingStore, useBuildingStoreApi } from '../../../building/stores/buildingStore';
@@ -12,8 +13,16 @@ import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../../runtime/run
 import { useNPCSimulation } from '../../hooks/useNPCSimulation';
 import { useNPCStore, useNPCStoreApi } from '../../stores/npcStore';
 import { NPCInstance } from '../NPCInstance';
-import { isNPCInLodRange } from './lod';
+import { selectVisibleNPCs } from './lod';
+import { NPCViewsContext, type NPCView } from './views';
 import './styles.css';
+
+export type NPCSystemProps = {
+  /** Most NPCs drawn at once, nearest to the camera first. Default: no cap. */
+  maxVisible?: number;
+};
+
+const cull = { frustum: new Frustum(), matrix: new Matrix4(), sphere: new Sphere() };
 
 /** Subscribes to one NPC, so a change to another NPC never reaches this subtree. */
 const NPCInstanceSlot = memo(function NPCInstanceSlot({ id, isEditMode, onSelect }: {
@@ -25,7 +34,7 @@ const NPCInstanceSlot = memo(function NPCInstanceSlot({ id, isEditMode, onSelect
   return instance ? <NPCInstance instance={instance} isEditMode={isEditMode} onSelect={onSelect} /> : null;
 });
 
-export function NPCSystem() {
+export function NPCSystem({ maxVisible = Infinity }: NPCSystemProps = {}) {
   const simulation = useNPCSimulation();
   const gl = useThree((state) => state.gl);
   const getThreeState = useThree((state) => state.get);
@@ -68,7 +77,8 @@ export function NPCSystem() {
     if (isNPCMode) setSelectedInstance(id);
   }, [isNPCMode, setSelectedInstance]);
 
-  // Distance-based LOD streams far NPCs out. Hysteresis keeps boundary walkers from remounting every check.
+  // Distance-based LOD streams far NPCs out, nearest first up to the cap. Hysteresis keeps boundary walkers from
+  // remounting every check.
   const [visibleIds, setVisibleIds] = useState<Set<string>>(() => new Set());
   const lodAccum = useRef(0);
 
@@ -78,19 +88,43 @@ export function NPCSystem() {
     lodAccum.current = 0;
 
     const cam = getThreeState().camera.position;
-    const next = new Set<string>();
+    const distances = new Map<string, number>();
     npcStore.getState().instances.forEach((inst) => {
       const [x, y, z] = simulation.getPose(inst.id)?.position ?? inst.position;
-      const dx = x - cam.x, dy = y - cam.y, dz = z - cam.z;
-      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      if (isNPCInLodRange(dist, visibleIds.has(inst.id))) next.add(inst.id);
+      distances.set(inst.id, Math.hypot(x - cam.x, y - cam.y, z - cam.z));
     });
+    const next = selectVisibleNPCs(distances, visibleIds, isNPCMode ? Infinity : maxVisible);
 
     // Only update state if the set actually changed.
     if (next.size !== visibleIds.size || [...next].some(id => !visibleIds.has(id))) {
       setVisibleIds(next);
     }
   }, { label: 'npc:lod' });
+
+  // Every frame, mounted NPCs whose root sphere is out of view are hidden: skinned bounds stay in the bind pose, and a
+  // hidden NPC also skips its shadow draws. A visible NPC that moved or turned keeps an idle frame rate drawing.
+  const [views] = useState(() => new Map<string, NPCView>());
+  const scheduler = useCanvasFrameScheduler();
+  useEngineFrame('effects', () => {
+    const camera = getThreeState().camera;
+    cull.matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    cull.frustum.setFromProjectionMatrix(cull.matrix, camera.coordinateSystem, camera.reversedDepth);
+    let active = false;
+    for (const [id, view] of views) {
+      const root = view.root.current;
+      const pose = simulation.getPose(id);
+      if (!root || !pose) continue;
+      cull.sphere.center.set(pose.position[0], pose.position[1] + view.height / 2, pose.position[2]);
+      cull.sphere.radius = view.height;
+      root.visible = cull.frustum.intersectsSphere(cull.sphere);
+      if (!root.visible) continue;
+      const revision = simulation.getPoseRevision(id);
+      if (revision === view.seen) continue;
+      active ||= view.seen >= 0;
+      view.seen = revision;
+    }
+    if (active) scheduler.markActivity();
+  }, { label: 'npc:view' });
 
   useEffect(() => {
     if (!isNPCMode) return;
@@ -149,11 +183,13 @@ export function NPCSystem() {
         navigation={navigation}
         enabled={navigationReady}
       />
-      {instanceIds.map((id) => {
-        // In edit mode show all; otherwise respect LOD.
-        if (!isNPCMode && !visibleIds.has(id)) return null;
-        return <NPCInstanceSlot key={id} id={id} isEditMode={isNPCMode} onSelect={selectInstance} />;
-      })}
+      <NPCViewsContext.Provider value={views}>
+        {instanceIds.map((id) => {
+          // In edit mode show all; otherwise respect LOD.
+          if (!isNPCMode && !visibleIds.has(id)) return null;
+          return <NPCInstanceSlot key={id} id={id} isEditMode={isNPCMode} onSelect={selectInstance} />;
+        })}
+      </NPCViewsContext.Provider>
     </group>
   );
-} 
+}

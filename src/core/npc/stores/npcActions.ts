@@ -62,16 +62,22 @@ export function applyNPCAction(state: NPCStore, instanceId: string, action: NPCA
         speed,
       );
       break;
-    case 'patrol':
-      if (action.waypoints.length === 0) return;
+    case 'patrol': {
+      const waypoints = action.waypoints;
+      const loop = action.loop ?? instance.behavior?.loop ?? true;
+      if (waypoints.length === 0) return;
+      // A patrol that does not loop walks back along its waypoints from the end it stands nearer to.
+      const distance = ([x, , z]: [number, number, number]) => Math.hypot(instance.position[0] - x, instance.position[2] - z);
+      const back = !loop && waypoints.length > 1 && distance(waypoints[waypoints.length - 1]!) < distance(waypoints[0]!);
       next = withNavigation(withBehavior(instance, {
         mode: 'patrol',
-        waypoints: action.waypoints,
+        waypoints,
         speed,
-        loop: action.loop ?? instance.behavior?.loop ?? true,
+        loop,
         ...(action.animationId ? { moveAnimation: action.animationId } : {}),
-      }), action.waypoints, speed);
+      }), back ? waypoints.slice(0, -1).reverse() : waypoints, speed);
       break;
+    }
     case 'wander':
       next = withBehavior(instance, {
         mode: 'wander',

@@ -7,12 +7,15 @@ import { useNPCStore } from '../../../stores/npcStore';
 import type { NPCInstance as NPCInstanceData } from '../../../types';
 import { NPCInstance } from '../index';
 
-const mockModel = { loaded: false, pending: Promise.resolve() };
+const mockModel: { loaded: boolean; pending: Promise<void>; gltf?: { scene: THREE.Group; animations: THREE.AnimationClip[] } } = {
+  loaded: false, pending: Promise.resolve(),
+};
 jest.mock('@react-three/drei', () => ({
+  // Like the loader's cache, every call for a loaded model returns the same result.
   useGLTF: () => {
     if (!mockModel.loaded) throw mockModel.pending;
     const three = jest.requireActual<typeof import('three')>('three');
-    return { scene: new three.Group(), animations: [] };
+    return (mockModel.gltf ??= { scene: new three.Group(), animations: [] });
   },
 }));
 jest.mock('@react-three/rapier', () => ({
@@ -21,7 +24,9 @@ jest.mock('@react-three/rapier', () => ({
 }));
 jest.mock('three-stdlib', () => ({ SkeletonUtils: { clone: (object: THREE.Object3D) => object.clone() } }));
 jest.mock('@motions/entities/refs/PhysicsEntity', () => ({ PhysicsEntity: () => null }));
-jest.mock('../../../hooks/useNPCSimulation', () => ({ useNPCSimulation: () => ({ bindBody: () => () => {}, getPose: () => undefined }) }));
+jest.mock('../../../hooks/useNPCSimulation', () => ({
+  useNPCSimulation: () => ({ bindBody: () => () => {}, getPose: () => undefined, getGesture: () => undefined, gestureRevision: 0, isAttending: () => false }),
+}));
 jest.mock('../../../../rendering/useSceneToon', () => ({ useSceneToon: () => {} }));
 jest.mock('../../../../simulation/physicsContext', () => ({ useWorldPhysicsInterpolation: () => ({ current: null }) }));
 jest.mock('../../../../animation/hooks/useSharedAnimations', () => ({ useSharedAnimations: () => ({ actions: {} }) }));

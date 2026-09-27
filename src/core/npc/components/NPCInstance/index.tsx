@@ -1,22 +1,30 @@
-import React, { Suspense, useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { Suspense, useRef, useEffect, useLayoutEffect, useMemo, useCallback, useState } from 'react';
 
 import { useGLTF } from '@react-three/drei';
 import type { ThreeEvent } from '@react-three/fiber';
 import { CapsuleCollider, RigidBody, RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
-import { SkeletonUtils } from 'three-stdlib';
 
 import { PhysicsEntity } from '@motions/entities/refs/PhysicsEntity';
 
+import { cloneNPCFigure, disposeNPCFigure, findClip, fitNPCFigure, prepareNPCClips, type NPCClips } from './figure';
 import { NPCPresence } from './NPCPresence';
 import { NPCPartMeshProps, NPCInstanceProps } from './types';
+import { useClipTransition } from '../../../animation/hooks/useClipTransition';
 import { useSharedAnimations } from '../../../animation/hooks/useSharedAnimations';
+import type { ImportedMaterialPolicy } from '../../../assets/materialPolicy';
 import { CompileGate } from '../../../rendering/CompileGate';
+import { castSubtreeNearShadowOnly } from '../../../rendering/sky/nearShadow';
 import { useSceneToon } from '../../../rendering/useSceneToon';
+import { useEngineFrame } from '../../../runtime/frame';
 import { useWorldPhysicsInterpolation } from '../../../simulation/physicsContext';
+import type { NPCGesture } from '../../core/NPCSimulation';
+import { npcDecisionPhase, npcUnit } from '../../core/wander';
 import { useNPCSimulation } from '../../hooks/useNPCSimulation';
 import { useNPCStore } from '../../stores/npcStore';
-import { NPCPart } from '../../types';
+import { NPCInstance as NPCInstanceData, NPCPart } from '../../types';
+import { NPC_ANIMATION_FAR } from '../NPCSystem/lod';
+import { useNPCView } from '../NPCSystem/views';
 import './styles.css';
 
 type PointerHandlers = {
@@ -54,18 +62,6 @@ class NPCPartErrorBoundary extends React.Component<NPCPartErrorBoundaryProps, NP
   }
 }
 
-function resolveAnimationKey(
-  actions: Record<string, THREE.AnimationAction | null>,
-  requested: string,
-): string | undefined {
-  if (actions[requested]) return requested;
-  const keys = Object.keys(actions);
-  const normalized = requested.toLowerCase();
-  return keys.find((key) => key.toLowerCase() === normalized)
-    ?? keys.find((key) => key.toLowerCase().includes(normalized))
-    ?? (keys.length === 1 ? keys[0] : undefined);
-}
-
 function NPCPartFallbackMesh({ part }: NPCPartMeshProps) {
   return (
     <mesh
@@ -89,30 +85,24 @@ function resolveNPCAssetUrl(url: string): string {
   return trimmed;
 }
 
-function NPCPartGltfMesh({ part, currentAnimation, cullRadius }: NPCPartMeshProps) {
+function NPCPartGltfMesh({ part, currentAnimation, transition, cullRadius, materialPolicy = 'keep', onClips, height, onFit }: NPCPartMeshProps) {
   const assetUrl = useMemo(() => resolveNPCAssetUrl(part.url), [part.url]);
   const gltf = useGLTF(assetUrl);
-  const clone = useMemo(() => SkeletonUtils.clone(gltf.scene), [gltf]);
-  useSceneToon(clone);
-  const { actions } = useSharedAnimations(gltf.animations, clone, cullRadius);
-  const activeAnimationRef = useRef<string | undefined>(undefined);
+  const figure = useMemo(() => cloneNPCFigure(gltf.scene, materialPolicy), [gltf, materialPolicy]);
+  const prepared = useMemo(() => prepareNPCClips(gltf.scene, gltf.animations), [gltf]);
+  // Casts into the nearest shadow cascade only; the renderer's objects for this copy are freed when it goes.
+  useLayoutEffect(() => castSubtreeNearShadowOnly(figure), [figure]);
+  useEffect(() => () => disposeNPCFigure(figure), [figure]);
+  useSceneToon(figure);
+  const { actions } = useSharedAnimations(prepared.clips, figure, cullRadius, NPC_ANIMATION_FAR);
+  useClipTransition(actions, currentAnimation, transition);
+  useLayoutEffect(() => onClips?.(prepared), [onClips, prepared]);
+  useLayoutEffect(() => onFit?.(height ? fitNPCFigure(gltf.scene, prepared.clips, height) : undefined), [gltf, prepared, height, onFit]);
 
-  useEffect(() => {
-    if (!currentAnimation) return;
-    const nextKey = resolveAnimationKey(actions, currentAnimation);
-    if (!nextKey || activeAnimationRef.current === nextKey) return;
-
-    const previous = activeAnimationRef.current ? actions[activeAnimationRef.current] : undefined;
-    const next = actions[nextKey];
-    previous?.fadeOut(0.2);
-    next?.reset().fadeIn(0.2).play();
-    activeAnimationRef.current = nextKey;
-  }, [actions, currentAnimation]);
-
-  if (!clone) return null;
   return (
     <primitive
-      object={clone}
+      object={figure}
+      dispose={null}
       position={part.position || [0, 0, 0]}
       rotation={part.rotation || [0, 0, 0]}
       scale={part.scale || [1, 1, 1]}
@@ -128,15 +118,104 @@ function NPCModelGate({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={null}><CompileGate>{children}</CompileGate></Suspense>;
 }
 
-function NPCPartMesh({ part, instanceId, currentAnimation, cullRadius }: NPCPartMeshProps) {
+function NPCPartMesh(props: NPCPartMeshProps) {
+  const { part, instanceId } = props;
   const hasUrl = !!part.url && part.url.trim() !== '';
   if (!hasUrl) return <NPCPartFallbackMesh part={part} instanceId={instanceId} />;
   return (
-    <NPCPartErrorBoundary part={part} instanceId={instanceId} currentAnimation={currentAnimation}>
+    <NPCPartErrorBoundary part={part} instanceId={instanceId} currentAnimation={props.currentAnimation}>
       <NPCModelGate>
-        <NPCPartGltfMesh part={part} instanceId={instanceId} currentAnimation={currentAnimation} cullRadius={cullRadius} />
+        <NPCPartGltfMesh {...props} />
       </NPCModelGate>
     </NPCPartErrorBoundary>
+  );
+}
+
+/** A greeting without a clip is a hop this long, in seconds, and this high, in meters. */
+const HOP_SECONDS = 0.42;
+const HOP_HEIGHT = 0.3;
+/** Salt of an NPC's idle playback rate. */
+const IDLE_RATE = 3;
+
+/**
+ * The parts of an NPC and how they move together: the stored clip, or its stance while it stops for whoever talks to
+ * it; gestures it has clips for, and a hop for a greeting it has none for; a move clip paced by its speed; an idle out
+ * of step with its neighbors; and the body's height fit.
+ */
+function NPCParts({ instance, parts, height, materialPolicy, cullRadius }: {
+  instance: NPCInstanceData;
+  parts: NPCPart[];
+  height: number | undefined;
+  materialPolicy: ImportedMaterialPolicy | undefined;
+  cullRadius: number;
+}) {
+  const simulation = useNPCSimulation();
+  const [gesture, setGesture] = useState<NPCGesture>();
+  const [attending, setAttending] = useState(false);
+  const [body, setBody] = useState<NPCClips>();
+  const [fit, setFit] = useState<{ scale: number; y: number }>();
+  const hop = useRef<THREE.Group>(null);
+  const seen = useRef({ gestures: -1, at: -Infinity, attending: false, hop: -1 });
+  const clearGesture = useCallback(() => setGesture(undefined), []);
+
+  useEngineFrame('effects', (delta) => {
+    const own = seen.current;
+    const holding = simulation.isAttending(instance.id);
+    if (holding !== own.attending) {
+      own.attending = holding;
+      setAttending(holding);
+    }
+    if (simulation.gestureRevision !== own.gestures) {
+      own.gestures = simulation.gestureRevision;
+      const next = simulation.getGesture(instance.id);
+      // A walking NPC keeps going; a model without the clip hops for a greeting and skips the rest.
+      if (next && next.at !== own.at && (holding || instance.navigation?.state !== 'moving')) {
+        own.at = next.at;
+        if (body && findClip(body.clips, next.clip)) setGesture(next);
+        else if (next.greeting) own.hop = 0;
+      }
+    }
+    if (own.hop < 0 || !hop.current) return;
+    own.hop += delta / HOP_SECONDS;
+    hop.current.position.y = own.hop < 1 ? Math.sin(own.hop * Math.PI) * HOP_HEIGHT : 0;
+    if (own.hop >= 1) own.hop = -1;
+  }, { label: 'npc:figure' });
+
+  const behavior = instance.behavior;
+  const stance = behavior?.idleAnimation ?? 'idle';
+  const walking = instance.navigation?.state === 'moving' && !attending;
+  // Walking off ends a gesture; the NPC stopped for whoever talks to it stands in its stance.
+  useEffect(() => { if (walking) setGesture(undefined); }, [walking]);
+  const playing = walking ? undefined : gesture;
+  const base = instance.navigation?.state === 'moving' && attending ? stance : instance.currentAnimation ?? stance;
+  let timeScale = 0.9 + 0.2 * npcUnit(instance.id, IDLE_RATE);
+  if (walking) {
+    const clip = body ? findClip(body.clips, base) : undefined;
+    const authored = body && clip ? (body.groundSpeed.get(clip.name) ?? 0) * (fit?.scale ?? 1) * instance.scale[1] : 0;
+    const stride = behavior?.strideSpeed ?? authored;
+    const speed = instance.navigation?.speed ?? behavior?.speed ?? 0;
+    timeScale = stride > 0 ? THREE.MathUtils.clamp(speed / stride, 0.5, 2) : 1;
+  }
+  const transition = { once: playing !== undefined, stance, phase: npcDecisionPhase(instance.id), timeScale, onFinish: clearGesture };
+  const bodyPart = parts.find((part) => part.type === 'body') ?? parts[0];
+
+  return (
+    <group ref={hop}>
+      <group scale={fit?.scale ?? 1} position={[0, fit?.y ?? 0, 0]}>
+        {parts.map((part) => (
+          <NPCPartMesh
+            key={part.id}
+            part={part}
+            instanceId={instance.id}
+            currentAnimation={playing?.clip ?? base}
+            transition={transition}
+            cullRadius={cullRadius}
+            materialPolicy={materialPolicy}
+            {...(part === bodyPart ? { onClips: setBody, height, onFit: setFit } : {})}
+          />
+        ))}
+      </group>
+    </group>
   );
 }
 
@@ -160,6 +239,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
   );
   const groupRef = useRef<GroupWithHandlers>(null);
   const rigidBodyRef = useRef<RapierRigidBody>(null);
+  const entityRef = useRef<THREE.Group>(null!);
   const detachBody = useRef<(() => void) | undefined>(undefined);
   const bindBody = useCallback((body: RapierRigidBody | null) => {
     detachBody.current?.();
@@ -187,6 +267,8 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
 
   const volume = instance.volume ?? DEFAULT_NPC_VOLUME;
   const bodyType = 'kinematicPosition';
+  // A single-model NPC is culled by its entity's outer group; a part-built one registers its own visual below.
+  useNPCView(instance.id, entityRef, npcCapsule(volume, instance.scale).height);
 
   const handlePointerEnter = useCallback((e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
@@ -194,7 +276,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
     const handlers = groupRef.current?.__handlers;
     if (handlers?.pointerover) handlers.pointerover();
   }, []);
-  
+
   const handlePointerLeave = useCallback(() => {
     document.body.style.cursor = 'default';
   }, []);
@@ -295,6 +377,8 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
         colliderSize={{ height: capsule.height, radius: capsule.radius }}
         animationCullRadius={capsule.height}
         currentAnimation={instance.currentAnimation || 'idle'}
+        outerGroupRef={entityRef}
+        {...(template.materialPolicy ? { materialPolicy: template.materialPolicy } : {})}
         userData={{
           instanceId: instance.id,
           templateId: instance.templateId,
@@ -319,7 +403,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
       </NPCModelGate>
     );
   }
-  
+
   // mainPartUrl 분기 / fallback 분기는 본문이 동일하여 단일 경로로 합친다.
   const capsule = npcCapsule(volume, instance.scale);
   return (
@@ -342,7 +426,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
         args={[capsule.halfHeight, capsule.interactionRadius]}
         position={[0, capsule.y, 0]}
       />
-      <NPCVisual bodyRef={rigidBodyRef}><group
+      <NPCVisual id={instance.id} height={capsule.height} bodyRef={rigidBodyRef}><group
         ref={groupRef}
         scale={instance.scale}
         {...(onClick
@@ -358,15 +442,7 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
       >
-        {allParts.map((part) => (
-          <NPCPartMesh
-            key={part.id}
-            part={part}
-            instanceId={instance.id}
-            currentAnimation={instance.currentAnimation ?? instance.behavior?.idleAnimation ?? 'idle'}
-            cullRadius={capsule.height}
-          />
-        ))}
+        <NPCParts instance={instance} parts={allParts} height={template.height} materialPolicy={template.materialPolicy} cullRadius={capsule.height} />
 
         {isEditMode && (
           <mesh position={[0, 2.5, 0]}>
@@ -384,7 +460,13 @@ export const NPCInstance = React.memo(function NPCInstance({ instance, isEditMod
 /** Characters never block the camera or other ray probes, matching `PhysicsEntity`. */
 const INTANGIBLE = { intangible: true };
 
-function NPCVisual({ bodyRef, children }: { bodyRef: React.RefObject<RapierRigidBody | null>; children: React.ReactNode }) {
+function NPCVisual({ id, height, bodyRef, children }: {
+  id: string;
+  height: number;
+  bodyRef: React.RefObject<RapierRigidBody | null>;
+  children: React.ReactNode;
+}) {
   const visual = useWorldPhysicsInterpolation(bodyRef);
+  useNPCView(id, visual, height);
   return <group ref={visual} userData={INTANGIBLE}>{children}</group>;
 }

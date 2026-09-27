@@ -2,8 +2,8 @@ import { Euler, Quaternion } from 'three';
 
 import { resolveNPCBrainDecision, type NPCBrainAdapterRegistry } from './brain';
 import { NPCPerceptionIndex } from './NPCPerceptionIndex';
-import { npcDecisionPhase } from './wander';
-import type { NavigationSystem } from '../../navigation/NavigationSystem';
+import { npcDecisionPhase, npcUnit } from './wander';
+import type { NavigationAgentSize, NavigationSystem } from '../../navigation/NavigationSystem';
 import { createNPCNavigationRoute } from '../../navigation/NPCNavigationAdapter';
 import type { AnimationClockLoop } from '../../simulation/AnimationClockLoop';
 import type { FixedTick } from '../../simulation/FixedStepClock';
@@ -22,12 +22,60 @@ type Pose = {
   moved: boolean;
   /** Advances with every pose change; perception rebuilds an NPC's view only after it moves. */
   revision: number;
+  /** Yaw it turns toward: along its path while walking, else where it stopped or was last turned. */
+  heading: number;
+  /** Clock seconds until which it stands facing whoever interacted with it. */
+  attentionUntil: number;
+  /** Next idle gesture time; negative until the NPC first stands. */
+  nextGesture: number;
+  gestures: number;
 };
 type View = { source: NPCInstance; revision: number; view: NPCInstance };
 /** Speech lasts this long, in seconds, when a speak action names no duration. */
 const DEFAULT_SPEECH_SECONDS = 3;
+/** An interaction holds the NPC this long, or until its speech ends. */
+const ATTENTION_SECONDS = 3;
+/** Turning to whoever interacts takes at most about 0.3 s, whatever the NPC's own turn speed. */
+const ATTENTION_TURN_SPEED = Math.PI / 0.3;
+/** Glances swing on a period of about 18 s, looking to one side while the swing passes ±0.55. */
+const GLANCE_RATE = 0.35;
+const GLANCE_SWING = 0.55;
+/** How far, in grid cells, a route looks for free ground around a start or target inside an obstacle. */
+const FREE_GROUND_RINGS = 3;
+/** Salts of an NPC's deterministic draws. */
+const GESTURE_TIME = 1;
+const GESTURE_CLIP = 2;
 /** Points left to walk toward one waypoint of a navigation. */
 type Route = { waypoints: Point[]; index: number; steps: Point[] };
+/** A one-shot the NPC's model plays; `at` is the clock time it started, which tells repeats apart. */
+export type NPCGesture = { clip: string; at: number; greeting: boolean };
+
+/** The shortest signed turn from `from` to `to`, in radians. */
+function turnBetween(from: number, to: number): number {
+  return Math.atan2(Math.sin(to - from), Math.cos(to - from));
+}
+
+/** `point` when the agent may stand there, else the center of the nearest free cell within a few cells, if any. */
+function freeGround(navigation: NavigationSystem, point: Point, size: NavigationAgentSize): Point | undefined {
+  if (navigation.isWalkable(point[0], point[2], size)) return point;
+  const [cx, cz] = navigation.worldToGrid(point[0], point[2]);
+  let best: Point | undefined;
+  let bestDistance = Infinity;
+  for (let ring = 1; ring <= FREE_GROUND_RINGS && !best; ring++) {
+    for (let dz = -ring; dz <= ring; dz++) {
+      for (let dx = -ring; dx <= ring; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
+        const [x, , z] = navigation.gridToWorld(cx + dx, cz + dz, point[1]);
+        const distance = (x - point[0]) ** 2 + (z - point[2]) ** 2;
+        if (distance < bestDistance && navigation.isWalkable(x, z, size)) {
+          best = [x, point[1], z];
+          bestDistance = distance;
+        }
+      }
+    }
+  }
+  return best;
+}
 
 /** Actions the simulation applies itself: speech is transient and a turn uses the live pose, not the stored one. */
 const SIMULATION_ACTIONS: ReadonlySet<NPCAction['type']> = new Set(['speak', 'lookAt']);
@@ -70,6 +118,8 @@ export class NPCSimulation {
   private recordListeners = new Set<() => void>();
   private speech = new Map<string, { text: string; until: number }>();
   private speechChanges = 0;
+  private gestures = new Map<string, NPCGesture>();
+  private gestureChanges = 0;
   private now = 0;
   /** Non-NPC targets NPCs perceive, such as the player; never decided for, stored or saved. */
   private actors = new Map<string, NPCInstance>();
@@ -118,7 +168,7 @@ export class NPCSimulation {
     } else {
       this.releaseSystem?.(); this.releaseSystem = undefined;
       this.releaseClock?.(); this.releaseClock = undefined;
-      if (!this.store.getState().instances.size) { this.poses.clear(); this.views.clear(); this.records.clear(); this.speech.clear(); this.perception.refresh(new Map()); }
+      if (!this.store.getState().instances.size) { this.poses.clear(); this.views.clear(); this.records.clear(); this.speech.clear(); this.gestures.clear(); this.perception.refresh(new Map()); }
     }
   }
 
@@ -126,24 +176,44 @@ export class NPCSimulation {
     if (!this.dirty) return;
     this.dirty = false;
     const instances = this.store.getState().instances;
-    for (const id of this.poses.keys()) if (!instances.has(id)) { this.poses.delete(id); this.routes.delete(id); this.views.delete(id); this.records.delete(id); if (this.speech.delete(id)) this.speechChanges++; }
+    for (const id of this.poses.keys()) {
+      if (instances.has(id)) continue;
+      this.poses.delete(id); this.routes.delete(id); this.views.delete(id); this.records.delete(id); this.gestures.delete(id);
+      if (this.speech.delete(id)) this.speechChanges++;
+    }
     for (const instance of instances.values()) {
       let pose = this.poses.get(instance.id);
       if (!pose) {
-        pose = { position: [...instance.position], rotation: [...instance.rotation], sourcePosition: instance.position, sourceRotation: instance.rotation, home: [...instance.position], nextDecision: -1, moved: true, revision: 0 };
+        pose = {
+          position: [...instance.position], rotation: [...instance.rotation], sourcePosition: instance.position, sourceRotation: instance.rotation,
+          home: [...instance.position], nextDecision: -1, moved: true, revision: 0,
+          heading: instance.rotation[1], attentionUntil: -Infinity, nextGesture: -1, gestures: 0,
+        };
         this.poses.set(instance.id, pose);
       }
       if (pose.sourcePosition !== instance.position) {
         pose.position = [...instance.position]; pose.home = [...instance.position]; pose.sourcePosition = instance.position; pose.nextDecision = -1; pose.moved = true;
         this.routes.delete(instance.id);
       }
-      if (pose.sourceRotation !== instance.rotation) { pose.rotation = [...instance.rotation]; pose.sourceRotation = instance.rotation; pose.moved = true; }
+      if (pose.sourceRotation !== instance.rotation) {
+        pose.rotation = [...instance.rotation]; pose.heading = instance.rotation[1]; pose.sourceRotation = instance.rotation; pose.moved = true;
+      }
     }
   }
 
-  getPose(id: string): Readonly<{ position: Point; rotation: Point }> | undefined {
+  private livePose(id: string): Pose | undefined {
     if (!this.active) this.dirty = true;
-    this.reconcile(); return this.poses.get(id);
+    this.reconcile();
+    return this.poses.get(id);
+  }
+
+  getPose(id: string): Readonly<{ position: Point; rotation: Point }> | undefined {
+    return this.livePose(id);
+  }
+
+  /** Advances whenever this NPC's pose moves or turns, so a view redraws or wakes only then. */
+  getPoseRevision(id: string): number {
+    return this.poses.get(id)?.revision ?? 0;
   }
 
   /** Owned snapshot for perception and persistence; callers cannot mutate live pose buffers. */
@@ -162,13 +232,15 @@ export class NPCSimulation {
     this.routes.clear();
   }
 
-  /** Clock seconds of the next decision or speech end; a paused presentation may sleep until then. */
+  /** Clock seconds of the next decision, gesture, or end of speech or attention; a paused presentation may sleep until then. */
   nextEventAt(): number | undefined {
     let next = Infinity;
     for (const instance of this.store.getState().instances.values()) {
-      if ((instance.brain?.mode ?? 'none') === 'none') continue;
       const pose = this.poses.get(instance.id);
-      next = Math.min(next, pose && pose.nextDecision >= 0 ? pose.nextDecision : this.now);
+      if ((instance.brain?.mode ?? 'none') !== 'none') next = Math.min(next, pose && pose.nextDecision >= 0 ? pose.nextDecision : this.now);
+      if (!pose) continue;
+      if (instance.behavior?.gestures?.clips.length && pose.nextGesture >= 0) next = Math.min(next, pose.nextGesture);
+      if (pose.attentionUntil > this.now) next = Math.min(next, pose.attentionUntil);
     }
     for (const speech of this.speech.values()) next = Math.min(next, speech.until);
     return Number.isFinite(next) ? next : undefined;
@@ -197,6 +269,39 @@ export class NPCSimulation {
 
   /** Advances whenever speech starts or ends, so presentation redraws bubbles only then. */
   get speechRevision(): number { return this.speechChanges; }
+
+  /** Has the NPC's model play the one-shot `clip`. Gestures are never stored or saved. */
+  gesture(id: string, clip: string, greeting = false): void {
+    this.gestures.set(id, { clip, at: this.now, greeting });
+    this.gestureChanges++;
+  }
+
+  /** The NPC's latest gesture; a model shows each one once, telling repeats apart by `at`. */
+  getGesture(id: string): Readonly<NPCGesture> | undefined { return this.gestures.get(id); }
+
+  /** Advances with every gesture, so presentation looks for new ones only then. */
+  get gestureRevision(): number { return this.gestureChanges; }
+
+  /**
+   * Someone at `from` interacts with the NPC. Unless its behavior turns `faceOnInteract` off, it stops and turns to
+   * them within about 0.3 s, staying so for a few seconds or until it finishes speaking; it plays its `greetAnimation`.
+   */
+  greet(id: string, from?: readonly [number, number, number]): void {
+    const pose = this.livePose(id);
+    const behavior = this.store.getState().instances.get(id)?.behavior;
+    if (!pose) return;
+    if (from && behavior?.faceOnInteract !== false) {
+      pose.attentionUntil = Math.max(this.now + ATTENTION_SECONDS, this.speech.get(id)?.until ?? -Infinity);
+      const dx = from[0] - pose.position[0], dz = from[2] - pose.position[2];
+      if (Math.hypot(dx, dz) > 1e-9) pose.heading = Math.atan2(dx, dz);
+    }
+    if (behavior?.greetAnimation) this.gesture(id, behavior.greetAnimation, true);
+  }
+
+  /** Whether the NPC stands turned to whoever last interacted with it, its route on hold. */
+  isAttending(id: string): boolean {
+    return (this.poses.get(id)?.attentionUntil ?? -Infinity) > this.now;
+  }
 
   subscribeRecords(listener: () => void): () => void {
     this.recordListeners.add(listener);
@@ -251,7 +356,13 @@ export class NPCSimulation {
     const instances = this.store.getState().instances;
     for (const instance of instances.values()) {
       const pose = this.poses.get(instance.id)!;
-      this.move(instance, pose, tick.deltaSeconds);
+      const attending = pose.attentionUntil > this.now;
+      if (!attending) this.move(instance, pose, tick.deltaSeconds);
+      // Arriving this tick changed the stored instance.
+      const current = this.store.getState().instances.get(instance.id) ?? instance;
+      const standing = !attending && current.navigation?.state !== 'moving';
+      this.turn(current, pose, tick.deltaSeconds, attending, standing);
+      if (standing) this.idleGesture(current, pose);
       const bodies = this.bodies.get(instance.id);
       if (bodies) for (const body of bodies) {
         if (!body.isValid()) continue;
@@ -309,19 +420,52 @@ export class NPCSimulation {
     for (const listener of this.recordListeners) listener();
   }
 
-  /** Turns the NPC toward `target` from where it stands; walking turns it again toward its next step. */
+  /** Turns the NPC toward `target` from where it stands, at its turn speed; walking turns it again toward its next step. */
   face(id: string, target: readonly [number, number, number]): void {
     const pose = this.poses.get(id);
     if (!pose) return;
     const dx = target[0] - pose.position[0], dz = target[2] - pose.position[2];
     if (Math.hypot(dx, dz) <= 1e-9) return;
-    pose.rotation[1] = Math.atan2(dx, dz);
+    pose.heading = Math.atan2(dx, dz);
+    if (this.store.getState().instances.get(id)?.behavior?.turnSpeed !== undefined) return;
+    pose.rotation[1] = pose.heading;
     pose.moved = true;
+  }
+
+  /** Turns toward the heading, glancing aside now and then while it stands, at its turn speed; without one it snaps. */
+  private turn(instance: NPCInstance, pose: Pose, delta: number, attending: boolean, standing: boolean): void {
+    const behavior = instance.behavior;
+    let target = pose.heading;
+    if (standing && behavior?.glance) {
+      const swing = Math.sin(this.now * GLANCE_RATE + npcDecisionPhase(instance.id) * Math.PI * 2);
+      target += swing > GLANCE_SWING ? behavior.glance : swing < -GLANCE_SWING ? -behavior.glance : 0;
+    }
+    const turn = turnBetween(pose.rotation[1], target);
+    if (Math.abs(turn) < 1e-6) return;
+    const speed = behavior?.turnSpeed === undefined ? Infinity : attending ? Math.max(behavior.turnSpeed, ATTENTION_TURN_SPEED) : behavior.turnSpeed;
+    pose.rotation[1] = turnBetween(0, pose.rotation[1] + Math.sign(turn) * Math.min(Math.abs(turn), speed * delta));
+    pose.moved = true;
+  }
+
+  /** While it stands, now and then plays one of its `gestures`, at times and in an order every client draws alike. */
+  private idleGesture(instance: NPCInstance, pose: Pose): void {
+    const gestures = instance.behavior?.gestures;
+    if (!gestures?.clips.length) return;
+    const every = Math.max(1, gestures.everySeconds ?? 20);
+    if (pose.nextGesture < 0) {
+      pose.nextGesture = this.now + every * (0.5 + npcUnit(instance.id, GESTURE_TIME));
+      return;
+    }
+    if (this.now < pose.nextGesture) return;
+    const count = pose.gestures++;
+    this.gesture(instance.id, gestures.clips[Math.floor(npcUnit(instance.id, GESTURE_CLIP, count) * gestures.clips.length)]!);
+    pose.nextGesture = this.now + every * (0.75 + 0.5 * npcUnit(instance.id, GESTURE_TIME, pose.gestures));
   }
 
   /**
    * The points to walk toward waypoint `index`: the grid's route around walls once navigation is ready, the straight
-   * segment before that, and none when the grid cannot reach the waypoint, which is then skipped.
+   * segment before that. An NPC standing inside an obstacle's cells first steps out to free ground, and a waypoint
+   * inside one is reached at the nearest free ground; one the grid cannot reach at all gets no points and is skipped.
    */
   private route(instance: NPCInstance, pose: Pose, waypoints: Point[], index: number): Point[] {
     const cached = this.routes.get(instance.id);
@@ -330,13 +474,16 @@ export class NPCSimulation {
     const navigation = this.navigation;
     let steps: Point[] = [[...target]];
     if (navigation?.isReady) {
-      const agentRadius = instance.volume ? instance.volume.radius * Math.max(instance.scale[0], instance.scale[2]) : undefined;
-      const path = createNPCNavigationRoute(navigation, {
-        id: instance.id, position: [...pose.position], ...(agentRadius !== undefined ? { agentRadius } : {}),
-      }, target, { includeStart: true });
+      const size = instance.volume ? { agentRadius: instance.volume.radius * Math.max(instance.scale[0], instance.scale[2]) } : {};
+      const from = freeGround(navigation, pose.position, size);
+      const to = freeGround(navigation, target, size);
+      const path = from && to ? createNPCNavigationRoute(navigation, { id: instance.id, position: [...from], ...size }, to, { includeStart: true }) : [];
       steps = path.slice(1).map(([x, y, z]): Point => [x, y, z]);
       const end = steps[steps.length - 1] ?? path[0];
-      if (end && Math.hypot(end[0] - target[0], end[2] - target[2]) > 1e-6) steps.push([...target]);
+      if (from && to && end) {
+        if (Math.hypot(end[0] - to[0], end[2] - to[2]) > 1e-6) steps.push([...to]);
+        if (from !== pose.position) steps.unshift([...from]);
+      }
     }
     this.routes.set(instance.id, { waypoints, index, steps });
     return steps;
@@ -355,7 +502,7 @@ export class NPCSimulation {
         if (distance > 0) {
           const fraction = Math.min(1, remaining / distance);
           pose.position[0] += dx * fraction; pose.position[1] += dy * fraction; pose.position[2] += dz * fraction;
-          if (Math.hypot(dx, dz) > 1e-9) pose.rotation[1] = Math.atan2(dx, dz);
+          if (Math.hypot(dx, dz) > 1e-9) pose.heading = Math.atan2(dx, dz);
           pose.moved = true;
         }
         if (distance > remaining + 1e-9) return;
@@ -366,6 +513,9 @@ export class NPCSimulation {
       this.routes.delete(instance.id);
       this.store.getState().advanceNavigation(instance.id, [...pose.position]);
       pose.sourcePosition = this.store.getState().instances.get(instance.id)!.position;
+      // The end of the route: the next decision, which starts the next one, waits out the rest.
+      const pause = instance.behavior?.pauseSeconds;
+      if (index === nav.waypoints.length - 1 && pause !== undefined) pose.nextDecision = this.now + Math.max(0, pause);
       if (remaining === 0) break;
     }
   }

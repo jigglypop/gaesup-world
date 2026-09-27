@@ -22,6 +22,11 @@ export function npcDecisionPhase(id: string): number {
   return unit(hashId(id));
 }
 
+/** A number in [0, 1) for the NPC's `count`-th draw of a kind (`salt`), the same on every client. */
+export function npcUnit(id: string, salt: number, count = 0): number {
+  return unit(hashId(id) ^ Math.imul(salt + 1, 0x9e3779b1) ^ Math.imul(count + 1, 0x85ebca6b));
+}
+
 /**
  * A point within `radius` of the NPC's home (its position when it has none). Each NPC and decision time gets its own
  * point, and every client computes the same one from the same observation.

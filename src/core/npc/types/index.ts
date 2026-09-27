@@ -1,3 +1,4 @@
+import type { ImportedMaterialPolicy } from '@core/assets/materialPolicy';
 import type { RuntimeValue } from '@core/boilerplate/types';
 
 
@@ -27,6 +28,10 @@ export interface NPCTemplate {
   accessoryParts?: NPCPart[]; // 액세서리 파트 (glasses, hat 등)
   defaultAnimation?: string;
   defaultClothingSet?: string; // 기본 의상 세트 ID
+  /** Height in meters the body model is drawn at, measured once in its idle pose, feet on the ground. */
+  height?: number;
+  /** How the model's imported materials are adjusted; `'figure'` draws generated characters matte. Default `'keep'`. */
+  materialPolicy?: ImportedMaterialPolicy;
 }
 
 export interface ClothingSet {
@@ -77,12 +82,27 @@ export type NPCBehaviorMode = 'idle' | 'patrol' | 'wander';
 export interface NPCBehaviorConfig {
   mode: NPCBehaviorMode;
   speed: number;
+  /** A patrol walks from its last waypoint back to its first; with `false` it walks back along its waypoints (pacing). */
   loop?: boolean;
   waypoints?: [number, number, number][];
   wanderRadius?: number;
   /** Wandering stays within `wanderRadius` of this point; without it, of where the NPC was placed. */
   home?: [number, number, number];
   waitSeconds?: number;
+  /** Seconds it rests at the end of each route (a wander target, a patrol's end) before the next one. */
+  pauseSeconds?: number;
+  /** Radians a second it turns at; without it, it faces a new direction at once. */
+  turnSpeed?: number;
+  /** Stops and turns to whoever interacts with it. Default true. */
+  faceOnInteract?: boolean;
+  /** Radians it looks to either side now and then while it stands. */
+  glance?: number;
+  /** One-shot clips it plays now and then while standing, about every `everySeconds` (default 20). */
+  gestures?: { clips: string[]; everySeconds?: number };
+  /** One-shot clip it plays when someone interacts with it; a model without the clip hops. */
+  greetAnimation?: string;
+  /** Ground speed, in m/s, at which the move clip plays at its own rate; the rate follows `speed` (0.5–2×). */
+  strideSpeed?: number;
   idleAnimation?: string;
   moveAnimation?: string;
   arriveAnimation?: string;

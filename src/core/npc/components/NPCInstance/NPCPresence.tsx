@@ -4,6 +4,7 @@ import * as THREE from 'three';
 
 import { DEFAULT_INTERACTION_KEY, DEFAULT_INTERACTION_RANGE } from '../../../interactions/components/Interactable';
 import { useInteractablesStoreApi } from '../../../interactions/stores/interactablesStore';
+import { useScopedStateManager } from '../../../motions/hooks/useStateSystem';
 import { useEngineFrame } from '../../../runtime/frame';
 import { SpeechBalloon } from '../../../ui/components/SpeechBalloon';
 import { useNPCSimulation } from '../../hooks/useNPCSimulation';
@@ -19,11 +20,12 @@ type NPCPresenceProps = {
 /**
  * What an NPC shows beyond its model: the line it is speaking, and — when it has an `onInteract` event — its place in
  * the world's interaction targets, so the player's interaction key runs that event (and the rule engine's
- * `interaction` trigger with the NPC id).
+ * `interaction` trigger with the NPC id) and the NPC greets the player.
  */
 export function NPCPresence({ instance, height, onInteract }: NPCPresenceProps) {
   const simulation = useNPCSimulation();
   const interactables = useInteractablesStoreApi();
+  const player = useScopedStateManager();
   const [speech, setSpeech] = useState<string>();
   const speechRevision = useRef(-1);
   const interact = useRef(onInteract);
@@ -53,9 +55,14 @@ export function NPCPresence({ instance, height, onInteract }: NPCPresenceProps) 
         const pose = simulation.getPose(instance.id);
         return pose ? position.fromArray(pose.position) : position;
       },
-      onActivate: () => interact.current(),
+      onActivate: () => {
+        interact.current();
+        // After the event, so turning to the player lasts until the line it just started ends.
+        const { x: px, y: py, z: pz } = player.getActiveState().position;
+        simulation.greet(instance.id, [px, py, pz]);
+      },
     });
-  }, [interactables, interactive, instance.id, instance.name, simulation, x, y, z]);
+  }, [interactables, interactive, instance.id, instance.name, player, simulation, x, y, z]);
 
   return speech ? <SpeechBalloon text={speech} position={balloonPosition} /> : null;
 }

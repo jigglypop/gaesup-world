@@ -7,7 +7,7 @@ NPC 데이터(템플릿·인스턴스), 행동과 두뇌, 고정 틱 시뮬레�
 | 조각 | 어디서 | 역할 |
 |---|---|---|
 | NPC store | `useNPCStore(selector)`, `useNPCStoreApi()`, `runtime.npcStore` | 템플릿·인스턴스·두뇌 블루프린트 등 저장되는 데이터 |
-| `NPCSystem` | `BuildingController`가 올린다 | NPC 렌더, 거리 LOD, 편집 클릭, 건축 장애물을 내비게이션에 넣기 |
+| `NPCSystem` | `BuildingController`가 올린다 | NPC 렌더, 거리 LOD와 가시 상한(`maxVisible`, 가까운 순), 화면 밖 NPC 숨기기, 편집 클릭, 건축 장애물을 내비게이션에 넣기 |
 | `NPCSimulation` | `runtime.npcSimulation` | 이동·결정·말하기. 고정 틱(60Hz)에서 돈다 |
 | 두뇌 어댑터 | `runtime.npcBrainAdapters`, `registerNPCBrainAdapter` | `scripted` 외 두뇌의 결정 |
 | 대화 | `runtime.dialogRegistry`(legacy는 `getDialogRegistry()`), `useDialogRegistry()`, `useDialogStore`, `<DialogBox />` | 대화 트리와 실행 |
@@ -81,13 +81,25 @@ function Villagers() {
 
 ## 행동 `behavior`
 
-`NPCBehaviorConfig`: `{ mode: 'idle' | 'patrol' | 'wander', speed, loop?, waypoints?, wanderRadius?, home?, waitSeconds?, idleAnimation?, moveAnimation?, arriveAnimation? }`.
+`NPCBehaviorConfig`: `{ mode: 'idle' | 'patrol' | 'wander', speed, loop?, waypoints?, wanderRadius?, home?, waitSeconds?, pauseSeconds?, turnSpeed?, faceOnInteract?, glance?, gestures?, greetAnimation?, strideSpeed?, idleAnimation?, moveAnimation?, arriveAnimation? }`.
 
 - 행동은 두뇌가 `scripted`(또는 정책 서버가 없는 `reinforcement`)일 때 결정의 기본값이 된다. 두뇌가 없거나 `none`이면 NPC는 결정하지 않고 서 있다.
 - `wander`: 이동 중이 아닐 때마다 `home`(없으면 처음 놓인 자리)에서 `wanderRadius`(기본 4m) 안의 한 점으로 간다. 점은 NPC id와 시뮬레이션 시각으로 정해져 같은 시계에서는 늘 같다.
-- `patrol`: `waypoints`를 차례로 걷는다. 끝에 닿으면 다음 결정 때 처음부터 다시 걷는다.
+- `patrol`: `waypoints`를 차례로 걷는다. 끝에 닿으면 다음 결정 때 처음부터 다시 걷는다. `loop: false`면 가까운 끝에서 거꾸로 되짚어 걷는다(왕복). 점을 좌우로 번갈아 두면 지그재그가 된다.
+- 출발점이나 목표가 장애물 칸 안이면 가장 가까운 빈 칸(3칸 안)으로 빠져나와 걷는다. 전에는 경로가 비어 목표를 건너뛰어 배회 NPC가 제자리에 서 있었다.
+- `pauseSeconds`: 한 경로(배회 목표, 순찰 끝)에 닿은 뒤 쉬는 시간.
 - `waitSeconds`: 결정 간격(최소 0.5초, 기본 1초). NPC마다 간격 안의 위상이 달라 한 틱에 몰리지 않는다.
 - 애니메이션: 걸을 때 `moveAnimation`(없으면 속도 3.8 이상 `run`, 아니면 `walk`), 멈추면 `idleAnimation` → `arriveAnimation` → `idle`. 클립 이름은 대소문자 무시, 부분 일치로 찾는다.
+- 연출(시뮬레이션의 일시 상태라 store에 쓰거나 저장하지 않는다):
+  - `turnSpeed`(rad/s): 방향을 부드럽게 바꾼다. 없으면 바로 돈다.
+  - `faceOnInteract`(기본 true): 플레이어가 말을 걸면 멈추고 0.3초 안에 돌아본다. 3초 또는 대사가 끝날 때까지 그 자리에 선다.
+  - `glance`(rad): 서 있는 동안 가끔 양옆을 본다.
+  - `gestures: { clips, everySeconds? }`: 서 있는 동안 약 `everySeconds`(기본 20초)마다 한 번씩 재생한다. 시각과 순서는 NPC id로 정해져 모든 클라이언트가 같다.
+  - `greetAnimation`: 말을 걸면 재생한다. 모델에 클립이 없으면 폴짝 뛴다.
+  - `strideSpeed`(m/s): 걷기 클립이 제 속도로 보이는 이동 속도. 재생 속도가 이동 속도를 따른다(0.5–2배). 없으면 클립의 루트 이동에서 잰다.
+- 모델 클립 준비(`NPCInstance`가 모델마다 한 번): 걷기·달리기 클립의 루트 이동을 빼고(`makeClipInPlace`), 클립이 키를 안 준 뼈를 idle 첫 자세로 고정해(`holdUnkeyedTracks`) 전환 중 T자 자세가 나오지 않는다. 첫 클립은 weight 1로 시작하고 이후 전환은 crossfade로 합이 1이다(`useClipTransition`). 서 있는 NPC들은 idle 위상과 속도(0.9–1.1배)가 달라 함께 숨 쉬지 않는다.
+- 템플릿 `height`(m)를 주면 모델을 idle 자세 기준 그 키로 맞추고 발을 땅에 붙인다. `materialPolicy: 'figure'`는 생성형 인물을 매트로 그린다([rendering.md](rendering.md)).
+- 화면 밖 NPC는 몸 캡슐 크기의 구로 판정해 숨기고(그림자 draw도 빠진다), 카메라에서 30m 넘는 NPC의 애니메이션은 15Hz로 진행한다. 보이는 NPC가 움직이면 캔버스 스케줄러에 활동을 알려 `IdleFrameRate`가 매 프레임 그린다.
 
 ## 두뇌 `brain`
 
