@@ -2,6 +2,13 @@ import type { BgmTrack, SfxDef } from '../types';
 
 export type AudioEngineOptions = { canPlay?: () => boolean };
 
+/** Seconds one BGM fades out while the next fades in. */
+export const BGM_FADE_SECONDS = 1;
+/** Inputs that count as the user gesture browsers want before audio may play. */
+const UNLOCK_EVENTS = ['pointerdown', 'keydown', 'touchstart'] as const;
+
+type BgmPlayback = { url: string; startedAt: number; offset: number; duration: number };
+
 class AudioEngine {
   constructor(private readonly options: AudioEngineOptions = {}) {}
   private ctx: AudioContext | null = null;
@@ -15,6 +22,9 @@ class AudioEngine {
   private sources = new Map<AudioScheduledSourceNode, { gain: GainNode; bgm: boolean }>();
   private requests = new Map<AbortController, boolean>();
   private bgmGeneration = 0;
+  // Where each looping track was when it last stopped, so coming back to it carries on instead of restarting.
+  private bgmPlayback = new Map<AudioScheduledSourceNode, BgmPlayback>();
+  private resumeAt = new Map<string, number>();
   private playbackEnabled = true;
   private volumes = { master: 1, bgm: 1, sfx: 1 };
 
@@ -33,6 +43,11 @@ class AudioEngine {
       this.masterGain.gain.value = this.volumes.master;
       this.bgmGain.gain.value = this.volumes.bgm;
       this.sfxGain.gain.value = this.volumes.sfx;
+      // Browsers keep a context made without a gesture suspended; the first input anywhere lets it play.
+      if (this.ctx.state === 'suspended') {
+        const unlock = () => this.resume();
+        for (const type of UNLOCK_EVENTS) window.addEventListener(type, unlock, { once: true, capture: true, passive: true });
+      }
       return true;
     } catch {
       return false;
@@ -104,9 +119,10 @@ class AudioEngine {
     osc.stop(t0 + dur + 0.05);
   }
 
+  /** Starts `track`, the one playing fading out over `BGM_FADE_SECONDS` while it fades in. */
   playBgm(track: BgmTrack | null): void {
     if (!this.canPlay()) return;
-    this.stopBgm();
+    this.stopBgm(BGM_FADE_SECONDS);
     if (!track) return;
     if (!this.ensure() || !this.ctx || !this.bgmGain) return;
     this.currentBgm = track;
@@ -141,7 +157,8 @@ class AudioEngine {
     this.bgmInterval = window.setInterval(tick, interval);
   }
 
-  stopBgm(): void {
+  /** Stops the BGM at once, or fading it out over `fadeSeconds`; a looping track remembers where it was. */
+  stopBgm(fadeSeconds = 0): void {
     this.bgmGeneration++;
     for (const [controller, bgm] of this.requests) if (bgm) controller.abort();
     if (this.bgmInterval !== null) {
@@ -149,7 +166,12 @@ class AudioEngine {
       this.bgmInterval = null;
     }
     this.currentBgm = null;
-    for (const [source, entry] of this.sources) if (entry.bgm) this.stopSource(source);
+    for (const [source, entry] of this.sources) {
+      if (!entry.bgm) continue;
+      this.rememberPlayback(source);
+      if (fadeSeconds > 0 && this.ctx) this.fadeOut(source, entry.gain, fadeSeconds);
+      else this.stopSource(source);
+    }
   }
 
   /** Release this engine's nodes, pending loads, decoded buffers and AudioContext. */
@@ -168,6 +190,26 @@ class AudioEngine {
     if (context && context.state !== 'closed') await context.close();
   }
 
+  private fadeOut(source: AudioScheduledSourceNode, gain: GainNode, seconds: number): void {
+    const t = this.ctx!.currentTime;
+    gain.gain.cancelScheduledValues(t);
+    gain.gain.setValueAtTime(gain.gain.value, t);
+    gain.gain.linearRampToValueAtTime(0, t + seconds);
+    try {
+      source.stop(t + seconds);
+    } catch {
+      this.releaseSource(source);
+    }
+  }
+
+  private rememberPlayback(source: AudioScheduledSourceNode): void {
+    const playback = this.bgmPlayback.get(source);
+    if (!playback || !this.ctx) return;
+    this.bgmPlayback.delete(source);
+    const played = playback.offset + this.ctx.currentTime - playback.startedAt;
+    this.resumeAt.set(playback.url, playback.duration > 0 ? played % playback.duration : 0);
+  }
+
   private trackSource(source: AudioScheduledSourceNode, gain: GainNode, bgm: boolean): void {
     this.sources.set(source, { gain, bgm });
     source.onended = () => this.releaseSource(source);
@@ -177,6 +219,7 @@ class AudioEngine {
     const entry = this.sources.get(source);
     if (!entry) return;
     this.sources.delete(source);
+    this.bgmPlayback.delete(source);
     source.onended = null;
     source.disconnect();
     entry.gain.disconnect();
@@ -214,11 +257,21 @@ class AudioEngine {
       src.buffer = buffer;
       src.loop = loop;
       const env = context.createGain();
-      env.gain.value = volume;
+      const t0 = context.currentTime;
+      // A track fades in, from where it was when it last played.
+      const offset = loop ? this.resumeAt.get(url) ?? 0 : 0;
+      if (loop) {
+        env.gain.setValueAtTime(0, t0);
+        env.gain.linearRampToValueAtTime(volume, t0 + BGM_FADE_SECONDS);
+      } else env.gain.value = volume;
       src.connect(env);
       env.connect(dest);
       this.trackSource(src, env, loop);
-      try { src.start(); } catch (error) { this.releaseSource(src); throw error; }
+      try {
+        if (loop) src.start(t0, offset);
+        else src.start();
+      } catch (error) { this.releaseSource(src); throw error; }
+      if (loop) this.bgmPlayback.set(src, { url, startedAt: t0, offset, duration: buffer.duration ?? 0 });
     } catch { /* A failed or cancelled audio request must not start a source. */ }
     finally { this.requests.delete(controller); }
   }

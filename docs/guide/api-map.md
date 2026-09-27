@@ -46,6 +46,8 @@ ESM(`import`)과 CJS(`require`) 둘 다 있다. 진입점 목록의 원본은 `p
 | 도메인 플러그인 | `buildingPlugin`, `npcPlugin`, `cameraPlugin`, `timePlugin`, `weatherPlugin`, `characterPlugin`, `audioPlugin`, `scenePlugin`, `i18nPlugin`, `motionsPlugin`과 각 `create*Plugin` |
 | UI | `ToastHost`, `notify`, `SpeechBalloon`, `MiniMap`, `RuntimeSaveDiagnosticsToaster` |
 | 시간·날씨·오디오·언어 | `useGameTime`, `TimeHUD`, `useWeatherStore`, `WeatherEffect`, `useAudioStore`, `useI18nStore`, `useTranslate` |
+
+오디오의 `playBgm`은 이전 곡을 1초에 걸쳐 줄이며 새 곡을 올리고(`stopBgm` 액션도 1초에 걸쳐 줄인다), 반복 곡은 마지막으로 멈춘 자리에서 이어 튼다. 브라우저가 제스처 전이라 오디오를 멈춰 둔 경우 첫 입력(포인터·키·터치)에서 다시 켠다.
 | 저작 모델 | `createSceneDocument`, `SceneRoot`, `createPrefabDocument`, `ScriptRuntime`, `defineScript` |
 | 에디터 | `gaesup-world/editor`의 에디터 부분(`Editor`, `EditorLayout`, `BuildingPanel` 등) |
 | 성능 | `PerformancePanel`, `usePerfStore`, `readRendererStats`, `autoDetectProfile` |

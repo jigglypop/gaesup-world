@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { lazyScopedStore } from '../../stores/scopedStore';
-import { createAudioEngine, getAudioEngine, type AudioEngine } from '../core/AudioEngine';
+import { BGM_FADE_SECONDS, createAudioEngine, getAudioEngine, type AudioEngine } from '../core/AudioEngine';
 import type { AudioSerialized, BgmTrack, SfxDef } from '../types';
 
 type State = {
@@ -72,7 +72,7 @@ return create<State>((set, get) => ({
   },
 
   stopBgm: () => {
-    engine.stopBgm();
+    engine.stopBgm(BGM_FADE_SECONDS);
     set(s => ({ currentBgmId: null, bgmRevision: s.bgmRevision + 1 }));
   },
 

@@ -1,7 +1,9 @@
 /** @jest-environment jsdom */
-import { createAudioEngine, getAudioEngine } from '../core/AudioEngine';
+import { BGM_FADE_SECONDS, createAudioEngine, getAudioEngine } from '../core/AudioEngine';
 
-const parameter = () => ({ value: 1, setValueAtTime: jest.fn(), linearRampToValueAtTime: jest.fn(), exponentialRampToValueAtTime: jest.fn() });
+const parameter = () => ({
+  value: 1, setValueAtTime: jest.fn(), linearRampToValueAtTime: jest.fn(), exponentialRampToValueAtTime: jest.fn(), cancelScheduledValues: jest.fn(),
+});
 const gain = () => ({ gain: parameter(), connect: jest.fn(), disconnect: jest.fn() });
 const source = () => ({
   frequency: parameter(), connect: jest.fn(), disconnect: jest.fn(), start: jest.fn(), stop: jest.fn(),
@@ -115,5 +117,31 @@ describe('AudioEngine source and request ownership', () => {
       expect(nodes).toHaveLength(1); expect(guarded.getCurrentBgmId()).toBe('manual');
       allowed = true; guarded.playSfx({ id: 'fresh' }); expect(nodes).toHaveLength(2);
     } finally { await guarded.dispose(); }
+  });
+  it('a new track fades in while the old one fades out, and a track played again carries on where it was', async () => {
+    context.decodeAudioData.mockImplementation(async () => ({ duration: 100 }));
+    engine.playBgm({ id: 'field', url: '/field.wav' });
+    await settle();
+    const field = nodes[0]!;
+    expect(field.start).toHaveBeenLastCalledWith(0, 0);
+    context.currentTime = 30;
+    engine.playBgm({ id: 'room', url: '/room.wav' });
+    // The old track is not cut: its level ramps to silence and it stops once the fade is over.
+    expect(field.stop).toHaveBeenLastCalledWith(30 + BGM_FADE_SECONDS);
+    expect(field.disconnect).not.toHaveBeenCalled();
+    await settle();
+    context.currentTime = 50;
+    engine.playBgm({ id: 'field', url: '/field.wav' });
+    await settle();
+    expect(nodes.at(-1)!.start).toHaveBeenLastCalledWith(50, 30);
+    context.decodeAudioData.mockImplementation(async () => ({}));
+  });
+
+  it('a context the browser keeps suspended plays after the first input', async () => {
+    context.state = 'suspended';
+    engine.playSfx({ id: 'tap' });
+    context.resume.mockClear();
+    window.dispatchEvent(new KeyboardEvent('keydown'));
+    expect(context.resume).toHaveBeenCalled();
   });
 });
