@@ -104,8 +104,7 @@ export type PhysicsEntityProps = {
   ridingUrl ? : string;
   offset ? : THREE.Vector3;
   /**
-   * 모델 자체의 전방축이 뒤집혀있는(GLTF 전방 -Z) 경우 보정용 yaw 오프셋
-   * - 기본값: componentType === 'character' ? Math.PI : 0 (InnerGroupRef에서 처리)
+   * Yaw correction for a model whose front is not glTF's +Z (for example `Math.PI` for a model facing -Z). Default 0.
    */
   modelYawOffset?: number;
   currentAnimation ? : string;

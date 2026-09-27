@@ -39,7 +39,7 @@ prop 타입은 `Omit<PhysicsEntityProps, 'url' | 'isActive' | 'componentType'> &
 | `baseColor` | `string` | 없음 | 기본 모델 색. 캐릭터는 이름이 `body`·`skin`·`Body`·`Skin`인 노드만 칠한다 |
 | `excludeBaseNodes` | `string[]` | 없음 | 숨길 기본 모델 노드 이름(부품과 겹칠 때) |
 | `modelHierarchy` | `boolean` | `false` | 가져온 리그의 계층·재질을 그대로 둔다 |
-| `modelYawOffset` | `number` | 캐릭터 `π` | 모델 정면 보정 |
+| `modelYawOffset` | `number` | 0 | 모델 정면 보정. glTF 모델은 +Z가 정면이라 필요 없다. −Z를 보는 모델이면 `Math.PI` |
 | `animatorController` | `AnimatorControllerDefinition` | 기본 캐릭터 애니메이터 | 상태 머신. 기본은 클립 `idle`·`walk`·`run`(blend)·`jump`·`fall`·`ride`를 찾고 없는 클립은 건너뛴다 |
 | `enableKeyboard` | `boolean` | `true` | 키보드 이동 입력 |
 | `clickToMove` | `boolean` | `false` | 바닥 클릭 이동. 아래 [클릭 이동](#클릭-이동) |

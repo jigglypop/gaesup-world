@@ -9,12 +9,9 @@ import { InnerGroupRefType } from './types';
 export const CHARACTER_SKIN_NODE_NAMES = ['body', 'skin', 'Body', 'Skin'];
 
 export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THREE.Group>) => {
-  const modelYawOffset =
-    typeof props.modelYawOffset === 'number'
-      ? props.modelYawOffset
-      : props.componentType === 'character'
-        ? Math.PI
-        : 0;
+  // glTF models face +Z and the movement yaw turns +Z along the direction of travel, so no correction by default.
+  // A default of π for characters turned every glTF figure around: they walked away facing the camera.
+  const modelYawOffset = props.modelYawOffset ?? 0;
   const isCharacter = props.componentType === 'character';
   // Characters: never let an outfit part's color bleed onto the base body, and tint
   // only skin nodes so authored materials (eyes, face) survive.
