@@ -1,5 +1,5 @@
-import { cellKey, neighborMask } from './field';
 import { tileWorldSize } from '../../../model/footprint';
+import { cellKey, neighborMask } from '../../../terrain/grid';
 import type { GrassProfile, MeshConfig, TileConfig } from '../../../types';
 import { getTileShape } from '../../TileSystem/layout';
 
@@ -14,7 +14,7 @@ const MEADOW_LIFT = 0.05;
 /** Blade roots on a textured mesh without a grass color. */
 const LAWN_TINT = '#86c460';
 /** Terrain covers that keep their own surface. */
-const COVERS = new Set(['water', 'sand', 'snowfield']);
+const COVERS = new Set(['water', 'sand', 'snowfield', 'dirt']);
 
 /** Local x, z, tile top y and the bits of the grass-bearing neighbors (`neighborMask`). */
 type Cell = [number, number, number, number];

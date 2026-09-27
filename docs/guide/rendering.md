@@ -306,6 +306,7 @@ export function ToonBox() {
 
 - 깃발 컴포넌트는 export되지 않는다. 깃발은 오브젝트 `type: 'flag'`(`config.flagWidth`·`flagHeight`·`flagStyle`·`flagTexture`)로 `BuildingController`가 그린다.
 - 물가 필드(`useShoreField()`, `createShoreField(source)`): 물 타일과 `worldSurface: 'water'` 월드의 열린 바다를 1m 텍셀로 래스터화해 흐린 물 덮임 값이다(땅 0, 물가 0.5, 열린 물 1). 월드마다 하나를 모든 물이 함께 쓰고, 타일이 바뀔 때만 프레임당 최대 4ms씩 나눠 다시 만든다. 격자는 타일이 놓인 위상을 따르므로 스냅 격자 밖에 손으로 놓은 타일에도 물가선이 맞는다. 셰이더는 `field.texture`를 `(world.xz - field.transform.xy) * field.transform.zw`에서 읽는다.
+- 흙길 덮개(`objectType: 'dirt'`, 공개 export 아님): 흙길 타일과 같은 높이 이웃 위에 0.5m 격자 한 장을 깔고 정점 알파로 가장자리를 흐린다. 경계까지 거리는 잔디 층의 불규칙한 경계와 같은 이웃 마스크(`borderDistance`)로 재고, 월드 노이즈로 흔든다. 노드 렌더러에서는 월드 좌표의 잔모래와 자갈을 셰이더로 더한다. 투명하게 섞고 그림자를 받는다.
 - 물 재질은 안개와 톤 매핑을 받는다. 물결 노멀맵은 주기적이라 이음선이 없다. 카메라에서 40m 안은 물결·거품이 움직이고 52m 밖은 단순한 면이다(히스테리시스). 물 타일 묶음은 둘레 띠 없이 메시 하나다.
 - 잔디·물·불·깃발·벚꽃·눈·날씨의 GLSL 경로는 PRD GPU-1에서 지운다.
 

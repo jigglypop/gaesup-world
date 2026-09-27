@@ -12,10 +12,12 @@ import { MinimapSystem } from '../../../ui/core';
 import { WorldProps } from '../../../world/components/WorldProps';
 import { MaterialManager } from '../../core/MaterialManager';
 import { tileWorldSize } from '../../model/footprint';
+import type { GroundSquare } from '../../terrain/dirt';
 import { BuildingColliderBody } from '../BuildingColliders';
 import type { BuildingColliderBox } from '../BuildingColliders/types';
 import { EditOverlay } from '../EditOverlay';
 import { tileEditItem, type EditOverlayItem } from '../EditOverlay/items';
+import { DirtCover } from '../mesh/dirt';
 import { GrassChunks } from '../mesh/grass/chunks';
 import { SandBatch, type SandEntry } from '../mesh/sand';
 import { SnowfieldBatch, type SnowfieldEntry } from '../mesh/snowfield';
@@ -315,6 +317,27 @@ export const TileSystem = memo(function TileSystem({
     [sandTiles],
   );
 
+  // Dirt path tiles and the flat tiles their soft edge may spread onto; the group's first dirt colors paint the path.
+  const dirtCover = useMemo(() => {
+    const dirt: GroundSquare[] = [];
+    const ground: GroundSquare[] = [];
+    let color: string | undefined;
+    let accent: string | undefined;
+    for (const tile of tileGroup.tiles) {
+      if (getTileShape(tile) !== 'box' || tile.objectType === 'water') continue;
+      const square = { x: tile.position.x, y: tile.position.y, z: tile.position.z, size: tileWorldSize(tile) };
+      if (tile.objectType !== 'dirt') ground.push(square);
+      else {
+        dirt.push(square);
+        if (!color && tile.objectConfig?.terrainColor) {
+          color = tile.objectConfig.terrainColor;
+          accent = tile.objectConfig.terrainAccentColor;
+        }
+      }
+    }
+    return { dirt, ground, color, accent };
+  }, [tileGroup.tiles]);
+
   const snowfieldTiles = useMemo(
     () => tileGroup.tiles.filter((t) => getTileShape(t) === 'box' && t.objectType === 'snowfield'),
     [tileGroup.tiles],
@@ -527,6 +550,10 @@ export const TileSystem = memo(function TileSystem({
         ))}
         
         {grassTiles.length > 0 && <GrassChunks tiles={grassTiles} meshOf={grassMeshOf} />}
+
+        {dirtCover.dirt.length > 0 && (
+          <DirtCover dirt={dirtCover.dirt} ground={dirtCover.ground} color={dirtCover.color} accent={dirtCover.accent} />
+        )}
 
         {sandEntries.length > 0 && <SandBatch entries={sandEntries} />}
 

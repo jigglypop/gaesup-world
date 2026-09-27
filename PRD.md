@@ -26,7 +26,7 @@
 | ID | 내용 | 완료 기준 |
 |---|---|---|
 | CK-4 | 렌더 수명·로딩. 언마운트된 clone을 해제한다(`releaseObject`: `Object3D.dispose`, skeleton). `GLTFAssetCache`를 한 벌로 합친다(LRU 24, 동시 3, 보이는 시간 기준 timeout·abort, 실패 쿨다운·재시도, meshopt 워커). 코어의 drei `useGLTF`는 `useGLTFAsset`으로 바꾼다. 모델을 바꾸는 동안 이전 모델을 유지한다. 첫 draw 준비 신호(`CompileGate onReady`)와 `visibleTimeout`을 둔다. Windows에서는 `powerPreference`를 생략한다. 장치 손실 복구(`onDeviceLost`, `RendererRecovery`)를 넣는다. WebGL 미리보기와 WebGPU 월드가 캐시를 함께 쓸 때 생기는 인덱스 변환 문제를 확인한다 | 캐릭터 로드 끝 long task 446ms→100ms 이하. LOD 경계 10회 왕복 뒤 렌더 객체 수·힙이 기준선으로 돌아옴. `device.destroy()` 뒤 3초 안에 같은 상태로 복구. gw 콘솔 경고 −1 |
-| CK-5 | 지면. `createTileSampler`(셀→재질·높이·물)를 둔다. 타일 재질은 월드 좌표 UV와 넓은 색 변화를 쓴다. 재질 경계는 물결과 둥근 모서리로 페더 처리한다. 절차 흙길(`surface: 'dirt'`)을 넣는다. 모래·눈·잔디는 결정적 월드 노이즈를 쓴다 | 위에서 본 스크린샷에 4m 반복과 직선 경계가 없음. 새로고침해도 같은 모양. 타일 편집 반영 16ms 이내. 지면 draw 증가 없음 |
+| CK-5 | 지면(남은 것). 타일 재질은 노드 렌더러에서 월드 좌표 UV와 넓은 색 변화를 쓴다(윗면만, 옆면은 기존 UV). 모래·눈밭과 다른 재질의 경계도 흙길처럼 페더 처리한다. 셀→재질·높이·물을 묻는 `createTileSampler`를 물가 필드 옆에 둔다(흙길 덮개·결정적 모래·눈 노이즈는 끝남) | 위에서 본 스크린샷에 4m 반복과 직선 경계가 없음. 새로고침해도 같은 모양. 타일 편집 반영 16ms 이내. 지면 draw 증가 없음 |
 | CK-8 | 산포. 규칙 산포 `ScatterLayer`(타일 재질·경계 거리·밀도·군집·시드)로 길가 꽃·돌·덤불을 뿌리고, 결과는 정적 모델 칸에 합친다(반복 GLB 인스턴싱과 정적 병합은 끝남) | 길가 꽃·돌 산포 스크린샷. 새로고침해도 같은 배치. draw 증가는 칸 수 이내 |
 | CK-10 | 적응형 품질. 성능 보고에 GPU 시간(`trackTimestamp`)을 넣는다. `quality="auto"`는 계속 조정한다(DPR .7–1.5 히스테리시스, 250ms 프레임은 즉시 낮춤, 탭 복귀 유예). CPU 병목이면 그림자 주기·NPC 상한을 낮춘다 | 강한 부하(후처리+큰 창)에서 DPR이 내려가고 4초 안에 FPS 회복. 보고에 dpr·gpuMs. 평상시 minihome DPR 1.5 유지 |
 | CK-12 | 조명 구역과 접지 그림자. `LightingZone`(영역 안에서 환경광·키광 교체, `GameplayArea` 연동)으로 미니룸 실내 조명을 만들고, 그림자 맵이 없는 곳(실내·low tier)에서 캐릭터·NPC 발밑에 인스턴스 블롭 그림자 `ContactShadows`(최대 32개, 경사에 맞춤)를 둔다 | 미니룸에 들어가면 조명이 바뀜(스크린샷), 주민 발밑 그림자, 프레임 +0.2ms 이하, draw +1 |

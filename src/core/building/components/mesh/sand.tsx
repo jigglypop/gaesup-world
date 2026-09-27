@@ -1,13 +1,12 @@
 import { useEffect, useMemo } from 'react';
 
-import { createNoise2D } from 'simplex-noise';
 import * as THREE from 'three';
 
 import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
 
 import { createCellIndex, type CellQuery } from '../../model/cellIndex';
+import { worldNoise as noise2D } from '../../terrain/grid';
 
-const noise2D = createNoise2D();
 const disableRaycast = () => undefined;
 
 type SandProps = {
@@ -38,14 +37,12 @@ function hash01(value: number): number {
   return x - Math.floor(x);
 }
 
-function getSandHeight(x: number, z: number, size: number): number {
-  const safeSize = Math.max(size, 1);
-  const duneA = noise2D(x / (safeSize * 0.8), z / (safeSize * 0.8)) * 0.07;
-  const duneB = noise2D(x / (safeSize * 0.32) + 8.3, z / (safeSize * 0.42) - 5.4) * 0.025;
+/** Dune height over the tile top at world (x, z): one field across every tile, so neighbors meet without a step. */
+function getSandHeight(x: number, z: number): number {
+  const duneA = noise2D(x / 6.4, z / 6.4) * 0.07;
+  const duneB = noise2D(x / 2.6 + 8.3, z / 3.4 - 5.4) * 0.025;
   const ripple = Math.sin(x * 1.35 + z * 0.42) * 0.01;
-  const moundA = Math.exp(-(((x + safeSize * 0.18) * (x + safeSize * 0.18) + (z - safeSize * 0.08) * (z - safeSize * 0.08)) / Math.max(safeSize * safeSize * 0.55, 1))) * 0.09;
-  const moundB = Math.exp(-(((x - safeSize * 0.24) * (x - safeSize * 0.24) + (z + safeSize * 0.16) * (z + safeSize * 0.16)) / Math.max(safeSize * safeSize * 0.7, 1))) * 0.05;
-  return 0.025 + duneA + duneB + ripple + moundA + moundB;
+  return 0.075 + duneA + duneB + ripple;
 }
 
 // ============================================================
@@ -150,8 +147,8 @@ function buildMergedSand(entries: SandEntry[]): [THREE.BufferGeometry, THREE.Buf
         const vi = vOff + iz * (segs + 1) + ix;
         const lx = (ix / segs - 0.5) * s;
         const lz = (iz / segs - 0.5) * s;
-        const y = getSandHeight(lx, lz, s);
-        const tint = 0.5 + 0.5 * noise2D(lx * 0.22 + 5.1, lz * 0.22 - 3.6);
+        const y = getSandHeight(lx + ox, lz + oz);
+        const tint = 0.5 + 0.5 * noise2D((lx + ox) * 0.22 + 5.1, (lz + oz) * 0.22 - 3.6);
         const vi3 = vi * 3;
         pos[vi3] = lx + ox;
         pos[vi3 + 1] = y + oy;
@@ -185,10 +182,10 @@ function buildMergedSand(entries: SandEntry[]): [THREE.BufferGeometry, THREE.Buf
       const sampleZ = side === 'north' ? -s * 0.5 - 0.02 : side === 'south' ? s * 0.5 + 0.02 : (z0 + z1) * 0.5;
       if (hasCoverAt(near, ox + sampleX, oz + sampleZ, e.position[1], e)) return;
 
-      const topA = e.position[1] + 0.04 + getSandHeight(x0, z0, s);
-      const topB = e.position[1] + 0.04 + getSandHeight(x1, z1, s);
-      const tintA = 0.5 + 0.5 * noise2D(x0 * 0.22 + 5.1, z0 * 0.22 - 3.6);
-      const tintB = 0.5 + 0.5 * noise2D(x1 * 0.22 + 5.1, z1 * 0.22 - 3.6);
+      const topA = e.position[1] + 0.04 + getSandHeight(ox + x0, oz + z0);
+      const topB = e.position[1] + 0.04 + getSandHeight(ox + x1, oz + z1);
+      const tintA = 0.5 + 0.5 * noise2D((ox + x0) * 0.22 + 5.1, (oz + z0) * 0.22 - 3.6);
+      const tintB = 0.5 + 0.5 * noise2D((ox + x1) * 0.22 + 5.1, (oz + z1) * 0.22 - 3.6);
       const colorA = baseColor.clone().lerp(accentColor, tintA * 0.45).multiplyScalar(0.86 + tintA * 0.18);
       const colorB = baseColor.clone().lerp(accentColor, tintB * 0.45).multiplyScalar(0.86 + tintB * 0.18);
       const topColor = colorA.clone().lerp(colorB, 0.5);
@@ -238,13 +235,15 @@ function buildMergedSand(entries: SandEntry[]): [THREE.BufferGeometry, THREE.Buf
     const accentColor = new THREE.Color(e.accentColor ?? '#e0c27a');
     const tmpColor = new THREE.Color();
 
+    // Seeded by the tile's place, so neighboring tiles scatter their grains differently.
+    const seed = ox * 0.317 + oz * 0.593;
     for (let i = 0; i < gc; i++) {
       const gi = (gOff + i) * 3;
-      const lx = hash01(i * 3.13 + 0.2) * s - s * 0.5;
-      const lz = hash01(i * 4.71 + 1.4) * s - s * 0.5;
-      const lift = hash01(i * 5.93 + 2.8);
-      const tint = hash01(i * 2.37 + 0.9);
-      const y = getSandHeight(lx, lz, s) + 0.01 + lift * 0.015;
+      const lx = hash01(i * 3.13 + 0.2 + seed) * s - s * 0.5;
+      const lz = hash01(i * 4.71 + 1.4 + seed) * s - s * 0.5;
+      const lift = hash01(i * 5.93 + 2.8 + seed);
+      const tint = hash01(i * 2.37 + 0.9 + seed);
+      const y = getSandHeight(lx + ox, lz + oz) + 0.01 + lift * 0.015;
       gPos[gi] = lx + ox;
       gPos[gi + 1] = y + oy;
       gPos[gi + 2] = lz + oz;
@@ -336,7 +335,7 @@ export default function Sand({ size = 4, toon, color: sandColor, accentColor: sa
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
       const z = positions.getZ(i);
-      const y = getSandHeight(x, z, size);
+      const y = getSandHeight(x, z);
       const tint = 0.5 + 0.5 * noise2D(x * 0.22 + 5.1, z * 0.22 - 3.6);
 
       positions.setY(i, y);
@@ -358,7 +357,7 @@ export default function Sand({ size = 4, toon, color: sandColor, accentColor: sa
       const z = hash01(i * 4.71 + 1.4) * size - size * 0.5;
       const lift = hash01(i * 5.93 + 2.8);
       const tint = hash01(i * 2.37 + 0.9);
-      const y = getSandHeight(x, z, size) + 0.01 + lift * 0.015;
+      const y = getSandHeight(x, z) + 0.01 + lift * 0.015;
 
       grainPositions[i * 3] = x;
       grainPositions[i * 3 + 1] = y;

@@ -46,8 +46,10 @@ function defaultResolveSurface(x: number, z: number, store: BuildingStoreApi): S
         case 'sand':      return 'sand';
         case 'snowfield': return 'snow';
         case 'grass':     return 'grass';
+        case 'dirt':      return 'sand';
         default: break;
       }
+      if (store.getState().meshes.get(tile.materialId ?? group.floorMeshId)?.grass) return 'grass';
 
       // Tile categories without a special object type fall through to floor
       // material guessing. The shape gives a coarse hint.

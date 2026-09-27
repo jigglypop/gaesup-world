@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
+import { borderDistance } from '../../../../terrain/grid';
 import { drawCount, GrassBudget, lodWeight, tierIndex } from '../budget';
-import { borderDistance, buildGrassLayout, createGrassLayoutBuild, withNeighborMasks, type GrassLayoutInput } from '../field';
+import { buildGrassLayout, createGrassLayoutBuild, withNeighborMasks, type GrassLayoutInput } from '../field';
 
 const input = (overrides: Partial<GrassLayoutInput> = {}): GrassLayoutInput => ({
   profile: 'lawn',

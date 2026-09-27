@@ -1,17 +1,6 @@
-import { createNoise2D } from 'simplex-noise';
 import * as THREE from 'three';
 
-/** Seeded, so the painted ground and the blade roots standing on it read the same field after every reload. */
-function seeded(seed: number): () => number {
-  return () => {
-    seed = (seed + 0x6d2b79f5) | 0;
-    let value = Math.imul(seed ^ (seed >>> 15), seed | 1);
-    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
-    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const noise2D = createNoise2D(seeded(0x6a09e667));
+import { worldNoise as noise2D } from '../../../terrain/grid';
 
 /** Default colors of the painted meadow under tall-grass tiles. */
 export const MEADOW = { base: '#5a7a35', accent: '#7a8e3a' } as const;

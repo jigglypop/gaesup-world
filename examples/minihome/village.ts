@@ -3,11 +3,11 @@ import { getDefaultBuildingObject, type BuildingSerializedState, type MeshConfig
 /** Grid cell in meters; one character (1.7m) is a little under half a cell. */
 export const CELL = 4;
 /** Bump when the island's layout changes: saves are kept per version, so returning visitors see the new island. */
-export const VILLAGE_VERSION = 3;
+export const VILLAGE_VERSION = 4;
 
 /**
  * The island, one character per 4m cell, north at the top.
- * T forest cliff · . lawn · = sand path · ~ pond · " tall grass · * flower bed · # field · F miniroom floor · s beach
+ * T forest cliff · . lawn · = dirt path · ~ pond · " tall grass · * flower bed · # field · F miniroom floor · s beach
  */
 const MAP = [
   'TTTTTTTTTTTTTT',
@@ -56,7 +56,6 @@ const LAWN = svg(
   scatter(14, 1, (x, y) => `<path d="M${x} ${y}l-2 -5M${x} ${y}l2 -5" stroke="#80bf5b" stroke-width="2" stroke-linecap="round"/>`),
   '#8ccd65',
 );
-const PATH = svg(scatter(26, 2, (x, y, i) => `<circle cx="${x}" cy="${y}" r="${1.5 + (i % 3)}" fill="${i % 2 ? '#e3c894' : '#fbeccc'}"/>`), '#f0dcaa');
 const FLOWERS = svg(
   scatter(40, 3, (x, y, i) => {
     const petal = ['#ff8fb1', '#ffffff', '#ffb3c9', '#fff3a8'][i % 4];
@@ -73,7 +72,6 @@ const PLANKS = svg([0, 32, 64, 96].map((y, i) => `<rect y="${y}" width="128" hei
 
 const MESHES: MeshConfig[] = [
   { id: 'lawn', color: '#ffffff', mapTextureUrl: LAWN, roughness: 0.95, grass: { profile: 'lawn', color: '#86c460' } },
-  { id: 'path', color: '#ffffff', mapTextureUrl: PATH, roughness: 1 },
   { id: 'flowers', color: '#ffffff', mapTextureUrl: FLOWERS, roughness: 0.9 },
   { id: 'field', color: '#ffffff', mapTextureUrl: FIELD, roughness: 1 },
   { id: 'floor', color: '#ffffff', mapTextureUrl: PLANKS, roughness: 0.7 },
@@ -81,8 +79,10 @@ const MESHES: MeshConfig[] = [
   { id: 'wall-outside', color: '#fff7ec' },
 ];
 
-const MATERIAL: Record<string, string> = { '.': 'lawn', T: 'lawn', '=': 'path', '*': 'flowers', '#': 'field', F: 'floor' };
+const MATERIAL: Record<string, string> = { '.': 'lawn', T: 'lawn', '*': 'flowers', '#': 'field', F: 'floor' };
 const DIRT = { terrainColor: '#a57b52', terrainAccentColor: '#7f5b3a' };
+/** Roads: packed earth over the lawn, fading into it. */
+const ROAD = { terrainColor: '#e8d2a2', terrainAccentColor: '#cfab74' };
 
 function tileAt(x: number, z: number): TileConfig {
   const kind = cell(x, z);
@@ -90,6 +90,7 @@ function tileAt(x: number, z: number): TileConfig {
   const base = { id: `tile-${x}-${z}`, tileGroupId: 'ground', size: 1, position: { x: at(x), y: raised ? 1 : 0, z: at(z) } };
   if (kind === '~') return { ...base, objectType: 'water' };
   if (kind === 's') return { ...base, objectType: 'sand' };
+  if (kind === '=') return { ...base, materialId: 'lawn', objectType: 'dirt', objectConfig: ROAD };
   if (kind === '"') return { ...base, materialId: 'lawn', objectType: 'grass', objectConfig: { grassDensity: TALL_GRASS } };
   return { ...base, materialId: MATERIAL[kind] ?? 'lawn', ...(raised ? { objectConfig: DIRT } : {}) };
 }

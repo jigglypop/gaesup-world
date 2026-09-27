@@ -1,11 +1,11 @@
 import { useEffect, useMemo } from 'react';
 
-import { createNoise2D } from 'simplex-noise';
 import * as THREE from 'three';
 
 import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
 
-const noise2D = createNoise2D();
+import { worldNoise as noise2D } from '../../terrain/grid';
+
 const disableRaycast = () => undefined;
 
 type SnowfieldProps = {
@@ -47,13 +47,12 @@ function hash01(value: number): number {
   return x - Math.floor(x);
 }
 
-function getSnowHeight(x: number, z: number, size: number): number {
-  const safeSize = Math.max(size, 1);
-  const driftA = Math.exp(-(((x + safeSize * 0.2) * (x + safeSize * 0.2) + (z - safeSize * 0.14) * (z - safeSize * 0.14)) / Math.max(safeSize * safeSize * 0.48, 1))) * 0.12;
-  const driftB = Math.exp(-(((x - safeSize * 0.18) * (x - safeSize * 0.18) + (z + safeSize * 0.12) * (z + safeSize * 0.12)) / Math.max(safeSize * safeSize * 0.65, 1))) * 0.08;
-  const baseNoise = noise2D(x / (safeSize * 0.7), z / (safeSize * 0.7)) * 0.06;
-  const detailNoise = noise2D(x / (safeSize * 0.24) + 6.1, z / (safeSize * 0.24) - 3.7) * 0.018;
-  return 0.05 + driftA + driftB + baseNoise + detailNoise;
+/** Drift height over the tile top at world (x, z): one field across every tile, so neighbors meet without a step. */
+function getSnowHeight(x: number, z: number): number {
+  const drift = noise2D(x / 7.2 - 3.3, z / 7.2 + 1.9) * 0.09;
+  const baseNoise = noise2D(x / 2.8, z / 2.8) * 0.06;
+  const detailNoise = noise2D(x / 0.96 + 6.1, z / 0.96 - 3.7) * 0.018;
+  return 0.13 + drift + baseNoise + detailNoise;
 }
 
 // ============================================================
@@ -153,8 +152,8 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
         const vi = vOff + iz * (segs + 1) + ix;
         const lx = (ix / segs - 0.5) * s;
         const lz = (iz / segs - 0.5) * s;
-        const y = getSnowHeight(lx, lz, s);
-        const tint = 0.5 + 0.5 * noise2D(lx * 0.16 - 2.4, lz * 0.16 + 7.2);
+        const y = getSnowHeight(lx + ox, lz + oz);
+        const tint = 0.5 + 0.5 * noise2D((lx + ox) * 0.16 - 2.4, (lz + oz) * 0.16 + 7.2);
         const vi3 = vi * 3;
         pos[vi3] = lx + ox;
         pos[vi3 + 1] = y + oy;
@@ -188,10 +187,10 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
       const sampleZ = side === 'north' ? -s * 0.5 - 0.02 : side === 'south' ? s * 0.5 + 0.02 : (z0 + z1) * 0.5;
       if (hasCoverAt(entries, ox + sampleX, oz + sampleZ, e.position[1], ei)) return;
 
-      const topA = e.position[1] + 0.045 + getSnowHeight(x0, z0, s);
-      const topB = e.position[1] + 0.045 + getSnowHeight(x1, z1, s);
-      const tintA = 0.5 + 0.5 * noise2D(x0 * 0.16 - 2.4, z0 * 0.16 + 7.2);
-      const tintB = 0.5 + 0.5 * noise2D(x1 * 0.16 - 2.4, z1 * 0.16 + 7.2);
+      const topA = e.position[1] + 0.045 + getSnowHeight(ox + x0, oz + z0);
+      const topB = e.position[1] + 0.045 + getSnowHeight(ox + x1, oz + z1);
+      const tintA = 0.5 + 0.5 * noise2D((ox + x0) * 0.16 - 2.4, (oz + z0) * 0.16 + 7.2);
+      const tintB = 0.5 + 0.5 * noise2D((ox + x1) * 0.16 - 2.4, (oz + z1) * 0.16 + 7.2);
       const colorA = baseColor.clone().lerp(accentColor, tintA * 0.55).multiplyScalar(0.9 + tintA * 0.1);
       const colorB = baseColor.clone().lerp(accentColor, tintB * 0.55).multiplyScalar(0.9 + tintB * 0.1);
       const topColor = colorA.clone().lerp(colorB, 0.5);
@@ -241,13 +240,15 @@ function buildMergedSnowfield(entries: SnowfieldEntry[]): [THREE.BufferGeometry,
     const accentColor = new THREE.Color(e.accentColor ?? '#ffffff');
     const tmpColor = new THREE.Color();
 
+    // Seeded by the tile's place, so neighboring tiles scatter their sparkles differently.
+    const seed = ox * 0.317 + oz * 0.593;
     for (let i = 0; i < sc; i++) {
       const gi = (sOff + i) * 3;
-      const lx = hash01(i * 2.71 + 0.4) * s - s * 0.5;
-      const lz = hash01(i * 3.97 + 1.9) * s - s * 0.5;
-      const lift = hash01(i * 5.41 + 2.2);
-      const tint = hash01(i * 7.13 + 3.1);
-      const y = getSnowHeight(lx, lz, s) + 0.016 + lift * 0.02;
+      const lx = hash01(i * 2.71 + 0.4 + seed) * s - s * 0.5;
+      const lz = hash01(i * 3.97 + 1.9 + seed) * s - s * 0.5;
+      const lift = hash01(i * 5.41 + 2.2 + seed);
+      const tint = hash01(i * 7.13 + 3.1 + seed);
+      const y = getSnowHeight(lx + ox, lz + oz) + 0.016 + lift * 0.02;
       sPos[gi] = lx + ox;
       sPos[gi + 1] = y + oy;
       sPos[gi + 2] = lz + oz;
@@ -339,7 +340,7 @@ export default function Snowfield({ size = 4, toon, color: snowColor, accentColo
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
       const z = positions.getZ(i);
-      const y = getSnowHeight(x, z, size);
+      const y = getSnowHeight(x, z);
       const tint = 0.5 + 0.5 * noise2D(x * 0.16 - 2.4, z * 0.16 + 7.2);
 
       positions.setY(i, y);
@@ -361,7 +362,7 @@ export default function Snowfield({ size = 4, toon, color: snowColor, accentColo
       const z = hash01(i * 3.97 + 1.9) * size - size * 0.5;
       const lift = hash01(i * 5.41 + 2.2);
       const tint = hash01(i * 7.13 + 3.1);
-      const y = getSnowHeight(x, z, size) + 0.016 + lift * 0.02;
+      const y = getSnowHeight(x, z) + 0.016 + lift * 0.02;
 
       sparklePositions[i * 3] = x;
       sparklePositions[i * 3 + 1] = y;

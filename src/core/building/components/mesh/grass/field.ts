@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import { meadowColor, meadowLift } from './ground';
+import { ALL_NEIGHBORS, borderDistance, cellKey, clamp01, hash2, neighborMask, smooth, valueNoise } from '../../../terrain/grid';
 import type { GrassProfile } from '../../../types';
 
 /**
@@ -11,21 +12,6 @@ import type { GrassProfile } from '../../../types';
 
 /** A grass-bearing cell: local center x, z, top height y and the bits of its grass-bearing neighbors (`neighborMask`). */
 export type GrassCell = readonly [x: number, z: number, y?: number, neighbors?: number];
-
-/** Neighbor offsets in mask bit order: west, east, north, south, then the corners. */
-const NEIGHBORS = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]] as const;
-export const ALL_NEIGHBORS = 0xff;
-
-export const cellKey = (x: number, z: number): string => `${Math.round(x * 8)}:${Math.round(z * 8)}`;
-
-/** Bits of the eight neighbors one `size` away from (x, z) that bear grass. */
-export function neighborMask(x: number, z: number, size: number, bears: (x: number, z: number) => boolean): number {
-  let mask = 0;
-  NEIGHBORS.forEach(([dx, dz], bit) => {
-    if (bears(x + dx * size, z + dz * size)) mask |= 1 << bit;
-  });
-  return mask;
-}
 
 /** Cells whose neighbors are the other cells of the same list. */
 export function withNeighborMasks(cells: ReadonlyArray<readonly [number, number, number?, number?]>, size: number): GrassCell[] {
@@ -97,27 +83,6 @@ const TAU = Math.PI * 2;
 /** Candidates between deadline checks. */
 const BATCH = 64;
 
-/** Deterministic hash of two numbers into [0, 1); coordinates resolve to 1/1024 m. */
-function hash(a: number, b: number): number {
-  let h = Math.imul(Math.round(a * 1024) | 0, 0x27d4eb2d) ^ Math.imul(Math.round(b * 1024) | 0, 0x165667b1);
-  h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
-  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-}
-
-const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
-const smooth = (edge0: number, edge1: number, value: number) => {
-  const t = clamp01((value - edge0) / (edge1 - edge0));
-  return t * t * (3 - 2 * t);
-};
-
-function valueNoise(x: number, z: number): number {
-  const ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz;
-  const sx = fx * fx * (3 - 2 * fx), sz = fz * fz * (3 - 2 * fz);
-  const a = hash(ix, iz), b = hash(ix + 1, iz), c = hash(ix, iz + 1), d = hash(ix + 1, iz + 1);
-  return (a + (b - a) * sx) * (1 - sz) + (c + (d - c) * sx) * sz;
-}
-
 /** The nearest jittered clump heart of a world-aligned grid (Voronoi), with its id in [0, 1) and distance. */
 const clump = { x: 0, z: 0, id: 0, distance: 0 };
 function nearestClump(x: number, z: number, size: number, salt: number): typeof clump {
@@ -125,30 +90,15 @@ function nearestClump(x: number, z: number, size: number, salt: number): typeof 
   let best = Infinity, bx = 0, bz = 0;
   for (let j = gz - 1; j <= gz + 1; j++) {
     for (let i = gx - 1; i <= gx + 1; i++) {
-      const px = (i + 0.15 + hash(i + salt, j) * 0.7) * size, pz = (j + 0.15 + hash(j - salt, i + 7.7) * 0.7) * size;
+      const px = (i + 0.15 + hash2(i + salt, j) * 0.7) * size, pz = (j + 0.15 + hash2(j - salt, i + 7.7) * 0.7) * size;
       const distance = (px - x) ** 2 + (pz - z) ** 2;
       if (distance >= best) continue;
       best = distance; bx = i; bz = j; clump.x = px; clump.z = pz;
     }
   }
-  clump.id = hash(bx * 1.31 + salt, bz * 0.77 - salt);
+  clump.id = hash2(bx * 1.31 + salt, bz * 0.77 - salt);
   clump.distance = Math.sqrt(best);
   return clump;
-}
-
-/** Meters from a point (local to its cell) to the edge of the grass-bearing area, looking one cell out. */
-export function borderDistance(mask: number, lx: number, lz: number, size: number): number {
-  const half = size / 2, west = lx + half, east = half - lx, north = lz + half, south = half - lz;
-  let edge = Infinity;
-  if (!(mask & 1)) edge = Math.min(edge, west);
-  if (!(mask & 2)) edge = Math.min(edge, east);
-  if (!(mask & 4)) edge = Math.min(edge, north);
-  if (!(mask & 8)) edge = Math.min(edge, south);
-  if (!(mask & 16)) edge = Math.min(edge, Math.hypot(west, north));
-  if (!(mask & 32)) edge = Math.min(edge, Math.hypot(east, north));
-  if (!(mask & 64)) edge = Math.min(edge, Math.hypot(west, south));
-  if (!(mask & 128)) edge = Math.min(edge, Math.hypot(east, south));
-  return edge;
 }
 
 /** Flat tiles: broad patches drift between sun-dried and lush, so a lawn is not one flat color. */
@@ -167,7 +117,7 @@ export function createGrassLayoutBuild(input: GrassLayoutInput): GrassLayoutBuil
   const total = cells.length * Math.max(0, Math.round(input.density * cellSize * cellSize));
   const capacity = Math.max(0, Math.min(total, Math.floor(input.maxBlades)));
   const offsets = new Float32Array(capacity * 4), shapes = new Float32Array(capacity * 4), tints = new Float32Array(capacity * 3);
-  const starts = cells.map(([x, z]) => [hash(originX + x + 41.7, originZ + z - 3.3), hash(originZ + z + 9.2, originX + x + 5.5)] as const);
+  const starts = cells.map(([x, z]) => [hash2(originX + x + 41.7, originZ + z - 3.3), hash2(originZ + z + 9.2, originX + x + 5.5)] as const);
   // A cell smaller than the fringe would lose its middle; the fringe shrinks with it.
   const fit = Math.min(1, cellSize / 4);
   const tint = new THREE.Color();
@@ -188,13 +138,13 @@ export function createGrassLayoutBuild(input: GrassLayoutInput): GrassLayoutBuil
       const ragged = (base + fine * valueNoise(x * 0.85 + 3.1, z * 0.85 - 7.3) + broad * valueNoise(x * 0.27 - 1.7, z * 0.27 + 4.9)) * fit;
       if (edge < ragged) return;
       fade = smooth(ragged, ragged + place.band * fit, edge);
-      if (hash(x * 1.37 + 5.1, z * 2.11 - 3.7) >= fade * place.fringe) return;
+      if (hash2(x * 1.37 + 5.1, z * 2.11 - 3.7) >= fade * place.fringe) return;
       rise = smooth(ragged, ragged + 1.4 * fit, edge);
     }
     // Blades of a clump share height and tone and fan out from its heart; tufts dome over their hearts.
     const heart = nearestClump(x, z, place.clump, place.salt);
     const spread = Math.min(1, heart.distance / place.spread);
-    const r1 = hash(x * 1.7 + 3.1, z * 2.3), r2 = hash(z * 3.1, x * 0.9 - 1.7), r3 = hash(x - z * 5.1, z + x * 0.3);
+    const r1 = hash2(x * 1.7 + 3.1, z * 2.3), r2 = hash2(z * 3.1, x * 0.9 - 1.7), r3 = hash2(x - z * 5.1, z + x * 0.3);
     const direction = Math.atan2(z - heart.z, x - heart.x) + (r1 - 0.5) * place.fan;
     const height = heightScale * (tall
       ? (0.56 + r3 * 0.2) * (0.84 + heart.id * 0.3) * (1 - 0.36 * spread * spread) * (0.6 + 0.4 * rise)

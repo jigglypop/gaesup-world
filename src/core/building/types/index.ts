@@ -93,7 +93,7 @@ export interface WallGroupConfig {
   walls: WallConfig[];
 }
 
-export type TileObjectType = 'water' | 'grass' | 'sand' | 'snowfield' | 'none';
+export type TileObjectType = 'water' | 'grass' | 'sand' | 'snowfield' | 'dirt' | 'none';
 export type BuildingTreeKind =
   | 'sakura'
   | 'oak'
@@ -679,6 +679,7 @@ export const BUILDING_TILE_OBJECT_OPTIONS: BuildingOptionMeta<TileObjectType>[] 
   { type: 'grass', labelEn: 'Grass', labelKo: '잔디' },
   { type: 'sand', labelEn: 'Sand', labelKo: '모래' },
   { type: 'snowfield', labelEn: 'Snowfield', labelKo: '눈밭' },
+  { type: 'dirt', labelEn: 'Dirt path', labelKo: '흙길' },
 ];
 
 export const BUILDING_TILE_SHAPE_OPTIONS: BuildingOptionMeta<TileShapeType>[] = [

@@ -22,7 +22,7 @@ function defaultTileObjectConfig(
   terrainAccentColor: string,
 ): TileConfig['objectConfig'] {
   if (objectType === 'grass') return { grassDensity: DEFAULT_GRASS_DENSITY, terrainColor, terrainAccentColor };
-  if (objectType === 'sand' || objectType === 'snowfield') return { terrainColor, terrainAccentColor };
+  if (objectType === 'sand' || objectType === 'snowfield' || objectType === 'dirt') return { terrainColor, terrainAccentColor };
   return undefined;
 }
 
