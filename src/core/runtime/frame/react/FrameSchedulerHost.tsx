@@ -13,14 +13,23 @@ import type { FrameSchedulerHostProps } from './types';
 
 export { FRAME_PRE_PHYSICS_PRIORITY, FRAME_SCHEDULER_PRIORITY, PHYSICS_STEP_PRIORITY } from './priorities';
 
+/** Longest frame the engine phases advance by at once; a longer gap (a hidden tab, a stall) is dropped. */
+const MAX_FRAME_DELTA = 1;
+
+/** A canvas delta the engine can use: time never runs backwards and a stall does not replay seconds at once. */
+export function engineFrameDelta(delta: number): number {
+  return delta > 0 ? Math.min(delta, MAX_FRAME_DELTA) : 0;
+}
+
 function tickOwnedPhases(
   token: object,
   scheduler: FrameScheduler,
   start: number,
   end: number,
-  delta: number,
+  rawDelta: number,
   elapsedMs: number,
 ): void {
+  const delta = engineFrameDelta(rawDelta);
   const ownsGlobal = scheduler !== frameScheduler && frameScheduler.isTickOwner(token);
   const ownsCanvas = scheduler.isTickOwner(token);
   for (let p = start; p < end; p++) {

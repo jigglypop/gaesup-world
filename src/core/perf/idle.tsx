@@ -55,6 +55,10 @@ export function IdleFrameRate({ fps = 30, after = 2 }: IdleFrameRateProps) {
     owned.current = true;
     const state = get();
     state.setFrameloop('never');
+    // Frames requested before the switch would still run in R3F's own loop, which passes its rAF time in milliseconds
+    // where 'never' expects seconds: one frame of +1772 s, then -1771 s on the next drawn frame, which left animation
+    // mixers at negative time and every character in its bind pose.
+    state.internal.frames = 0;
     state.clock.elapsedTime = elapsed.current;
   }, [frameloop, get]);
   useEffect(() => () => {
@@ -80,6 +84,8 @@ export function IdleFrameRate({ fps = 30, after = 2 }: IdleFrameRateProps) {
         gate.activity(time);
         break;
       }
+      // Whatever else moved the canvas clock, this frame's delta is the time since the last drawn one.
+      state.clock.elapsedTime = elapsed.current;
       elapsed.current += Math.max(0, time - last) / 1000;
       last = time;
       flushGlobalEffects('before', time);

@@ -62,6 +62,21 @@ test('activity marked on the canvas scheduler, such as walking NPCs, keeps every
   }
 });
 
+test('taking the canvas over drops frames requested before, which would run with a millisecond timestamp', async () => {
+  let get: (() => RootState) | null = null;
+  function Probe() {
+    get = useThree((state) => state.get);
+    return null;
+  }
+  const view = await ReactThreeTestRenderer.create(<><Probe /><IdleFrameRate /></>, { frameloop: 'always' });
+  try {
+    expect(get!().frameloop).toBe('never');
+    expect(get!().internal.frames).toBe(0);
+  } finally {
+    await view.unmount();
+  }
+});
+
 test('the gate alone paces frames: requests from awake physics bodies add none while idle, and time runs on', async () => {
   let get: (() => RootState) | null = null;
   const deltas: number[] = [];
