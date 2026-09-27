@@ -1,4 +1,4 @@
-import type { Camera, Material, Object3D, Scene } from 'three';
+import type { BufferGeometry, Camera, Material, Object3D, Scene } from 'three';
 
 import { isGpuBatchRevision } from './gpuBatchRevision';
 
@@ -126,6 +126,30 @@ function compileShadowsAsync(renderer: AsyncCompiler & TargetedRenderer, root: O
   }
 }
 
+/** Gate roots hidden until their content compiles: the lights under them still light what compiles meanwhile. */
+const hiddenGates = new Set<Object3D>();
+
+/** Hides `root` until the returned function shows it again. */
+export function hideUntilCompiled(root: Object3D): () => void {
+  root.visible = false;
+  hiddenGates.add(root);
+  return () => {
+    hiddenGates.delete(root);
+    root.visible = true;
+  };
+}
+
+/** Runs `read` with every hidden gate shown: three collects the scene's lights and cascades from what is visible. */
+function withGatesShown<T>(read: () => T): T {
+  const shown = [...hiddenGates].filter((gate) => !gate.visible);
+  for (const gate of shown) gate.visible = true;
+  try {
+    return read();
+  } finally {
+    for (const gate of shown) gate.visible = false;
+  }
+}
+
 /**
  * Starts an async compile of `root` with `scene`'s lights while it is visible and unculled for that one call: for the
  * target the scene is drawn into and for the shadow cascades, which draw it one render deeper.
@@ -141,17 +165,95 @@ export function compileSubtreeAsync(renderer: AsyncCompiler, root: Object3D, cam
   const visible = root.visible;
   root.visible = true;
   try {
-    const target = sceneTargets.get(renderer);
-    const depth = target?.depth ?? 0;
-    const switchable = canSwitchTargets(renderer) ? renderer : null;
-    const main = target && switchable
-      ? withTarget(switchable, target.renderTarget, target.mrt, () => atDepth(renderer, depth, () => renderer.compileAsync(root, camera, scene)))
-      : renderer.compileAsync(root, camera, scene);
-    const shadows = switchable ? compileShadowsAsync(switchable, root, scene, depth + 1) : [];
-    return shadows.length > 0 ? Promise.all([main, ...shadows]) : main;
+    return withGatesShown(() => {
+      const target = sceneTargets.get(renderer);
+      const depth = target?.depth ?? 0;
+      const switchable = canSwitchTargets(renderer) ? renderer : null;
+      const main = target && switchable
+        ? withTarget(switchable, target.renderTarget, target.mrt, () => atDepth(renderer, depth, () => renderer.compileAsync(root, camera, scene)))
+        : renderer.compileAsync(root, camera, scene);
+      const shadows = switchable ? compileShadowsAsync(switchable, root, scene, depth + 1) : [];
+      return shadows.length > 0 ? Promise.all([main, ...shadows]) : main;
+    });
   } finally {
     root.visible = visible;
     for (const object of culled) object.frustumCulled = true;
+  }
+}
+
+/** What three builds a drawable's shaders from, near enough: drawables alike share them, so one compiles for all. */
+function shaderKey(object: Object3D): string {
+  const { material, geometry } = object as Object3D & { material?: Material | Material[]; geometry?: BufferGeometry };
+  const materials = Array.isArray(material) ? material : [material];
+  const attributes = geometry ? `${Object.keys(geometry.attributes).sort().join()}/${Object.keys(geometry.morphAttributes).join()}` : '';
+  return `${object.type}|${materials.map((entry) => entry?.uuid).join()}|${attributes}|${object.castShadow}|${object.receiveShadow}`;
+}
+
+/** Milliseconds of compiling a task takes on before the next compile waits for a later task. */
+const COMPILE_SLICE_MS = 12;
+const jobs: (() => void)[] = [];
+let draining = false;
+
+function drain(): void {
+  const began = performance.now();
+  while (jobs.length > 0 && performance.now() - began < COMPILE_SLICE_MS) jobs.shift()!();
+  if (jobs.length > 0) setTimeout(drain, 0);
+  else draining = false;
+}
+
+/** Runs `compile` on a later task, sharing each task with other compiles up to `COMPILE_SLICE_MS`. */
+function queueCompile(compile: () => Promise<unknown>): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    jobs.push(() => {
+      try {
+        compile().then(resolve, reject);
+      } catch (error) {
+        reject(error);
+      }
+    });
+    if (draining) return;
+    draining = true;
+    setTimeout(drain, 0);
+  });
+}
+
+/** Scans of a subtree at most: content that mounts while it compiles, or cascades its first lit material creates. */
+const COMPILE_ROUNDS = 4;
+
+/**
+ * Compiles `root` one drawable at a time on later tasks, a slice of `COMPILE_SLICE_MS` each: three builds a new
+ * material's shaders on the main thread, so a world compiled, or first drawn, at once is one long task. Drawables alike
+ * (material, geometry layout, kind, shadows) compile once. Once they are done `root` is scanned again, for content that
+ * mounted meanwhile and for shadow cascades the first lit materials created, until a scan finds nothing new. Stops early
+ * once `alive` turns false.
+ */
+export async function compileInSlices(
+  renderer: AsyncCompiler,
+  root: Object3D,
+  camera: Camera,
+  scene: Scene,
+  alive: () => boolean = () => true,
+): Promise<void> {
+  if (!compilesAhead(renderer)) return;
+  const compiled = new Set<string>();
+  for (let round = 0; round < COMPILE_ROUNDS && alive(); round++) {
+    const cascades = withGatesShown(() => shadowCascades(scene).length);
+    const drawables: Object3D[] = [];
+    const visit = (object: Object3D) => {
+      if (isDrawable(object)) drawables.push(object);
+      for (const child of object.children) if (child.visible) visit(child);
+    };
+    visit(root);
+    let fresh = 0;
+    // Keys are read as each compile runs: a material swapped in after mounting compiles as it will draw.
+    await Promise.all(drawables.map((drawable) => queueCompile(() => {
+      const key = `${shaderKey(drawable)}|${cascades}`;
+      if (!alive() || compiled.has(key)) return Promise.resolve();
+      compiled.add(key);
+      fresh++;
+      return compileSubtreeAsync(renderer, drawable, camera, scene);
+    })));
+    if (fresh === 0) return;
   }
 }
 

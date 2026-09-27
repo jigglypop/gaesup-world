@@ -313,7 +313,11 @@ export function ToonBox() {
 
 새 콘텐츠는 처음 그려지는 프레임에 셰이더와 파이프라인을 동기로 만들면서 멈춘다. `CompileGate`(`src/core/rendering/CompileGate.tsx`, 공개 export 아님)는 감싼 콘텐츠를 숨긴 채 `compileAsync`로 파이프라인을 먼저 만들고, 끝나면 보이게 한다.
 
-- 건축의 벚꽃·나무, 깃발, 불, 간판 배치와 모델 오브젝트, 불 효과가 이 문 안에 있다. 그래서 새로 놓은 오브젝트가 몇 프레임 늦게 나타날 수 있다.
+- `GaesupWorldContent`의 자식 전체가 문 하나 안에 있다. 첫 프레임이 모든 재질을 한 번에 만들지 않고, 월드는 컴파일이 끝난 뒤 나타난다. 건축의 벚꽃·나무, 깃발, 불, 간판 배치와 모델 오브젝트, NPC 모델은 따로 문이 있어 새로 놓거나 나타날 때도 몇 프레임 늦게 보인다.
+- 문은 그릴 것(메시·점·선·스프라이트)마다 나눠 다음 작업들에서 컴파일한다. 한 작업은 12ms까지 쓰고(`compileInSlices`), 재질·지오메트리 속성·종류·그림자 설정이 같은 것은 한 번만 컴파일한다. 다 끝나면 한 번 더 훑어, 그사이 올라온 콘텐츠와 첫 조명 재질이 만든 그림자 cascade를 컴파일하고, 새로 컴파일할 것이 없을 때 보인다.
+- 숨은 문 안의 빛(해, 방 조명)도 컴파일에는 들어간다. three가 보이는 것에서만 빛과 cascade를 모으므로 컴파일하는 동안만 숨은 문을 보이게 둔다.
+- `GpuBatchBridge`의 GPU 배치 메시는 원래 메시를 대신하기 전에 컴파일한다.
+- 예제 섬(개발 서버, 헤드리스 Chrome WebGPU)에서 첫 로드의 렌더 long task가 450~900ms 하나에서 80ms 넘는 것 없음으로 줄었다(모듈 평가 150ms 한 번은 남는다, 2026-09-27).
 - 장면을 그리는 대상(후처리 pass의 렌더 타깃)과, `WebGPURenderer`에서는 그림자 cascade마다 따로 컴파일한다.
 - 후처리 pass가 MRT를 쓰면(TRAA나 AO가 켜진 `balanced`·`quality` preset) 미리 컴파일하지 못한다. three가 나중 작업에서 MRT 없이 셰이더를 만들기 때문이다. 이때 콘텐츠는 바로 보이고 처음 그릴 때 컴파일된다. `performance` preset이나 후처리가 없으면 미리 컴파일한다(`src/core/rendering/CompileGate.tsx`의 `compilesAhead`).
 - three r185·r186이고 렌더러에 `compileAsync`가 있을 때만 동작한다. 그 밖에서는 바로 보인다.

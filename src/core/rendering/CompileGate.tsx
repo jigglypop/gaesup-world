@@ -3,9 +3,10 @@ import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { useThree } from '@react-three/fiber';
 import type { Group } from 'three';
 
-import { canCompileAsync, compileSubtreeAsync, countCompile, sceneTargets } from './sceneCompile';
+import { canCompileAsync, compileInSlices, countCompile, hideUntilCompiled, sceneTargets } from './sceneCompile';
 
 export {
+  compileInSlices,
   compileSceneAsync,
   compileSubtreeAsync,
   pendingCompiles,
@@ -16,8 +17,9 @@ export {
 
 /**
  * Keeps first-time content hidden until its pipelines are built asynchronously, instead of stalling the frame that
- * first draws it on synchronous shader and pipeline creation. Place it inside the Suspense boundary of the content,
- * so the gate commits together with what it compiles.
+ * first draws it on synchronous shader and pipeline creation. Its drawables compile in slices on later tasks
+ * (`compileInSlices`), so content that mounts all at once, a whole world, never builds in one long task. Place it
+ * inside the Suspense boundary of the content, so the gate commits together with what it compiles.
  */
 export function CompileGate({ children }: { children: ReactNode }) {
   const gl = useThree((state) => state.gl);
@@ -28,12 +30,12 @@ export function CompileGate({ children }: { children: ReactNode }) {
     const root = group.current;
     if (!root || !canCompileAsync(gl)) return undefined;
     let active = true;
-    root.visible = false;
+    const reveal = hideUntilCompiled(root);
     // Postprocessing loads after the first content mounts; content still hidden when its scene target appears is
     // compiled again for that target, since the first compile built pipelines for a target the scene never uses.
     const compile = (): Promise<unknown> => {
       const target = sceneTargets.get(gl);
-      return compileSubtreeAsync(gl, root, camera, scene)
+      return compileInSlices(gl, root, camera, scene, () => active)
         .then(() => (active && sceneTargets.get(gl) !== target ? compile() : undefined));
     };
     let counted = true;
@@ -46,12 +48,12 @@ export function CompileGate({ children }: { children: ReactNode }) {
     compile()
       .catch(() => undefined)
       .finally(() => {
-        if (active) root.visible = true;
+        if (active) reveal();
         settle();
       });
     return () => {
       active = false;
-      root.visible = true;
+      reveal();
       settle();
     };
     // Compiles once per mount (camera swaps do not re-hide content); later edits reuse these pipelines.

@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
@@ -9,6 +9,7 @@ import { isProductionEnv } from '../../../../utils/env';
 jest.mock('@/core/camera', () => ({ Camera: () => null }));
 jest.mock('@/core/perf/PerformanceCollector', () => ({ PerformanceCollector: () => 'collector' }));
 jest.mock('@/core/rendering/shadow/ShadowDepthMaterials', () => ({ ShadowDepthMaterials: () => null }));
+jest.mock('@/core/rendering/CompileGate', () => ({ CompileGate: ({ children }: { children: ReactNode }) => children }));
 jest.mock('@/core/rendering/postprocess/WorldPostProcessing', () => ({ WorldPostProcessing: () => null }));
 jest.mock('@/core/runtime/frame/react/FrameSchedulerHost', () => ({ FrameSchedulerHost: () => null }));
 jest.mock('@/core/utils/env', () => ({ ...jest.requireActual('@/core/utils/env'), isProductionEnv: jest.fn(() => true) }));

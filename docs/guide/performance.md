@@ -194,6 +194,7 @@ export function customLoop(draw: (time: number) => void) {
 
 - 비용은 픽셀 수에 비례하므로 픽셀 비율 상한(1.5)이 함께 효과를 낸다. AO만 줄이려면 `aoResolutionScale`·`aoSamples`를 낮춘다.
 - MRT를 쓰는 preset에서는 `CompileGate`가 파이프라인을 미리 만들지 못해 새 콘텐츠가 처음 그려지는 프레임에 멈출 수 있다([rendering.md](rendering.md)).
+- 첫 로드는 `GaesupWorldContent`의 월드 전체를 `CompileGate`가 12ms 조각으로 나눠 컴파일한 뒤 보여 준다. 예제 섬에서 첫 프레임의 450~900ms long task가 사라졌다([rendering.md](rendering.md#첫-프레임-멈춤-방지-compilegate)).
 - classic WebGL 경로는 `@react-three/postprocessing`의 `EffectComposer`(외곽선 + 색보정)를 쓴다.
 
 ### 잔디와 삼각형

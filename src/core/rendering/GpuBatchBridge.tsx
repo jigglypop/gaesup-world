@@ -10,6 +10,7 @@ import { isGpuBatchRevision } from './gpuBatchRevision';
 import { createGpuInstanceBatch, type GpuInstanceBatch } from './gpuInstanceBatch';
 import { supportsGpuBatchMaterial } from './gpuMaterialSync';
 import { invalidateRenderHistory } from './renderHistory';
+import { canCompileAsync, compileInSlices } from './sceneCompile';
 import { rendererKind } from './webgpu';
 import { logger } from '../utils/logger';
 
@@ -79,6 +80,7 @@ export function GpuBatchBridge({
 }) {
   const gl = useThree((state) => state.gl);
   const scene = useThree((state) => state.scene);
+  const get = useThree((state) => state.get);
   const tick = useRef<
     ((camera: Matrix4, coordinateSystem: CoordinateSystem, reversed: boolean) => void) | null
   >(null);
@@ -189,6 +191,12 @@ export function GpuBatchBridge({
             materials,
           });
           void createGpuInstanceBatch(renderer, source)
+            // A batch compiles before it replaces its source, so its first draw builds nothing.
+            .then(async (created) => {
+              if (created && canCompileAsync(renderer))
+                await Promise.all(created.meshes.map((mesh) => compileInSlices(renderer, mesh, get().camera, scene)));
+              return created;
+            })
             .then((created) => {
               if (disposed || pending.get(source) !== token || !source.parent) {
                 created?.dispose();
@@ -218,7 +226,7 @@ export function GpuBatchBridge({
       remove(group);
       filter.release();
     };
-  }, [gl, scene, root, enabled]);
+  }, [gl, scene, get, root, enabled]);
 
   useFrame(({ camera }) => {
     if (!tick.current) return;

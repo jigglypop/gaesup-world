@@ -5,6 +5,7 @@ import type { CameraOptionType } from '@/core/camera';
 import { CAMERA_DEFAULTS } from '@/core/camera/core/constants';
 import { PerformanceCollector } from '@/core/perf/PerformanceCollector';
 import { QualityProfileProvider, useQualityProfile, type WorldQuality } from '@/core/perf/quality';
+import { CompileGate } from '@/core/rendering/CompileGate';
 import type { WorldPostProcessingProps } from '@/core/rendering/postprocess/WorldPostProcessing';
 import { ShadowDepthMaterials } from '@/core/rendering/shadow/ShadowDepthMaterials';
 import { GaesupRuntimeProvider } from '@/core/runtime';
@@ -27,12 +28,13 @@ const URL_ALIASES: Partial<Record<(typeof URL_KEYS)[number], 'character' | 'vehi
   characterUrl: 'character', vehicleUrl: 'vehicle', airplaneUrl: 'airplane',
 };
 
+/** The world compiles in slices before its first draw, instead of building every material in one frame. */
 function WorldContent({ children, showGrid, showAxes }: { children?: ReactNode; showGrid?: boolean; showAxes?: boolean }) {
   return (
     <group name="gaesup-world">
       {showGrid && <gridHelper args={[100, 100, '#888888', '#444444']} />}
       {showAxes && <axesHelper args={[10]} />}
-      {children}
+      <CompileGate>{children}</CompileGate>
     </group>
   );
 }

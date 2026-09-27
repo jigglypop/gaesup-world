@@ -4,6 +4,11 @@ import * as THREE from 'three';
 
 import { CompileGate, compileSceneAsync, compileSubtreeAsync, setSceneRenderTarget } from '../CompileGate';
 
+/** Lets queued compiles run: each starts on a later task, and a gate scans again once its compiles finish. */
+const nextTasks = () => ReactThreeTestRenderer.act(async () => {
+  for (let i = 0; i < 3; i++) await new Promise((resolve) => setTimeout(resolve, 0));
+});
+
 test('content stays hidden until its async compile resolves, compiled unculled and visible', async () => {
   let finish = () => {};
   const seen: { visible: boolean; culled: boolean }[] = [];
@@ -23,11 +28,17 @@ test('content stays hidden until its async compile resolves, compiled unculled a
   try {
     const gate = renderer.scene.findByProps({ name: 'content' }).instance.parent as THREE.Object3D;
     const mesh = renderer.scene.findByProps({ name: 'content' }).instance as THREE.Mesh;
+    // Compiles start on a later task, never in the commit that mounted the content.
+    expect(compileAsync).not.toHaveBeenCalled();
+    expect(gate.visible).toBe(false);
+    await nextTasks();
     expect(compileAsync).toHaveBeenCalledTimes(1);
     expect(seen).toEqual([{ visible: true, culled: false }]);
     expect(gate.visible).toBe(false);
     expect(mesh.frustumCulled).toBe(true);
-    await ReactThreeTestRenderer.act(async () => { finish(); });
+    finish();
+    await nextTasks();
+    expect(compileAsync).toHaveBeenCalledTimes(1);
     expect(gate.visible).toBe(true);
   } finally {
     await renderer.unmount();
@@ -59,12 +70,15 @@ test('content compiles for the target a pass draws the scene into, and again if 
   );
   try {
     const gate = renderer.scene.findByProps({ name: 'content' }).instance.parent as THREE.Object3D;
+    await nextTasks();
     setSceneRenderTarget(gl as Parameters<typeof setSceneRenderTarget>[0], { renderTarget: 'scene-pass', mrt: null, depth: 1 });
-    await ReactThreeTestRenderer.act(async () => { finishes[0]!(); });
+    finishes[0]!();
+    await nextTasks();
     expect(compiledFor).toEqual([[null, null], ['scene-pass', null]]);
     expect([target, mrt]).toEqual([null, null]);
     expect(gate.visible).toBe(false);
-    await ReactThreeTestRenderer.act(async () => { finishes[1]!(); });
+    finishes[1]!();
+    await nextTasks();
     expect(gate.visible).toBe(true);
   } finally {
     setSceneRenderTarget(gl as Parameters<typeof setSceneRenderTarget>[0], null);
@@ -139,6 +153,50 @@ test('a pass with extra outputs is not compiled ahead: content shows at once and
     expect(compileAsync).not.toHaveBeenCalled();
   } finally {
     setSceneRenderTarget(gl as Parameters<typeof setSceneRenderTarget>[0], null);
+    await renderer.unmount();
+  }
+});
+
+test('alike drawables compile once, lights under the hidden gate light them, and content added meanwhile compiles before the gate shows', async () => {
+  const finishes: Array<() => void> = [];
+  const compiled: string[] = [];
+  const gateShown: boolean[] = [];
+  let gate: THREE.Object3D | null = null;
+  const compileAsync = jest.fn((root: THREE.Object3D) => {
+    compiled.push(root.name);
+    gateShown.push(Boolean(gate?.visible));
+    return new Promise<void>((resolve) => { finishes.push(resolve); });
+  });
+  function Patch() {
+    Object.assign(useThree((state) => state.gl), { compileAsync });
+    return null;
+  }
+  const geometry = new THREE.BoxGeometry();
+  const material = new THREE.MeshBasicMaterial();
+  const renderer = await ReactThreeTestRenderer.create(
+    <><Patch /><CompileGate>
+      <mesh name="a" geometry={geometry} material={material} />
+      <mesh name="b" geometry={geometry} material={material} />
+      <pointLight name="lamp" />
+    </CompileGate></>,
+  );
+  try {
+    gate = renderer.scene.findByProps({ name: 'a' }).instance.parent as THREE.Object3D;
+    await nextTasks();
+    expect(compiled).toEqual(['a']);
+    expect(gateShown).toEqual([true]);
+    expect(gate.visible).toBe(false);
+    const late = new THREE.Mesh(new THREE.PlaneGeometry(), new THREE.MeshBasicMaterial());
+    late.name = 'late';
+    gate.add(late);
+    finishes[0]!();
+    await nextTasks();
+    expect(compiled).toEqual(['a', 'late']);
+    expect(gate.visible).toBe(false);
+    finishes[1]!();
+    await nextTasks();
+    expect(gate.visible).toBe(true);
+  } finally {
     await renderer.unmount();
   }
 });
