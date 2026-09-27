@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 import { meadowColor, meadowLift } from './ground';
-import { ALL_NEIGHBORS, borderDistance, cellKey, clamp01, hash2, neighborMask, smooth, valueNoise } from '../../../terrain/grid';
+import { ALL_NEIGHBORS, borderDistance, cellKey, clamp01, DRIFT_TINT, driftPatch, hash2, neighborMask, smooth, valueNoise } from '../../../terrain/grid';
 import type { GrassProfile } from '../../../types';
 
 /**
@@ -103,8 +103,9 @@ function nearestClump(x: number, z: number, size: number, salt: number): typeof 
 
 /** Flat tiles: broad patches drift between sun-dried and lush, so a lawn is not one flat color. */
 function drift(x: number, z: number, base: THREE.Color, target: THREE.Color): THREE.Color {
-  const patch = smooth(-0.55, 0.55, Math.sin(x * 0.043 + Math.sin(z * 0.031) * 2.1) * Math.cos(z * 0.037 + x * 0.011));
-  return target.setRGB(base.r * (0.94 + 0.12 * patch), base.g * (1.012 + 0.012 * patch), base.b * (0.97 - 0.09 * patch));
+  const patch = driftPatch(x, z);
+  const [r, g, b] = DRIFT_TINT.base, [dr, dg, db] = DRIFT_TINT.swing;
+  return target.setRGB(base.r * (r + dr * patch), base.g * (g + dg * patch), base.b * (b + db * patch));
 }
 
 /**

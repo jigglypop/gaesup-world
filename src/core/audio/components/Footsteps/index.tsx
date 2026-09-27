@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { useBuildingStoreApi, type BuildingStoreApi } from '../../../building/stores/buildingStore';
-import { TILE_CONSTANTS } from '../../../building/types/constants';
+import { createTileSampler, type TileSampler } from '../../../building/terrain/sampler';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
 import { useEngineFrame } from '../../../runtime/frame';
 import { useAudioStoreApi } from '../../stores/audioStore';
@@ -31,33 +31,28 @@ const SURFACE_PROFILES: Record<SurfaceTag, Partial<SfxDef>> = {
   water: { freq: 180, duration: 0.13, type: 'sine',     volume: 0.24 },
 };
 
+/** One sampler per tile layout: the store replaces its tile map on every edit. */
+const samplers = new WeakMap<object, TileSampler>();
+
 function defaultResolveSurface(x: number, z: number, store: BuildingStoreApi): SurfaceTag {
-  const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-  const groups = store.getState().tileGroups;
-
-  for (const group of groups.values()) {
-    for (const tile of group.tiles) {
-      const half = ((tile.size || 1) * cellSize) / 2;
-      if (Math.abs(tile.position.x - x) > half) continue;
-      if (Math.abs(tile.position.z - z) > half) continue;
-
-      switch (tile.objectType) {
-        case 'water':     return 'water';
-        case 'sand':      return 'sand';
-        case 'snowfield': return 'snow';
-        case 'grass':     return 'grass';
-        case 'dirt':      return 'sand';
-        default: break;
-      }
-      if (store.getState().meshes.get(tile.materialId ?? group.floorMeshId)?.grass) return 'grass';
-
-      // Tile categories without a special object type fall through to floor
-      // material guessing. The shape gives a coarse hint.
-      if (tile.shape === 'stairs' || tile.shape === 'ramp') return 'wood';
-      return 'stone';
-    }
+  const { tileGroups, meshes } = store.getState();
+  let sampler = samplers.get(tileGroups);
+  if (!sampler) samplers.set(tileGroups, sampler = createTileSampler({ tileGroups: tileGroups.values() }));
+  const sample = sampler.at(x, z);
+  if (!sample) return 'grass';
+  const { tile } = sample;
+  switch (tile.objectType) {
+    case 'water':     return 'water';
+    case 'sand':      return 'sand';
+    case 'snowfield': return 'snow';
+    case 'grass':     return 'grass';
+    case 'dirt':      return 'sand';
+    default: break;
   }
-  return 'grass';
+  if (meshes.get(sample.materialId)?.grass) return 'grass';
+  // Tile categories without a special object type fall through to floor material guessing. The shape gives a coarse hint.
+  if (tile.shape === 'stairs' || tile.shape === 'ramp') return 'wood';
+  return 'stone';
 }
 
 export function Footsteps({

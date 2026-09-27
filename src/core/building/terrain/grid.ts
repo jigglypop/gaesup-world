@@ -66,6 +66,17 @@ export const smooth = (edge0: number, edge1: number, value: number): number => {
 };
 
 /** Smooth value noise in [0, 1) on a unit lattice. */
+/**
+ * The island's broadest color drift, 0..1: a warped product of waves some 150 m across. Lawn blades take it on the CPU
+ * and tile tops in their shader (`groundMaterial`), so ground and grass change color together.
+ */
+export const DRIFT = { x: 0.043, warp: 0.031, bend: 2.1, z: 0.037, skew: 0.011, edge: 0.55 } as const;
+/** RGB multipliers where the drift is 0, and how far each moves by 1: warmer and drier. */
+export const DRIFT_TINT = { base: [0.94, 1.012, 0.97], swing: [0.12, 0.012, -0.09] } as const;
+
+export const driftPatch = (x: number, z: number): number =>
+  smooth(-DRIFT.edge, DRIFT.edge, Math.sin(x * DRIFT.x + Math.sin(z * DRIFT.warp) * DRIFT.bend) * Math.cos(z * DRIFT.z + x * DRIFT.skew));
+
 export function valueNoise(x: number, z: number): number {
   const ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz;
   const sx = fx * fx * (3 - 2 * fx), sz = fz * fz * (3 - 2 * fz);

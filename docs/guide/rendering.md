@@ -341,6 +341,8 @@ export function ToonBox() {
 
 - 깃발 컴포넌트는 export되지 않는다. 깃발은 오브젝트 `type: 'flag'`(`config.flagWidth`·`flagHeight`·`flagStyle`·`flagTexture`)로 `BuildingController`가 그린다.
 - 물가 필드(`useShoreField()`, `createShoreField(source)`): 물 타일과 `worldSurface: 'water'` 월드의 열린 바다를 1m 텍셀로 래스터화해 흐린 물 덮임 값이다(땅 0, 물가 0.5, 열린 물 1). 월드마다 하나를 모든 물이 함께 쓰고, 타일이 바뀔 때만 프레임당 최대 4ms씩 나눠 다시 만든다. 격자는 타일이 놓인 위상을 따르므로 스냅 격자 밖에 손으로 놓은 타일에도 물가선이 맞는다. 셰이더는 `field.texture`를 `(world.xz - field.transform.xy) * field.transform.zw`에서 읽는다.
+- 타일 샘플러(`createTileSampler(source)`, `gaesup-world/building`): 물가 필드와 같은 원본(`{ tileGroups, worldSurface }`)에서 월드 한 점의 타일·그 타일이 그리는 재질 id·윗면 높이·물 여부를 4m 버킷으로 상수 시간에 답한다(`at`, `heightAt`, `isWater`). 타일이 겹치면 높은 쪽이다. 발소리가 이것으로 밟은 지면을 고른다. 타일 편집마다 새로 만든다(타일 1,000개에 1ms 미만).
+- 타일 윗면(노드 렌더러): 불투명 표준 재질의 박스 타일은 윗면 텍스처를 월드 좌표로 읽어 크기·회전이 다른 타일에도 무늬가 이어진다(한 번 반복이 격자 한 칸 4m). 20m쯤의 밝고 어두운 얼룩과, 잔디 잎이 받는 섬 전체의 색 흐름(`driftPatch`)을 같은 식으로 곱해 같은 타일이 늘어선 땅에 4m 반복이 드러나지 않고 새로고침해도 같다. 옆면은 원래 UV, 색·거칠기·금속도는 원래 재질을 따른다. 노드 재질이라 이 타일 배치는 GPU 배치 대신 원래 인스턴스 메시로 그리고 draw 수는 같다.
 - 흙길 덮개(`objectType: 'dirt'`, 공개 export 아님): 흙길 타일과 같은 높이 이웃 위에 0.5m 격자 한 장을 깔고 정점 알파로 가장자리를 흐린다. 경계까지 거리는 잔디 층의 불규칙한 경계와 같은 이웃 마스크(`borderDistance`)로 재고, 월드 노이즈로 흔든다. 노드 렌더러에서는 월드 좌표의 잔모래와 자갈을 셰이더로 더한다. 투명하게 섞고 그림자를 받는다.
 - 물 재질은 안개와 톤 매핑을 받는다. 물결 노멀맵은 주기적이라 이음선이 없다. 카메라에서 40m 안은 물결·거품이 움직이고 52m 밖은 단순한 면이다(히스테리시스). 물 타일 묶음은 둘레 띠 없이 메시 하나다.
 - 잔디·물·불·깃발·벚꽃·눈·날씨의 GLSL 경로는 PRD GPU-1에서 지운다.

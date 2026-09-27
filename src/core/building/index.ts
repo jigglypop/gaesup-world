@@ -44,5 +44,6 @@ export { getGrassManager, createGrassManager, type GrassManagerType, type GrassM
 export { useGrassManager, GrassManagerProvider } from './components/mesh/grass/useGrassManager';
 export { default as Water } from './components/mesh/water';
 export { createShoreField, useShoreField, type ShoreField, type ShoreFieldOptions, type ShoreFieldSource } from './terrain';
+export { createTileSampler, type TileSample, type TileSampler, type TileSamplerSource } from './terrain';
 export { default as Billboard } from './components/mesh/billboard';
 export { default as Fire } from './components/mesh/fire';

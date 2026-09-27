@@ -15,8 +15,8 @@
 - `pnpm run verify:full` 통과: jest 2,639개, publint, 설치형 ESM/CJS 소비자, 예제 lazy 라우트.
 - 기준 측정(작은 마을, WebGPU, dev): 스크립트 2.3ms/프레임, draw 81, 삼각형 230만(대부분 잔디), 유휴에도 매 프레임 렌더(CPU 15%). 운영 월드 라우트 3,913KB min / 1,311KB gz.
 - 소비자 번들(피어 제외, DEL-1 전 측정): `createSceneDocument` 하나에 712KB, 최소 월드 6개 이름에 848KB, 전체 1,495KB. 루트 값 export는 DEL-1·DEL-2로 1,097개에서 946개가 됐고, ISO-1이 4개(`createAssetStore`, `useAssetStoreApi`, `createDialogRegistry`, `useDialogRegistry`)를 더했다.
-- minihome 측정(2026-09-27, RTX 50 WebGPU, 1600×900@1.5, high tier, vsync 해제): 프레임 4.23ms, draw 219, 삼각형 1.02M, 텍스처 441MB. 해 그림자(cascade 2048px×4장을 매 프레임)가 draw 159개·프레임의 70%다. three `WebGPURenderer`는 draw 하나에 CPU 18–22µs라 프레임 시간이 draw 수를 따른다. 입력이 2초 없으면 NPC가 걸어도 초당 30번만 그리고, 인물이 모두 준비되는 순간 메인 스레드가 0.45초 멈춘다.
-- 초켓몬스터 이식(CK): 사용자가 만든 게임 [choketmonster](https://github.com/jigglypop/choketmonster)는 gw 1.1.0에서 월드·카메라·런타임·잔디 드라이버만 쓰고 렌더링·그림자·LOD·지형·잔디·UI를 직접 만들었다. 효과가 확인된 기법을 코어로 옮긴다(장르 로직 제외). 참조 사본은 `chocketmon/`(git·lint 제외), 무엇을 옮기고 뺐는지는 [docs/dev/decisions.md](docs/dev/decisions.md)에 있다.
+- minihome 측정(2026-09-27, RTX 50 WebGPU, 1600×900@1.5, high tier, vsync 해제): 프레임 4.23ms, draw 219, 삼각형 1.02M, 텍스처 441MB. 해 그림자(cascade 2048px×4장을 매 프레임)가 draw 159개·프레임의 70%다. three `WebGPURenderer`는 draw 하나에 CPU 18–22µs라 프레임 시간이 draw 수를 따른다. 입력이 2초 없으면 NPC가 걸어도 초당 30번만 그린다. 첫 로드는 월드를 조각으로 나눠 컴파일해 렌더 long task가 80ms를 넘지 않는다.
+- 초켓몬스터 이식(CK-1~13)은 끝났다. 사용자가 만든 게임 [choketmonster](https://github.com/jigglypop/choketmonster)의 렌더링·그림자·LOD·지형·잔디·UI 기법 가운데 효과가 확인된 것을 코어로 옮겼다(장르 로직 제외). 무엇을 옮기고 뺐는지는 [docs/dev/decisions.md](docs/dev/decisions.md), 각 작업은 커밋 제목의 CK ID에 있다.
 - 수용 테스트 12개가 `pending`이다. `test/accept/budgets.json`의 미구현 계약을 합격 근거로 세지 않는다.
 
 ## 실행 순서
@@ -25,10 +25,9 @@
 
 | ID | 내용 | 완료 기준 |
 |---|---|---|
-| CK-5 | 지면(남은 것). 타일 재질은 노드 렌더러에서 월드 좌표 UV와 넓은 색 변화를 쓴다(윗면만, 옆면은 기존 UV). 셀→재질·높이·물을 묻는 `createTileSampler`를 물가 필드 옆에 둔다(흙길 덮개, 모래·눈의 결정적 노이즈·가장자리 내려앉음·번짐은 끝남) | 위에서 본 스크린샷에 4m 반복이 없음. 새로고침해도 같은 모양. 타일 편집 반영 16ms 이내. 지면 draw 증가 없음 |
 | UP-1 | upstream 대체. `CascadedSun`·`DynamicSky`를 three r186 `SunLight`(두 백엔드 CSM)와 시간대 연동 하나로 가로등 라이트 풀은 r185 클러스터(Forward+) 조명으로, 품질 tier에 r184 TAAU/FSR 업스케일. `OutfitAvatar`는 `AvatarRuntime`으로 합친다. 새 해도 cascade 갱신 주기(`updateHz`, CPU 병목 때 15/5Hz)와 자동 해상도를 그대로 받는다 | 자체 CSM·라이트 풀 코드 삭제, 같은 장면의 draw·프레임 시간 전후 기록 |
 | LIB-1 | 라이브러리 형태. `preserveModules` 빌드로 트리셰이킹 복구, `GaesupWorld`가 런타임을 만들고 수명을 관리(legacy 경고 0), 루트 진입점에서 에디터 분리, 캔버스·WebGPU·품질·`GaesupWorldContent`를 묶은 부팅 컴포넌트, 런타임 `logger` 기본값을 개발 모드 콘솔로(지금은 플러그인 로그가 사라진다), 프로젝트 설정의 입력 바인딩을 조작 캐릭터에 연결 | import 모양별 소비자 번들 크기 전후, 최소 월드 부팅 코드 줄 수, 콘솔 경고 0 |
-| PERF | 측정 기반 병목 제거. 건물 편집 증분 갱신(`BuildingBatches`, `BlockColliders`), 내비게이션 변경 영역만 갱신(ck처럼 탐색 한 번 동안 격자 샘플 캐시), NPC 비가시 시뮬레이션 예산, 장면 전체 순회 제거, 게임패드 입력도 유휴 해제 활동으로, MRT 후처리에서도 `CompileGate` 사전 컴파일. 모델 상주는 CK-4가 맡는다 | 같은 장면·장치에서 프레임 p50/p95, long task, draw, GPU ms, collider 수를 전후로 남긴다. CPU 미세 측정만으로 FPS 개선을 선언하지 않는다 |
+| PERF | 측정 기반 병목 제거. 건물 편집 증분 갱신(`BuildingBatches`, `BlockColliders`), 내비게이션 변경 영역만 갱신(ck처럼 탐색 한 번 동안 격자 샘플 캐시), NPC 비가시 시뮬레이션 예산, 장면 전체 순회 제거, 게임패드 입력도 유휴 해제 활동으로, MRT 후처리에서도 `CompileGate` 사전 컴파일. | 같은 장면·장치에서 프레임 p50/p95, long task, draw, GPU ms, collider 수를 전후로 남긴다. CPU 미세 측정만으로 FPS 개선을 선언하지 않는다 |
 | NPC-1 | NPC 결함. 말하기 상태를 말풍선으로 그리고, 렌더 경로(`fullModelUrl` 단일 모델과 부위 조립)를 한 벌로, 일과표가 시뮬레이션을 움직이게, store의 카탈로그·인스턴스·에디터 선택을 나눈다. 지각이 `fieldOfView`·`hearingRadius`를 쓰고, 두뇌를 정하지 않은 NPC의 기본값을 외부 정책(`reinforcement`/`openai`)이 아닌 `scripted`로 | 예제 마을에서 말풍선과 일과 이동 브라우저 확인, NPC 50명 장면의 프레임 p50/p95 전후 |
 | GI-1 | 동적 GI(웹판 Lumen-lite). 표준 WebGPU에는 하드웨어 레이트레이싱이 없으므로 Lumen의 소프트웨어 경로처럼 간다. upstream 기반: three `SSGINode`, r184 `LightProbeGrid`, r186 `SunLight`. gw 고유: 건축 격자(4m 셀)를 GPU 3D 복셀 텍스처로 직접 채우고 편집한 셀만 갱신, compute가 프로브에서 복셀을 레이마칭(DDGI 방식)하며 프레임마다 일부 프로브만 갱신. wasm은 정적 GI 굽기와 GLB 소품 SDF 생성(워커). 품질 tier: low 굽기, medium 동적 프로브, high 프로브+SSGI | 작은 마을에서 GI를 켠 WebGPU 프레임의 GPU 시간 증가가 내장 GPU 기준 4ms 이하, 타일 편집 뒤 GI 반영 지연, 켜기 전후 스크린샷 |
 | EX-1 | 예제 2차: 멀티플레이 방문자, 계단식 마을 꾸미기 확장 등. 예제 minihome: 계단식 마을 꾸미기(건축), 주민 NPC, 방문자 멀티플레이, 성능 HUD, Pretendard UI(woff2 `@font-face`, 지금은 이름만 있고 글꼴 파일을 싣지 않는다) | 공개 API만 사용, 브라우저 스크린샷, 성능 HUD 수치 |

@@ -1,8 +1,11 @@
 import { useLayoutEffect, useRef } from 'react';
 
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { rendererKind } from '../../../rendering/webgpu';
 import { tileWorldSize } from '../../model/footprint';
+import { groundMaterial } from '../../terrain/groundMaterial';
 import type { TileConfig } from '../../types';
 import { useInstanceCapacity } from '../BuildingBatches/capacity';
 
@@ -36,6 +39,9 @@ export function BoxTileBatchMesh({
 }) {
   const ref = useRef<THREE.InstancedMesh | null>(null);
   const capacity = useInstanceCapacity(batch.tiles.length);
+  // Node renderers draw tile tops with world-space texture coordinates and broad tint patches.
+  const nodeRenderer = useThree((state) => rendererKind(state.gl) !== 'webgl');
+  const material = nodeRenderer ? groundMaterial(batch.material) : batch.material;
 
   useLayoutEffect(() => {
     const mesh = ref.current;
@@ -65,7 +71,7 @@ export function BoxTileBatchMesh({
   return (
     <instancedMesh
       ref={ref}
-      args={[geometry, batch.material, capacity]}
+      args={[geometry, material, capacity]}
       name={`building-batch:tile:${batch.key}`}
       castShadow={batch.castShadow}
       receiveShadow

@@ -6,15 +6,15 @@
 
 | import | 소스 | 값 export | 용도 |
 |---|---|---:|---|
-| `gaesup-world` | `src/index.ts` = `core/editor` + `core` 전체 | 952 | 모든 기능. NPC·대화·카메라·입력·캐릭터는 여기에만 있다 |
+| `gaesup-world` | `src/index.ts` = `core/editor` + `core` 전체 | 983 | 모든 기능. NPC·대화·카메라·입력·캐릭터는 여기에만 있다 |
 | `gaesup-world/runtime` | `src/runtime.ts` = `core/runtime` + `core/world` + `core/save` | 73 | 런타임, 프레임 단계, 물리 시계, 월드 컴포넌트, 저장 |
-| `gaesup-world/building` | `src/building.ts` = `core/building` | 142 | 건축 데이터·store·렌더·편집 |
-| `gaesup-world/editor` | `src/editor.ts` = `core/editor` + `core/building` + `core/content` | 220 | 에디터 셸·패널, 콘텐츠 번들 |
+| `gaesup-world/building` | `src/building.ts` = `core/building` | 145 | 건축 데이터·store·렌더·편집 |
+| `gaesup-world/editor` | `src/editor.ts` = `core/editor` + `core/building` + `core/content` | 223 | 에디터 셸·패널, 콘텐츠 번들 |
 | `gaesup-world/gameplay` | `src/gameplay.ts` | 18 | 규칙 엔진(클라이언트 서비스 포함) |
 | `gaesup-world/navigation` | `src/navigation.ts` | 11 | 격자 길찾기 |
 | `gaesup-world/network` | `src/network.ts` = `core/networks` | 27 | 멀티플레이 클라이언트, 방문 스냅샷, 네트워크 계약 |
 | `gaesup-world/server-contracts` | `src/server-contracts.ts` | 41 | 서버용 계약. React·Zustand·R3F 없음 |
-| `gaesup-world/assets` | `src/assets.ts` | 25 | 자산 카탈로그, GLTF 캐시, 생산 매니페스트 검증 |
+| `gaesup-world/assets` | `src/assets.ts` | 35 | 자산 카탈로그, GLTF 캐시, 생산 매니페스트 검증 |
 | `gaesup-world/avatar` | `src/avatar.ts` | 18 | 공유 스켈레톤 아바타 런타임 |
 | `gaesup-world/plugins` | `src/plugins.ts` | 22 | 플러그인 정의·레지스트리 |
 | `gaesup-world/postprocessing` | `src/postprocessing.ts` | 9 | 후처리 컴포넌트 |
@@ -71,6 +71,7 @@ ESM(`import`)과 CJS(`require`) 둘 다 있다. 진입점 목록의 원본은 `p
 - store: `useBuildingStore`, `useBuildingStoreApi`, `createBuildingStore`, `useBuildingEditor`, `buildingPlugin`, `createBuildingPlugin`
 - 좌표: `edgeToWallTransform`, `wallTransformToEdge`, `worldToBuildingCell`, `buildingCellToWorld`, `tilePositionToCell`, `snapBuildingPosition`, `createTileFootprint`, `createBlockFootprint`, `applyBuildingNavigationObstacles`
 - 표·카탈로그: `DEFAULT_BUILDING_OBJECT_CATALOG`, `getDefaultBuildingObject`, `BUILDING_TILE_PRESETS`, `BUILDING_WALL_PRESETS`, `BUILDING_*_OPTIONS`, `FLAG_STYLE_META`
+- 지형: `createShoreField`, `useShoreField`(물가 필드), `createTileSampler`(월드 한 점의 타일·재질·높이·물, [rendering.md](rendering.md))
 - 그리기 내부: `GpuBatchBridge`, `supportsGpuInstanceBatches`, `MaterialManager`, 컬링·가시성·GPU 업로드 드라이버와 store, `DRAW_CLUSTER_*`
 
 사용법은 [building.md](building.md).
