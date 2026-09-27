@@ -13,6 +13,7 @@ import { rendererKind } from '../../../rendering/webgpu';
 import { MinimapSystem } from '../../../ui/core';
 import { WorldProps } from '../../../world/components/WorldProps';
 import { MaterialManager } from '../../core/MaterialManager';
+import { useStableItems } from '../../hooks/useReusedByKey';
 import { tileWorldSize } from '../../model/footprint';
 import { coverSpreads } from '../../terrain/dirt';
 import { BuildingColliderBody } from '../BuildingColliders';
@@ -311,10 +312,11 @@ export const TileSystem = memo(function TileSystem({
     [isEditMode, tileGroup.tiles],
   );
 
-  const sandTiles = useMemo(
+  // An edit to another tile leaves these lists the same objects, so the beaches and snowfields keep their meshes.
+  const sandTiles = useStableItems(useMemo(
     () => tileGroup.tiles.filter((t) => getTileShape(t) === 'box' && t.objectType === 'sand'),
     [tileGroup.tiles],
-  );
+  ));
 
   const sandEntries: SandEntry[] = useMemo(
     () => sandTiles.map((t) => ({
@@ -329,10 +331,10 @@ export const TileSystem = memo(function TileSystem({
   // Dirt paths, beaches and snowfields with the flat tiles their soft edges spread onto.
   const spreads = useMemo(() => coverSpreads(tileGroup.tiles), [tileGroup.tiles]);
 
-  const snowfieldTiles = useMemo(
+  const snowfieldTiles = useStableItems(useMemo(
     () => tileGroup.tiles.filter((t) => getTileShape(t) === 'box' && t.objectType === 'snowfield'),
     [tileGroup.tiles],
-  );
+  ));
 
   const snowfieldEntries: SnowfieldEntry[] = useMemo(
     () => snowfieldTiles.map((t) => ({

@@ -1,6 +1,8 @@
 import { BatchedMesh, Box3, InstancedMesh, Matrix4, Mesh, Ray, Triangle, Vector3 } from 'three';
 import type { BufferAttribute, InterleavedBufferAttribute } from 'three';
 
+import { TRIANGLE_GRID_MIN, triangleGrid, visitGridTriangles } from './triangleGrid';
+
 const triangle = new Triangle();
 const closest = new Vector3();
 const normal = new Vector3();
@@ -184,32 +186,43 @@ function prepareLocalBox(): boolean {
   return true;
 }
 
-/** Tests triangles [start, end). With `cull`, triangles whose raw vertices all lie beyond one face of the swept
- * sphere's local bounds are rejected before any vector math, so a large mesh costs one comparison per triangle. */
+/** Tests the triangle whose first corner is at index offset `i`. With `cull`, a triangle whose raw vertices all lie
+ * beyond one face of the swept sphere's local bounds is rejected before any vector math. */
+function visitTriangle(
+  vertices: Mesh, positions: Positions, index: BufferAttribute | null, i: number,
+  ray: Ray, radius: number, maxDistance: number, cull: boolean, point: Vector3,
+): void {
+  const a = index ? index.getX(i) : i;
+  const b = index ? index.getX(i + 1) : i + 1;
+  const c = index ? index.getX(i + 2) : i + 2;
+  if (cull) {
+    const { min, max } = localBox;
+    const ax = positions.getX(a); const bx = positions.getX(b); const cx = positions.getX(c);
+    if ((ax < min.x && bx < min.x && cx < min.x) || (ax > max.x && bx > max.x && cx > max.x)) return;
+    const az = positions.getZ(a); const bz = positions.getZ(b); const cz = positions.getZ(c);
+    if ((az < min.z && bz < min.z && cz < min.z) || (az > max.z && bz > max.z && cz > max.z)) return;
+    const ay = positions.getY(a); const by = positions.getY(b); const cy = positions.getY(c);
+    if ((ay < min.y && by < min.y && cy < min.y) || (ay > max.y && by > max.y && cy > max.y)) return;
+  }
+  vertices.getVertexPosition(a, triangle.a).applyMatrix4(worldMatrix);
+  vertices.getVertexPosition(b, triangle.b).applyMatrix4(worldMatrix);
+  vertices.getVertexPosition(c, triangle.c).applyMatrix4(worldMatrix);
+  const distance = sweepSphereTriangle(ray, radius, triangle, Math.min(maxDistance, nearest), closest);
+  if (distance < nearest) { nearest = distance; point.copy(closest); }
+}
+
+/** Tests triangles [start, end). A large static range looks its triangles up in a grid over the geometry, so it
+ * costs the triangles under the swept path, not every one; otherwise each triangle costs one cull comparison. */
 function visitTriangles(
   vertices: Mesh, positions: Positions, index: BufferAttribute | null, start: number, end: number,
   ray: Ray, radius: number, maxDistance: number, cull: boolean, point: Vector3,
 ): void {
-  const minX = localBox.min.x; const minY = localBox.min.y; const minZ = localBox.min.z;
-  const maxX = localBox.max.x; const maxY = localBox.max.y; const maxZ = localBox.max.z;
-  for (let i = start; i + 2 < end; i += 3) {
-    const a = index ? index.getX(i) : i;
-    const b = index ? index.getX(i + 1) : i + 1;
-    const c = index ? index.getX(i + 2) : i + 2;
-    if (cull) {
-      const ax = positions.getX(a); const bx = positions.getX(b); const cx = positions.getX(c);
-      if ((ax < minX && bx < minX && cx < minX) || (ax > maxX && bx > maxX && cx > maxX)) continue;
-      const az = positions.getZ(a); const bz = positions.getZ(b); const cz = positions.getZ(c);
-      if ((az < minZ && bz < minZ && cz < minZ) || (az > maxZ && bz > maxZ && cz > maxZ)) continue;
-      const ay = positions.getY(a); const by = positions.getY(b); const cy = positions.getY(c);
-      if ((ay < minY && by < minY && cy < minY) || (ay > maxY && by > maxY && cy > maxY)) continue;
-    }
-    vertices.getVertexPosition(a, triangle.a).applyMatrix4(worldMatrix);
-    vertices.getVertexPosition(b, triangle.b).applyMatrix4(worldMatrix);
-    vertices.getVertexPosition(c, triangle.c).applyMatrix4(worldMatrix);
-    const distance = sweepSphereTriangle(ray, radius, triangle, Math.min(maxDistance, nearest), closest);
-    if (distance < nearest) { nearest = distance; point.copy(closest); }
+  if (cull && start % 3 === 0 && end - start >= TRIANGLE_GRID_MIN * 3) {
+    const grid = triangleGrid(vertices.geometry, positions, index);
+    visitGridTriangles(grid, localBox, start, end, (i) => visitTriangle(vertices, positions, index, i, ray, radius, maxDistance, cull, point));
+    return;
   }
+  for (let i = start; i + 2 < end; i += 3) visitTriangle(vertices, positions, index, i, ray, radius, maxDistance, cull, point);
 }
 
 /** Mesh sweep uses exact triangles after a conservative world-AABB broad phase.

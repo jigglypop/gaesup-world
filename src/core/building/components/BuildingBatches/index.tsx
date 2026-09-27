@@ -2,6 +2,7 @@ import { memo, useEffect, useMemo, useState } from 'react';
 
 import * as THREE from 'three';
 
+import { CompileGate } from '../../../rendering/CompileGate';
 import { getDefaultToonMode, getToonGradient } from '../../../rendering/toon';
 import { MaterialManager } from '../../core/MaterialManager';
 import { sameItems, useReusedByKey } from '../../hooks/useReusedByKey';
@@ -97,21 +98,24 @@ export const BuildingBatches = memo(function BuildingBatches({
     [manager, meshes, wallGroupMap, wallGroups],
   ), samePieceBatch);
 
+  // A batch of a material first used by an edit compiles before it shows, instead of stalling the frame it appears in;
+  // a batch whose pieces change keeps its gate and shows at once.
   return (
     <>
       {tileBatches.map((batch) => (
-        <BoxTileBatchMesh key={batch.key} batch={batch} geometry={resources.tileGeometry} dummy={resources.dummy} />
+        <CompileGate key={batch.key}>
+          <BoxTileBatchMesh batch={batch} geometry={resources.tileGeometry} dummy={resources.dummy} />
+        </CompileGate>
       ))}
       {wallBatches.map((batch) => (
-        <WallBatchMesh
-          key={batch.key}
-          batch={batch}
-          geometry={resources.wallGeometry}
-          {...(onWallClick ? { onWallClick } : {})}
-        />
+        <CompileGate key={batch.key}>
+          <WallBatchMesh batch={batch} geometry={resources.wallGeometry} {...(onWallClick ? { onWallClick } : {})} />
+        </CompileGate>
       ))}
       {pieceBatches.map((batch) => (
-        <WallPieceBatchMesh key={batch.key} batch={batch} {...(onWallClick ? { onWallClick } : {})} />
+        <CompileGate key={batch.key}>
+          <WallPieceBatchMesh batch={batch} {...(onWallClick ? { onWallClick } : {})} />
+        </CompileGate>
       ))}
     </>
   );

@@ -119,7 +119,7 @@
 | `billboard` | `billboardText`, `billboardImageUrl`, `billboardColor`, `billboardWidth`, `billboardHeight`, `billboardScale`, `billboardOffsetY`, `billboardElevation`, `billboardIntensity` | |
 | `model` | `modelUrl`, `modelScale`, `modelColor`, `modelFallbackKind`, `modelLabel`, `modelId` | GLB를 읽는 동안·실패했을 때·`modelUrl`이 없을 때 원시 도형 대체물을 그린다 |
 
-`modelFallbackKind`: `door` · `window` · `fence` · `lamp` · `chair` · `table` · `bed` · `storage` · `mailbox` · `crafting` · `shop` · `generic`(기본). `modelColor`는 대체 도형에만 칠해진다. `lamp` 대체 도형은 풀링된 점광원을 켠다(GLB를 불러온 조명 모델에는 빛이 없다). 나무·깃발·불·간판은 종류별로 묶어 그린다. GLB 모델은 에디터 밖에서 정적 지오메트리로 그린다. 무늬 없는 모델은 32m 칸마다 한 메시로 합치고, 텍스처·투명 재질 모델과 많이 복사한 모델은 GLB마다 인스턴싱한다([rendering.md](rendering.md#정적-모델-병합)). 편집 중에는 하나씩 골라 옮길 수 있게 오브젝트마다 그린다. 오브젝트에는 **물리 콜라이더가 없다**(캐릭터가 통과한다). 대신 내비게이션 장애물로는 들어간다.
+`modelFallbackKind`: `door` · `window` · `fence` · `lamp` · `chair` · `table` · `bed` · `storage` · `mailbox` · `crafting` · `shop` · `generic`(기본). `modelColor`는 대체 도형에만 칠해진다. `lamp` 대체 도형은 풀링된 점광원을 켠다(GLB를 불러온 조명 모델에는 빛이 없다). 나무·깃발·불·간판은 종류별로 묶어 그린다. GLB 모델은 편집 중에도 정적 지오메트리로 그린다. 무늬 없는 모델은 32m 칸마다 한 메시로 합치고, 텍스처·투명 재질 모델과 많이 복사한 모델은 GLB마다 인스턴싱한다([rendering.md](rendering.md#정적-모델-병합)). 편집기는 오브젝트를 모델 메시가 아니라 편집 표시(와이어 상자)로 고른다. 오브젝트에는 **물리 콜라이더가 없다**(캐릭터가 통과한다). 대신 내비게이션 장애물로는 들어간다.
 
 ### 예시
 
@@ -210,7 +210,7 @@ export const plaza: BuildingSerializedState = {
 - 편집 중 기존 타일·벽·블록의 강조 표시를 클릭하면 `place` 도구에서는 선택되고(같은 모드일 때), `paint`·`erase` 도구에서는 칠하거나 지운다. `erase` 도구의 `object` 모드는 오브젝트마다 와이어 상자를 띄운다. 강조 표시와 미리보기는 카메라 충돌에서 빠진다(`userData.intangible`).
 - 편집 모드(`none` 외)에서는 조작 캐릭터가 사라지고 키 입력이 막힌다.
 - 콜라이더: 타일은 항상, 벽은 `wall` 모드가 아닐 때, 블록은 `block` 모드가 아닐 때 만든다(편집 중 클릭을 막지 않도록). 같은 높이·1칸·직각 타일은 사각형으로 합쳐 콜라이더 수를 줄인다.
-- 그리기: 네이티브 WebGPU에서는 재질별 인스턴스 배치를 GPU에 상주시키고(`GpuBatchBridge`), 아니면 `BuildingVisibilityDriver`가 그룹 단위로 컬링한다. 자세한 내용은 [rendering.md](rendering.md).
+- 그리기: 네이티브 WebGPU에서는 재질별 인스턴스 배치를 GPU에 상주시키고(`GpuBatchBridge`), 아니면 `BuildingVisibilityDriver`가 그룹 단위로 컬링한다. 배치마다 `CompileGate`가 있어 편집으로 처음 쓰는 재질은 컴파일된 뒤 보인다. GLB 모델은 편집 중에도 합쳐 그려 편집 모드를 켜고 끌 때 다시 합치지 않는다. 자세한 내용은 [rendering.md](rendering.md).
 
 ## 카탈로그와 프리셋
 

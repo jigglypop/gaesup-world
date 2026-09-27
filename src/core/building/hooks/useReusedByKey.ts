@@ -27,3 +27,13 @@ export function useReusedByKey<T extends Keyed>(next: readonly T[], same: (a: T,
 export function sameItems(a: readonly unknown[], b: readonly unknown[]): boolean {
   return a.length === b.length && a.every((item, index) => item === b[index]);
 }
+
+/**
+ * `items`, or the array last returned when it holds the same objects in the same order: a filter over a store list
+ * that an edit elsewhere rebuilt keeps its identity, and so do the memos keyed on it.
+ */
+export function useStableItems<T>(items: readonly T[]): readonly T[] {
+  const last = useRef(items);
+  if (last.current !== items && !sameItems(last.current, items)) last.current = items;
+  return last.current;
+}

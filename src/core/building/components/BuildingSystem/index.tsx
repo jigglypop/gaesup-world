@@ -195,17 +195,11 @@ export const BuildingSystem = React.memo(function BuildingSystem({
   useEffect(() => {
     scatterCache.current = new Map(scattered.map((object) => [object.id, object]));
   }, [scattered]);
-  // Outside the editor, GLB models draw as static geometry, merged or instanced; while editing they stay single so each
-  // can be picked and moved. Scattered decoration is not editable and stays static.
-  const batching = editMode === 'none';
-  const modelGroups = useMemo(
-    () => groupModels(batching ? [...residentModels, ...scattered] : scattered),
-    [batching, residentModels, scattered],
-  );
-  const modelObjects = useMemo(
-    () => (batching ? residentModels.filter((object) => !object.config?.modelUrl) : residentModels),
-    [batching, residentModels],
-  );
+  // GLB models draw as static geometry, merged or instanced, while editing too: entering or leaving edit mode rebuilds
+  // nothing, and an edit re-merges only the cells it touched. The editor picks objects by their edit overlay boxes.
+  // Only models without a URL, drawn as fallback shapes, stay single.
+  const modelGroups = useMemo(() => groupModels([...residentModels, ...scattered]), [residentModels, scattered]);
+  const modelObjects = useMemo(() => residentModels.filter((object) => !object.config?.modelUrl), [residentModels]);
 
   return (
     <Suspense fallback={null}>

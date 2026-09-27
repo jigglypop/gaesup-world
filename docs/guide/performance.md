@@ -138,7 +138,7 @@ export async function measureWindow(runtime: GaesupRuntime, ms: number) {
 
 ## 입력이 없을 때 fps 낮추기: `IdleFrameRate`
 
-기본 설정의 캔버스는 입력이 없어도 매 프레임 그린다. 저장소 기준 측정에서 작은 마을은 유휴 상태에서도 CPU 약 15%를 쓴다. `IdleFrameRate`(`src/core/perf/idle.tsx`, 루트 export)는 화면이 바뀌는 동안 매 프레임 그리고, 바뀌지 않으면 낮은 fps로 그린다.
+기본 설정의 캔버스는 입력이 없어도 매 프레임 그린다. 게임패드 입력도 월드 입력으로 들어오면 활동으로 친다. 저장소 기준 측정에서 작은 마을은 유휴 상태에서도 CPU 약 15%를 쓴다. `IdleFrameRate`(`src/core/perf/idle.tsx`, 루트 export)는 화면이 바뀌는 동안 매 프레임 그리고, 바뀌지 않으면 낮은 fps로 그린다.
 
 ```tsx
 <Canvas shadows="percentage" gl={createRenderer}>
@@ -220,9 +220,21 @@ export function customLoop(draw: (time: number) => void) {
 
 - 건축 타일·벽·블록은 재질별 `InstancedMesh` 배치로 그린다. WebGPU 백엔드에서는 `GpuBatchBridge`가 이 배치를 compute로 컬링하고 간접 draw로 그린다. 그 밖의 렌더러에서는 `BuildingVisibilityDriver`가 카메라 거리로 그릴 그룹을 고른다.
 - 벚꽃·나무, 깃발, 불, 간판은 개수와 상관없이 종류마다 고정된 수의 draw로 그린다.
-- GLB 모델 오브젝트는 에디터 밖에서 32m 칸마다 한 메시로 합치거나 GLB마다 인스턴싱한다([rendering.md](rendering.md#정적-모델-병합)). 예제 섬에서 모델 draw가 62에서 12로(모든 pass 합), 프레임 draw가 185에서 136으로 줄었다(2026-09-27). `modelUrl`이 없는 대체 도형과 편집 중인 모델은 오브젝트마다 그린다.
+- GLB 모델 오브젝트는 편집 중에도 32m 칸마다 한 메시로 합치거나 GLB마다 인스턴싱한다([rendering.md](rendering.md#정적-모델-병합)). 예제 섬에서 모델 draw가 62에서 12로(모든 pass 합), 프레임 draw가 185에서 136으로 줄었다(2026-09-27). 편집 모드를 켜고 끌 때 다시 합치지 않고, 편집은 바뀐 칸만 다시 합친다. `modelUrl`이 없는 대체 도형만 오브젝트마다 그린다.
+- 건축 배치(타일·벽·벽 조각)는 배치마다 `CompileGate` 안에 있어, 편집으로 처음 쓰는 재질의 배치는 컴파일된 뒤 나타난다. 모래·눈밭은 그 타일이 그대로면 다른 타일 편집에 다시 만들지 않는다(`useStableItems`).
 - NPC는 카메라에서 120m(보이던 NPC는 135m)보다 멀면 화면에서 내리고, 화면 밖 NPC는 숨기며, `maxVisible`로 가까운 순 상한을 둔다. 시뮬레이션은 거리와 상관없이 모든 NPC를 돌린다.
 - 저장소 측정에서 작은 마을은 draw 81(`render()` 호출 6)이었다.
+
+### 예제 섬 전후(2026-09-28, dev, 헤드리스 Chrome WebGPU, 1600×900)
+
+| 측정 | 전 | 후 |
+|---|---|---|
+| 걸을 때 메인 스레드 사용 | 7.69ms/프레임 | 6.0ms/프레임 |
+| 그중 카메라 충돌 쓸기 | 2.28ms | 0.27ms |
+| 꾸미기 탭 열기 / 완료 | long task 71 / 121ms | 없음 / 없음 |
+| 바닥 칠하기·지우기 | long task 59 / 54ms | 없음 / 없음 |
+| 새 재질 바닥 놓기 | long task 61ms, 최악 프레임 200ms | long task 없음, 최악 프레임 100ms |
+| 처음 놓는 GLB 소품 | long task 102ms | 93~100ms(모델 불러오기·해석, 남음) |
 
 ## 번들 크기
 
@@ -253,7 +265,7 @@ export function customLoop(draw: (time: number) => void) {
 | 게임 화면용 성능 HUD가 없다. `PerformancePanel`은 에디터 패널이고 FPS를 자체 rAF로 따로 잰다 | PERF |
 | `IdleFrameRate`가 기본 장착되지 않는다 | PERF |
 | classic WebGL 잔디가 월드 `quality`를 따르지 않는다 | GPU-1 |
-| 건물 편집 증분 갱신, 내비게이션 변경 영역만 갱신, NPC 비가시 시뮬레이션 예산, 장면 전체 순회 제거 | PERF |
+| 큰 월드(타일 수천 개)의 건물 편집 증분 갱신, 내비게이션 변경 영역만 갱신, NPC 비가시 시뮬레이션 예산. 예제 섬 규모에서는 측정상 병목이 아니다 | PERF |
 | 트리셰이킹(`preserveModules`), 루트에서 에디터 분리 | LIB-1 |
 | 업스케일(TAAU/FSR) 품질 tier | UP-1 |
 | classic WebGL·GLSL 경로 제거 | GPU-1 |

@@ -181,6 +181,7 @@ function useCameraMode() {
 2. 시작점에서 이번 프레임 카메라 위치까지 반지름 `collisionMargin`(store 기본 0.1)인 구를 쓸어 가장 먼저 닿는 곳 앞에 카메라를 둔다.
 3. 조상 중 하나라도 `userData.intangible`이 참인 메시는 무시한다. 기본으로 무시되는 것: 모든 캐릭터·NPC·원격 플레이어, 잔디, GPU 인스턴스 배치 복사본, `GroundClicker`·`TeleportOnClick` 평면. 장식 메시를 빼려면 그룹에 `userData={{ intangible: true }}`를 준다.
 4. SkinnedMesh는 삼각형 대신 바인드 포즈 경계로 근사한다.
+5. 삼각형이 512개 넘는 정적 지오메트리(합친 소품 칸, 흙길·모래 덮개)는 로컬 XZ 격자에 삼각형을 나눠 두고(`src/core/camera/utils/triangleGrid.ts`, 지오메트리마다 한 번, 정점이 바뀌면 다시), 쓸기 경로가 지나는 칸의 삼각형만 검사한다. 결과는 전부 훑을 때와 같다. 예제 섬에서 걷는 동안 쓸기가 2.28ms에서 0.27ms/프레임이 됐다(2026-09-28, dev, 헤드리스 Chrome).
 
 `setCameraOption({ collisionTargets: 'colliders' })`로 바꾸면 `CAMERA_COLLIDER_LAYER`(30번 레이어)를 켠 메시만 검사하고, 그런 메시가 하나도 없으면 장면 전체로 돌아간다. 후보 메시 목록은 장면에 자식이 붙고 떨어질 때 다시 만든다. 이미 있는 메시의 레이어만 바꿨다면 `invalidateCollisionCache()`를 호출한다.
 

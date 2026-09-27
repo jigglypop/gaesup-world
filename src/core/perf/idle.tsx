@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
 
 import { advance, flushGlobalEffects, useThree } from '@react-three/fiber';
 
+import { useInputBackend } from '../interactions/hooks';
 import { useCanvasFrameScheduler } from '../runtime/frame';
 
 /** Input that keeps the canvas drawing every display frame. */
@@ -36,14 +37,15 @@ export type IdleFrameRateProps = {
 
 /**
  * Draws every display frame while the scene changes and `fps` frames a second once `after` seconds pass without a
- * change. Input, a moving camera and systems that call the canvas scheduler's `markActivity` (walking NPCs) count as
- * changes. It paces the canvas itself (`frameloop="never"` while mounted), so frame requests from elsewhere, such as
+ * change. Input (a gamepad too), a moving camera and systems that call the canvas scheduler's `markActivity` (walking
+ * NPCs) count as changes. It paces the canvas itself (`frameloop="never"` while mounted), so frame requests from elsewhere, such as
  * physics bodies that never sleep, do not keep an idle canvas at full rate. Simulation keeps its own clock
  * (`WorldPhysics`).
  */
 export function IdleFrameRate({ fps = 30, after = 2 }: IdleFrameRateProps) {
   const get = useThree((state) => state.get);
   const scheduler = useCanvasFrameScheduler();
+  const input = useInputBackend();
   const frameloop = useThree((state) => state.frameloop);
   // Frame time drawn so far, in seconds; the canvas clock follows it.
   const elapsed = useRef(0);
@@ -93,11 +95,14 @@ export function IdleFrameRate({ fps = 30, after = 2 }: IdleFrameRateProps) {
       flushGlobalEffects('after', time);
     });
     for (const type of ACTIVITY) window.addEventListener(type, wake, { capture: true, passive: true });
+    // Gamepads send no DOM events: a change the world's input sees, a stick or button, counts too.
+    const offInput = input.subscribe?.(wake);
     return () => {
       cancelAnimationFrame(request);
       for (const type of ACTIVITY) window.removeEventListener(type, wake, { capture: true });
+      offInput?.();
     };
-  }, [after, fps, get, scheduler]);
+  }, [after, fps, get, input, scheduler]);
 
   return null;
 }
