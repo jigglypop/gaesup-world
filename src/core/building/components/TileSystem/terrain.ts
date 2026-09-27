@@ -55,10 +55,17 @@ function hashNoise(a: number, b = 0, c = 0, d = 0): number {
   return fract(Math.sin(seed) * 43758.5453123);
 }
 
-function buildTileBounds(tile: TileLike): TileBounds {
+/**
+ * Whether a tile keeps its mesh surface under its cover: tall grass on a mesh that grows its own grass layer paints no
+ * raised meadow, so its edge gets no lip.
+ */
+export type KeepsSurface = (tile: TileLike) => boolean;
+
+function buildTileBounds(tile: TileLike, keepsSurface?: KeepsSurface): TileBounds {
   const tileSize = tileWorldSize(tile);
   const half = tileSize / 2;
-  const terrainLift = tile.objectType ? (TERRAIN_COVER_EDGE_LIFT[tile.objectType] ?? 0) : 0;
+  const kept = tile.objectType === 'grass' && keepsSurface?.(tile);
+  const terrainLift = tile.objectType && !kept ? (TERRAIN_COVER_EDGE_LIFT[tile.objectType] ?? 0) : 0;
 
   return {
     id: tile.id,
@@ -76,8 +83,8 @@ function buildTileBounds(tile: TileLike): TileBounds {
 /** Tiles near a point, bucketed once per tile set; building one side or stair asks it instead of scanning all tiles. */
 export type TileSupport = CellQuery<TileBounds>;
 
-export function createTileSupport(tiles: readonly TileLike[]): TileSupport {
-  return createCellIndex(tiles.map(buildTileBounds), (bounds) => bounds);
+export function createTileSupport(tiles: readonly TileLike[], keepsSurface?: KeepsSurface): TileSupport {
+  return createCellIndex(tiles.map((tile) => buildTileBounds(tile, keepsSurface)), (bounds) => bounds);
 }
 
 function sampleSupportHeight(near: TileSupport, currentId: string, x: number, z: number): number {
@@ -118,11 +125,16 @@ function pushSideQuad(
   colors.push(top.r, top.g, top.b, bottom.r, bottom.g, bottom.b, bottom.r, bottom.g, bottom.b);
 }
 
-export function buildTerrainGeometry(subjectTiles: readonly TileLike[], support: TileSupport, baseColor: THREE.Color): TerrainBuild {
+export function buildTerrainGeometry(
+  subjectTiles: readonly TileLike[],
+  support: TileSupport,
+  baseColor: THREE.Color,
+  keepsSurface?: KeepsSurface,
+): TerrainBuild {
   const positions: number[] = [];
   const colors: number[] = [];
   const rocks: TerrainRock[] = [];
-  const subjectBounds = subjectTiles.map(buildTileBounds);
+  const subjectBounds = subjectTiles.map((tile) => buildTileBounds(tile, keepsSurface));
   const rockWarm = new THREE.Color('#7b6a58');
   const rockDark = new THREE.Color('#433930');
   const topColor = new THREE.Color();

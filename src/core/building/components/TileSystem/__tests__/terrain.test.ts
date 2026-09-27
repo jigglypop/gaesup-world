@@ -42,3 +42,15 @@ test('each side sample scans only the tiles around it, so a group builds in line
   expect(queries).toBe(tiles.length * 4);
   expect(scanned).toBeLessThanOrEqual(queries * 4);
 });
+
+test('tall grass keeping its mesh surface gets no meadow lip against the lawn beside it', () => {
+  const tall: TileConfig = { ...tile('tall', 0, 0), objectType: 'grass' };
+  const tiles = [tall, tile('lawn', cell, 0)];
+  const color = new THREE.Color('#888888');
+  const painted = buildTerrainGeometry(tiles, createTileSupport(tiles), color);
+  expect(eastWestSides(painted.sideGeometry)).toContainEqual([cell / 2, 0]);
+  const keeps = (candidate: TileConfig) => candidate.id === 'tall';
+  const kept = buildTerrainGeometry(tiles, createTileSupport(tiles, keeps), color, keeps);
+  // Level tiles without the lip have no sides at all.
+  expect(kept.sideGeometry.getAttribute('position')).toBeUndefined();
+});

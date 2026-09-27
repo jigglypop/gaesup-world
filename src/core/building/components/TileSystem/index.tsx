@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { BoxTileBatchMesh, getBoxTileBatchKey, isRaisedTile, type BoxTileBatch } from './batch';
@@ -8,6 +9,7 @@ import { buildTerrainGeometry, createTileSupport, shouldCloseStairBack, type Til
 import { TileSystemProps } from './types';
 import { buildWaterPatches } from './waterPatches';
 import { getDefaultToonMode, getToonGradient } from '../../../rendering/toon';
+import { rendererKind } from '../../../rendering/webgpu';
 import { MinimapSystem } from '../../../ui/core';
 import { WorldProps } from '../../../world/components/WorldProps';
 import { MaterialManager } from '../../core/MaterialManager';
@@ -225,10 +227,17 @@ export const TileSystem = memo(function TileSystem({
   const floorColor = floorMesh?.color;
   const terrainColor = useMemo(() => new THREE.Color(floorColor || '#8a806f'), [floorColor]);
 
-  const support = useMemo(() => createTileSupport(tileGroup.tiles), [tileGroup.tiles]);
+  const grassMeshOf = useCallback(
+    (tile: TileLike) => meshes.get(getTileMaterialId(tile, tileGroup.floorMeshId)),
+    [meshes, tileGroup.floorMeshId],
+  );
+  // On node renderers tall grass on a grass-growing mesh keeps that surface, so its edges get no meadow lip.
+  const nodeRenderer = useThree((state) => rendererKind(state.gl) !== 'webgl');
+  const keepsSurface = useCallback((tile: TileLike) => nodeRenderer && Boolean(grassMeshOf(tile)?.grass), [nodeRenderer, grassMeshOf]);
+  const support = useMemo(() => createTileSupport(tileGroup.tiles, keepsSurface), [tileGroup.tiles, keepsSurface]);
   const terrain = useMemo(
-    () => buildTerrainGeometry(boxTiles, support, terrainColor),
-    [boxTiles, support, terrainColor],
+    () => buildTerrainGeometry(boxTiles, support, terrainColor, keepsSurface),
+    [boxTiles, support, terrainColor, keepsSurface],
   );
 
   const sideMaterial = useMemo(
@@ -354,10 +363,6 @@ export const TileSystem = memo(function TileSystem({
   );
 
   // Tall-grass tiles, and on node renderers every box tile whose mesh grows a grass layer.
-  const grassMeshOf = useCallback(
-    (tile: TileLike) => meshes.get(getTileMaterialId(tile, tileGroup.floorMeshId)),
-    [meshes, tileGroup.floorMeshId],
-  );
   const grassTiles = useMemo(
     () => tileGroup.tiles.filter((t) => getTileShape(t) === 'box' && (t.objectType === 'grass' || grassMeshOf(t)?.grass)),
     [tileGroup.tiles, grassMeshOf],
