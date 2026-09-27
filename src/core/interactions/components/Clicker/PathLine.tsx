@@ -1,55 +1,77 @@
 import { RefObject, useEffect, useMemo, useRef } from 'react';
 
-import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { Line2, LineGeometry, LineMaterial } from 'three-stdlib';
 
 import { useEngineFrame } from '../../../runtime/frame';
 
 const MAX_POINTS = 128;
 const UPDATE_INTERVAL_MS = 100;
+/** Ribbon width and its lift above the path points, in meters. */
+const WIDTH = 0.16;
+const LIFT = 0.06;
 
 export type PathLineProps = {
   pointsRef: RefObject<THREE.Vector3[]>;
   color: string;
 };
 
-export function PathLine({ pointsRef, color }: PathLineProps) {
-  const size = useThree((state) => state.size);
-  const lastUpdateRef = useRef(0);
-  const positionsRef = useRef(new Array<number>(MAX_POINTS * 3).fill(0));
+/** Writes the ribbon's two edge vertices per point, each offset sideways from the path on the ground plane. */
+export function writeRibbon(points: readonly THREE.Vector3[], count: number, positions: Float32Array): void {
+  for (let index = 0; index < count; index += 1) {
+    const point = points[index]!;
+    const previous = points[Math.max(0, index - 1)]!;
+    const next = points[Math.min(count - 1, index + 1)]!;
+    let dx = next.x - previous.x;
+    let dz = next.z - previous.z;
+    const length = Math.hypot(dx, dz) || 1;
+    dx /= length;
+    dz /= length;
+    const sideX = -dz * WIDTH * 0.5;
+    const sideZ = dx * WIDTH * 0.5;
+    const offset = index * 6;
+    positions[offset] = point.x + sideX;
+    positions[offset + 1] = point.y + LIFT;
+    positions[offset + 2] = point.z + sideZ;
+    positions[offset + 3] = point.x - sideX;
+    positions[offset + 4] = point.y + LIFT;
+    positions[offset + 5] = point.z - sideZ;
+  }
+}
 
-  const line = useMemo(() => {
-    const geometry = new LineGeometry();
-    geometry.setPositions(new Array<number>(MAX_POINTS * 3).fill(0));
-    const material = new LineMaterial({
-      color: new THREE.Color(color).getHex(),
-      linewidth: 2,
-      transparent: true,
-      opacity: 0.9,
-    });
-    const instance = new Line2(geometry, material);
-    instance.visible = false;
-    instance.frustumCulled = false;
-    return instance;
+/**
+ * The click-navigation route as a flat ribbon over the ground. A mesh with a basic material draws on WebGPU and WebGL
+ * alike; three-stdlib's `Line2` is WebGL-only and made WebGPU fail every draw with an infinite instance count.
+ */
+export function PathLine({ pointsRef, color }: PathLineProps) {
+  const lastUpdateRef = useRef(0);
+
+  const ribbon = useMemo(() => {
+    const geometry = new THREE.BufferGeometry();
+    const positions = new THREE.BufferAttribute(new Float32Array(MAX_POINTS * 2 * 3), 3).setUsage(THREE.DynamicDrawUsage);
+    geometry.setAttribute('position', positions);
+    const index: number[] = [];
+    for (let segment = 0; segment < MAX_POINTS - 1; segment += 1) {
+      const a = segment * 2;
+      index.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+    }
+    geometry.setIndex(index);
+    geometry.setDrawRange(0, 0);
+    const material = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.85, depthWrite: false, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.visible = false;
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 1;
+    return mesh;
   }, []);
 
   useEffect(() => {
-    const material = line.material as LineMaterial;
-    material.resolution.set(size.width, size.height);
-  }, [line, size.width, size.height]);
+    ribbon.material.color.set(color);
+  }, [ribbon, color]);
 
-  useEffect(() => {
-    const material = line.material as LineMaterial;
-    material.color.set(color);
-  }, [line, color]);
-
-  useEffect(() => {
-    return () => {
-      line.geometry.dispose();
-      (line.material as LineMaterial).dispose();
-    };
-  }, [line]);
+  useEffect(() => () => {
+    ribbon.geometry.dispose();
+    ribbon.material.dispose();
+  }, [ribbon]);
 
   useEngineFrame('lateUpdate', () => {
     const now = performance.now();
@@ -57,24 +79,18 @@ export function PathLine({ pointsRef, color }: PathLineProps) {
     lastUpdateRef.current = now;
     const points = pointsRef.current;
     if (!points || points.length < 2) {
-      line.visible = false;
+      ribbon.visible = false;
       return;
     }
     const count = Math.min(points.length, MAX_POINTS);
-    const positions = positionsRef.current;
-    for (let index = 0; index < count; index += 1) {
-      const point = points[index];
-      if (!point) continue;
-      positions[index * 3] = point.x;
-      positions[index * 3 + 1] = point.y;
-      positions[index * 3 + 2] = point.z;
-    }
-    line.geometry.setPositions(positions.slice(0, count * 3));
-    line.computeLineDistances();
-    line.visible = true;
+    const positions = ribbon.geometry.getAttribute('position') as THREE.BufferAttribute;
+    writeRibbon(points, count, positions.array as Float32Array);
+    positions.needsUpdate = true;
+    ribbon.geometry.setDrawRange(0, (count - 1) * 6);
+    ribbon.visible = true;
   }, { label: 'interactions:path-line' });
 
-  return <primitive object={line} />;
+  return <primitive object={ribbon} />;
 }
 
 PathLine.displayName = 'PathLine';

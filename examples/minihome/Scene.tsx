@@ -39,7 +39,7 @@ export function Scene({ quality, postProcessing, idleThrottle }: SceneSettings) 
           <CascadedSun position={[18, 36, 22]} intensity={2.55} color="#fff3da" />
           {idleThrottle && <IdleFrameRate />}
           <WorldPhysics>
-            <GaesupController position={SPAWN} materialPolicy="figure" />
+            <GaesupController position={SPAWN} materialPolicy="figure" clickToMove />
             <BuildingController />
           </WorldPhysics>
           <InteractionTracker />
