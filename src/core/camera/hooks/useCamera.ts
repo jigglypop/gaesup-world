@@ -14,6 +14,7 @@ import { useGaesupStore } from '../../stores/gaesupStore';
 import { CameraSystemConfig } from '../bridge/types';
 import { useCameraBridge } from '../bridge/useCameraBridge';
 import { CameraSystem } from '../core/CameraSystem';
+import { CAMERA_DEFAULTS } from '../core/constants';
 import { CameraCalcProps } from '../core/types';
 
 const ORBIT_SPEED = 0.0015;
@@ -95,6 +96,8 @@ export function useCamera(enableMouse = true) {
     enableCollision: cameraOption?.enableCollision ?? true,
     ...(cameraOption?.collisionMargin !== undefined ? { collisionMargin: cameraOption.collisionMargin } : {}),
     ...(cameraOption?.collisionTargets !== undefined ? { collisionTargets: cameraOption.collisionTargets } : {}),
+    collisionMode: cameraOption?.collisionMode ?? 'push',
+    collisionFadeOpacity: cameraOption?.collisionFadeOpacity ?? CAMERA_DEFAULTS.COLLISION_FADE_OPACITY,
     orbitYaw: orbitYawRef.current,
     orbitPitch: orbitPitchRef.current,
     ...(cameraOption?.offset
@@ -128,6 +131,9 @@ export function useCamera(enableMouse = true) {
       enableCollision: opt?.enableCollision ?? true,
       ...(opt?.collisionMargin !== undefined ? { collisionMargin: opt.collisionMargin } : {}),
       ...(opt?.collisionTargets !== undefined ? { collisionTargets: opt.collisionTargets } : {}),
+      // Always written, so clearing either in the store goes back to the default.
+      collisionMode: opt?.collisionMode ?? 'push',
+      collisionFadeOpacity: opt?.collisionFadeOpacity ?? CAMERA_DEFAULTS.COLLISION_FADE_OPACITY,
       ...(opt?.focus !== undefined ? { focus: opt.focus } : {}),
       ...(opt?.focusTarget
         ? { focusTarget: { x: opt.focusTarget.x, y: opt.focusTarget.y, z: opt.focusTarget.z } }

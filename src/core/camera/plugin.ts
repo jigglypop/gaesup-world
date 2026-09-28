@@ -5,7 +5,7 @@ import { createIdentityRevision } from '../save/core/revision';
 import { useGaesupStore, RUNTIME_GAESUP_STORE_SERVICE_ID, type GaesupStore } from '../stores/gaesupStore';
 import type { CameraSystemConfig } from './bridge/types';
 import { CameraSystem } from './core/CameraSystem';
-import type { CameraCollisionTargets, CameraOptionType } from './core/types';
+import type { CameraCollisionMode, CameraCollisionTargets, CameraOptionType } from './core/types';
 import type { ModeState } from '../stores/slices/mode';
 
 type SerializedVector3 = {
@@ -65,6 +65,7 @@ export const DEFAULT_CAMERA_SYSTEM_EXTENSION_ID = 'camera.system';
 export const DEFAULT_CAMERA_SAVE_EXTENSION_ID = 'camera';
 export const DEFAULT_CAMERA_STORE_SERVICE_ID = 'camera.store';
 const COLLISION_TARGETS: ReadonlySet<unknown> = new Set<CameraCollisionTargets>(['scene', 'colliders']);
+const COLLISION_MODES: ReadonlySet<unknown> = new Set<CameraCollisionMode>(['push', 'fade']);
 const VECTOR_OPTION_KEYS = new Set(['focusTarget', 'fixedPosition']);
 /**
  * Never saved or restored: the transient shake `offset` (older saves hold a meaningless (-10, -10, -10) default that
@@ -185,7 +186,8 @@ function prepareCameraState(data: CameraSerializedState | null | undefined, stor
   const raw = data.cameraOption;
   if (raw) {
     for (const key of ['maxDistance', 'distance', 'xDistance', 'yDistance', 'zDistance', 'zoom', 'zoomSpeed', 'minZoom', 'maxZoom',
-      'focusDuration', 'focusDistance', 'focusLerpSpeed', 'collisionMargin', 'fov', 'minFov', 'maxFov', 'isoAngle']) {
+      'focusDuration', 'focusDistance', 'focusLerpSpeed', 'collisionMargin', 'collisionFadeOpacity', 'fov', 'minFov', 'maxFov',
+      'isoAngle']) {
       if (raw[key] !== undefined && (typeof raw[key] !== 'number' || !Number.isFinite(raw[key]))) throw new TypeError('Invalid camera number');
     }
     for (const key of ['enableZoom', 'focus', 'enableFocus', 'enableCollision']) {
@@ -197,6 +199,9 @@ function prepareCameraState(data: CameraSerializedState | null | undefined, stor
     if (raw['mode'] !== undefined && typeof raw['mode'] !== 'string') throw new TypeError('Invalid camera option mode');
     if (raw['collisionTargets'] !== undefined && !COLLISION_TARGETS.has(raw['collisionTargets'])) {
       throw new TypeError('Invalid camera collision targets');
+    }
+    if (raw['collisionMode'] !== undefined && !COLLISION_MODES.has(raw['collisionMode'])) {
+      throw new TypeError('Invalid camera collision mode');
     }
   }
   const option = raw ? deserializeCameraOption(raw) : undefined;

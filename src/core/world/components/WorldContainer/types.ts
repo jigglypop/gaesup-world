@@ -22,6 +22,8 @@ export type WorldCameraOption = Pick<CameraOptionType,
   | 'maxZoom'
   | 'zoomSpeed'
   | 'enableCollision'
+  | 'collisionMode'
+  | 'collisionFadeOpacity'
   | 'dragOrbit'
 > & {
   type: CameraType;

@@ -3,6 +3,7 @@ import type {
   CameraSettingsLabels,
   CameraSettingsSection,
 } from './types';
+import { CAMERA_DEFAULTS } from '../../../../camera/core/constants';
 
 const CAMERA_SETTINGS_DISTANCE_MIN = -50;
 const CAMERA_SETTINGS_DISTANCE_MAX = 50;
@@ -28,6 +29,7 @@ const CAMERA_SETTINGS_BOUND_MAX_MIN = 5;
 const CAMERA_SETTINGS_BOUND_MIN = -10;
 const CAMERA_SETTINGS_BOUND_MAX = 100;
 const CAMERA_SETTINGS_DISTANCE_STEP = 1;
+const CAMERA_SETTINGS_OPACITY_STEP = 0.05;
 export const CAMERA_SETTINGS_DEFAULT_LABELS: CameraSettingsLabels = {
   modePrefix: '모드',
   fallbackMode: '3인칭',
@@ -183,6 +185,23 @@ export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] 
         kind: 'checkbox',
         path: 'enableCollision',
         defaultValue: false,
+      },
+      {
+        key: 'collisionFade',
+        label: '가리면 반투명',
+        kind: 'checkbox',
+        path: 'collisionMode',
+        defaultValue: false,
+      },
+      {
+        key: 'collisionFadeOpacity',
+        label: '가림 불투명도',
+        kind: 'range',
+        path: 'collisionFadeOpacity',
+        min: 0,
+        max: 1,
+        step: CAMERA_SETTINGS_OPACITY_STEP,
+        defaultValue: CAMERA_DEFAULTS.COLLISION_FADE_OPACITY,
       },
       {
         key: 'enableFocus',

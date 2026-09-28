@@ -6,6 +6,7 @@ import { TRIANGLE_GRID_MIN, triangleGrid, visitGridTriangles } from './triangleG
 const triangle = new Triangle();
 const closest = new Vector3();
 const normal = new Vector3();
+const faceNormal = new Vector3();
 const center = new Vector3();
 const contact = new Vector3();
 const edge = new Vector3();
@@ -176,8 +177,25 @@ export function sweepSphereTriangle(ray: Ray, radius: number, surface: Triangle,
 
 type Positions = BufferAttribute | InterleavedBufferAttribute;
 
-// Per-sweep state for visitTriangles; sweeps never nest.
+/**
+ * Receives every contact of a sweep that collects them, not only the nearest: the instance (-1 outside instanced and
+ * batched meshes), the index offset of the triangle's first corner, the distance, and the triangle's world normal turned
+ * toward the ray origin. The normal is reused by the next contact.
+ */
+export type SweepContact = (instance: number, offset: number, distance: number, normal: Vector3) => void;
+
+// Per-sweep state of the triangle visitors, so a visit allocates nothing; sweeps never nest.
 let nearest = Infinity;
+let sweepVertices: Mesh;
+let sweepPositions: Positions;
+let sweepIndex: BufferAttribute | null = null;
+let sweepRay: Ray;
+let sweepRadius = 0;
+let sweepLimit = 0;
+let sweepCull = false;
+let sweepPoint: Vector3;
+let sink: SweepContact | null = null;
+let sinkInstance = -1;
 
 /** Bounds of the swept sphere in the current instance's local space. False when the transform cannot be inverted. */
 function prepareLocalBox(): boolean {
@@ -186,16 +204,16 @@ function prepareLocalBox(): boolean {
   return true;
 }
 
-/** Tests the triangle whose first corner is at index offset `i`. With `cull`, a triangle whose raw vertices all lie
- * beyond one face of the swept sphere's local bounds is rejected before any vector math. */
-function visitTriangle(
-  vertices: Mesh, positions: Positions, index: BufferAttribute | null, i: number,
-  ray: Ray, radius: number, maxDistance: number, cull: boolean, point: Vector3,
-): void {
+/** Tests the triangle whose first corner is at index offset `i`. With culling, a triangle whose raw vertices all lie
+ * beyond one face of the swept sphere's local bounds is rejected before any vector math. A contact sink sees every
+ * contact, so it gives up pruning by the nearest one. */
+function visitTriangle(i: number): void {
+  const index = sweepIndex;
+  const positions = sweepPositions;
   const a = index ? index.getX(i) : i;
   const b = index ? index.getX(i + 1) : i + 1;
   const c = index ? index.getX(i + 2) : i + 2;
-  if (cull) {
+  if (sweepCull) {
     const { min, max } = localBox;
     const ax = positions.getX(a); const bx = positions.getX(b); const cx = positions.getX(c);
     if ((ax < min.x && bx < min.x && cx < min.x) || (ax > max.x && bx > max.x && cx > max.x)) return;
@@ -204,31 +222,35 @@ function visitTriangle(
     const ay = positions.getY(a); const by = positions.getY(b); const cy = positions.getY(c);
     if ((ay < min.y && by < min.y && cy < min.y) || (ay > max.y && by > max.y && cy > max.y)) return;
   }
-  vertices.getVertexPosition(a, triangle.a).applyMatrix4(worldMatrix);
-  vertices.getVertexPosition(b, triangle.b).applyMatrix4(worldMatrix);
-  vertices.getVertexPosition(c, triangle.c).applyMatrix4(worldMatrix);
-  const distance = sweepSphereTriangle(ray, radius, triangle, Math.min(maxDistance, nearest), closest);
-  if (distance < nearest) { nearest = distance; point.copy(closest); }
+  sweepVertices.getVertexPosition(a, triangle.a).applyMatrix4(worldMatrix);
+  sweepVertices.getVertexPosition(b, triangle.b).applyMatrix4(worldMatrix);
+  sweepVertices.getVertexPosition(c, triangle.c).applyMatrix4(worldMatrix);
+  const distance = sweepSphereTriangle(sweepRay, sweepRadius, triangle, sink ? sweepLimit : Math.min(sweepLimit, nearest), closest);
+  if (distance < nearest) { nearest = distance; sweepPoint.copy(closest); }
+  if (sink && distance <= sweepLimit) {
+    triangle.getNormal(faceNormal);
+    if (faceNormal.dot(sweepRay.direction) > 0) faceNormal.negate();
+    sink(sinkInstance, i, distance, faceNormal);
+  }
 }
 
 /** Tests triangles [start, end). A large static range looks its triangles up in a grid over the geometry, so it
  * costs the triangles under the swept path, not every one; otherwise each triangle costs one cull comparison. */
-function visitTriangles(
-  vertices: Mesh, positions: Positions, index: BufferAttribute | null, start: number, end: number,
-  ray: Ray, radius: number, maxDistance: number, cull: boolean, point: Vector3,
-): void {
-  if (cull && start % 3 === 0 && end - start >= TRIANGLE_GRID_MIN * 3) {
-    const grid = triangleGrid(vertices.geometry, positions, index);
-    visitGridTriangles(grid, localBox, start, end, (i) => visitTriangle(vertices, positions, index, i, ray, radius, maxDistance, cull, point));
+function visitTriangles(start: number, end: number): void {
+  if (sweepCull && start % 3 === 0 && end - start >= TRIANGLE_GRID_MIN * 3) {
+    visitGridTriangles(triangleGrid(sweepVertices.geometry, sweepPositions, sweepIndex), localBox, start, end, visitTriangle);
     return;
   }
-  for (let i = start; i + 2 < end; i += 3) visitTriangle(vertices, positions, index, i, ray, radius, maxDistance, cull, point);
+  for (let i = start; i + 2 < end; i += 3) visitTriangle(i);
 }
 
 /** Mesh sweep uses exact triangles after a conservative world-AABB broad phase.
  * Output point is caller-owned. Animated vertices use Mesh.getVertexPosition.
+ * `onContact` also receives every contact within `maxDistance`, per instance and triangle.
  */
-export function sweepSphereMesh(mesh: Mesh, ray: Ray, radius: number, maxDistance: number, point: Vector3): number {
+export function sweepSphereMesh(
+  mesh: Mesh, ray: Ray, radius: number, maxDistance: number, point: Vector3, onContact?: SweepContact,
+): number {
   const geometry = mesh.geometry;
   const positions = geometry.getAttribute('position');
   if (!positions) return Infinity;
@@ -254,6 +276,15 @@ export function sweepSphereMesh(mesh: Mesh, ray: Ray, radius: number, maxDistanc
   segmentBox.set(ray.origin, ray.origin).expandByPoint(center.copy(ray.origin).addScaledVector(ray.direction, maxDistance));
   sweptBox.copy(segmentBox).expandByScalar(radius);
   nearest = Infinity;
+  sweepVertices = vertices;
+  sweepPositions = positions;
+  sweepIndex = index;
+  sweepRay = ray;
+  sweepRadius = radius;
+  sweepLimit = maxDistance;
+  sweepPoint = point;
+  sink = onContact ?? null;
+  sinkInstance = -1;
   if (batched) {
     // Public IDs can have holes after deletion. Stop after the active instance count.
     let remaining = batched.instanceCount;
@@ -269,35 +300,39 @@ export function sweepSphereMesh(mesh: Mesh, ray: Ray, radius: number, maxDistanc
       if (!box.applyMatrix4(worldMatrix).expandByScalar(radius).intersectsBox(segmentBox)) continue;
       const range = batched.getGeometryRangeAt(geometryId, batchRange);
       if (range) {
-        visitTriangles(vertices, positions, index, range.start, range.start + range.count,
-          ray, radius, maxDistance, cullable && prepareLocalBox(), point);
+        sinkInstance = id;
+        sweepCull = cullable && prepareLocalBox();
+        visitTriangles(range.start, range.start + range.count);
       }
     }
+    sink = null;
     return nearest;
   }
   // Cached world spheres reject instances without touching matrices; floor batches pass the mesh bounds every frame.
+  // A zero-scale instance (hidden, or drawn apart by a camera fade) has no surface.
   const spheres = instanced && bounds ? getInstanceSpheres(instanced, bounds) : null;
   for (let instance = 0; instance < (instanced?.count ?? 1); instance++) {
-    if (spheres && !segmentNearSphere(ray, maxDistance, spheres[instance * 4]!, spheres[instance * 4 + 1]!,
-      spheres[instance * 4 + 2]!, spheres[instance * 4 + 3]! + radius)) continue;
+    if (spheres && (spheres[instance * 4 + 3] === 0 || !segmentNearSphere(ray, maxDistance, spheres[instance * 4]!,
+      spheres[instance * 4 + 1]!, spheres[instance * 4 + 2]!, spheres[instance * 4 + 3]! + radius))) continue;
     if (instanced) {
       instanced.getMatrixAt(instance, instanceMatrix);
       worldMatrix.multiplyMatrices(mesh.matrixWorld, instanceMatrix);
       if (instanced.morphTexture) instanced.getMorphAt(instance, vertices);
+      sinkInstance = instance;
     } else worldMatrix.copy(mesh.matrixWorld);
     if (!spheres && bounds) {
       boundsCenter.copy(bounds.center).applyMatrix4(worldMatrix);
       if (!segmentNearSphere(ray, maxDistance, boundsCenter.x, boundsCenter.y, boundsCenter.z,
         bounds.radius * worldMatrix.getMaxScaleOnAxis() + radius)) continue;
     }
-    const cull = cullable && prepareLocalBox();
+    sweepCull = cullable && prepareLocalBox();
     if (Array.isArray(mesh.material)) {
       for (const group of geometry.groups) {
         if (!mesh.material[group.materialIndex ?? 0]) continue;
-        visitTriangles(vertices, positions, index, Math.max(drawStart, group.start), Math.min(drawEnd, group.start + group.count),
-          ray, radius, maxDistance, cull, point);
+        visitTriangles(Math.max(drawStart, group.start), Math.min(drawEnd, group.start + group.count));
       }
-    } else if (mesh.material) visitTriangles(vertices, positions, index, drawStart, drawEnd, ray, radius, maxDistance, cull, point);
+    } else if (mesh.material) visitTriangles(drawStart, drawEnd);
   }
+  sink = null;
   return nearest;
 }

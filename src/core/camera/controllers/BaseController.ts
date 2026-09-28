@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 
+import { disposeCameraOcclusion, peekCameraOcclusion } from '../core/CameraOcclusion';
 import { ICameraController, CameraCalcProps, CameraSystemState, CameraSystemConfig } from '../core/types';
 import { activeStateUtils, cameraUtils, resolveCollisionPosition } from '../utils/camera';
 
@@ -25,6 +26,8 @@ export abstract class BaseController implements ICameraController {
   private orbitPitchQuaternion = new THREE.Quaternion();
   private readonly xAxis = new THREE.Vector3(1, 0, 0);
   private readonly yAxis = new THREE.Vector3(0, 1, 0);
+  /** Scene of the last update, whose faded occluders `dispose` restores. */
+  private scene: THREE.Scene | null = null;
 
   private applyDefaults(state: CameraSystemState): void {
     const defaults = this.defaultConfig;
@@ -99,7 +102,11 @@ export abstract class BaseController implements ICameraController {
   
   update(props: CameraCalcProps, state: CameraSystemState): void {
     const { camera, deltaTime, activeState } = props;
-    if (!activeState) return;
+    this.scene = props.scene;
+    if (!activeState) {
+      peekCameraOcclusion(props.scene)?.update(deltaTime, state.config.collisionFadeOpacity, state.config.collisionMode === 'fade');
+      return;
+    }
     this.applyDefaults(state);
     const cameraOption = state.config;
     let targetPosition: THREE.Vector3;
@@ -150,9 +157,12 @@ export abstract class BaseController implements ICameraController {
       this.collisionPivot.copy(lookAtTarget).y += Math.max(COLLISION_PIVOT_HEIGHT, margin);
       resolveCollisionPosition(
         this.collisionPivot, this.nextPosition, props.scene, margin, props.excludeObjects,
-        this.nextPosition, cameraOption.collisionTargets,
+        this.nextPosition, cameraOption.collisionTargets, cameraOption.collisionMode ?? 'push',
       );
     }
+    // What the sweep collected fades toward the fade opacity and the rest fades back, also while collision is off
+    // (close-ups turn it off); leaving fade mode frees the kept copies.
+    peekCameraOcclusion(props.scene)?.update(deltaTime, cameraOption.collisionFadeOpacity, cameraOption.collisionMode === 'fade');
     camera.position.copy(this.nextPosition);
     cameraUtils.smoothLookAt(camera, lookAtTarget, rotationSmoothing, deltaTime);
     
@@ -160,5 +170,11 @@ export abstract class BaseController implements ICameraController {
     if (state.config.fov && camera instanceof THREE.PerspectiveCamera) {
       cameraUtils.updateFOV(camera, state.config.fov, state.config.smoothing?.fov, deltaTime);
     }
+  }
+
+  /** Restores the occluders this camera faded, at once, and frees their faded copies. */
+  dispose(): void {
+    if (this.scene) disposeCameraOcclusion(this.scene);
+    this.scene = null;
   }
 }

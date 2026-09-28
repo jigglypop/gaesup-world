@@ -34,7 +34,7 @@ gaesup-world는 React Three Fiber 위에서 도는 **웹판 Unity/Unreal**이다
 | [getting-started.md](guide/getting-started.md) | 설치, 예제 실행, 최소 월드와 각 조각의 역할 |
 | [world-runtime.md](guide/world-runtime.md) | 월드·런타임·store 범위, 프레임 단계, 물리 시계, 플러그인 |
 | [rendering.md](guide/rendering.md) | WebGPU 렌더러, 품질 tier, 해·안개·후처리, TSL 재질, 인스턴싱 |
-| [character-camera-input.md](guide/character-camera-input.md) | 조작 캐릭터, 카메라 모드와 충돌, 입력·터치·클릭 이동, 상호작용 |
+| [character-camera-input.md](guide/character-camera-input.md) | 조작 캐릭터, 카메라 모드와 충돌(밀기·반투명), 입력·터치·클릭 이동, 상호작용 |
 | [building.md](guide/building.md) | 건축 데이터 모델, store 액션, 편집 모드, 에디터 패널 |
 | [npc-dialog-gameplay.md](guide/npc-dialog-gameplay.md) | NPC(템플릿·인스턴스·두뇌·시뮬레이션), 대화, 게임플레이 규칙 엔진 |
 | [save-network.md](guide/save-network.md) | 저장 시스템, 월드·플레이어 스냅샷, 방문, 멀티플레이 클라이언트 |

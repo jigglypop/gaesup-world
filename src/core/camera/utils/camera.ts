@@ -4,8 +4,11 @@ import * as THREE from 'three';
 import { cameraMeshMayIntersect, sweepSphereBounds, sweepSphereMesh } from './sphereSweep';
 import { ActiveStateType } from '../../motions/core/types';
 import { getCameraCollisionIndex, invalidateCameraColliders } from '../core/CameraCollisionIndex';
+import { getCameraOcclusion, type CameraOcclusion } from '../core/CameraOcclusion';
 import { CAMERA_CONSTANTS } from '../core/constants';
-import { CameraOptionType, CameraBounds, CollisionCheckResult, Obstacle, type CameraCollisionTargets } from '../core/types';
+import {
+  CameraOptionType, CameraBounds, CollisionCheckResult, Obstacle, type CameraCollisionMode, type CameraCollisionTargets,
+} from '../core/types';
 
 const tempVector3 = new THREE.Vector3();
 const tempVector3_2 = new THREE.Vector3();
@@ -24,12 +27,20 @@ const fallbackVelocity = new THREE.Vector3();
 const fallbackOffset = new THREE.Vector3();
 const fallbackToVec3 = new THREE.Vector3();
 
-function isCollidableInScene(mesh: THREE.Mesh, scene: THREE.Scene, excludedObjects: readonly THREE.Object3D[] | undefined): boolean {
-  let object: THREE.Object3D | null = mesh;
-  while (object) {
-    if (object.userData['intangible'] || excludedObjects?.includes(object)) return false;
-    if (object === scene) return true;
-    object = object.parent;
+/**
+ * False when the mesh is outside the scene or excluded (`userData.intangible`, `excludedObjects` on the way up); else the
+ * nearest `userData.cameraCollisionMode` on the way up, or undefined when none overrides the camera's mode.
+ */
+function collisionModeInScene(
+  mesh: THREE.Mesh, scene: THREE.Scene, excludedObjects: readonly THREE.Object3D[] | undefined,
+): CameraCollisionMode | undefined | false {
+  let mode: CameraCollisionMode | undefined;
+  for (let object: THREE.Object3D | null = mesh; object; object = object.parent) {
+    const data = object.userData;
+    if (data['intangible'] || excludedObjects?.includes(object)) return false;
+    const own = data['cameraCollisionMode'];
+    if (mode === undefined && (own === 'push' || own === 'fade')) mode = own;
+    if (object === scene) return mode;
   }
   return false;
 }
@@ -38,6 +49,10 @@ export function invalidateCollisionCache(): void {
   invalidateCameraColliders();
 }
 
+/**
+ * With a `mode`, meshes that resolve to `fade` (the mode, or their own `userData.cameraCollisionMode`) are collected by
+ * the scene's occlusion fader instead of blocking; its ground contacts still block. Without one, everything blocks.
+ */
 function sweepCameraPath(
   from: THREE.Vector3,
   to: THREE.Vector3,
@@ -47,6 +62,7 @@ function sweepCameraPath(
   out: THREE.Vector3,
   obstacles: Obstacle[] | null,
   targets: CameraCollisionTargets,
+  mode: CameraCollisionMode | null,
 ): boolean {
   collisionDirection.subVectors(to, from);
   const distance = collisionDirection.length();
@@ -67,14 +83,20 @@ function sweepCameraPath(
   const colliders = targets === 'colliders' ? index.getColliders() : null;
   const colliderMode = colliders !== null && colliders.length > 0;
   const meshes = colliderMode ? colliders : index.getMeshes(excludedObjects);
+  let occlusion: CameraOcclusion | undefined;
   try {
     for (let i = 0, len = meshes.length; i < len; i++) {
       const mesh = meshes[i];
       if (!mesh) continue;
       if (!colliderMode && !cameraMeshMayIntersect(mesh, collisionRaycaster.ray, radius, distance)) continue;
-      if (!isCollidableInScene(mesh, scene, excludedObjects)) continue;
+      const own = collisionModeInScene(mesh, scene, excludedObjects);
+      if (own === false) continue;
       mesh.updateWorldMatrix(true, false);
       if (!cameraMeshMayIntersect(mesh, collisionRaycaster.ray, radius, distance)) continue;
+      if (mode !== null && (own ?? mode) === 'fade') {
+        occlusion ??= getCameraOcclusion(scene).begin(collisionRaycaster.ray, radius, distance);
+        if (occlusion.collect(mesh, own === 'fade')) continue;
+      }
       // Skinning every triangle each frame costs more than it gains; bind-pose bounds approximate the body.
       const skinned = (mesh as THREE.SkinnedMesh).isSkinnedMesh === true;
       // A swept sphere contains its center ray, so the ray narrow phase only runs for zero-radius probes.
@@ -101,12 +123,23 @@ function sweepCameraPath(
     collisionIntersections.length = 0;
   }
 
+  if (occlusion) {
+    if (occlusion.solid < safeDistance) {
+      blocked = true;
+      safeDistance = occlusion.solid;
+    }
+    occlusion.finish(safeDistance);
+  }
+
   if (blocked) out.copy(from).addScaledVector(collisionDirection, safeDistance);
   else out.copy(to);
   return blocked;
 }
 
-/** Frame hot path: writes the collision-safe camera position into `out` without collecting obstacles. */
+/**
+ * Frame hot path: writes the collision-safe camera position into `out` without collecting obstacles. `mode` is the
+ * camera's collision mode; fading meshes leave the position alone and are faded by the scene's occlusion fader.
+ */
 export function resolveCollisionPosition(
   from: THREE.Vector3,
   to: THREE.Vector3,
@@ -115,8 +148,9 @@ export function resolveCollisionPosition(
   excludedObjects: THREE.Object3D[] | undefined,
   out: THREE.Vector3,
   targets: CameraCollisionTargets = 'scene',
+  mode: CameraCollisionMode = 'push',
 ): THREE.Vector3 {
-  sweepCameraPath(from, to, scene, radius, excludedObjects, out, null, targets);
+  sweepCameraPath(from, to, scene, radius, excludedObjects, out, null, targets, mode);
   return out;
 }
 
@@ -199,7 +233,7 @@ export const cameraUtils = {
   ): CollisionCheckResult => {
     const obstacles: Obstacle[] = [];
     const position = new THREE.Vector3();
-    const blocked = sweepCameraPath(from, to, scene, radius, excludedObjects, position, obstacles, 'scene');
+    const blocked = sweepCameraPath(from, to, scene, radius, excludedObjects, position, obstacles, 'scene', null);
     return { safe: !blocked, position, obstacles };
   },
 

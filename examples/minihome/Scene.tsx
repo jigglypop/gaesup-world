@@ -34,6 +34,8 @@ export type SceneSettings = {
   postProcessing: boolean;
   /** Draw 30 frames a second after two idle seconds. */
   idleThrottle: boolean;
+  /** What hides the player turns see-through instead of pulling the camera in front of it (on when unset). */
+  cameraFade?: boolean;
 };
 
 /** The island canvas: the player, the village, its residents and the rule engine's trigger areas. */

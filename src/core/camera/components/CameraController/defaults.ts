@@ -1,4 +1,5 @@
 import type {
+  CameraCollisionModeConfig,
   CameraControllerClassNameSlot,
   CameraControllerLabels,
   CameraControllerModeOption,
@@ -15,8 +16,13 @@ export const CAMERA_CONTROLLER_DEFAULT_MODES: CameraModeConfig[] = [
   { value: 'sideScroll', label: '횡스크롤' },
   { value: 'fixed', label: '고정' },
 ];
+export const CAMERA_CONTROLLER_DEFAULT_COLLISION_MODES: CameraCollisionModeConfig[] = [
+  { value: 'push', label: '가리면 당기기' },
+  { value: 'fade', label: '가리면 반투명' },
+];
 export const CAMERA_CONTROLLER_DEFAULT_LABELS: CameraControllerLabels = {
   title: '카메라 모드',
+  collision: '가림 처리',
 };
 export const CAMERA_CONTROLLER_MODE_OPTIONS: Record<CameraType, CameraControllerModeOption> = {
   thirdPerson: {

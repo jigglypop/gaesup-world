@@ -8,6 +8,9 @@ import { WorldPropsType } from './types';
 import { MinimapSystem } from '../../../ui/core';
 import { createUniqueId } from '../../../utils/id';
 
+/** Ground never turns see-through: a camera in `collisionMode: 'fade'` still stops in front of it. */
+const GROUND_USER_DATA = { cameraCollisionMode: 'push' };
+
 export function WorldProps({ 
   type = 'normal', 
   text, 
@@ -70,6 +73,7 @@ export function WorldProps({
     <group 
       ref={groupRef}
       {...(position ? { position } : {})}
+      {...(type === 'ground' ? { userData: GROUND_USER_DATA } : {})}
       onClick={(e) => {
         if (interactive) {
           e.stopPropagation();

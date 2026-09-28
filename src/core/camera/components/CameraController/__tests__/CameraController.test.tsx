@@ -83,4 +83,36 @@ describe('CameraController 커스텀 UI', () => {
       root.unmount();
     });
   });
+  test('가림 처리 버튼이 collisionMode를 바꾸고, 카메라 모드를 바꿔도 유지된다', () => {
+    const handleCollisionModeChange = jest.fn();
+    useGaesupStore.getState().setCameraOption({ collisionMode: 'push' });
+    let renderer: ReactTestRenderer | undefined;
+    act(() => {
+      renderer = create(<CameraController onCollisionModeChange={handleCollisionModeChange} />);
+    });
+    const root = renderer as ReactTestRenderer;
+    const group = root.root.findByProps({ role: 'group' });
+    expect(group.props['aria-label']).toBe('가림 처리');
+    const [push, fade] = group.findAllByType('button');
+    expect(push!.props['aria-pressed']).toBe(true);
+    act(() => {
+      (fade!.props['onClick'] as () => void)();
+    });
+    expect(useGaesupStore.getState().cameraOption.collisionMode).toBe('fade');
+    expect(handleCollisionModeChange).toHaveBeenCalledWith('fade');
+    expect(root.root.findByProps({ role: 'group' }).findAllByType('button')[1]!.props['aria-pressed']).toBe(true);
+    act(() => {
+      (root.root.findAllByType('button')[1]!.props['onClick'] as () => void)();
+    });
+    expect(useGaesupStore.getState().mode.control).toBe('firstPerson');
+    expect(useGaesupStore.getState().cameraOption.collisionMode).toBe('fade');
+    act(() => {
+      root.update(<CameraController collisionModes={[]} />);
+    });
+    expect(root.root.findAllByProps({ role: 'group' })).toHaveLength(0);
+    act(() => {
+      root.unmount();
+    });
+    useGaesupStore.getState().setCameraOption({ collisionMode: 'push' });
+  });
 });

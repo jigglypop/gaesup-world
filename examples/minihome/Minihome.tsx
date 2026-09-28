@@ -2,7 +2,9 @@ import './minihome.css';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { DialogBox, GaesupWorld, InteractionPrompt, ToastHost, useAmbientBgm, useAutoSave, useGameTime, useLoadOnMount } from 'gaesup-world';
+import {
+  DialogBox, GaesupWorld, InteractionPrompt, ToastHost, useAmbientBgm, useAutoSave, useGameTime, useGaesupStoreApi, useLoadOnMount,
+} from 'gaesup-world';
 
 import { Decorate } from './Decorate';
 import { Guestbook } from './Guestbook';
@@ -43,6 +45,15 @@ function Bgm({ enabled }: { enabled: boolean }) {
   return null;
 }
 
+/** The settings panel's camera choice, applied to this world's camera option. */
+function CameraOcclusion({ fade }: { fade: boolean }) {
+  const store = useGaesupStoreApi();
+  useEffect(() => {
+    store.getState().setCameraOption({ collisionMode: fade ? 'fade' : 'push' });
+  }, [store, fade]);
+  return null;
+}
+
 export default function Minihome() {
   const [runtime] = useState(createMinihomeRuntime);
   useEffect(() => {
@@ -71,6 +82,7 @@ export default function Minihome() {
     <GaesupWorld runtime={runtime} urls={urls} cameraOption={CAMERA}>
       <Persistence />
       <Bgm enabled={bgm} />
+      <CameraOcclusion fade={settings.cameraFade ?? true} />
       <div className="mh-page">
         <div className="mh-frame">
           <header className="mh-head">

@@ -35,6 +35,22 @@ describe('CameraSettingsTab helper', () => {
       bounds: { minY: 2, maxY: 70 },
     });
   });
+  test('가림 반투명 체크박스는 collisionMode를 push와 fade로 오간다', () => {
+    const field: CameraSettingsField = {
+      key: 'collision-fade',
+      label: 'Fade',
+      kind: 'checkbox',
+      path: 'collisionMode',
+      defaultValue: false,
+    };
+    expect(readCameraSettingsValue(cameraOption, field)).toBe(false);
+    expect(readCameraSettingsValue({ collisionMode: 'fade' }, field)).toBe(true);
+    expect(createCameraSettingsUpdate(cameraOption, field, true)).toEqual({ collisionMode: 'fade' });
+    expect(createCameraSettingsUpdate(cameraOption, field, false)).toEqual({ collisionMode: 'push' });
+    const opacity: CameraSettingsField = { key: 'fade-opacity', label: 'Opacity', kind: 'range', path: 'collisionFadeOpacity', defaultValue: 0.3 };
+    expect(readCameraSettingsValue(cameraOption, opacity)).toBe(0.3);
+    expect(createCameraSettingsUpdate(cameraOption, opacity, 0.5)).toEqual({ collisionFadeOpacity: 0.5 });
+  });
   test('숨김 섹션과 숨김 필드를 제외해야 한다', () => {
     const sections: readonly CameraSettingsSection[] = [
       {

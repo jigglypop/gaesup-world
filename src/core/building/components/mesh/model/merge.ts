@@ -114,7 +114,8 @@ export function placementOf(object: PlacedObject, target: THREE.Matrix4): THREE.
 
 /**
  * One geometry of every entry's parts placed in the world, with each part's color, emission and roughness per vertex:
- * the draw of a whole cell. Quantized glTF attributes are read unpacked.
+ * the draw of a whole cell. Quantized glTF attributes are read unpacked. `userData.mergedParts` lists the index offset
+ * where each entry ends, so a camera fade turns one placed object see-through instead of the whole cell.
  */
 export function mergeStaticModels(entries: readonly StaticEntry[]): THREE.BufferGeometry | null {
   let vertexCount = 0;
@@ -132,9 +133,10 @@ export function mergeStaticModels(entries: readonly StaticEntry[]): THREE.Buffer
   const emissive = new Float32Array(vertexCount * 3);
   const roughness = new Float32Array(vertexCount);
   const index = vertexCount > 0xffff ? new Uint32Array(indexCount) : new Uint16Array(indexCount);
+  const ends = new Uint32Array(entries.length);
   let base = 0;
   let cursor = 0;
-  for (const { object, parts } of entries) {
+  for (const [entry, { object, parts }] of entries.entries()) {
     placementOf(object, placement);
     for (const part of parts) {
       matrix.multiplyMatrices(placement, part.matrix);
@@ -157,8 +159,10 @@ export function mergeStaticModels(entries: readonly StaticEntry[]): THREE.Buffer
       }
       base += positions.count;
     }
+    ends[entry] = cursor;
   }
   const geometry = new THREE.BufferGeometry();
+  geometry.userData['mergedParts'] = ends;
   geometry.setAttribute('position', new THREE.BufferAttribute(position, 3));
   geometry.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
   geometry.setAttribute('color', new THREE.BufferAttribute(color, 3));

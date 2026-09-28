@@ -18,6 +18,8 @@ export type BoxTileBatch = {
 };
 
 const GROUND_LEVEL = 0.02;
+/** Tiles are ground: a camera in `collisionMode: 'fade'` stops in front of them instead of seeing through. */
+const GROUND_USER_DATA = { cameraCollisionMode: 'push' };
 
 export function isRaisedTile(tile: TileConfig): boolean {
   return tile.position.y > GROUND_LEVEL;
@@ -76,6 +78,7 @@ export function BoxTileBatchMesh({
       castShadow={batch.castShadow}
       receiveShadow
       frustumCulled
+      userData={GROUND_USER_DATA}
     />
   );
 }

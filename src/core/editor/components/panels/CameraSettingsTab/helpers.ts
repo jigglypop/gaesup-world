@@ -68,6 +68,10 @@ export function readCameraSettingsValue(
       return cameraOption.maxZoom ?? field.defaultValue;
     case 'enableCollision':
       return cameraOption.enableCollision ?? field.defaultValue;
+    case 'collisionMode':
+      return cameraOption.collisionMode === undefined ? field.defaultValue : cameraOption.collisionMode === 'fade';
+    case 'collisionFadeOpacity':
+      return cameraOption.collisionFadeOpacity ?? field.defaultValue;
     case 'enableFocus':
       return cameraOption.enableFocus ?? field.defaultValue;
     case 'focusDistance':
@@ -111,6 +115,10 @@ export function createCameraSettingsUpdate(
       return { maxZoom: toNumber(value) };
     case 'enableCollision':
       return { enableCollision: toBoolean(value) };
+    case 'collisionMode':
+      return { collisionMode: toBoolean(value) ? 'fade' : 'push' };
+    case 'collisionFadeOpacity':
+      return { collisionFadeOpacity: toNumber(value) };
     case 'enableFocus':
       return { enableFocus: toBoolean(value) };
     case 'focusDistance':

@@ -48,6 +48,8 @@ test('placed copies merge into one geometry with each part surface per vertex', 
   expect(geometry.index!.count).toBe(12);
   // The second copy's indices start past the first copy's vertices.
   expect(Math.min(...Array.from(geometry.index!.array).slice(6))).toBe(4);
+  // Where each placed object ends, so a camera fade can turn one of them see-through.
+  expect(Array.from(geometry.userData['mergedParts'] as Uint32Array)).toEqual([6, 12]);
   const box = new THREE.Box3().setFromBufferAttribute(geometry.getAttribute('position') as THREE.BufferAttribute);
   expect(box.max.y).toBeCloseTo(3);
   expect(box.min.x).toBeCloseTo(0);

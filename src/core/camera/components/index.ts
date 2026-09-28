@@ -1,11 +1,13 @@
 export {
   CAMERA_CONTROLLER_DEFAULT_CLASSES,
+  CAMERA_CONTROLLER_DEFAULT_COLLISION_MODES,
   CAMERA_CONTROLLER_DEFAULT_LABELS,
   CAMERA_CONTROLLER_DEFAULT_MODES,
   CAMERA_CONTROLLER_MODE_OPTIONS,
   CameraController,
 } from './CameraController';
 export type {
+  CameraCollisionModeConfig,
   CameraControllerActions,
   CameraControllerClassNameSlot,
   CameraControllerClassNames,

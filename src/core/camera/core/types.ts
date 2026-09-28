@@ -17,6 +17,13 @@ export interface CameraConstants {
 
 export type CameraCollisionTargets = 'scene' | 'colliders';
 
+/**
+ * What the camera does about a mesh between it and the character: `push` moves the camera in front of it, `fade` keeps
+ * the camera where it is and turns the mesh see-through until it stops occluding. A mesh (or an ancestor) overrides the
+ * option with `userData.cameraCollisionMode`.
+ */
+export type CameraCollisionMode = 'push' | 'fade';
+
 export interface CameraBounds {
   minX?: number;
   maxX?: number;
@@ -46,6 +53,13 @@ export interface CameraOption {
   collisionMargin?: number;
   /** 'colliders' tests only meshes on CAMERA_COLLIDER_LAYER and falls back to the whole scene when none exist. */
   collisionTargets?: CameraCollisionTargets;
+  /**
+   * How `enableCollision` handles occluders; `push` (default) or `fade`. Fade still pushes for ground (surfaces facing
+   * up), meshes marked `userData.cameraCollisionMode: 'push'`, invisible meshes and materials it cannot fade.
+   */
+  collisionMode?: CameraCollisionMode;
+  /** Opacity a faded occluder reaches, 0–1, relative to its own (default 0.3). */
+  collisionFadeOpacity?: number;
   smoothing?: {
     position?: number;
     rotation?: number;
@@ -146,6 +160,8 @@ export interface CameraSystemConfig {
   enableCollision: boolean;
   collisionMargin?: number;
   collisionTargets?: CameraCollisionTargets;
+  collisionMode?: CameraCollisionMode;
+  collisionFadeOpacity?: number;
   orbitYaw?: number;
   orbitPitch?: number;
   smoothing?: {
@@ -180,6 +196,8 @@ export interface ICameraController {
   name: string;
   defaultConfig: Partial<CameraSystemConfig>;
   update(props: CameraCalcProps, state: CameraSystemState): void;
+  /** Restores what the controller changed in the scene (faded occluders) and frees what it made for that. */
+  dispose?(): void;
 }
 
 export interface Obstacle {

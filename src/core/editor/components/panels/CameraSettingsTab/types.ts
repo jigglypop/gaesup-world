@@ -17,6 +17,8 @@ export type CameraSettingsFieldPath =
   | 'minZoom'
   | 'maxZoom'
   | 'enableCollision'
+  | 'collisionMode'
+  | 'collisionFadeOpacity'
   | 'enableFocus'
   | 'focusDistance'
   | 'smoothing.position'

@@ -102,6 +102,19 @@ function createSpatialRuntimeProbe(kind) {
       { lastUpdate: 0, config: { mode: 'thirdPerson', distance: { x: 4, y: 0, z: -8 }, zoom: 1, enableCollision: true, collisionMargin: 0.25, smoothing: { position: 0.5, rotation: 0.5 } } });
     if (new Box3().setFromObject(wall).distanceToPoint(camera.position) < 0.25 - 1e-6) throw new Error('Installed camera interpolation clips through wall');
   } finally { manager.dispose(); scene.clear(); wall.geometry.dispose(); wall.material.dispose(); }
+  const faded = new Mesh(new BoxGeometry(1, 4, 3), new MeshBasicMaterial()); faded.position.set(0, 0, 8); scene.add(faded);
+  const shared = faded.material;
+  const fadeManager = new rootModule.EntityStateManager();
+  const fader = new rootModule.ThirdPersonController();
+  try {
+    const camera = new PerspectiveCamera();
+    fader.update({ camera, scene, activeState: fadeManager.getActiveState(), deltaTime: 1 / 60 },
+      { lastUpdate: 0, config: { mode: 'thirdPerson', distance: { x: 0, y: 1, z: -12 }, zoom: 1, enableCollision: true, collisionMargin: 0.25, collisionMode: 'fade', smoothing: { position: 1000, rotation: 1000 } } });
+    if (faded.material === shared || !faded.material.transparent || shared.transparent) throw new Error('Installed camera fade did not fade its own copy');
+    if (camera.position.z < 12 - 1e-3) throw new Error('Installed camera fade pushed the camera');
+    fader.dispose();
+    if (faded.material !== shared) throw new Error('Installed camera fade did not restore the material');
+  } finally { fader.dispose(); fadeManager.dispose(); scene.clear(); faded.geometry.dispose(); shared.dispose(); }
 }`;
 }
 
@@ -875,6 +888,7 @@ ${createInteractionAggregateTypeProbe('rootModule.')}`;
           'isWebGPUAvailable',
           'requestCameraCloseUp',
           'playCameraCinematic',
+          'CAMERA_CONTROLLER_DEFAULT_COLLISION_MODES',
           'TeleportOnClick',
           'TeleportMarker',
           'createTeleportDestination',
@@ -1069,6 +1083,7 @@ import type { Vector2, Vector3 } from 'three';
 
 import {
   BuildingUI,
+  CAMERA_CONTROLLER_DEFAULT_COLLISION_MODES,
   DEFAULT_CHARACTER_ATTACHMENT_SOCKETS,
   DEFAULT_CHARACTER_EQUIPMENT_PRESETS,
   GaesupWorld,
@@ -1104,6 +1119,8 @@ import {
   type AutomationMetrics,
   type AutomationSettings,
   type AutomationState,
+  type CameraCollisionMode,
+  type CameraCollisionModeConfig,
   type CanonicalSceneJsonObject,
   type GamepadState,
   type GaesupRuntime,
@@ -1123,6 +1140,7 @@ import {
   type SceneVector3,
   type TouchState,
   type UsePhysicsBridgeOptions,
+  type WorldCameraOption,
 } from 'gaesup-world';
 import { HttpAssetSource } from 'gaesup-world/assets';
 import { BlueprintFactory, BlueprintSpawner, WARRIOR_BLUEPRINT, type BlueprintAnimationClips, type BlueprintMovementInput } from 'gaesup-world/blueprints';
@@ -1178,6 +1196,14 @@ const runtime: GaesupRuntime = createGaesupRuntime({
   plugins: [createCameraPlugin(), createBuildingPlugin()],
 });
 const rendererCanvas = <Canvas gl={createRenderer} />;
+const collisionMode: CameraCollisionMode = 'fade';
+const fadingCamera: WorldCameraOption = {
+  type: 'thirdPerson', xDistance: -4, yDistance: 10, zDistance: -10, fov: 42, dragOrbit: 'all', collisionMode, collisionFadeOpacity: 0.3,
+};
+const fadingWorld = <GaesupWorld cameraOption={fadingCamera} />;
+const collisionButtons: CameraCollisionModeConfig[] = [...CAMERA_CONTROLLER_DEFAULT_COLLISION_MODES];
+// @ts-expect-error Camera collision modes are a closed union.
+const invalidCollisionMode: CameraCollisionMode = 'dissolve';
 declare module 'gaesup-world' {
   interface MeshRendererComponentData {
     consumerLabel?: string;
@@ -1319,6 +1345,9 @@ const attachments = resolveEquippedCharacterAttachments({
 
 void runtime;
 void rendererCanvas;
+void fadingWorld;
+void collisionButtons;
+void invalidCollisionMode;
 void augmentedMeshData;
 void strictSceneJsonFromAuthoring;
 void customMeshData.data.customValue;

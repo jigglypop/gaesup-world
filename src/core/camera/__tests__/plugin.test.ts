@@ -48,6 +48,7 @@ describe('camera plugin', () => {
     { fixedPosition: { x: 0, y: NaN, z: 0 } }, { focusTarget: [0, 0, 0] },
     { focusTarget: { x: Infinity, y: 0, z: 0 } }, { zoom: 'large' },
     { enableZoom: 'yes' }, { smoothing: { position: Infinity } },
+    { collisionMode: 'dissolve' }, { collisionFadeOpacity: 'half' },
   ])('rejects malformed options before applying mode or other domains: %j', async (cameraOption) => {
     const save = new SaveSystem({ adapter: new MemoryAdapter() });
     const applyOther = jest.fn();

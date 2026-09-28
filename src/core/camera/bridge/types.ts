@@ -1,7 +1,7 @@
 import type * as THREE from 'three';
 
 import type { TypedEventBus } from '../../plugins/EventBus';
-import type { CameraBounds, CameraCollisionTargets } from '../core/types';
+import type { CameraBounds, CameraCollisionMode, CameraCollisionTargets } from '../core/types';
 
 export type CameraEventValue = object | string | number | boolean | null | undefined;
 
@@ -26,6 +26,8 @@ export interface CameraSystemConfig {
   enableCollision: boolean;
   collisionMargin?: number;
   collisionTargets?: CameraCollisionTargets;
+  collisionMode?: CameraCollisionMode;
+  collisionFadeOpacity?: number;
   orbitYaw?: number;
   orbitPitch?: number;
   minDistance?: number;

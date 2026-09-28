@@ -77,6 +77,14 @@ describe('WorldConfigProvider', () => {
     unmount();
   });
 
+  it('passes the occlusion mode and fade opacity on to the camera option', () => {
+    const { unmount } = render(
+      <WorldConfigProvider cameraOption={{ type: 'thirdPerson', collisionMode: 'fade', collisionFadeOpacity: 0.4 }} />,
+    );
+    expect(useGaesupStore.getState().cameraOption).toMatchObject({ collisionMode: 'fade', collisionFadeOpacity: 0.4 });
+    unmount();
+  });
+
   it('puts a first-person eye at head height on the body instead of an orbit distance away', () => {
     const { unmount } = render(<WorldConfigProvider cameraOption={{ type: 'thirdPerson', distance: 15 }} />);
     unmount();

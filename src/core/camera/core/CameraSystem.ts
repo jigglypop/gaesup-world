@@ -108,6 +108,12 @@ export class CameraSystem extends BaseCameraSystem {
     this.trackFrameMetrics(deltaTime);
   }
 
+  /** Restores what the controllers changed in the scene, such as faded occluders. */
+  override destroy(): void {
+    this.controllers.forEach((controller) => controller.dispose?.());
+    super.destroy();
+  }
+
   calculate(props: CameraCalcProps): void {
     try {
       const controller = this.resolveActiveController();

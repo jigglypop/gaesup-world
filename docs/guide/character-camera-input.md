@@ -136,6 +136,8 @@ setPhysics({ walkSpeed: 6, runSpeed: 12, jumpSpeed: 12 });
 | `zoom` | 거리 배율, 기본 1 |
 | `enableZoom`, `minZoom`, `maxZoom`, `zoomSpeed` | 휠 줌(기본 켬, 0.45, 2.4, 0.001) |
 | `enableCollision` | 카메라 충돌(기본 켬) |
+| `collisionMode` | 가림 처리: `push`(기본, 카메라를 앞으로 당김) 또는 `fade`(가린 물체를 반투명하게). 아래 "가림 처리" |
+| `collisionFadeOpacity` | `fade`에서 가린 물체가 닿는 불투명도, 0–1(기본 0.3, 물체 자신의 불투명도에 곱함) |
 | `smoothness` | `smoothing.position`·`rotation`·`fov`에 같은 값 |
 
 적용할 때 `target`, `offset`, `focusTarget`은 지우고 `focus`는 끈다. `collisionMargin`, `collisionTargets`, `smoothing`, `focus*`, `enableFocus`는 `WorldCameraOption`에 없으므로 `setCameraOption`으로 넣는다.
@@ -184,6 +186,22 @@ function useCameraMode() {
 5. 삼각형이 512개 넘는 정적 지오메트리(합친 소품 칸, 흙길·모래 덮개)는 로컬 XZ 격자에 삼각형을 나눠 두고(`src/core/camera/utils/triangleGrid.ts`, 지오메트리마다 한 번, 정점이 바뀌면 다시), 쓸기 경로가 지나는 칸의 삼각형만 검사한다. 결과는 전부 훑을 때와 같다. 예제 섬에서 걷는 동안 쓸기가 2.28ms에서 0.27ms/프레임이 됐다(2026-09-28, dev, 헤드리스 Chrome).
 
 `setCameraOption({ collisionTargets: 'colliders' })`로 바꾸면 `CAMERA_COLLIDER_LAYER`(30번 레이어)를 켠 메시만 검사하고, 그런 메시가 하나도 없으면 장면 전체로 돌아간다. 후보 메시 목록은 장면에 자식이 붙고 떨어질 때 다시 만든다. 이미 있는 메시의 레이어만 바꿨다면 `invalidateCollisionCache()`를 호출한다.
+
+### 가림 처리 (`collisionMode`)
+
+`collisionMode: 'push'`(기본)는 위처럼 카메라를 가린 물체 앞으로 당긴다. `'fade'`는 카메라를 원래 거리에 두고, 같은 쓸기에서 탐사 시작점과 카메라 사이에 닿은 물체를 0.2초에 걸쳐 `collisionFadeOpacity`(기본 0.3)까지 반투명하게 한다. 더 닿지 않으면 0.15초 뒤 같은 속도로 돌아오고, 다 돌아오면 원래 머티리얼로 되돌린다(`src/core/camera/core/CameraOcclusion.ts`, `seeThrough.ts`). `cameraOption`, `setCameraOption`, 에디터 `CameraPanel`의 조작 탭(`CameraController`의 "가림 처리" 버튼)과 설정 탭("가리면 반투명", "가림 불투명도")에서 실행 중에 바꾼다.
+
+```tsx
+<GaesupWorld cameraOption={{ type: 'thirdPerson', xDistance: -4, yDistance: 10, zDistance: -10, fov: 42, collisionMode: 'fade' }}>
+```
+
+- **공유 머티리얼은 바꾸지 않는다.** 가린 물체마다 머티리얼 복사본(`transparent`, `depthWrite: false`)을 만들어 그 물체에만 끼운다. 인스턴스에 준 `onBeforeCompile`·`customProgramCacheKey`는 복사본에도 옮긴다. 되돌린 복사본은 다음 가림에 다시 쓰려고 최대 32개까지 두고(다시 쓸 때 원본의 바뀐 값을 따라감), `push`로 돌아가거나 카메라가 내려가면(`CameraSystem.destroy`, 컨트롤러 `dispose()`) 모두 되돌리고 `dispose()`한다.
+- **InstancedMesh**(벽·타일·모델 배치)는 배치 전체가 아니라 가린 인스턴스만 흐린다. 그 인스턴스를 배치 안에서 크기 0으로 접고, 같은 지오메트리의 대리 메시(`camera-fade`, `intangible`, raycast 없음)가 복사본으로 그 자리를 그린다. 되돌릴 때 원래 행렬을 돌려놓는다. 그 사이 배치 주인이 행렬을 다시 쓰면(편집) 흐림을 버리고 주인 것을 따른다. 흐린 인스턴스는 클릭되지 않는다.
+- **합친 정적 모델 칸**(WebGPU의 32m 칸)은 `geometry.userData.mergedParts`(물체마다 인덱스가 끝나는 곳)로 가린 물체의 삼각형 범위만 따로 그룹으로 나눠 흐린다. 부분 목록이 없는 합친 메시, `BatchedMesh`, `ShaderMaterial`, 보이지 않는 메시, morph 텍스처 인스턴스는 흐릴 수 없어 `push`처럼 막는다.
+- **바닥은 흐리지 않는다.** 닿은 면의 법선이 위를 향하면(수직에서 약 37° 안, 바닥·완만한 경사) 그 접촉은 `push`처럼 카메라를 멈춘다. 건물 시스템의 지형(`<WorldProps type="ground">` 아래 전부, 바닥 타일 배치)은 `userData.cameraCollisionMode = 'push'`로 표시되어 절벽 옆면도 흐리지 않는다.
+- **물체별 지정**: 메시나 조상의 `userData.cameraCollisionMode`가 `'push'`면 `fade`에서도 막고, `'fade'`면 `push`에서도 흐린다(가장 가까운 조상 값, 바닥 판정 없음). `userData.intangible`인 캐릭터·NPC·원격 플레이어는 지금처럼 검사하지 않으므로 흐려지지 않는다.
+- 흐린 물체는 반투명 목록으로 가서 뒤쪽부터 그려지고 깊이를 쓰지 않는다. 그림자는 그대로 드리운다. TRAA를 켜면 흐린 물체 가장자리에 잔상이 조금 남을 수 있다.
+- 비용: `push`와 같은 후보 목록·격자 쓸기를 쓴다. `fade` 후보는 가장 가까운 접촉에서 멈추지 않고 경로 위 접촉을 모두 모으며, 매 프레임 할당이 없다. 복사본과 대리 메시는 가림이 시작될 때만 만든다.
 
 ### 포커스·클로즈업·시네마틱
 
