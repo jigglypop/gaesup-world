@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/jigglypop/gaesup-world/compare/v1.3.0...v1.3.1) (2026-09-28)
+
+
+### Performance Improvements
+
+* **editor:** NPC 뇌 흐름 보기(React Flow)를 열 때만 받아, 편집기를 쓰지 않는 앱의 번들에서 뺀다 ([84a0463](https://github.com/jigglypop/gaesup-world/commit/84a0463c4c80d70a761bccf41ea32857dd290b85))
+
 # [1.3.0](https://github.com/jigglypop/gaesup-world/compare/v1.2.0...v1.3.0) (2026-09-28)
 
 
