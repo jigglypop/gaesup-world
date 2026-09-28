@@ -105,9 +105,12 @@ export default defineConfig(({ mode }) => {
     resolve: {
       tsconfigPaths: true,
       alias,
-      // Published-consumer builds must share one Three module graph with the example.
-      // Duplicate node/lighting registries can render an unlit WebGPU scene without errors.
-      dedupe: ['react', 'react-dom', 'three'],
+      // Published-consumer builds must share one copy of every peer with the example. A second Three splits WebGPU's
+      // node/lighting registries (an unlit scene without errors); a second React Three Fiber, Rapier or drei splits
+      // their contexts, so the package's hooks throw "Hooks can only be used within the Canvas component!".
+      dedupe: Object.keys(
+        JSON.parse(readFileSync(path.resolve(import.meta.dirname, 'package.json'), 'utf8')).peerDependencies,
+      ),
     },
     optimizeDeps: {
       entries: ['index.html'],
