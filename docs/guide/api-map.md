@@ -95,7 +95,7 @@ ESM(`import`)과 CJS(`require`) 둘 다 있다. 진입점 목록의 원본은 `p
 
 ### `gaesup-world/network`
 
-- 클라이언트: `useMultiplayer`, `usePlayerNetwork`, `PlayerNetworkManager`, `PlayerPositionTracker`, `RemotePlayer`, `ConnectionForm`, `PlayerInfoOverlay`, `MultiplayerCanvas`, `defaultMultiplayerConfig`, `DEFAULT_NETWORK_CONFIG`
+- 클라이언트: `useMultiplayer`, `usePlayerNetwork`, `PlayerNetworkManager`, `PlayerPositionTracker`, `RemotePlayer`, `RemotePlayers`, `ConnectionForm`, `PlayerInfoOverlay`, `MultiplayerCanvas`, `defaultMultiplayerConfig`, `DEFAULT_NETWORK_CONFIG`
 - 방문: `serializeVisit`, `applyVisitSnapshot`, `captureVisitRestorePoint`, `visitProviderFromSaveSystem`, `createLocalVisitChannel`, `createWebSocketVisitChannel`, `useVisitRoom`, `DEFAULT_VISIT_DOMAINS`
 - 계약: `createCommandAuthorityRouter`, `createCommandAcceptedResult`, `createCommandRejectedResult`, `createGameCommand`, `createServerEvent`, `createStateDelta`, `createSnapshotAck`, `createNetworkEnvelope`, `MockNetworkAdapter`
 

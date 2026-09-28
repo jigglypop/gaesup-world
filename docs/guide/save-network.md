@@ -224,42 +224,52 @@ visit.leaveVisit();          // 내 월드로 돌아온다
 
 ```tsx
 import type { RapierRigidBody } from '@react-three/rapier';
-import { GaesupController } from 'gaesup-world';
-import { ConnectionForm, PlayerInfoOverlay, RemotePlayer, defaultMultiplayerConfig, useMultiplayer } from 'gaesup-world/network';
+import { GaesupController, GaesupWorld, Nameplates } from 'gaesup-world';
+import { ConnectionForm, PlayerInfoOverlay, RemotePlayers, defaultMultiplayerConfig, useMultiplayer } from 'gaesup-world/network';
 
-type LivePlayers = ReturnType<typeof useMultiplayer>['players'];
-
-function LiveRemote({ id, players, speech }: { id: string; players: LivePlayers; speech: string }) {
-  const state = useSyncExternalStore((onChange) => players.subscribePlayer(id, onChange), () => players.get(id));
-  return state ? <RemotePlayer playerId={id} state={state} config={defaultMultiplayerConfig} speechText={speech} /> : null;
-}
-
+// useMultiplayer는 월드 store에서 내 애니메이션을 읽으므로 GaesupWorld 안에서 부른다.
 function Room() {
   const playerRef = useRef<RapierRigidBody>(null!);
   const mp = useMultiplayer({ config: defaultMultiplayerConfig, characterUrl: PLAYER_URL, rigidBodyRef: playerRef });
   return (
-    <GaesupWorld urls={{ characterUrl: PLAYER_URL }} cameraOption={CAMERA}>
+    <>
       {!mp.isConnected && <ConnectionForm onConnect={mp.connect} error={mp.error} isConnecting={mp.connectionStatus === 'connecting'} />}
       <PlayerInfoOverlay state={mp} onDisconnect={mp.disconnect} onSendChat={(text) => mp.sendChat(text)} />
       <Canvas gl={createRenderer}>
         <Suspense fallback={null}>
           <GaesupWorldContent>
+            <Nameplates />
             <WorldPhysics>
               <GaesupController rigidBodyRef={playerRef} position={[0, 2, 0]} />
-              {[...mp.players.keys()].map((id) => (
-                <LiveRemote key={id} id={id} players={mp.players} speech={mp.speechByPlayerId.get(id) ?? ''} />
-              ))}
+              <RemotePlayers
+                players={mp.players}
+                config={defaultMultiplayerConfig}
+                playerRef={playerRef}
+                speechByPlayerId={mp.speechByPlayerId}
+              />
             </WorldPhysics>
           </GaesupWorldContent>
         </Suspense>
       </Canvas>
+    </>
+  );
+}
+
+export function App() {
+  return (
+    <GaesupWorld urls={{ characterUrl: PLAYER_URL }} cameraOption={CAMERA}>
+      <Room />
     </GaesupWorld>
   );
 }
 ```
 
-- `RemotePlayer` props: `playerId`, `state`, `characterUrl?`(주면 모든 원격 아바타가 이 모델), `config?`, `speechText?`, `allowedModelOrigins?`. 원격 사람이 보낸 `modelUrl`은 http(s)이고 2048자 이하이며, 이 페이지와 같은 출처이거나 `allowedModelOrigins`(출처 또는 출처+디렉터리, 예: `https://cdn.example.com/models/`) 아래일 때만 불러오고, 실패해도 월드를 멈추지 않는다. 키네마틱 캡슐을 쓰므로 `WorldPhysics` 안에 둔다. 이름표는 drei `Text`(WebGL 헬퍼)로 그린다.
-- `RemotePlayer`는 `state` prop이 바뀔 때만 목표를 받는다. 위처럼 한 사람씩 구독하지 않고 `players`를 그대로 map하면 부모가 위치 갱신 때 다시 그려지지 않아(상태 갱신은 약 0.25초에 한 번) 움직임이 끊긴다. 한 사람씩 구독하는 내부 `RemotePlayers`는 공개 export가 아니다.
+- `GaesupWorld` 밖에서 `useMultiplayer`를 부르면 런타임이 없는 전역 store를 읽어(개발 모드 경고) 내 애니메이션이 늘 `idle`로 나간다.
+- `RemotePlayers` props: `players`, `characterUrl?`, `config?`, `playerRef?`, `proximityRange?`(내 몸에서 이 거리 안의 사람만 그린다), `speechByPlayerId?`. 사람마다 `players.subscribePlayer`로 구독해 위치 갱신은 React를 다시 그리지 않고 움직임에 바로 넣는다. `WorldPhysics` 안에 둔다.
+
+- `RemotePlayer` props: `playerId`, `state`, `characterUrl?`(주면 모든 원격 아바타가 이 모델), `config?`, `speechText?`, `allowedModelOrigins?`. 원격 사람이 보낸 `modelUrl`은 http(s)이고 2048자 이하이며, 이 페이지와 같은 출처이거나 `allowedModelOrigins`(출처 또는 출처+디렉터리, 예: `https://cdn.example.com/models/`) 아래일 때만 불러오고, 실패해도 월드를 멈추지 않는다. 키네마틱 캡슐을 쓰므로 `WorldPhysics` 안에 둔다.
+- 원격 아바타의 이름은 장면의 `<Nameplates />`가 DOM 이름표로 그린다(NPC 이름표와 같은 층, WebGPU·WebGL 공통). `<Nameplates />`가 없으면 이름이 보이지 않는다. 높이는 `rendering.nameTagHeight`(발에서 m)이고, `rendering.nameTagSize`는 쓰지 않는다(글자 크기는 CSS 변수를 따른다).
+- `RemotePlayer`는 `state` prop이 바뀔 때만 목표를 받는다. `players`를 그대로 map하면 부모가 위치 갱신 때 다시 그려지지 않아(상태 갱신은 약 0.25초에 한 번) 움직임이 끊긴다. 여러 사람은 `RemotePlayers`로 그린다.
 - `ConnectionForm`(`onConnect`, `error?`, `isConnecting?`), `PlayerInfoOverlay`(`state`, `playerName?`, `onDisconnect`, `onSendChat?`)는 DOM이다.
 - `usePlayerNetwork({ url, roomId, playerName, playerColor })`는 추적 없이 연결·플레이어 목록·`updateLocalPlayer(state)`만 주는 가벼운 hook이다.
 - `PlayerNetworkManager`를 직접 쓰면 `acceptModelUrl`(원격 모델 URL 허용 함수), `offlineQueueSize`(끊긴 동안 쌓을 채팅 수, 기본 50), `onReliableFailed` 등 hook이 노출하지 않는 옵션도 쓸 수 있다.
@@ -325,9 +335,9 @@ Node 서버에서 쓸 수 있도록 React·Zustand·React Three를 끌어오지 
 - 멀티플레이 서버가 저장소에 없다.
 - `worldId` 없이 만든 런타임의 기본 저장은 새로고침 뒤 찾을 수 없다.
 - 도메인 플러그인을 넣지 않은 런타임은 규칙 엔진 상태만 저장한다.
-- 공개 `RemotePlayer`로 원격 아바타를 부드럽게 움직이려면 한 사람씩 구독해야 한다.
 - 클라이언트는 채팅 범위를 거르지 않고, 모르는 메시지 type을 오류로 보고한다.
-- `MultiplayerCanvas`와 원격 이름표는 WebGL 경로를 쓴다(PRD GPU-1). 전송은 WebSocket뿐이다.
+- `MultiplayerCanvas`는 WebGL 경로(drei `Grid`·`Environment`)를 쓴다(PRD GPU-1). 전송은 WebSocket뿐이다.
+- 자동 재연결은 연결할 때의 URL을 그대로 다시 쓴다(`updateConfig`는 다음 `connect()`부터 적용된다). 한 번만 쓰는 입장권을 URL에 싣는 서버라면 `websocket.reconnectAttempts`를 0으로 두고, 끊기면 앱이 새 URL로 `connect()`를 다시 부른다.
 - `PlayerNetworkManager`는 연결·재연결·핑·속도 제한·신뢰 전송·채팅 큐를 한 파일(1,006줄)에 담고 있다.
 
 ## 관련 문서

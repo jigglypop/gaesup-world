@@ -5,6 +5,7 @@ import { SkeletonUtils } from 'three-stdlib';
 
 import { useGLTFAsset } from '../../../assets/useGLTFAsset';
 import { frameScheduler, getSharedFrameEntryCount } from '../../../runtime/frame';
+import { useNameplate } from '../../../ui/components/Nameplates';
 import type { PlayerState } from '../../types';
 import { RemotePlayer } from '../RemotePlayer';
 
@@ -18,7 +19,6 @@ jest.mock('three', () => {
 });
 
 jest.mock('@react-three/drei', () => ({
-  Text: 'Text',
   useAnimations: jest.fn(() => ({ actions: {}, ref: undefined })),
 }));
 jest.mock('../../../assets/useGLTFAsset', () => ({
@@ -59,6 +59,10 @@ jest.mock('../../../ui/components/SpeechBalloon', () => ({
   SpeechBalloon: 'SpeechBalloon',
 }));
 
+jest.mock('../../../ui/components/Nameplates', () => ({
+  useNameplate: jest.fn(),
+}));
+
 const PLAYER_STATE: PlayerState = {
   name: 'Remote player',
   color: '',
@@ -77,6 +81,28 @@ describe('RemotePlayer', () => {
 
   afterEach(() => {
     frameScheduler.clear();
+  });
+
+  test('labels the peer through the DOM nameplate layer at the configured height', () => {
+    const mockedNameplate = jest.mocked(useNameplate);
+    mockedNameplate.mockClear();
+    let renderer: ReactTestRenderer | undefined;
+    try {
+      act(() => {
+        renderer = create(
+          <RemotePlayer
+            playerId="named"
+            state={PLAYER_STATE}
+            characterUrl="/model.glb"
+            config={{ rendering: { nameTagHeight: 2.2, nameTagSize: 0.5, characterScale: 1 } } as never}
+          />,
+        );
+      });
+      expect(mockedNameplate).toHaveBeenLastCalledWith(expect.anything(), 'Remote player', 2.2);
+      expect(renderer?.root.findAll((node) => (node.type as unknown) === 'Text')).toHaveLength(0);
+    } finally {
+      act(() => renderer?.unmount());
+    }
   });
 
   test('keeps a failing peer model inside its own boundary', () => {

@@ -12,6 +12,7 @@ import { RemotePlayers } from './RemotePlayers';
 import { Clicker } from '../../interactions/components/Clicker';
 import { ControllerWrapper as GaesupController } from '../../interactions/components/ControllerWrapper';
 import { GroundClicker } from '../../interactions/components/GroundClicker';
+import { Nameplates } from '../../ui/components/Nameplates';
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
 import { GaesupWorldContent, WorldConfigProvider as GaesupWorld } from '../../world/components/WorldContainer';
 import { WorldPhysics } from '../../world/components/WorldPhysics';
@@ -128,6 +129,7 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
 
         <Suspense fallback={null}>
           <GaesupWorldContent>
+            <Nameplates />
             <WorldPhysics>
               <LocalPositionTracker
                 playerRef={playerRef}
@@ -152,7 +154,7 @@ export const MultiplayerCanvas = React.memo(function MultiplayerCanvas({
                 />
               ) : null}
 
-              {/* 원격 플레이어들 */}
+              {/* 원격 플레이어들: 이름은 아래 Nameplates가 그린다 */}
               <RemotePlayers
                 players={players}
                 characterUrl={characterUrl}

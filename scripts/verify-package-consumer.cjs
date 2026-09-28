@@ -889,7 +889,7 @@ ${createInteractionAggregateTypeProbe('rootModule.')}`;
       ['gaesup-world/gameplay', ['GameplayEventEngine', 'SEED_GAMEPLAY_EVENTS']],
       ['gaesup-world/navigation', ['NavigationSystem']],
       ['gaesup-world/avatar', ['Avatar', 'AvatarRuntime', 'createAvatarStore']],
-      ['gaesup-world/network', ['ConnectionForm', 'defaultMultiplayerConfig']],
+      ['gaesup-world/network', ['ConnectionForm', 'RemotePlayers', 'defaultMultiplayerConfig']],
       ['gaesup-world/plugins', ['defineGaesupPlugin']],
       ['gaesup-world/postprocessing', ['ColorGrade', 'parseCubeLut']],
       ['gaesup-world/runtime', ['createGaesupRuntime', 'createDefaultSaveSystem']],
@@ -1135,9 +1135,13 @@ import { NavigationSystem } from 'gaesup-world/navigation';
 import {
   ConnectionForm,
   MultiplayerCanvas,
+  RemotePlayers,
   defaultMultiplayerConfig,
   useMultiplayer,
+  type RemotePlayersProps,
 } from 'gaesup-world/network';
+const remotePlayersProps: RemotePlayersProps = { players: new Map(), proximityRange: 12 };
+void remotePlayersProps;
 import { ColorGrade, parseCubeLut } from 'gaesup-world/postprocessing';
 import { Avatar, AvatarRuntime, createAvatarStore } from 'gaesup-world/avatar';
 const modularAvatar = <Avatar body="body-sd-neutral-v1" equipment={{ top: 'top-001' }} />;
@@ -1241,6 +1245,7 @@ const components: ComponentType<any>[] = [
   CinematicPanel as ComponentType<any>,
   ConnectionForm as ComponentType<any>,
   MultiplayerCanvas as ComponentType<any>,
+  RemotePlayers as ComponentType<any>,
   ColorGrade as ComponentType<any>,
 ];
 

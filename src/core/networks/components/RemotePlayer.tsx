@@ -5,12 +5,12 @@ import { CapsuleCollider, RigidBody, type RapierRigidBody } from '@react-three/r
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
-import { Text } from '@/core/rendering/legacyDrei';
 import { useSharedFrame, type SharedFrameChannel } from '@core/runtime/frame';
 
 import { useGLTFAsset } from '../../assets/useGLTFAsset';
 import { GaesupErrorBoundary } from '../../error';
 import { releaseObject } from '../../rendering/release';
+import { useNameplate } from '../../ui/components/Nameplates';
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
 import { logger } from '../../utils/logger';
 import { isTrustedRemoteModelUrl } from '../core/remoteInputLimits';
@@ -98,7 +98,8 @@ const RemotePlayerContent = React.memo(function RemotePlayerContent({
   const interpolationSpeed = config?.tracking?.interpolationSpeed || 0.15;
   const characterScale = config?.rendering?.characterScale || 1;
   const nameTagHeight = config?.rendering?.nameTagHeight || 3.5;
-  const nameTagSize = config?.rendering?.nameTagSize || 0.5;
+  // The name rides the scene's DOM <Nameplates /> layer, which both WebGPU and WebGL draw alike.
+  useNameplate(meshRef, appearance.name, nameTagHeight);
   
   // 모델 로드
   const { scene, animations } = useGLTFAsset(modelUrl);
@@ -253,18 +254,6 @@ const RemotePlayerContent = React.memo(function RemotePlayerContent({
           </group>
         </group>
 
-        {/* 이름표: rigidbody 아래로 넣어서 스무딩된 위치를 그대로 따라감 */}
-        <Text
-          position={[0, nameTagHeight, 0]}
-          fontSize={nameTagSize}
-          color="white"
-          anchorX="center"
-          anchorY="middle"
-          outlineWidth={0.05}
-          outlineColor="black"
-        >
-          {appearance.name}
-        </Text>
       </RigidBody>
 
       {/* 말풍선 */}
