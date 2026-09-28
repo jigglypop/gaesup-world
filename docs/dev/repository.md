@@ -45,7 +45,7 @@
 | peerDependencies | `@react-three/drei` 9·10, `@react-three/fiber` 8·9, `@react-three/postprocessing` 2·3, `@react-three/rapier` 1·2, `react`/`react-dom` 18·19, `three` 0.168·0.178·0.185·0.186, `three-stdlib` 2.36+. 모두 필수(optional 없음) |
 | 개발 도구 | `three` 0.186.0, `@react-three/fiber` 9.7, Vite 8, Jest 30. TypeScript는 두 벌이다: `@typescript/native`(= `typescript` 7.0.2)가 `tsc` 명령을 제공해 `typecheck`·`build:types`·설치형 소비자 검증이 쓰고, `typescript` 이름(= `@typescript/typescript6` 6.0.2, CLI는 `tsc6`)은 ts-jest·typescript-eslint·`copy-cjs-types.cjs`·소비자 검증의 엄격 선언 검사가 API로 쓴다 |
 | `sideEffects` | `**/*.css`, `**/*.glsl` |
-| `files` | `dist/*.js`·`*.cjs`·`*.d.ts`·`*.d.cts`·`*.css`, `dist/**/*.d.ts`·`*.d.cts`, `dist/wasm/*.wasm`, `public/gltf/*.glb`, `public/gltf/avatars/**/*`, `public/gltf/props/**/*`, README 2개, `integrations/unity/**/*`, `LICENSE.txt` |
+| `files` | `dist/*.js`·`*.cjs`·`*.d.ts`·`*.d.cts`·`*.css`, `dist/**/*.d.ts`·`*.d.cts`, `dist/wasm/*.wasm`, `public/gltf/*.glb`, `public/gltf/avatars/**/*`, `public/gltf/props/**/*`, `public/gltf/nature/**/*`, README 2개, `integrations/unity/**/*`, `LICENSE.txt` |
 | `prepare` | `npm run build`. 설치만 해도 빌드가 돈다. CI는 `--ignore-scripts`로 설치한다 |
 | `gaesupRelease` | 릴리스 버전과 원본 커밋. `scripts/release/metadata.mjs`가 릴리스 때 쓴다 |
 

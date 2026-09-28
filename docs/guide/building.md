@@ -230,7 +230,7 @@ export const plaza: BuildingSerializedState = {
 | `crafting-basic` | 제작대 | `crafting` | `gltf/props/crafting.glb` |
 | `shop-stall-basic` | 가판대 | `shop` | `gltf/props/shop-stall.glb` |
 
-`modelUrl`은 페이지 기준 상대 경로다. GLB는 패키지의 `public/gltf/props/`에 들어 있으므로, 앱이 그 파일을 `gltf/props/` 경로로 서빙해야 한다. 파일이 없으면 대체 도형이 보이고, 5초부터 점점 길게 쉬며 다시 받아 본다.
+`modelUrl`은 페이지 기준 상대 경로다. GLB는 패키지의 `public/gltf/props/`와 `public/gltf/nature/`에 들어 있으므로, 앱이 그 파일을 `gltf/props/`·`gltf/nature/` 경로로 서빙해야 한다. 파일이 없으면 대체 도형이 보이고, 5초부터 점점 길게 쉬며 다시 받아 본다.
 
 그 밖의 표(에디터 UI용): `BUILDING_TILE_PRESETS`(바닥 24종), `BUILDING_WALL_PRESETS`(벽 8종), `BUILDING_TILE_OBJECT_OPTIONS`, `BUILDING_TILE_SHAPE_OPTIONS`, `BUILDING_WALL_KIND_OPTIONS`, `BUILDING_TREE_OPTIONS`, `BUILDING_FLAG_STYLE_OPTIONS`, `BUILDING_BASIC_OBJECT_OPTIONS`, `BUILDING_PLACED_OBJECT_OPTIONS`, `BUILDING_WEATHER_EFFECT_OPTIONS`, `BUILDING_WORLD_SURFACE_OPTIONS`. 각 항목은 `labelEn`·`labelKo`를 갖는다.
 

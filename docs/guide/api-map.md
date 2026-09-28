@@ -154,7 +154,7 @@ ESM(`import`)과 CJS(`require`) 둘 다 있다. 진입점 목록의 원본은 `p
 ## 스타일과 정적 파일
 
 - 라이브러리 빌드는 컴포넌트 CSS를 모두 `dist/index.css` 하나로 뽑고, 배포 JS는 CSS를 import하지 않는다. DOM UI(에디터 셸·패널, `BuildingUI`, `RideableUI`, `ConnectionForm`, `CameraController`, `CameraPresets`, `GamePad` 등)를 쓰면 앱에서 `import 'gaesup-world/style.css'`를 한 번 넣는다. `DialogBox`, `InteractionPrompt`, `TouchControls`는 인라인 스타일이라 없어도 된다.
-- 패키지에 들어 있는 정적 파일: `public/gltf/trainer_green.glb`, `public/gltf/trainer_red.glb`(기본 NPC 템플릿이 `/gltf/trainer_*.glb`로 찾는다), `public/gltf/avatars/**`, `public/gltf/props/**`(건축 카탈로그가 `gltf/props/*.glb`로 찾는다), `dist/wasm/*.wasm`, `integrations/unity/**`. 앱이 GLB와 WASM을 그 경로로 서빙해야 한다(예: `public/gltf`를 앱의 `/gltf`로, `dist/wasm`을 `/wasm`으로 복사).
+- 패키지에 들어 있는 정적 파일: `public/gltf/trainer_green.glb`, `public/gltf/trainer_red.glb`(기본 NPC 템플릿이 `/gltf/trainer_*.glb`로 찾는다), `public/gltf/avatars/**`, `public/gltf/props/**`(건축 카탈로그가 `gltf/props/*.glb`로 찾는다), `public/gltf/nature/**`(카탈로그의 `nature-*`가 `gltf/nature/**/*.glb`로 찾는다. Kenney 모델은 CC0), `dist/wasm/*.wasm`, `integrations/unity/**`. 앱이 GLB와 WASM을 그 경로로 서빙해야 한다(예: `public/gltf`를 앱의 `/gltf`로, `dist/wasm`을 `/wasm`으로 복사).
 - WASM(`gaesup_core.wasm`: 잔디 데이터, 가중 A* 등)은 `document.baseURI` 기준 `wasm/gaesup_core.wasm`에서 받는다. 다른 곳에 두면 `globalThis.__GAESUP_WASM_BASE_URL__`에 기준 URL을 넣는다(그 아래 `wasm/gaesup_core.wasm`을 찾는다). 못 받으면 길찾기는 JS 경로로 대신한다.
 
 ## 관련 문서

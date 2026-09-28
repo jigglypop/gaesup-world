@@ -35,6 +35,7 @@ npm install gaesup-world react@19 react-dom@19 three@0.186 three-stdlib @react-t
 | `gaesup-world/style.css` | UI 컴포넌트(NPC 이름표, 말풍선, 에디터 패널 등)를 쓸 때 | 앱 진입점에서 `import 'gaesup-world/style.css'`. 빌드된 JS는 CSS를 스스로 불러오지 않는다(모든 스타일이 `dist/index.css` 하나에 있다) |
 | `dist/wasm/gaesup_core.wasm` | 잔디 속성 생성, 눈 입자, 길찾기 A*의 WASM 가속 | 앱 정적 폴더의 `wasm/`에 복사한다. 로더는 `document.baseURI` 기준 `wasm/gaesup_core.wasm`을 fetch하고, `globalThis.__GAESUP_WASM_BASE_URL__`이 있으면 그 주소를 기준으로 쓴다. 파일이 없으면 세 기능 모두 JS 경로로 돈다(`src/core/wasm/loader.ts`) |
 | `public/gltf/trainer_green.glb`, `trainer_red.glb` | 예제 캐릭터를 그대로 쓸 때 | 패키지 `files`에 들어 있다. 앱 정적 폴더로 복사해 URL로 넘긴다 |
+| `public/gltf/props/**`, `public/gltf/nature/**` | 건축 카탈로그의 소품(`gltf/props/*.glb`)과 자연물(`nature-*`, `gltf/nature/**/*.glb`)을 놓을 때 | 패키지 `files`에 들어 있다. 앱의 `gltf/` 경로로 서빙한다 |
 
 ## 저장소 예제 실행
 
