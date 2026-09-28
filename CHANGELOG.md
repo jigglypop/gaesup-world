@@ -1,3 +1,21 @@
+# [1.3.0](https://github.com/jigglypop/gaesup-world/compare/v1.2.0...v1.3.0) (2026-09-28)
+
+
+### Bug Fixes
+
+* **package:** 건축 카탈로그의 자연물 glTF를 npm 패키지에 넣는다 ([e57d52e](https://github.com/jigglypop/gaesup-world/commit/e57d52ec41dd3d1175ec4a3e8bc4d5926d03f937))
+
+
+### Features
+
+* **network:** RemotePlayers를 공개하고 원격 이름표를 DOM 이름표 층으로 그린다 ([7012ad4](https://github.com/jigglypop/gaesup-world/commit/7012ad416116aac319ea641faabdd65cca17ab9f))
+
+
+### Performance Improvements
+
+* 카메라 충돌이 큰 지오메트리를 삼각형 격자로 찾아 걷는 동안 메인 스레드를 7.7→6.0ms/프레임으로 줄이고, 꾸미기의 편집·모드 전환 long task를 없앤다 (PERF) ([73dded8](https://github.com/jigglypop/gaesup-world/commit/73dded8601ebb2833fdbd1fe61d596492c19ead0))
+* **rendering:** 후처리(MRT)도 장면을 pass 대상으로 미리 컴파일해, 켜는 순간의 6초 멈춤과 1.2초 long task를 없애고 켠 채 첫 로드를 11→6.5초로 줄인다 (PERF-1) ([bb52a1c](https://github.com/jigglypop/gaesup-world/commit/bb52a1c2e3623870841fe07c33eac185e3f72510))
+
 # [1.2.0](https://github.com/jigglypop/gaesup-world/compare/v1.1.0...v1.2.0) (2026-09-27)
 
 
