@@ -83,7 +83,7 @@
 2. gw 고유: 월드가 이미 4m 격자(타일·벽·블록)라 **복셀화가 거의 공짜**다. 건축 데이터에서 GPU 3D 텍스처(불투명도·알베도·발광)를 직접 채우고 편집한 셀만 갱신한다. compute가 프로브에서 복셀을 레이마칭(DDGI 방식)하고 프레임마다 일부 프로브만 갱신한다. 카메라 근처는 SSGI로 보강한다.
 3. wasm: 정적 부분의 GI 굽기, GLB 소품의 SDF 생성(워커). 기존 Rust wasm 코어(잔디·A*)에 붙인다.
 4. 품질 tier: low는 구운 프로브, medium은 동적 프로브, high는 프로브+SSGI. 내장 GPU에서 GI에 쓰는 GPU 시간 4ms 이하를 목표로 한다.
-5. 선행 조건: GPU-1(WebGPU 전면), UP-1(해 통합), PERF(GPU 시간 측정). SSGI만 먼저 붙이는 GI-1a는 기존 TSL 후처리에 바로 넣을 수 있어 앞당길 수 있다.
+5. 선행 조건: GPU-1(WebGPU 전면), UP-1(해 통합), PERF(GPU 시간 측정). 화면 공간 부분(SSGI·SSR)은 `WorldPostProcessing`의 `cinematic` preset으로 들어갔다. r186에는 VXGI 애드온(`lighting/vxgi`, 복셀 콘 트레이싱)도 있어 2의 자체 복셀 GI보다 먼저 검토한다.
 
 ## 출처
 

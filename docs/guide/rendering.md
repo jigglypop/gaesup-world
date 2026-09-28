@@ -102,7 +102,7 @@ classic 경로와 비교할 때는 `<Canvas gl={createLegacyRenderer}>`로 강�
 | 캔버스 픽셀 비율 | `pixelRatio`(상한 1.5) |
 | `CascadedSun` | `quality`를 주지 않았으면 `tier`로 그림자 preset(아래 표) |
 | `DynamicSky` | `shadowMapSize`를 주지 않았으면 `shadowMapSize` |
-| `GaesupWorldContent postProcessing` | `postprocess`가 false면 올리지 않는다. preset을 주지 않았으면 `low`→`performance`, `medium`→`balanced`, `high`→`quality` |
+| `GaesupWorldContent postProcessing` | `postprocess`가 false면 올리지 않는다. preset을 주지 않았으면 `low`→`performance`, `medium`→`balanced`, `high`→`quality`. `cinematic`은 `postProcessing`의 `quality`로만 고른다 |
 | 잔디 | `instanceScale`로 잎 수와 월드 잔디 예산을 곱한다. 노드 렌더러의 잔디는 월드 profile을, 없으면 전역 `usePerfStore`를 읽는다. classic WebGL 잔디(`Grass`)는 전역 `usePerfStore`(감지 전 기본 `medium`)만 읽으므로, `quality="low"`처럼 tier를 고정하면 `usePerfStore.getState().setTier('low')`도 함께 부른다 |
 
 ### 관련 API
@@ -239,19 +239,37 @@ export function TimeOfDayLights() {
 
 | prop | 기본값 | 뜻 |
 |---|---|---|
-| `quality` | `'balanced'` | `performance`·`balanced`·`quality`. 아래 기본값을 정한다 |
+| `quality` | `'balanced'` | `performance`·`balanced`·`quality`·`cinematic`. 아래 기본값을 정한다. `cinematic`은 `quality`에 화면 공간 GI·반사를 더한다 |
 | `antialias` | `performance`면 `'none'`, 아니면 `'traa'` | 시간축 안티에일리어싱(TRAA) |
-| `ambientOcclusion` | `performance`가 아니면 켬 | GTAO |
+| `ambientOcclusion` | `performance`가 아니면 켬 | GTAO. GI가 도는 동안은 GI의 차폐가 대신한다 |
 | `aoRadius` | 2 | |
-| `aoSamples` | `quality`면 16, 아니면 8 | |
-| `aoResolutionScale` | `quality`면 1, 아니면 0.5 | 0.25~1 |
+| `aoSamples` | `quality`·`cinematic`이면 16, 아니면 8 | |
+| `aoResolutionScale` | `quality`·`cinematic`이면 1, 아니면 0.5 | 0.25~1 |
+| `globalIllumination` | `cinematic`이면 켬 | 화면 공간 GI(SSGI): 간접광 한 번 반사와 그 차폐 |
+| `giRadius` | 4 | 반사광과 차폐를 모으는 거리(월드 단위) |
+| `giSteps` | 8 | 방향마다 샘플 수, 1~32. 비용이 비례한다 |
+| `giIntensity` | 8 | 반사광 세기 |
+| `giResolutionScale` | 0.5 | 0.25~1 |
+| `reflections` | `cinematic`이면 켬 | 화면 공간 반사(SSR) |
+| `reflectionDistance` | 8 | 반사 광선이 가는 거리(월드 단위) |
+| `reflectionQuality` | 0.5 | 광선 진행 밀도, 0.05~1 |
+| `reflectionIntensity` | 1 | |
+| `reflectionResolutionScale` | 0.5 | 0.25~1 |
+| `reflectionMaxRoughness` | 0.5 | 이보다 거친 면은 반사하지 않고 광선도 쏘지 않는다 |
 | `bloomStrength`, `bloomRadius`, `bloomThreshold` | 0.18, 0.4, 1 | 항상 켜진 bloom |
 | `saturation` | 1.08 | |
 | `historyVersion` | 0 | 텔레포트, 월드 교체, 서버 위치 보정 뒤에 올린다. TRAA 이력을 버려 잔상을 없앤다 |
 
-- `webgpu`·`webgpu-fallback`: TSL `RenderPipeline`이다. 장면 pass(TRAA·AO를 쓰면 velocity·normal MRT, 이때 MSAA 끔) → TRAA → GTAO를 색에 곱함 → bloom 더함 → 채도. `three/webgpu`, `three/tsl`, `BloomNode`·`TRAANode`·`GTAONode` addon을 켤 때 동적으로 불러온다.
+- `webgpu`·`webgpu-fallback`: TSL `RenderPipeline`이다. 장면 pass(TRAA·AO를 쓰면 velocity·normal MRT, 이때 MSAA 끔) → GI·반사 → TRAA → GTAO를 색에 곱함 → bloom 더함 → 채도. `three/webgpu`, `three/tsl`, `BloomNode`·`TRAANode`·`GTAONode`·`SSGINode`·`DenoiseNode`·`SSRNode` addon을 켤 때 동적으로 불러온다.
+- GI·반사(`screenSpaceLighting.ts`, Lumen의 화면 공간 경로에 해당): 장면 pass가 `normal`(시야 법선 + 거칠기)과 `surface`(기본색 + 금속도, 8비트)를 쓴다. 재질마다 셰이더를 만들 때 정해, 표준·물리 재질만 반사하고 unlit 재질(basic·선·점·스프라이트, 조명 없는 노드 재질)은 반사광을 받지 않는다.
+  - SSGI(r186 `SSGINode`, 슬라이스 2, 월드 단위 반경)는 `giResolutionScale` 해상도로 그린 뒤 같은 해상도에서 깊이·법선을 따지는 필터(`DenoiseNode`)로 걸러 올려 샘플링한다. 색에 차폐를 곱하고 기본색 × (1 − 금속도) × 반사광을 더한다. 깊이는 네 텍셀을 보간해 평면에서 정확하게 읽고(낮은 해상도의 줄무늬 방지), 반사하는 빛은 휘도 4에서 자른다(스페큘러 하이라이트의 반딧불 방지).
+  - SSR(`SSRNode`, 거울 반사 + 거칠기로 고른 blur mip)은 금속은 기본색으로 물들여, 유전체는 Fresnel만큼 더한다. `reflectionMaxRoughness`보다 거친 픽셀은 광선을 쏘지 않는다.
+  - 둘을 한 텍스처로 합성해 TRAA가 GI 잡음을 누적하고 bloom이 그 색을 읽는다. GI가 켜지면 GTAO는 만들지 않는다.
+- GI·반사는 WebGPU 장치에서만 돈다. `webgpu-fallback`(WebGL2 백엔드)에서는 둘 다, 직교 카메라나 RG11B10 렌더 타깃(`rg11b10ufloat-renderable`)이 없는 장치에서는 GI가 조용히 꺼지고 GTAO가 남는다. 그래서 `cinematic`은 그런 곳에서 `quality`처럼 그린다.
+- 수치 prop(`giRadius`, 해상도 배율 등)은 uniform만 바꿔 파이프라인을 다시 만들지 않는다. `globalIllumination`·`reflections`·`antialias`를 바꾸면 다시 만든다.
+- 화면 공간의 한계: 화면 밖이나 가려진 물체는 빛을 튕기지도 비치지도 않는다(화면 가장자리에서 반사가 사라진다). 깊이를 쓰지 않는 투명 물체(물 등)는 뒤 불투명 표면의 깊이로 계산된다. 반사는 환경맵 반사 위에 더해진다. 월드 공간 GI는 PRD GI-1에 남아 있다.
 - 카메라가 5m 넘게 튀거나 크게 돌거나 투영이 바뀌면 TRAA 이력을 스스로 버린다.
-- 장면 파이프라인을 그릴 것마다 나눠 먼저 컴파일한 뒤 렌더를 넘겨받고, 그 전까지는 장면을 직접 그린다(MRT preset 포함, 아래 `CompileGate` 참고). 넘겨받는 프레임에 후처리 pass 자신의 셰이더(TRAA·GTAO·bloom·출력, 약 10개)는 동기로 만든다.
+- 장면 파이프라인을 그릴 것마다 나눠 먼저 컴파일한 뒤 렌더를 넘겨받고, 그 전까지는 장면을 직접 그린다(MRT preset 포함, 아래 `CompileGate` 참고). 넘겨받는 프레임에 후처리 pass 자신의 셰이더(TRAA·GTAO·bloom·출력, 약 10개. `cinematic`은 GI·필터·반사·합성이 더해진다)는 동기로 만든다.
 - `useFrame` priority 1로 캔버스 렌더를 소유한다. 다른 `EffectComposer`나 렌더 소유자를 같은 캔버스에 두지 않는다.
 - `webgl`(classic): props를 무시하고 `ToonOutlines` + `ColorGrade`(`@react-three/postprocessing`) 조합을 올린다.
 
@@ -267,6 +285,7 @@ export function TimeOfDayLights() {
 
 - `true` 또는 props 객체를 받는다. 켠 월드만 후처리 청크를 `React.lazy`로 내려받고, 로딩 중에도 월드는 계속 그려진다.
 - profile의 `postprocess`가 false인 tier(`low`)에서는 올리지 않는다. `quality`를 주지 않으면 tier에서 preset을 고른다.
+- tier는 `cinematic`을 고르지 않는다. 화면 공간 GI·반사는 `postProcessing={{ quality: 'cinematic' }}`로 켜고, 조정값도 같은 객체에 준다(`{ quality: 'cinematic', giIntensity: 6 }`).
 - 직접 올리려면 `import { WorldPostProcessing } from 'gaesup-world/postprocessing'` 뒤 캔버스 안에 `<WorldPostProcessing quality="balanced" historyVersion={teleports} />`를 둔다. 이때는 tier 연동과 lazy 로드가 없다.
 
 ### WebGL 전용 효과(삭제 예정)

@@ -94,6 +94,12 @@
   - ck CSS 전체(254KB, 3D 위 배경 블러 32곳): 디자인 토큰과 구성만 가져온다.
 - 공개 API: 추가만 한다. 삭제가 필요해 보이는 것(물 `shore` prop, 잔디 `joints`·`bladeDiffuseUrl`·`bladeAlphaUrl`)은 동작을 대체해도 prop은 받아 둔다. 동작이 바뀌는 것(`GLTFAssetCache` LRU 보존, `MaterialManager` 기본 거칠기, 유리 기본값)은 CHANGELOG에 적는다.
 
+### 화면 공간 GI·반사를 후처리 preset `cinematic`으로 (GI-1)
+- 새 `PerfTier`가 아니라 `WorldPostProcessingProps.quality`의 값으로 넣었다. `PerfTier`를 넓히면 tier별 표(`Record<PerfTier, …>`)를 가진 소비자가 깨진다. tier는 `cinematic`을 고르지 않고 앱이 `postProcessing={{ quality: 'cinematic' }}`로 고른다.
+- 반해상도 SSGI는 TRAA만으로 잡음이 걷히지 않는다(이웃 clamp가 2×2 덩어리를 디테일로 본다). GI 해상도에서 깊이·법선 필터(`DenoiseNode`)로 거른 뒤 올려 샘플링한다. 반해상도 + 필터는 4K에서 전해상도(필터 포함) 비용의 약 3분의 1이다.
+- r186 `SSGINode`는 해상도 배율이 없고, 줄인 해상도에서 가장 가까운 깊이 텍셀을 읽어 평면에 줄무늬가 생긴다. `setSize`로 크기를 줄이고 깊이는 네 텍셀 보간(gather)으로 읽는다.
+- SSR은 비확률(거울 + 거칠기 mip) 방식이다. 확률(GGX) 방식은 시간·공간 denoiser 둘과 환경 반사 끄기가 필요해 비싸다. 금속만 반사하는 three 기본 대신 반사율을 직접 줘 유전체도 Fresnel로 반사하고, 표준·물리 재질이 아니면(툰·basic은 거칠기 0을 쓴다) 반사하지 않는다.
+
 ## 보류하거나 되돌린 것
 
 - **GPU-1(WebGPU 전면)**: WebGL 전용 공개 export(`ColorGrade`, `LutOverlay`, `ToonOutlines`, `Outlined`, LUT 도우미)와 GLSL 경로 삭제를 사용자가 보류했다(2026-09-27). 다시 요청할 때까지 착수하지 않는다.

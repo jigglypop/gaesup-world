@@ -32,6 +32,16 @@ export function rendererKind(renderer: unknown): RendererKind {
   return value.backend?.isWebGPUBackend === true ? 'webgpu' : 'webgpu-fallback';
 }
 
+/** Whether a renderer draws on a WebGPU device that has `feature`; false on WebGL backends and classic renderers. */
+export function hasWebGPUFeature(renderer: unknown, feature: string): boolean {
+  if (rendererKind(renderer) !== 'webgpu') return false;
+  try {
+    return (renderer as { hasFeature?: (name: string) => boolean }).hasFeature?.(feature) === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Whether the environment exposes the WebGPU API at all; `isWebGPUAvailable` also requires an adapter. */
 export function hasWebGPUApi(): boolean {
   try {

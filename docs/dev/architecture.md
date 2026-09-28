@@ -45,7 +45,7 @@
 
 - `GaesupRuntimeProvider`의 `runtime`이 `undefined`면 부모를 물려받고, `null`이면 명시적으로 legacy 범위를 고른다. `revision`은 런타임 수명 revision을 `useSyncExternalStore`로 구독한 값이다(`revision` prop을 주면 더한다).
 - 월드 store와 time store만 전용 context로 내려간다. 나머지 도메인 store는 hook이 `useGaesupRuntime()?.<store>`로 찾는다.
-- `GaesupWorldContent`는 `WorldPostProcessing`을 모듈 최상위 `lazy()`로 부르므로 후처리를 켜지 않은 월드는 그 청크를 받지 않는다. 품질 프로필 tier가 `low`·`medium`·`high`면 후처리 preset을 `performance`·`balanced`·`quality`로 고르고, 후처리가 없는 tier에서는 건너뛴다.
+- `GaesupWorldContent`는 `WorldPostProcessing`을 모듈 최상위 `lazy()`로 부르므로 후처리를 켜지 않은 월드는 그 청크를 받지 않는다. 품질 프로필 tier가 `low`·`medium`·`high`면 후처리 preset을 `performance`·`balanced`·`quality`로 고르고, 후처리가 없는 tier에서는 건너뛴다. `cinematic`(화면 공간 GI·반사)은 tier가 아니라 `postProcessing`의 `quality`로 고른다.
 
 ## 런타임 합성 루트
 
@@ -285,7 +285,7 @@ const runtime = createGaesupRuntime({ plugins: [createWeatherPlugin(), plugin] }
 - TSL: `src/core/rendering/tsl/`(fire, flag, grassMaterial, snow, toonWater, weather)과 `Node*` 컴포넌트(`building/components/mesh/NodeTreeParticles.tsx`, `fire/NodeFireEffects.tsx`, `flag/NodeFlagMaterial.tsx`, `grass/NodeGrassMaterial.tsx`, `snow/NodeGpuSnow.tsx`, `water/NodeWaterMaterial.tsx`, `weather/components/WeatherEffect/NodeWeather.tsx`). 메시 컴포넌트는 `rendererKind !== 'webgl'`이면 이쪽을 쓴다.
 - `CompileGate`: 처음 보이는 콘텐츠를 숨긴 채 `compileAsync`로 파이프라인(그림자 cascade 포함)을 먼저 만들어 첫 그리기 프레임의 동기 셰이더 생성 멈춤을 없앤다. 콘텐츠의 Suspense 안에 둔다. three r185·r186에서만(`gpuBatchRevision.ts`) 켜진다. 건축의 벚꽃·깃발·불·빌보드·모델 오브젝트가 쓴다.
 - `GpuBatchBridge`: 이름이 `building-batch:`로 시작하는 `InstancedMesh`를 compute 셰이더로 frustum 컬링하고 indirect draw로 그린다. `'webgpu'`와 three r185·r186에서만 켜진다. raw `useFrame`을 쓰는 두 파일 중 하나다.
-- 후처리 `WorldPostProcessing`: WebGPU에서는 TSL `RenderPipeline`(TRAA, GTAO, bloom, 색 보정)을 캔버스의 단일 render owner로 돌린다. WebGL에서는 `@react-three/postprocessing` 기반 `ToonOutlines` + `ColorGrade`로 간다.
+- 후처리 `WorldPostProcessing`: WebGPU에서는 TSL `RenderPipeline`(TRAA, GTAO, bloom, 색 보정, `cinematic`이면 SSGI·SSR)을 캔버스의 단일 render owner로 돌린다. WebGL에서는 `@react-three/postprocessing` 기반 `ToonOutlines` + `ColorGrade`로 간다.
 - 해·하늘·안개: `CascadedSun`(WebGPU에서 CSM 그림자), `DynamicSky`, `DynamicFog`. UP-1에서 three `SunLight`로 합칠 예정이다.
 - 품질·성능: `QualityProfileProvider`(tier, pixel ratio, 그림자 크기, 후처리 preset), `PerformanceCollector`(렌더 뒤 `addAfterEffect`로 renderer 통계를 4Hz 이하로 샘플), `IdleFrameRate`(입력이 없으면 낮은 fps로 그림).
 

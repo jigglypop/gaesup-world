@@ -10,7 +10,18 @@ jest.mock('@/core/camera', () => ({ Camera: () => null }));
 jest.mock('@/core/perf/PerformanceCollector', () => ({ PerformanceCollector: () => 'collector' }));
 jest.mock('@/core/rendering/shadow/ShadowDepthMaterials', () => ({ ShadowDepthMaterials: () => null }));
 jest.mock('@/core/rendering/CompileGate', () => ({ CompileGate: ({ children }: { children: ReactNode }) => children }));
-jest.mock('@/core/rendering/postprocess/WorldPostProcessing', () => ({ WorldPostProcessing: () => null }));
+const mockPostProcessing = jest.fn();
+jest.mock('@/core/rendering/postprocess/WorldPostProcessing', () => ({
+  WorldPostProcessing: (props: object) => {
+    mockPostProcessing(props);
+    return null;
+  },
+}));
+// A quality profile sizes the canvas; these tests have no canvas, only its state.
+jest.mock('@react-three/fiber', () => ({
+  ...jest.requireActual('@react-three/fiber'),
+  useThree: (selector: (state: object) => unknown) => selector({ viewport: { dpr: 1 }, setDpr: () => undefined, gl: {} }),
+}));
 jest.mock('@/core/runtime/frame/react/FrameSchedulerHost', () => ({ FrameSchedulerHost: () => null }));
 jest.mock('@/core/utils/env', () => ({ ...jest.requireActual('@/core/utils/env'), isProductionEnv: jest.fn(() => true) }));
 
@@ -53,5 +64,33 @@ describe('GaesupWorldContent performance sampling', () => {
     const development = render(<GaesupWorldContent />);
     expect(hasCollector(development)).toBe(true);
     act(() => development.unmount());
+  });
+});
+
+describe('GaesupWorldContent post-processing presets', () => {
+  beforeEach(() => mockPostProcessing.mockClear());
+
+  async function presetFor(element: ReactElement): Promise<unknown> {
+    let renderer: ReactTestRenderer | undefined;
+    await act(async () => {
+      renderer = create(element);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const props = mockPostProcessing.mock.calls.at(-1)?.[0] as { quality?: string } | undefined;
+    act(() => renderer!.unmount());
+    return props ? props.quality : 'not mounted';
+  }
+
+  it('picks the preset from the tier, or the one the app asked for', async () => {
+    expect(await presetFor(<GaesupWorldContent quality="high" postProcessing />)).toBe('quality');
+    expect(await presetFor(<GaesupWorldContent quality="high" postProcessing={{ quality: 'cinematic' }} />)).toBe('cinematic');
+    expect(await presetFor(<GaesupWorldContent postProcessing={{ quality: 'cinematic', giRadius: 3 }} />)).toBe('cinematic');
+    expect(mockPostProcessing).toHaveBeenLastCalledWith(expect.objectContaining({ giRadius: 3 }));
+  });
+
+  it('keeps post-processing off on tiers without it, even when cinematic is asked for', async () => {
+    expect(await presetFor(<GaesupWorldContent quality="low" postProcessing={{ quality: 'cinematic' }} />)).toBe('not mounted');
   });
 });

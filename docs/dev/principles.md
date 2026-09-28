@@ -41,7 +41,8 @@ three.js(r186)와 React Three Fiber가 제공하는 기능은 자체 구현하�
 | 다수 광원 | r185 클러스터(Forward+) 조명 | 가로등 라이트 풀 | UP-1 |
 | 업스케일 | r184 TAAU/FSR 노드 | 없음 | UP-1 |
 | 후처리 파이프라인 | `RenderPipeline`(TSL) | `WorldPostProcessing`이 이미 사용 | 유지 |
-| 화면 공간 GI | `SSGINode` | 없음 | GI-1 |
+| 화면 공간 GI·반사 | `SSGINode`, `SSRNode`, `DenoiseNode` | `WorldPostProcessing`의 `cinematic`이 사용 | 유지 |
+| 월드 공간 GI | r184 `LightProbeGrid`, r186 VXGI 애드온(`lighting/vxgi`) | 없음 | GI-1 |
 | 시간 | `THREE.Timer` | R3F가 `Clock` 사용(경고) | R3F 10 |
 | 프레임 스케줄러, WebGPU 캔버스 | R3F 10 alpha의 새 `useFrame`, WebGPU 1급 지원 | `FrameScheduler`, `createRenderer` | R3F 10 안정판 뒤 |
 

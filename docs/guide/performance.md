@@ -191,9 +191,11 @@ export function customLoop(draw: (time: number) => void) {
 | `performance` | 끔 | 끔 | | | 켬 | 없음 |
 | `balanced` | 켬 | 켬 | 8 | 0.5 | 켬 | velocity, normal(MRT, MSAA 끔) |
 | `quality` | 켬 | 켬 | 16 | 1.0 | 켬 | velocity, normal(MRT, MSAA 끔) |
+| `cinematic` | 켬 | GI를 못 쓸 때만 | 16 | 1.0 | 켬 | velocity, normal(+거칠기), surface(기본색·금속도, 8비트) |
 
 - 비용은 픽셀 수에 비례하므로 픽셀 비율 상한(1.5)이 함께 효과를 낸다. AO만 줄이려면 `aoResolutionScale`·`aoSamples`를 낮춘다.
-- 후처리를 켜면 장면을 pass 대상으로 먼저 컴파일한 뒤 넘겨받는다(MRT preset 포함, [rendering.md](rendering.md#첫-프레임-멈춤-방지-compilegate)). 넘겨받는 프레임에는 후처리 pass 자신의 파이프라인(TRAA·GTAO·bloom·출력)을 만드느라 0.7초 안팎 한 번 멈춘다.
+- `cinematic`은 GTAO 대신 SSGI(반해상도, 슬라이스 2 × 8걸음, 필터)를 쓰고 SSR(반해상도)을 더한다. RTX 50(Blackwell, Chrome 153, vsync 끔)에서 잰 값: 3840×2160 방에서 GPU 시간 `quality` 7.9ms → `cinematic` 4.4~4.9ms(프레임 8.9 → 7.1ms, 후처리 없음 1.3ms). 예제 섬(1308×1188)에서는 GPU 2.1~2.6 → 1.6~2.2ms로 비슷하고, 패스가 늘어 CPU가 프레임당 약 0.5ms 더 든다(프레임 p50 2.9~3.0 → 3.4~3.7ms). GI·반사를 전해상도(`giResolutionScale`·`reflectionResolutionScale` 1)로 올리면 4K GPU가 16.5ms로 세 배 넘게 든다.
+- 후처리를 켜면 장면을 pass 대상으로 먼저 컴파일한 뒤 넘겨받는다(MRT preset 포함, [rendering.md](rendering.md#첫-프레임-멈춤-방지-compilegate)). 넘겨받는 프레임에는 후처리 pass 자신의 파이프라인(TRAA·GTAO·bloom·출력)을 만드느라 0.7초 안팎 한 번 멈춘다. `cinematic`은 GI·필터·반사·합성 셰이더가 더해져, 예제 섬에서 그 프레임의 가장 긴 작업이 `quality` 56~61ms, `cinematic` 74~123ms였다(셰이더 캐시가 있는 같은 기기).
 - 첫 로드는 `GaesupWorldContent`의 월드 전체를 `CompileGate`가 12ms 조각으로 나눠 컴파일한 뒤 보여 준다. 예제 섬에서 첫 프레임의 450~900ms long task가 사라졌다([rendering.md](rendering.md#첫-프레임-멈춤-방지-compilegate)).
 - classic WebGL 경로는 `@react-three/postprocessing`의 `EffectComposer`(외곽선 + 색보정)를 쓴다.
 

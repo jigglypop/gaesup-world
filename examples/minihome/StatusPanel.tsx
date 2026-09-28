@@ -209,6 +209,7 @@ export function StatusPanel({ settings, onChange }: { settings: SceneSettings; o
         <Toggle label="절전 모드" hint="입력이 2초 없으면 30fps로 그려요" checked={settings.idleThrottle} onChange={(idleThrottle) => onChange({ idleThrottle })} />
         <Toggle label="후처리" hint="블룸·톤매핑. 필요할 때만 불러와요" checked={settings.postProcessing} onChange={(postProcessing) => onChange({ postProcessing })} />
         <Toggle label="가리면 반투명" hint="앞을 가린 물체를 반투명하게 해요. 끄면 카메라가 앞으로 당겨져요" checked={settings.cameraFade ?? true} onChange={(cameraFade) => onChange({ cameraFade })} />
+        <Toggle label="시네마틱 조명" hint="후처리에 화면 공간 GI·반사를 더해요(WebGPU)" checked={settings.cinematic ?? false} onChange={(cinematic) => onChange({ cinematic })} />
       </Section>
     </div>
   );

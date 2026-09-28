@@ -119,7 +119,7 @@ ESM(`import`)과 CJS(`require`) 둘 다 있다. 진입점 목록의 원본은 `p
 
 ### `gaesup-world/postprocessing`
 
-`WorldPostProcessing`(TSL `RenderPipeline`: TRAA, GTAO, Bloom), `ColorGrade`, `LutOverlay`, `ToonOutlines`, `Outlined`, `parseCubeLut`, `createLutTexture`, `loadCubeLut`, `loadCubeLutTexture`. `ColorGrade`, `LutOverlay`, `ToonOutlines`, `Outlined`는 `@react-three/postprocessing`(WebGL 경로)을 쓰며 삭제 예정이다(PRD GPU-1). 자세한 내용은 [rendering.md](rendering.md).
+`WorldPostProcessing`(TSL `RenderPipeline`: TRAA, GTAO, Bloom, `cinematic`이면 SSGI·SSR), `ColorGrade`, `LutOverlay`, `ToonOutlines`, `Outlined`, `parseCubeLut`, `createLutTexture`, `loadCubeLut`, `loadCubeLutTexture`. `ColorGrade`, `LutOverlay`, `ToonOutlines`, `Outlined`는 `@react-three/postprocessing`(WebGL 경로)을 쓰며 삭제 예정이다(PRD GPU-1). 자세한 내용은 [rendering.md](rendering.md).
 
 ### `gaesup-world/blueprints`, `gaesup-world/blueprints/editor`
 

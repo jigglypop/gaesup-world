@@ -28,10 +28,14 @@ const MINIROOM = AREAS.find((area) => area.id === 'miniroom')!;
 /** Inside the miniroom most daylight stays out; a warm fill and the ceiling lamp light the room. */
 const ROOM_LIGHT: LightingProfile = { sun: 0.3, fill: 0.72, sky: '#ffe8d2', ground: '#8a6d58', environment: 0.45 };
 const ROOM_LAMP = { color: '#ffcf8f', intensity: 9, distance: 10, height: 3 };
+/** Post-processing with screen-space GI and reflections on WebGPU devices. */
+const CINEMATIC = { quality: 'cinematic' } as const;
 
 export type SceneSettings = {
   quality: WorldQuality;
   postProcessing: boolean;
+  /** With post-processing on, light the island with bounced light and reflections (`cinematic` preset). */
+  cinematic?: boolean;
   /** Draw 30 frames a second after two idle seconds. */
   idleThrottle: boolean;
   /** What hides the player turns see-through instead of pulling the camera in front of it (on when unset). */
@@ -39,7 +43,7 @@ export type SceneSettings = {
 };
 
 /** The island canvas: the player, the village, its residents and the rule engine's trigger areas. */
-export function Scene({ quality, postProcessing, idleThrottle }: SceneSettings) {
+export function Scene({ quality, postProcessing, cinematic, idleThrottle }: SceneSettings) {
   // A lost GPU device remounts the canvas with a fresh renderer; the island's state lives outside it.
   const canvasKey = useRendererRecovery();
   return (
@@ -49,7 +53,7 @@ export function Scene({ quality, postProcessing, idleThrottle }: SceneSettings) 
       <hemisphereLight args={['#eaf6ff', '#6f8a57', 1.22]} />
       <SkyEnvironment intensity={0.32} />
       <Suspense fallback={null}>
-        <GaesupWorldContent quality={quality} postProcessing={postProcessing}>
+        <GaesupWorldContent quality={quality} postProcessing={postProcessing && (cinematic ? CINEMATIC : true)}>
           <CascadedSun position={[18, 36, 22]} intensity={2.55} color="#fff3da" />
           {idleThrottle && <IdleFrameRate />}
           <WorldPhysics>

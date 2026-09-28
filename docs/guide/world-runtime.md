@@ -43,7 +43,7 @@ createGaesupRuntime()              월드 하나의 store·시계·입력·NPC �
 | prop | 타입 | 기본값 | 동작 |
 |---|---|---|---|
 | `quality` | `'auto' \| 'low' \| 'medium' \| 'high' \| PerfProfile` | 없음 | 품질 profile을 적용한다(캔버스 픽셀 비율 최대 1.5, 그림자 preset, 후처리 preset). 생략하면 각 컴포넌트가 자기 기본값을 쓴다. [rendering.md](rendering.md) |
-| `postProcessing` | `boolean \| WorldPostProcessingProps` | 없음 | 켜면 `WorldPostProcessing`을 lazy로 내려받아 캔버스 렌더를 맡긴다. 끈 월드는 그 청크를 받지 않는다. profile의 `postprocess`가 false인 tier(`low`)에서는 켜도 올리지 않는다 |
+| `postProcessing` | `boolean \| WorldPostProcessingProps` | 없음 | 켜면 `WorldPostProcessing`을 lazy로 내려받아 캔버스 렌더를 맡긴다. 끈 월드는 그 청크를 받지 않는다. profile의 `postprocess`가 false인 tier(`low`)에서는 켜도 올리지 않는다. `{ quality: 'cinematic' }`이면 화면 공간 GI·반사를 켠다(WebGPU) |
 | `performance` | `boolean` | production이 아니면 켜짐 | 렌더러 통계를 월드 store에 샘플링한다. `retainPerformanceSampling()`을 잡고 있는 소비자가 있으면 꺼 두어도 켜진다. [performance.md](performance.md) |
 | `showGrid` | `boolean` | `false` | 100×100 `gridHelper` |
 | `showAxes` | `boolean` | `false` | 길이 10의 `axesHelper` |

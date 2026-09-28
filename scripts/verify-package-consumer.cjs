@@ -1087,6 +1087,7 @@ import {
   DEFAULT_CHARACTER_ATTACHMENT_SOCKETS,
   DEFAULT_CHARACTER_EQUIPMENT_PRESETS,
   GaesupWorld,
+  GaesupWorldContent,
   ActionEquipmentPanel,
   SCENE_DOCUMENT_SAVE_KEY,
   TeleportMarker,
@@ -1160,7 +1161,26 @@ import {
 } from 'gaesup-world/network';
 const remotePlayersProps: RemotePlayersProps = { players: new Map(), proximityRange: 12 };
 void remotePlayersProps;
-import { ColorGrade, parseCubeLut } from 'gaesup-world/postprocessing';
+import { ColorGrade, WorldPostProcessing, parseCubeLut, type WorldPostProcessingProps } from 'gaesup-world/postprocessing';
+const cinematicLighting: WorldPostProcessingProps = {
+  quality: 'cinematic',
+  globalIllumination: true,
+  giRadius: 4,
+  giSteps: 8,
+  giIntensity: 8,
+  giResolutionScale: 0.5,
+  reflections: true,
+  reflectionDistance: 8,
+  reflectionQuality: 0.5,
+  reflectionIntensity: 1,
+  reflectionResolutionScale: 0.5,
+  reflectionMaxRoughness: 0.5,
+};
+// @ts-expect-error Post-processing presets are a closed set.
+const unknownPreset: WorldPostProcessingProps = { quality: 'ultra' };
+const cinematicPipeline = <WorldPostProcessing {...cinematicLighting} />;
+const cinematicWorld = <GaesupWorldContent quality="high" postProcessing={{ quality: 'cinematic', giIntensity: 6 }} />;
+void unknownPreset; void cinematicPipeline; void cinematicWorld;
 import { Avatar, AvatarRuntime, createAvatarStore } from 'gaesup-world/avatar';
 const modularAvatar = <Avatar body="body-sd-neutral-v1" equipment={{ top: 'top-001' }} />;
 void modularAvatar; void AvatarRuntime; void createAvatarStore;

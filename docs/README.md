@@ -21,7 +21,7 @@ gaesup-world는 React Three Fiber 위에서 도는 **웹판 Unity/Unreal**이다
   2. `GaesupWorld`만 쓰면 모듈 전역(legacy) store로 돌고 개발 모드 경고가 7개 난다(LIB-1).
   3. WebGPU가 없으면 `WebGPURenderer`의 WebGL2 백엔드가 아니라 classic `WebGLRenderer`와 GLSL 경로로 그린다. WebGL 전용 후처리(`@react-three/postprocessing`)가 루트 진입점에 정적으로 묶여 WebGPU만 쓰는 앱도 그 패키지를 설치해야 한다(GPU-1).
   4. NPC는 말풍선을 그리지 않고 일과표가 움직이지 않는다(NPC-1).
-  5. 동적 GI가 없다(GI-1).
+  5. 동적 GI는 화면 공간(`WorldPostProcessing`의 `cinematic`)뿐이라 화면 밖이나 가려진 빛은 반영되지 않는다(GI-1).
   6. `IdleFrameRate`가 기본 장착되지 않아, 앱이 올리지 않으면 유휴 상태에서도 매 프레임을 그린다(PERF).
 - 다음 작업: PRD 순서대로 UP-1 → LIB-1 → PERF → NPC-1 → GI-1 → EX-1. GPU-1은 보류.
 
