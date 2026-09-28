@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import type { NPCBrainBlueprint, NPCInstance } from '../../../../../npc/types';
 import { getNPCBlueprintNodeTitle, getNPCBlueprintNodeDescription } from '../helpers';
@@ -13,7 +13,7 @@ const INSTANCE: NPCInstance = {
   position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1],
 };
 
-test('localized inspector repairs missing branches using graph data and keeps command identifiers', () => {
+test('localized inspector repairs missing branches using graph data and keeps command identifiers', async () => {
   const blueprint: NPCBrainBlueprint = {
     id: 'brain', name: 'Test brain',
     nodes: [
@@ -48,6 +48,8 @@ test('localized inspector repairs missing branches using graph data and keeps co
     ],
   }));
   expect(blueprint.edges).toHaveLength(1);
+  // The graph view loads on demand.
+  await waitFor(() => expect(mockFlowProps).toBeDefined());
   if (!mockFlowProps) throw new Error('Missing graph');
   mockFlowProps.onDelete(['start', 'left'], ['entry']);
   expect(updateBrainBlueprint).toHaveBeenLastCalledWith('brain', expect.objectContaining({

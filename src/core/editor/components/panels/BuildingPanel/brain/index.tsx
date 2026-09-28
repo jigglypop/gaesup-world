@@ -1,5 +1,6 @@
+import { lazy, Suspense } from 'react';
+
 import { NPC_BRAIN_MODES } from './constants';
-import { BrainFlow } from '../flow';
 import { cloneNPCBlueprintForInstance, getNPCBrainLabel, removeNPCBlueprintNode, resetNPCBlueprint } from '../helpers';
 import { BrainNodeInspector } from './BrainNodeInspector';
 import { BrainNodeList } from './BrainNodeList';
@@ -8,6 +9,9 @@ import type { NPCBrainSectionProps } from './types';
 import { useNPCBrainEditor } from './useNPCBrainEditor';
 
 export type { NPCBrainPreviewState, NPCBrainSectionProps } from './types';
+
+// The graph view brings React Flow and d3 (about 160 kB minified); apps that never open it never download them.
+const BrainFlow = lazy(() => import('../flow').then((module) => ({ default: module.BrainFlow })));
 
 export function NPCBrainSection(props: NPCBrainSectionProps) {
   const editor = useNPCBrainEditor(props);
@@ -102,21 +106,23 @@ export function NPCBrainSection(props: NPCBrainSectionProps) {
                   background: '#0f172a',
                 }}
               >
-                <BrainFlow
-                  blueprint={selectedBlueprint}
-                  selectedNodeId={selectedNodeId}
-                  selectedEdgeId={selectedEdgeId}
-                  onSelectNode={setSelectedNodeId}
-                  onSelectEdge={setSelectedEdgeId}
-                  onDelete={(nodeIds, edgeIds) => {
-                    const next = nodeIds.reduce(removeNPCBlueprintNode, selectedBlueprint);
-                    const removedEdges = new Set(edgeIds);
-                    updateBrainBlueprint(selectedBlueprint.id, {
-                      ...next,
-                      edges: next.edges.filter((edge) => !removedEdges.has(edge.id)),
-                    });
-                  }}
-                />
+                <Suspense fallback={null}>
+                  <BrainFlow
+                    blueprint={selectedBlueprint}
+                    selectedNodeId={selectedNodeId}
+                    selectedEdgeId={selectedEdgeId}
+                    onSelectNode={setSelectedNodeId}
+                    onSelectEdge={setSelectedEdgeId}
+                    onDelete={(nodeIds, edgeIds) => {
+                      const next = nodeIds.reduce(removeNPCBlueprintNode, selectedBlueprint);
+                      const removedEdges = new Set(edgeIds);
+                      updateBrainBlueprint(selectedBlueprint.id, {
+                        ...next,
+                        edges: next.edges.filter((edge) => !removedEdges.has(edge.id)),
+                      });
+                    }}
+                  />
+                </Suspense>
               </div>
             )}
             <div className="building-panel__brain-tabs">
