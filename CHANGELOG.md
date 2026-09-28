@@ -1,3 +1,10 @@
+## [1.3.2](https://github.com/jigglypop/gaesup-world/compare/v1.3.1...v1.3.2) (2026-09-28)
+
+
+### Bug Fixes
+
+* **demo:** 설치형 소비자 데모가 모든 피어를 예제와 한 벌로 써, WebGL2 경로의 Canvas 훅 오류와 Pages 배포 검증 실패를 없앤다 ([81a5fba](https://github.com/jigglypop/gaesup-world/commit/81a5fbac669e3f87732e80e7fac50275df469cc2))
+
 ## [1.3.1](https://github.com/jigglypop/gaesup-world/compare/v1.3.0...v1.3.1) (2026-09-28)
 
 
