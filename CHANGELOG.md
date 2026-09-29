@@ -1,3 +1,15 @@
+# [1.6.0](https://github.com/jigglypop/gaesup-world/compare/v1.5.0...v1.6.0) (2026-09-29)
+
+
+### Features
+
+* **gi:** 배치한 나무·가구·바위를 모델 경계 상자로 GI에 넣어 그늘을 만들고 조명 머리를 발광체로 넣는다 ([c067271](https://github.com/jigglypop/gaesup-world/commit/c06727187f0240b6678102c6839b261bad13d1f0))
+
+
+### Performance Improvements
+
+* **gi:** 프로브 추적을 Web Worker로 옮기고, 수렴하면 갱신을 줄이며, 셰이더 샘플을 픽셀당 3번으로 줄인다 ([4a0c989](https://github.com/jigglypop/gaesup-world/commit/4a0c98997760ae66c887ff1a11a6e83f51ae6667))
+
 # [1.5.0](https://github.com/jigglypop/gaesup-world/compare/v1.4.0...v1.5.0) (2026-09-29)
 
 
