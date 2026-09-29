@@ -7,7 +7,7 @@ import { Water } from "three-stdlib";
 import { extendOnce } from '@/core/rendering/extendOnce';
 import { getDefaultToonMode } from "@core/rendering/toon";
 
-import { createGlslWaterMaterial } from './glsl';
+import { createGlslWaterBedMaterial, createGlslWaterMaterial } from './glsl';
 import { getSharedWaterNormals } from './normals';
 import { distanceToWater, selectWaterDetail, type WaterLodState } from './shading';
 import { rendererKind } from '../../../../rendering/webgpu';
@@ -27,9 +27,16 @@ class OwnedWater extends Water {
 const extendWater = extendOnce({ Water: OwnedWater });
 const WATER_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:water' };
 const NodeWaterMaterial = lazy(() => import('./NodeWaterMaterial'));
+const NodeWaterBed = lazy(() => import('./NodeWaterMaterial').then((module) => ({ default: module.NodeWaterBed })));
 const SURFACE_Y = 0.1;
 /** Meters over which fallback coverage climbs from a shore side (0.5) to open water (1), like a blurred field. */
 const SHORE_RAMP = 2.5;
+/** Fallback distance to land where no shore side is near. */
+const OPEN_DISTANCE = 1000;
+/** The open sea's floor is three times finer than its surface, so its shelf follows the shore closely. */
+const SEA_BED_DETAIL = 3;
+/** Water draws first among see-through things: it shows the opaque scene behind it, and they draw over it. */
+const WATER_RENDER_ORDER = -1;
 
 type ShoreSides = { north: boolean; south: boolean; east: boolean; west: boolean };
 
@@ -46,7 +53,7 @@ type WaterProps = {
   depth?: number;
   /** @deprecated Shores come from the world's shore field; only water without one shades these sides as shore. */
   shore?: Partial<ShoreSides>;
-  /** An open sea under the camera: opaque, no banks of its own. */
+  /** An open sea under the camera, over a sea floor that shelves away from the shore; no banks of its own. */
   followCamera?: boolean;
   /** Borrowed repeating normal texture. The caller owns its lifetime. */
   normalMap?: THREE.Texture;
@@ -58,11 +65,15 @@ type WaterProps = {
   field?: ShoreField | null;
 };
 
-/** A level grid whose `waterCoverage` climbs from the shore sides into the open; without shores it is open water. */
+/**
+ * A level grid whose `waterCoverage` climbs from the shore sides into the open and whose `waterDistance` is meters to
+ * the nearest of them; without shores it is open water.
+ */
 function createSurfaceGeometry(width: number, depth: number, segments: number, shore: ShoreSides | null): THREE.PlaneGeometry {
   const geometry = new THREE.PlaneGeometry(width, depth, segments, segments);
   const position = geometry.getAttribute('position');
   const coverage = new Float32Array(position.count);
+  const distances = new Float32Array(position.count);
   for (let i = 0; i < position.count; i++) {
     // The plane's +y becomes north (-z) once it lies flat.
     const x = position.getX(i);
@@ -73,8 +84,10 @@ function createSurfaceGeometry(width: number, depth: number, segments: number, s
     if (shore?.north) distance = Math.min(distance, depth / 2 - y);
     if (shore?.south) distance = Math.min(distance, y + depth / 2);
     coverage[i] = Math.min(1, 0.5 + distance / (2 * SHORE_RAMP));
+    distances[i] = Math.min(distance, OPEN_DISTANCE);
   }
   geometry.setAttribute('waterCoverage', new THREE.BufferAttribute(coverage, 1));
+  geometry.setAttribute('waterDistance', new THREE.BufferAttribute(distances, 1));
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
   return geometry;
@@ -120,16 +133,29 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
     [segments, sides, surfaceDepth, surfaceWidth],
   );
   useEffect(() => () => geometry.dispose(), [geometry]);
+  // The sea floor steps with the surface grid (whole surface cells), so its vertices stay on fixed world points too.
+  const bedGeometry = useMemo(
+    () => (followCamera ? createSurfaceGeometry(surfaceWidth, surfaceDepth, segments * SEA_BED_DETAIL, null) : geometry),
+    [followCamera, geometry, segments, surfaceDepth, surfaceWidth],
+  );
+  useEffect(() => () => { if (bedGeometry !== geometry) bedGeometry.dispose(); }, [bedGeometry, geometry]);
 
   const glslMaterial = useMemo(
     () => (useNodes || useMirrorWater ? null : createGlslWaterMaterial({ normals: waterNormals, field, open: followCamera })),
     [field, followCamera, useMirrorWater, useNodes, waterNormals],
   );
   useEffect(() => () => glslMaterial?.dispose(), [glslMaterial]);
+  const glslBedMaterial = useMemo(
+    () => (useNodes || useMirrorWater ? null : createGlslWaterBedMaterial({ normals: waterNormals, field, open: followCamera })),
+    [field, followCamera, useMirrorWater, useNodes, waterNormals],
+  );
+  useEffect(() => () => glslBedMaterial?.dispose(), [glslBedMaterial]);
   useEffect(() => {
-    const uniform = glslMaterial?.uniforms['uBrightness'];
-    if (uniform) uniform.value = brightness;
-  }, [glslMaterial, brightness]);
+    for (const material of [glslMaterial, glslBedMaterial]) {
+      const uniform = material?.uniforms['uBrightness'];
+      if (uniform) uniform.value = brightness;
+    }
+  }, [glslMaterial, glslBedMaterial, brightness]);
 
   const renderTargetSize = useMemo(() => {
     const longest = Math.max(surfaceWidth, surfaceDepth);
@@ -191,9 +217,10 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
     group.visible = ready && visibleRef.current;
     if (!group.visible) return;
 
-    if (glslMaterial) {
-      glslMaterial.uniforms['uTime']!.value = elapsedSeconds;
-      glslMaterial.uniforms['uDetail']!.value = lodState.detailed ? 1 : 0;
+    for (const material of [glslMaterial, glslBedMaterial]) {
+      if (!material) continue;
+      material.uniforms['uTime']!.value = elapsedSeconds;
+      material.uniforms['uDetail']!.value = lodState.detailed ? 1 : 0;
     }
     if (!useMirrorWater) return;
     const mirror = waterRef.current;
@@ -211,7 +238,7 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
     <group ref={groupRef} visible={ready}>
       {useNodes ? (
         <Suspense fallback={null}>
-          <mesh geometry={geometry} rotation-x={-Math.PI / 2} position={[0, SURFACE_Y, 0]}>
+          <mesh geometry={geometry} rotation-x={-Math.PI / 2} position={[0, SURFACE_Y, 0]} renderOrder={WATER_RENDER_ORDER}>
             <NodeWaterMaterial
               normalMap={waterNormals}
               brightness={brightness}
@@ -220,6 +247,9 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
               open={followCamera}
               lod={lodState}
             />
+          </mesh>
+          <mesh geometry={bedGeometry} rotation-x={-Math.PI / 2} position={[0, SURFACE_Y, 0]} receiveShadow={!followCamera}>
+            <NodeWaterBed field={field} open={followCamera} normalMap={waterNormals} />
           </mesh>
         </Suspense>
       ) : useMirrorWater ? (
@@ -237,7 +267,12 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
           )}
         </>
       ) : (
-        glslMaterial && <mesh geometry={geometry} material={glslMaterial} rotation-x={-Math.PI / 2} position={[0, SURFACE_Y, 0]} />
+        glslMaterial && glslBedMaterial && (
+          <>
+            <mesh geometry={geometry} material={glslMaterial} rotation-x={-Math.PI / 2} position={[0, SURFACE_Y, 0]} renderOrder={WATER_RENDER_ORDER} />
+            <mesh geometry={bedGeometry} material={glslBedMaterial} rotation-x={-Math.PI / 2} position={[0, SURFACE_Y, 0]} />
+          </>
+        )
       )}
     </group>
   );

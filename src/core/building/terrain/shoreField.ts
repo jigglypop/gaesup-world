@@ -11,6 +11,8 @@ const RADIUS = 3;
 const EMPTY = 255;
 /** Texels a slice blurs before it checks the clock, so one slice overshoots its budget by a fraction of a millisecond. */
 const TEXELS_PER_STEP = 16_384;
+/** Meters of distance to land the field's G channel spans: G = min(distance / SHORE_DISTANCE_RANGE, 1). */
+export const SHORE_DISTANCE_RANGE = 64;
 
 export type ShoreFieldSource = {
   tileGroups: Iterable<Pick<TileGroupConfig, 'tiles'>>;
@@ -32,7 +34,8 @@ const DEFAULTS: Required<ShoreFieldOptions> = { texelsPerCell: 4, margin: 2, max
 /**
  * Water coverage around the building grid, blurred across every shoreline so ground and water shaders can blend by
  * distance instead of switching per tile: 0 on land, 1 on open water and 0.5 on the shoreline itself.
- * The RGBA8 texture keeps coverage in R (and A = 1); sample it at `(world.xz - transform.xy) * transform.zw`.
+ * The RGBA8 texture keeps coverage in R, the distance from water to the nearest land in G (a fraction of
+ * {@link SHORE_DISTANCE_RANGE} meters, 0 on land) and A = 1; sample it at `(world.xz - transform.xy) * transform.zw`.
  * Rebuilds write into the same texture and transform, so materials that bound them stay valid.
  */
 export class ShoreField {
@@ -53,8 +56,8 @@ export class ShoreField {
     this.texture.needsUpdate = true;
   }
 
-  /** Bilinear coverage at a world point, matching what the GPU samples. */
-  sample(x: number, z: number): number {
+  /** Bilinear coverage (`channel` 0) or distance fraction (1) at a world point, matching what the GPU samples. */
+  sample(x: number, z: number, channel = 0): number {
     const { data, width, height } = this.texture.image as { data: Uint8Array; width: number; height: number };
     const u = Math.min(Math.max((x - this.transform.x) * this.transform.z * width - 0.5, 0), width - 1);
     const v = Math.min(Math.max((z - this.transform.y) * this.transform.w * height - 0.5, 0), height - 1);
@@ -64,7 +67,7 @@ export class ShoreField {
     const z1 = Math.min(z0 + 1, height - 1);
     const fx = u - x0;
     const fz = v - z0;
-    const at = (tx: number, tz: number) => data[(tz * width + tx) * 4]!;
+    const at = (tx: number, tz: number) => data[(tz * width + tx) * 4 + channel]!;
     const top = at(x0, z0) + (at(x1, z0) - at(x0, z0)) * fx;
     const bottom = at(x0, z1) + (at(x1, z1) - at(x0, z1)) * fx;
     return (top + (bottom - top) * fz) / 255;
@@ -140,6 +143,42 @@ function rasterize({ tileGroups, worldSurface = 'ground' }: ShoreFieldSource, ma
   return { minX, minZ, phaseX, phaseZ, columns, rows, water, hasWater };
 }
 
+/** Chamfer distance in texels from every texel to the nearest land texel (0 on land), in two sweeps. */
+function* landDistance(mask: CellMask, perCell: number, width: number, height: number, rowsPerStep: number): Generator<void, Float32Array> {
+  const distance = new Float32Array(width * height);
+  for (let z = 0; z < height; z++) {
+    const row = Math.floor(z / perCell) * mask.columns;
+    for (let x = 0; x < width; x++) distance[z * width + x] = mask.water[row + Math.floor(x / perCell)] ? Infinity : 0;
+  }
+  const relax = (i: number, from: number, cost: number) => {
+    const through = distance[from]! + cost;
+    if (through < distance[i]!) distance[i] = through;
+  };
+  for (let z = 0; z < height; z++) {
+    for (let x = 0; x < width; x++) {
+      const i = z * width + x;
+      if (x > 0) relax(i, i - 1, 1);
+      if (z === 0) continue;
+      relax(i, i - width, 1);
+      if (x > 0) relax(i, i - width - 1, Math.SQRT2);
+      if (x < width - 1) relax(i, i - width + 1, Math.SQRT2);
+    }
+    if (z % rowsPerStep === rowsPerStep - 1) yield;
+  }
+  for (let z = height - 1; z >= 0; z--) {
+    for (let x = width - 1; x >= 0; x--) {
+      const i = z * width + x;
+      if (x < width - 1) relax(i, i + 1, 1);
+      if (z === height - 1) continue;
+      relax(i, i + width, 1);
+      if (x < width - 1) relax(i, i + width + 1, Math.SQRT2);
+      if (x > 0) relax(i, i + width - 1, Math.SQRT2);
+    }
+    if (z % rowsPerStep === 0) yield;
+  }
+  return distance;
+}
+
 /**
  * Rebuilds `field` from the tiles, yielding between slices of rows so a caller can spread a large world over frames.
  * The field keeps its previous contents until the last step writes the new texture, transform and version.
@@ -165,6 +204,9 @@ export function* rebuildShoreField(field: ShoreField, source: ShoreFieldSource, 
     if (row % rowsPerStep === rowsPerStep - 1) yield;
   }
 
+  const toLand = yield* landDistance(mask, perCell, width, height, rowsPerStep);
+  // The shoreline lies half a texel past the nearest land texel's center.
+  const texelMeters = CELL / perCell;
   const data = new Uint8Array(width * height * 4);
   for (let z = 0; z < height; z++) {
     for (let x = 0; x < width; x++) {
@@ -175,6 +217,8 @@ export function* rebuildShoreField(field: ShoreField, source: ShoreFieldSource, 
       }
       const offset = (z * width + x) * 4;
       data[offset] = Math.round(sum * 255);
+      const meters = Math.max(0, toLand[z * width + x]! - 0.5) * texelMeters;
+      data[offset + 1] = Math.round(Math.min(1, meters / SHORE_DISTANCE_RANGE) * 255);
       data[offset + 3] = 255;
     }
     if (z % rowsPerStep === rowsPerStep - 1) yield;

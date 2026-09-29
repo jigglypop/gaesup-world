@@ -23,10 +23,10 @@ function RendererMode({ nodes, children }: { nodes: boolean; children: ReactNode
 
 beforeEach(() => jest.mocked(createToonWaterMaterial).mockClear());
 
-test('legacy renderer keeps the GLSL material without loading a node material', async () => {
+test('legacy renderer keeps GLSL water over a GLSL floor without loading a node material', async () => {
   const renderer = await ReactThreeTestRenderer.create(<RendererMode nodes={false}><Ocean toon /></RendererMode>);
-  expect(renderer.scene.findAll((node) => node.instance instanceof THREE.Mesh
-    && node.instance.material instanceof THREE.ShaderMaterial)).toHaveLength(1);
+  const shaders = renderer.scene.findAll((node) => node.instance instanceof THREE.Mesh && node.instance.material instanceof THREE.ShaderMaterial);
+  expect(shaders.map((node) => ((node.instance as THREE.Mesh).material as THREE.Material).name)).toEqual(['water-surface', 'water-bed']);
   expect(createToonWaterMaterial).not.toHaveBeenCalled();
   await renderer.unmount();
 });

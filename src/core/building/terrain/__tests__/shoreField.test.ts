@@ -1,6 +1,6 @@
-import { selectWaterDetail, distanceToWater, WATER_DETAIL_LOD } from '../../components/mesh/water/shading';
+import { selectWaterDetail, distanceToWater, WATER_BED, WATER_DETAIL_LOD, waterDepth } from '../../components/mesh/water/shading';
 import type { TileConfig } from '../../types';
-import { createShoreField, rebuildShoreField, ShoreField, type ShoreFieldSource } from '../shoreField';
+import { createShoreField, rebuildShoreField, SHORE_DISTANCE_RANGE, ShoreField, type ShoreFieldSource } from '../shoreField';
 
 /** A 7 × 7 grid of 4 m tiles centered on `offset`, water in the middle 3 × 3 unless `island`. */
 function source(offset: number, { island = false } = {}): ShoreFieldSource {
@@ -68,4 +68,29 @@ test('water detail switches with hysteresis around the camera distance', () => {
   expect(selectWaterDetail(true, WATER_DETAIL_LOD.exit + 1)).toBe(false);
   expect(distanceToWater(3, 5, 1, 0, 0, 0, 4, 4)).toBe(5);
   expect(distanceToWater(7, 0, 0, 0, 0, 0, 4, 4)).toBe(3);
+});
+
+test('the distance to land grows from the shoreline into open water', () => {
+  const meters = (field: ShoreField, x: number, z: number) => field.sample(x, z, 1) * SHORE_DISTANCE_RANGE;
+  const pond = createShoreField(source(0));
+  expect(meters(pond, 12, 12)).toBe(0);
+  // The pond spans ±6 m: its middle lies 6 m from its banks, give or take a texel.
+  expect(meters(pond, 0, 0)).toBeGreaterThan(5);
+  expect(meters(pond, 0, 0)).toBeLessThan(7);
+  expect(meters(pond, 4, 0)).toBeCloseTo(2, 0);
+  const island = createShoreField(source(0, { island: true }));
+  expect(meters(island, 0, 0)).toBe(0);
+  expect(meters(island, 10, 0)).toBeCloseTo(4, 0);
+  expect(meters(island, 10, 0)).toBeLessThan(meters(island, 12, 0));
+});
+
+test('water reads deeper away from land: a shelving sea with a floor, a pond that levels off', () => {
+  const { sea, pond } = WATER_BED;
+  expect(waterDepth(0, true)).toBeCloseTo(sea.shore);
+  expect(waterDepth(-3, true)).toBeCloseTo(sea.shore);
+  expect(waterDepth(10, true)).toBeGreaterThan(waterDepth(5, true));
+  expect(waterDepth(1_000, true)).toBe(sea.max);
+  expect(waterDepth(0, false)).toBe(0);
+  expect(waterDepth(pond.ramp / 2, false)).toBeCloseTo(pond.depth / 2);
+  expect(waterDepth(pond.ramp * 4, false)).toBe(pond.depth);
 });
