@@ -1,22 +1,22 @@
 import type { RuntimeRecord } from '../../boilerplate/types';
 
-export interface SaveData {
+export type SaveData = {
   version: string;
   timestamp: number;
   world: WorldSaveData;
   metadata?: SaveMetadata;
-}
+};
 
-export interface WorldSaveData {
+export type WorldSaveData = {
   id: string;
   name: string;
   buildings: BuildingSaveData;
   npcs: NPCSaveData[];
   environment: EnvironmentSaveData;
   camera?: CameraSaveData;
-}
+};
 
-export interface BuildingSaveData {
+export type BuildingSaveData = {
   wallGroups: Array<{
     id: string;
     name: string;
@@ -61,9 +61,9 @@ export interface BuildingSaveData {
     opacity?: number;
     transparent?: boolean;
   }>;
-}
+};
 
-export interface NPCSaveData {
+export type NPCSaveData = {
   id: string;
   name: string;
   position: { x: number; y: number; z: number };
@@ -71,9 +71,9 @@ export interface NPCSaveData {
   modelUrl?: string;
   behavior?: string;
   metadata?: RuntimeRecord;
-}
+};
 
-export interface EnvironmentSaveData {
+export type EnvironmentSaveData = {
   lighting: {
     ambientIntensity: number;
     directionalIntensity: number;
@@ -90,34 +90,34 @@ export interface EnvironmentSaveData {
     color?: string;
     textureUrl?: string;
   };
-}
+};
 
-export interface CameraSaveData {
+export type CameraSaveData = {
   position: { x: number; y: number; z: number };
   rotation: { x: number; y: number; z: number };
   mode: string;
   settings?: RuntimeRecord;
-}
+};
 
-export interface SaveMetadata {
+export type SaveMetadata = {
   description?: string;
   tags?: string[];
   thumbnail?: string;
   author?: string;
   createdAt: number;
   updatedAt: number;
-}
+};
 
-export interface SaveLoadOptions {
+export type SaveLoadOptions = {
   includeBuildings?: boolean;
   includeNPCs?: boolean;
   includeEnvironment?: boolean;
   includeCamera?: boolean;
   compress?: boolean;
-}
+};
 
-export interface SaveLoadResult {
+export type SaveLoadResult = {
   success: boolean;
   data?: SaveData;
   error?: string;
-} 
+}; 

@@ -22,7 +22,7 @@ export type PhysicsDispatchAction = {
 };
 
 
-export interface PhysicsCalcProps {
+export type PhysicsCalcProps = {
   rigidBodyRef: RefObject<RapierRigidBody>;
   innerGroupRef?: RefObject<THREE.Group>;
   state: RootState;
@@ -38,13 +38,13 @@ export interface PhysicsCalcProps {
     direction?: THREE.Vector3;
     directionTarget?: THREE.Vector3;
   };
-}
+};
 
 export type PhysicsCalculationProps =
   Required<Pick<PhysicsEntityProps, 'rigidBodyRef'>> &
   Pick<PhysicsEntityProps, 'innerGroupRef' | 'outerGroupRef' | 'colliderRef' | 'groundRay' | 'colliderSize'>;
 
-export interface PhysicsState {
+export type PhysicsState = {
   activeState: ActiveStateType;
   gameStates: GameStatesType;
   keyboard: {
@@ -70,4 +70,4 @@ export interface PhysicsState {
   automationOption: AutomationState;
   modeType: ModeType;
   delta?: number;
-}
+};

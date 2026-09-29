@@ -14,10 +14,10 @@ import {
   useGaesupRuntimeRevision,
 } from '../../runtime';
 
-export interface TeleportResult {
+export type TeleportResult = {
   teleport: (position: Vector3, rotation?: Euler, options?: TeleportOptions) => void;
   canTeleport: boolean;
-}
+};
 
 export type TeleportOptions = {
   dropHeight?: number;

@@ -2,11 +2,11 @@ import { createStoreDomainPlugin } from '../plugins';
 import { useCatalogStore } from './stores/catalogStore';
 import type { CatalogSerialized } from './types';
 
-export interface CatalogPluginOptions {
+export type CatalogPluginOptions = {
   id?: string;
   saveExtensionId?: string;
   storeServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.catalog';
 const DEFAULT_SAVE_EXTENSION_ID = 'catalog';

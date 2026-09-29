@@ -12,47 +12,47 @@ export type WorldCommand =
   | InteractCommand
   | CleanupCommand;
 
-export interface AddObjectCommand {
+export type AddObjectCommand = {
   type: 'addObject';
   // Allow callers to supply an id so state-layer APIs can return the real id.
   data: Omit<WorldObject, 'id'> & { id?: string };
-}
+};
 
-export interface RemoveObjectCommand {
+export type RemoveObjectCommand = {
   type: 'removeObject';
   data: { id: string };
-}
+};
 
-export interface UpdateObjectCommand {
+export type UpdateObjectCommand = {
   type: 'updateObject';
   data: { id: string; updates: Partial<WorldObject> };
-}
+};
 
-export interface SelectObjectCommand {
+export type SelectObjectCommand = {
   type: 'selectObject';
   data: { id?: string };
-}
+};
 
-export interface SetInteractionModeCommand {
+export type SetInteractionModeCommand = {
   type: 'setInteractionMode';
   data: { mode: 'view' | 'edit' | 'interact' };
-}
+};
 
-export interface ToggleDebugInfoCommand {
+export type ToggleDebugInfoCommand = {
   type: 'toggleDebugInfo';
-}
+};
 
-export interface InteractCommand {
+export type InteractCommand = {
   type: 'interact';
   data: { objectId: string; action: string };
-}
+};
 
-export interface CleanupCommand {
+export type CleanupCommand = {
   type: 'cleanup';
-}
+};
 
 // WorldBridge Snapshot
-export interface WorldSnapshot {
+export type WorldSnapshot = {
   objects: WorldObject[];
   selectedObjectId?: string;
   interactionMode: 'view' | 'edit' | 'interact';
@@ -61,17 +61,17 @@ export interface WorldSnapshot {
   objectsInRadius?: (center: THREE.Vector3, radius: number) => WorldObject[];
   objectsByType?: (type: WorldObject['type']) => WorldObject[];
   raycast?: (origin: THREE.Vector3, direction: THREE.Vector3) => WorldObject | null;
-}
+};
 
-export interface WorldBridgeState {
+export type WorldBridgeState = {
   selectedObjectId?: string;
   interactionMode: 'view' | 'edit' | 'interact';
   showDebugInfo: boolean;
-}
+};
 
-export interface WorldBridgeMetrics {
+export type WorldBridgeMetrics = {
   totalObjects: number;
   objectsByType: Record<string, number>;
   totalEvents: number;
   lastInteractionTime: number;
-} 
+}; 

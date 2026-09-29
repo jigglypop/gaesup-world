@@ -1,19 +1,19 @@
 import type { RuntimeRecord } from '../types';
 
-export interface SystemCapabilities {
+export type SystemCapabilities = {
   hasAsync?: boolean;
   hasMetrics?: boolean;
   hasState?: boolean;
   hasEvents?: boolean;
-}
+};
 
-export interface SystemContext {
+export type SystemContext = {
   deltaTime: number;
   totalTime: number;
   frameCount: number;
-}
+};
 
-export interface BaseSystem<TState = RuntimeRecord, TMetrics = RuntimeRecord> {
+export type BaseSystem<TState = RuntimeRecord, TMetrics = RuntimeRecord> = {
   /**
    * 시스템 고유 ID
    */
@@ -69,4 +69,4 @@ export interface BaseSystem<TState = RuntimeRecord, TMetrics = RuntimeRecord> {
    * 메트릭스 조회
    */
   getMetrics?(): Readonly<TMetrics>;
-} 
+}; 

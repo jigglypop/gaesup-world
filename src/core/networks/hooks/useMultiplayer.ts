@@ -12,11 +12,11 @@ import {
   MultiplayerConfig
 } from '../types';
 
-interface UseMultiplayerOptions {
+type UseMultiplayerOptions = {
   config: MultiplayerConfig;
   characterUrl?: string;
   rigidBodyRef?: RefObject<RapierRigidBody>;
-}
+};
 
 interface UseMultiplayerResult extends MultiplayerState {
   connect: (options: MultiplayerConnectionOptions) => void;

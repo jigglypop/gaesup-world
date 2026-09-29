@@ -2,14 +2,14 @@ import * as THREE from 'three';
 
 import { GaesupCoreWasmExports, loadCoreWasm } from '../wasm/loader';
 
-export interface NavigationConfig {
+export type NavigationConfig = {
   cellSize: number;
   worldMinX: number;
   worldMinZ: number;
   worldMaxX: number;
   worldMaxZ: number;
   maxStepHeight: number;
-}
+};
 
 export type Waypoint = [number, number, number];
 
@@ -498,6 +498,9 @@ export class NavigationSystem {
     );
 
     if (pathLen === 0) return [];
+    if (pathLen >= this.outCapacity) {
+      return this.findPathJS(sx, sz, gx, gz, y, weighted, traversalGrid, traversalCostGrid);
+    }
 
     const raw = new Uint32Array(wasm.memory.buffer, this.outPathPtr, pathLen * 2);
     const waypoints: Waypoint[] = [];

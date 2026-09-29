@@ -4,11 +4,11 @@ import { acquireFarmingClock } from './stores/clock';
 import { usePlotStore } from './stores/plotStore';
 import type { FarmingSerialized } from './types';
 
-export interface FarmingPluginOptions {
+export type FarmingPluginOptions = {
   id?: string;
   saveExtensionId?: string;
   storeServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.farming';
 const DEFAULT_SAVE_EXTENSION_ID = 'farming';

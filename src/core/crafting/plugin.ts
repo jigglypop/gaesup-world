@@ -2,11 +2,11 @@ import { createStoreDomainPlugin } from '../plugins';
 import { useCraftingStore } from './stores/craftingStore';
 import type { CraftingSerialized } from './types';
 
-export interface CraftingPluginOptions {
+export type CraftingPluginOptions = {
   id?: string;
   saveExtensionId?: string;
   storeServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.crafting';
 const DEFAULT_SAVE_EXTENSION_ID = 'crafting';

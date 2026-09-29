@@ -3,7 +3,7 @@ import * as THREE from 'three';
 export type NetworkPayload = object | string | number | boolean | null | undefined;
 
 // 플레이어 상태 정보
-export interface PlayerState {
+export type PlayerState = {
   name: string;
   color: string;
   position: [number, number, number];
@@ -11,10 +11,10 @@ export interface PlayerState {
   animation?: string;
   velocity?: [number, number, number];
   modelUrl?: string;
-}
+};
 
 // NPC 네트워크 노드
-export interface NPCNetworkNode {
+export type NPCNetworkNode = {
   id: string;
   npcId: string;
   position: THREE.Vector3;
@@ -24,10 +24,10 @@ export interface NPCNetworkNode {
   status: 'active' | 'idle' | 'disconnected';
   communicationRange: number;
   signalStrength: number;
-}
+};
 
 // 네트워크 메시지
-export interface NetworkMessage {
+export type NetworkMessage = {
   id: string;
   from: string;
   to: string | 'broadcast' | 'group';
@@ -38,10 +38,10 @@ export interface NetworkMessage {
   reliability: 'unreliable' | 'reliable';
   groupId?: string;
   retryCount?: number;
-}
+};
 
 // 연결 정보
-export interface NetworkConnection {
+export type NetworkConnection = {
   id: string;
   nodeA: string;
   nodeB: string;
@@ -50,10 +50,10 @@ export interface NetworkConnection {
   bandwidth: number;
   status: 'establishing' | 'active' | 'unstable' | 'disconnected';
   lastActivity: number;
-}
+};
 
 // 네트워크 그룹
-export interface NetworkGroup {
+export type NetworkGroup = {
   id: string;
   type: 'party' | 'proximity' | 'broadcast' | 'guild';
   members: Set<string>;
@@ -62,20 +62,20 @@ export interface NetworkGroup {
   persistent: boolean;
   createdAt: number;
   lastActivity: number;
-}
+};
 
 // 네트워크 통계
-export interface NetworkStats {
+export type NetworkStats = {
   totalNodes: number;
   activeConnections: number;
   messagesPerSecond: number;
   averageLatency: number;
   bandwidth: number;
   lastUpdate: number;
-}
+};
 
 // 네트워크 시스템 상태
-export interface NetworkSystemState {
+export type NetworkSystemState = {
   nodes: Map<string, NPCNetworkNode>;
   connections: Map<string, NetworkConnection>;
   groups: Map<string, NetworkGroup>;
@@ -83,7 +83,7 @@ export interface NetworkSystemState {
   stats: NetworkStats;
   isRunning: boolean;
   lastUpdate: number;
-}
+};
 
 // Bridge Commands
 export type NetworkCommand = 
@@ -112,17 +112,17 @@ export type NetworkCommand =
   | { type: 'stopMonitoring'; npcId: string };
 
 // Bridge Snapshot
-export interface NetworkSnapshot {
+export type NetworkSnapshot = {
   nodeCount: number;
   connectionCount: number;
   activeGroups: number;
   messagesPerSecond: number;
   averageLatency: number;
   lastUpdate: number;
-}
+};
 
 // 네트워크 설정
-export interface NetworkConfig {
+export type NetworkConfig = {
   // 성능 설정
   updateFrequency: number;
   maxConnections: number;
@@ -176,7 +176,7 @@ export interface NetworkConfig {
   messageGCInterval: number;
   connectionTimeout: number;
     inactiveNodeCleanup: number;
-}
+};
 
 // 플레이어 상태는 이미 위에 정의됨
 
@@ -202,15 +202,15 @@ export interface MultiplayerConfig extends NetworkConfig {
 }
 
 // 멀티플레이어 연결 옵션
-export interface MultiplayerConnectionOptions {
+export type MultiplayerConnectionOptions = {
   roomId: string;
   playerName: string;
   playerColor: string;
   characterUrl?: string;
-}
+};
 
 // 멀티플레이어 상태
-export interface MultiplayerState {
+export type MultiplayerState = {
   isConnected: boolean;
   connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
   players: Map<string, PlayerState>;
@@ -219,4 +219,4 @@ export interface MultiplayerState {
   error: string | null;
   ping: number;
   lastUpdate: number;
-} 
+}; 

@@ -11,38 +11,38 @@ import type {
 export type PrefabId = string;
 export type PrefabDocumentVersion = 1;
 
-export interface PrefabMetadata {
+export type PrefabMetadata = {
   description?: string;
   thumbnailUrl?: string;
   tags: string[];
   sourceSceneId?: string;
   createdAt?: string;
   updatedAt?: string;
-}
+};
 
-export interface PrefabDocument {
+export type PrefabDocument = {
   version: PrefabDocumentVersion;
   id: PrefabId;
   name: string;
   objects: SceneObject[];
   rootObjectIds: SceneObjectId[];
   metadata: PrefabMetadata;
-}
+};
 
-export interface CreatePrefabDocumentInput {
+export type CreatePrefabDocumentInput = {
   id: PrefabId;
   name?: string;
   objects?: CreateSceneObjectInput[];
   rootObjectIds?: SceneObjectId[];
   metadata?: Partial<PrefabMetadata>;
-}
+};
 
-export interface InstantiatePrefabOptions {
+export type InstantiatePrefabOptions = {
   idPrefix?: string;
   parentId?: SceneObjectId;
   rootTransform?: Partial<SceneTransform>;
   nameSuffix?: string;
-}
+};
 
 export type PrefabValidationIssueCode =
   | 'unsupported-prefab-version'
@@ -52,22 +52,22 @@ export type PrefabValidationIssueCode =
   | 'invalid-root-object'
   | 'invalid-prefab-scene';
 
-export interface PrefabValidationIssue {
+export type PrefabValidationIssue = {
   code: PrefabValidationIssueCode;
   objectId?: SceneObjectId;
   message: string;
-}
+};
 
-export interface PrefabValidationResult {
+export type PrefabValidationResult = {
   valid: boolean;
   issues: PrefabValidationIssue[];
-}
+};
 
-export interface ParsePrefabDocumentResult {
+export type ParsePrefabDocumentResult = {
   ok: boolean;
   prefab?: PrefabDocument;
   issues: PrefabValidationIssue[];
-}
+};
 
 export type PrefabInstanceLink = {
   prefabId: PrefabId;

@@ -13,6 +13,8 @@ function createTarget(): BuildingHydrationTarget {
     tileGroups: new Map(),
     blocks: [],
     objects: [],
+    wallCategories: new Map(),
+    tileCategories: new Map(),
     tileIndex: new Map(),
     tileCells: new Map(),
     tileMeta: new Map(),
@@ -136,6 +138,8 @@ describe('building persistence helpers', () => {
       tileGroups: [{ id: 'tiles', name: 'Tiles', floorMeshId: 'mesh', tiles: [] }],
       blocks: [{ id: 'block', position: { x: 0, y: 0, z: 0 } }],
       objects: [{ id: 'object', type: 'fire', position: { x: 1, y: 0, z: 1 } }],
+      wallCategories: [],
+      tileCategories: [],
       showSnow: false,
       showFog: false,
       fogColor: '#cfd8e3',
@@ -214,6 +218,54 @@ describe('building persistence helpers', () => {
     expect(target.wallMeta.get('wall')).toEqual({ x: 2, z: -2, rotY: 0 });
     expect(target.wallCells.get('wall')?.length).toBeGreaterThan(0);
     expect(block?.cell).toEqual({ x: 3, z: 3, level: 1 });
+  });
+
+  it('카테고리는 직렬화와 복원을 왕복한다', () => {
+    const source = createTarget();
+    source.wallCategories.set('custom-walls', {
+      id: 'custom-walls',
+      name: '사용자 벽',
+      wallGroupIds: ['walls'],
+    });
+    source.tileCategories.set('custom-floors', {
+      id: 'custom-floors',
+      name: '사용자 바닥',
+      tileGroupIds: ['tiles'],
+    });
+    const snapshot = serializeBuildingState(source);
+    source.wallCategories.get('custom-walls')?.wallGroupIds.push('mutated');
+
+    const target = createTarget();
+    target.wallCategories.set('stale', { id: 'stale', name: '이전', wallGroupIds: [] });
+    hydrateBuildingState(target, snapshot);
+
+    expect(snapshot.wallCategories?.[0]?.wallGroupIds).toEqual(['walls']);
+    expect(Array.from(target.wallCategories.keys())).toEqual(['custom-walls']);
+    expect(target.tileCategories.get('custom-floors')?.tileGroupIds).toEqual(['tiles']);
+  });
+
+  it('카테고리가 없는 이전 스냅샷은 기존 카테고리를 유지한다', () => {
+    const target = createTarget();
+    target.wallCategories.set('keep', { id: 'keep', name: '유지', wallGroupIds: [] });
+
+    hydrateBuildingState(target, { meshes: [] });
+
+    expect(target.wallCategories.has('keep')).toBe(true);
+  });
+
+  it('잘못된 카테고리는 기존 상태를 바꾸기 전에 거부한다', () => {
+    const target = createTarget();
+    target.meshes.set('mesh', { id: 'mesh', color: '#fff', material: 'STANDARD' });
+    target.wallCategories.set('keep', { id: 'keep', name: '유지', wallGroupIds: [] });
+
+    for (const invalid of [{ wallCategories: {} }, { tileCategories: [{ name: 'id 없음' }] }]) {
+      expect(() =>
+        hydrateBuildingState(target, { meshes: [], ...invalid } as unknown as BuildingSerializedState),
+      ).toThrow();
+    }
+
+    expect(target.meshes.has('mesh')).toBe(true);
+    expect(target.wallCategories.has('keep')).toBe(true);
   });
 
   it('ignores empty hydrate payloads without clearing current state', () => {

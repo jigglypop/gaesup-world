@@ -22,10 +22,10 @@ export type StoreDomainService<TStore extends { getState: () => unknown }> = {
     : Record<string, never>
 );
 
-export interface StoreDomainPluginConfig<
+export type StoreDomainPluginConfig<
   TSerialized extends SerializedDomainValue,
   TStore extends SerializableStore<TSerialized>,
-> {
+> = {
   id: string;
   name: string;
   saveExtensionId: string;
@@ -38,7 +38,7 @@ export interface StoreDomainPluginConfig<
   serialize?: () => TSerialized;
   hydrate?: (data: TSerialized | null | undefined) => void;
   prepareHydrate?: DomainBinding<TSerialized>['prepareHydrate'];
-}
+};
 
 function createStoreService<TStore extends { getState: () => unknown }>(
   store: TStore,

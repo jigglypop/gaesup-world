@@ -2,16 +2,16 @@ import type { SceneObject, SceneObjectId } from '../scene-object';
 
 export type EditorSelectionMode = 'replace' | 'add' | 'toggle' | 'range';
 
-export interface EditorSelectionState {
+export type EditorSelectionState = {
   selectedObjectIds: SceneObjectId[];
   activeObjectId: SceneObjectId | undefined;
   hoveredObjectId: SceneObjectId | undefined;
-}
+};
 
-export interface SelectSceneObjectOptions {
+export type SelectSceneObjectOptions = {
   mode?: EditorSelectionMode;
   orderedObjectIds?: SceneObjectId[];
-}
+};
 
 export const EMPTY_EDITOR_SELECTION: EditorSelectionState = {
   selectedObjectIds: [],

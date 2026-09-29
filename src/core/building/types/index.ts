@@ -1,18 +1,18 @@
 import type { CellCoord, EdgeCoord } from '../../grid';
 
-export interface Position3D {
+export type Position3D = {
   x: number;
   y: number;
   z: number;
-}
+};
 
-export interface Rotation3D {
+export type Rotation3D = {
   x: number;
   y: number;
   z: number;
-}
+};
 
-export interface MeshConfig {
+export type MeshConfig = {
   id: string;
   assetId?: string;
   color?: string;
@@ -33,7 +33,7 @@ export interface MeshConfig {
   metalness?: number;
   opacity?: number;
   transparent?: boolean;
-}
+};
 
 export type BuildingWallKind = 'solid' | 'window' | 'door' | 'arch' | 'half' | 'railing' | 'glass';
 
@@ -51,7 +51,7 @@ export type BuildingWallPreset = {
   metalness?: number;
 };
 
-export interface WallConfig {
+export type WallConfig = {
   id: string;
   position: Position3D;
   rotation: Rotation3D;
@@ -63,9 +63,9 @@ export interface WallConfig {
   depth?: number;
   wallKind?: BuildingWallKind;
   flipSides?: boolean;
-}
+};
 
-export interface WallGroupConfig {
+export type WallGroupConfig = {
   id: string;
   name: string;
   frontMeshId?: string;
@@ -73,7 +73,7 @@ export interface WallGroupConfig {
   sideMeshId?: string;
   defaultWallKind?: BuildingWallKind;
   walls: WallConfig[];
-}
+};
 
 export type TileObjectType = 'water' | 'grass' | 'sand' | 'snowfield' | 'none';
 export type BuildingTreeKind =
@@ -101,7 +101,7 @@ export type BuildingModelFallbackKind =
   | 'shop'
   | 'generic';
 
-export interface ObjectConfig {
+export type ObjectConfig = {
   size?: number;
   primaryColor?: string;
   secondaryColor?: string;
@@ -129,17 +129,17 @@ export interface ObjectConfig {
   modelScale?: number;
   modelColor?: string;
   modelFallbackKind?: BuildingModelFallbackKind;
-}
+};
 
-export interface PlacedObject {
+export type PlacedObject = {
   id: string;
   type: PlacedObjectType;
   position: Position3D;
   rotation?: number;
   config?: ObjectConfig;
-}
+};
 
-export interface BillboardConfig {
+export type BillboardConfig = {
   id: string;
   position: Position3D;
   width: number;
@@ -148,16 +148,16 @@ export interface BillboardConfig {
   text?: string;
   imageUrl?: string;
   color?: string;
-}
+};
 
-export interface BloomConfig {
+export type BloomConfig = {
   id: string;
   position: Position3D;
   intensity?: number;
   color?: string;
-}
+};
 
-export interface TileConfig {
+export type TileConfig = {
   id: string;
   position: Position3D;
   tileGroupId: string;
@@ -175,9 +175,9 @@ export interface TileConfig {
     terrainColor?: string;
     terrainAccentColor?: string;
   };
-}
+};
 
-export interface BuildingBlockConfig {
+export type BuildingBlockConfig = {
   id: string;
   position: Position3D;
   cell?: CellCoord;
@@ -188,21 +188,23 @@ export interface BuildingBlockConfig {
   };
   materialId?: string;
   tags?: string[];
-}
+};
 
-export interface BuildingSerializedState {
+export type BuildingSerializedState = {
   version: 1;
   meshes: MeshConfig[];
   wallGroups: WallGroupConfig[];
   tileGroups: TileGroupConfig[];
   blocks: BuildingBlockConfig[];
   objects: PlacedObject[];
+  wallCategories?: WallCategory[];
+  tileCategories?: TileCategory[];
   showSnow: boolean;
   showFog: boolean;
   fogColor: string;
   weatherEffect: BuildingWeatherEffect;
   worldSurface: BuildingWorldSurface;
-}
+};
 
 export type BuildingWeatherEffect = 'none' | 'snow' | 'rain' | 'storm' | 'wind';
 export type BuildingWorldSurface = 'ground' | 'water';
@@ -691,28 +693,28 @@ export const BUILDING_FLAG_STYLE_OPTIONS: {
   meta: FLAG_STYLE_META[style],
 }));
 
-export interface TileGroupConfig {
+export type TileGroupConfig = {
   id: string;
   name: string;
   floorMeshId: string;
   tiles: TileConfig[];
-}
+};
 
-export interface WallCategory {
+export type WallCategory = {
   id: string;
   name: string;
   description?: string;
   wallGroupIds: string[];
-}
+};
 
-export interface TileCategory {
+export type TileCategory = {
   id: string;
   name: string;
   description?: string;
   tileGroupIds: string[];
-}
+};
 
-export interface BuildingSystemState {
+export type BuildingSystemState = {
   meshes: Map<string, MeshConfig>;
   wallGroups: Map<string, WallGroupConfig>;
   tileGroups: Map<string, TileGroupConfig>;
@@ -733,4 +735,4 @@ export interface BuildingSystemState {
   fogColor: string;
   weatherEffect: BuildingWeatherEffect;
   worldSurface: BuildingWorldSurface;
-}
+};

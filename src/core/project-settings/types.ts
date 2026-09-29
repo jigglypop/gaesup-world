@@ -6,16 +6,16 @@ export type ProjectInputDevice = 'keyboard' | 'mouse' | 'gamepad' | 'touch';
 
 export type ProjectVector3 = readonly [number, number, number];
 
-export interface ProjectPhysicsSettings {
+export type ProjectPhysicsSettings = {
   enabled: boolean;
   gravity: ProjectVector3;
   timeStep: number;
   maxSubSteps: number;
   solverIterations: number;
   collisionMatrix: Record<string, string[]>;
-}
+};
 
-export interface ProjectRenderingSettings {
+export type ProjectRenderingSettings = {
   backend: ProjectRenderBackend;
   pixelRatio: number;
   shadows: boolean;
@@ -31,40 +31,40 @@ export interface ProjectRenderingSettings {
     colorGrade: boolean;
     outline: boolean;
   };
-}
+};
 
-export interface ProjectInputBinding {
+export type ProjectInputBinding = {
   device: ProjectInputDevice;
   code: string;
   scale?: number;
-}
+};
 
-export interface ProjectInputSettings {
+export type ProjectInputSettings = {
   pointerLock: boolean;
   touchControls: boolean;
   gamepad: boolean;
   bindings: Record<string, ProjectInputBinding[]>;
-}
+};
 
-export interface ProjectBuildSettings {
+export type ProjectBuildSettings = {
   target: ProjectBuildTarget;
   publicPath: string;
   assetBaseUrl: string;
   sourceMaps: boolean;
   minify: boolean;
   chunkStrategy: ProjectChunkStrategy;
-}
+};
 
-export interface ProjectEditorSettings {
+export type ProjectEditorSettings = {
   autosave: boolean;
   autosaveIntervalMs: number;
   gridSize: number;
   snapMove: number;
   snapRotateDegrees: number;
   showGizmos: boolean;
-}
+};
 
-export interface ProjectSettings {
+export type ProjectSettings = {
   version: ProjectSettingsVersion;
   name: string;
   physics: ProjectPhysicsSettings;
@@ -72,7 +72,7 @@ export interface ProjectSettings {
   input: ProjectInputSettings;
   build: ProjectBuildSettings;
   editor: ProjectEditorSettings;
-}
+};
 
 export type ProjectSettingsInput = Partial<{
   name: string;
@@ -94,16 +94,16 @@ export type ProjectSettingsIssueCode =
   | 'invalid-rendering-settings'
   | 'invalid-project-settings-version';
 
-export interface ProjectSettingsIssue {
+export type ProjectSettingsIssue = {
   code: ProjectSettingsIssueCode;
   path: string;
   message: string;
-}
+};
 
-export interface ProjectSettingsValidationResult {
+export type ProjectSettingsValidationResult = {
   valid: boolean;
   issues: ProjectSettingsIssue[];
-}
+};
 
 export interface ParseProjectSettingsResult extends ProjectSettingsValidationResult {
   settings?: ProjectSettings;

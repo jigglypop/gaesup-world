@@ -46,6 +46,9 @@ const BlueprintEditorPage = lazy(() =>
 const NextCorePage = lazy(() =>
   import('./pages/NextCorePage').then((module) => ({ default: module.NextCorePage })),
 );
+const GiPage = lazy(() =>
+  import('./pages/GiPage').then((module) => ({ default: module.GiPage })),
+);
 
 function AppLayout() {
   const { pathname } = useLocation();
@@ -73,6 +76,7 @@ function AppLayout() {
             <Route path="/blueprints/*" element={<BlueprintEditorPage />} />
             <Route path="/network" element={<NetworkMultiplayerPage />} />
             <Route path="/next" element={<NextCorePage />} />
+            <Route path="/gi" element={<GiPage />} />
             <Route path="/admin-test" element={<AdminTest />} />
             <Route path="/admin/*" element={<AdminPage />} />
             <Route path="*" element={<HomePage />} />

@@ -7,13 +7,13 @@ import { BridgeFactory } from '@core/boilerplate';
 import { NetworkBridge } from '../bridge/NetworkBridge';
 import { NetworkCommand, NetworkSnapshot, NetworkConfig } from '../types';
 
-export interface UseNetworkBridgeOptions {
+export type UseNetworkBridgeOptions = {
   systemId?: string;
   config?: Partial<NetworkConfig>;
   enableAutoUpdate?: boolean;
-}
+};
 
-export interface UseNetworkBridgeResult {
+export type UseNetworkBridgeResult = {
   bridge: NetworkBridge | null;
   executeCommand: (command: NetworkCommand) => void;
   getSnapshot: () => NetworkSnapshot | null;
@@ -21,7 +21,7 @@ export interface UseNetworkBridgeResult {
   getSystemState: () => ReturnType<NetworkBridge['getSystemState']>;
   updateSystem: (deltaTime: number) => void;
   isReady: boolean;
-}
+};
 
 /**
  * NetworkBridge와 상호작용하는 기본 훅

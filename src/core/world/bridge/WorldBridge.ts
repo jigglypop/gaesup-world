@@ -7,11 +7,11 @@ import { WorldCommand, WorldSnapshot, WorldBridgeState } from './types';
 import { WorldSystem, WorldObject, InteractionEvent } from '../core/WorldSystem';
 
 
-interface WorldSystemEntity {
+type WorldSystemEntity = {
   system: WorldSystem;
   state: WorldBridgeState;
   dispose: () => void;
-}
+};
 
 @DomainBridge('world')
 @EnableEventLog()

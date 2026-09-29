@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import { NetworkConfig } from '../types';
 
-interface NetworkConfigStore {
+type NetworkConfigStore = {
   config: NetworkConfig;
   updateConfig: (partial: Partial<NetworkConfig>) => void;
   updatePerformanceConfig: (config: Partial<Pick<NetworkConfig, 'updateFrequency' | 'maxConnections' | 'messageQueueSize'>>) => void;
@@ -12,7 +12,7 @@ interface NetworkConfigStore {
   resetConfig: () => void;
   resetToProfile: (profile: 'high' | 'balanced' | 'low') => void;
   validateConfig: () => { isValid: boolean; errors: string[] };
-}
+};
 
 const defaultConfig: NetworkConfig = {
   // 성능 설정

@@ -9,7 +9,7 @@ import { Line, Text } from '@/core/rendering/legacyDrei';
 import { useNetworkBridge } from '../hooks';
 import type { NPCNetworkNode, NetworkConnection, NetworkSystemState } from '../types';
 
-interface NPCNetworkVisualizerProps {
+type NPCNetworkVisualizerProps = {
   systemId?: string;
   showLabels?: boolean;
   showConnectionLines?: boolean;
@@ -19,13 +19,13 @@ interface NPCNetworkVisualizerProps {
   updateInterval?: number;
   maxRenderDistance?: number;
   className?: string;
-}
+};
 
-interface VisualizationState {
+type VisualizationState = {
   nodes: NPCNetworkNode[];
   connections: NetworkConnection[];
   groups: Map<string, string[]>;
-}
+};
 
 const COLOR_PALETTE = [
   '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57',

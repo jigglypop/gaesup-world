@@ -4,7 +4,7 @@ import type { RuntimeRecord } from '@core/boilerplate/types';
 
 import { ActiveStateType } from '../../motions/core/types';
 
-export interface CameraConstants {
+export type CameraConstants = {
   THROTTLE_MS: number;
   POSITION_THRESHOLD: number;
   TARGET_THRESHOLD: number;
@@ -13,18 +13,18 @@ export interface CameraConstants {
   MIN_FOV: number;
   MAX_FOV: number;
   FRAME_RATE_LERP_SPEED: number;
-}
+};
 
-export interface CameraBounds {
+export type CameraBounds = {
   minX?: number;
   maxX?: number;
   minY?: number;
   maxY?: number;
   minZ?: number;
   maxZ?: number;
-}
+};
 
-export interface CameraOption {
+export type CameraOption = {
   offset?: THREE.Vector3;
   maxDistance?: number;
   distance?: number;
@@ -76,7 +76,7 @@ export interface CameraOption {
       angle?: number;
     };
   };
-}
+};
 
 export type CameraOptionType = CameraOption;
 
@@ -89,7 +89,7 @@ export type CameraType =
   | 'fixed'
   | 'chase';
 
-export interface CameraConfig {
+export type CameraConfig = {
   shoulderOffset?: THREE.Vector3;
   distance?: { x: number; y: number; z: number; };
   smoothing?: { position: number; rotation: number; fov: number; };
@@ -106,16 +106,16 @@ export interface CameraConfig {
     minAngle?: number;
     maxAngle?: number;
   };
-}
+};
 
-export interface CameraTransitionCondition {
+export type CameraTransitionCondition = {
   type: 'timer' | 'event' | 'distance' | 'custom';
   value?: number | string;
   target?: string;
   callback?: () => boolean;
-}
+};
 
-export interface CameraState {
+export type CameraState = {
   name: string;
   type: CameraType;
   position: THREE.Vector3;
@@ -124,23 +124,23 @@ export interface CameraState {
   config: CameraConfig;
   priority: number;
   tags: string[];
-}
+};
 
-export interface CameraTransition {
+export type CameraTransition = {
   from: string;
   to: string;
   duration: number;
   easing?: string;
   conditions?: CameraTransitionCondition[];
-}
+};
 
-export interface CameraSystemState {
+export type CameraSystemState = {
   config: CameraSystemConfig;
   activeController?: ICameraController;
   lastUpdate: number; // 추가
-}
+};
 
-export interface CameraSystemConfig {
+export type CameraSystemConfig = {
   mode: string;
   distance: {
     x: number;
@@ -168,9 +168,9 @@ export interface CameraSystemConfig {
   zDistance?: number;
   fixedPosition?: THREE.Vector3;
   fixedLookAt?: THREE.Vector3;
-}
+};
 
-export interface CameraCalcProps {
+export type CameraCalcProps = {
   camera: THREE.Camera;
   scene: THREE.Scene;
   deltaTime: number;
@@ -178,46 +178,46 @@ export interface CameraCalcProps {
   /** @deprecated Optional legacy renderer clock. Camera calculations use deltaTime. */
   clock?: THREE.Clock | undefined;
   excludeObjects?: THREE.Object3D[];
-}
+};
 
-export interface ICameraController {
+export type ICameraController = {
   name: string;
   defaultConfig: Partial<CameraSystemConfig>;
   update(props: CameraCalcProps, state: CameraSystemState): void;
-}
+};
 
-export interface Obstacle {
+export type Obstacle = {
   object: THREE.Mesh;
   distance: number;
   point: THREE.Vector3;
-}
+};
 
-export interface CollisionCheckResult {
+export type CollisionCheckResult = {
   safe: boolean;
   position: THREE.Vector3;
   obstacles: Obstacle[];
-}
+};
 
-export interface CameraPropType {
+export type CameraPropType = {
   state: { delta: number } & RuntimeRecord;
   worldContext: {
     activeState: ActiveStateType;
   };
   cameraOption: CameraOptionType;
   controllerOptions?: RuntimeRecord;
-}
+};
 
-export interface CameraShakeConfig {
+export type CameraShakeConfig = {
   intensity: number;
   duration: number;
   frequency: number;
   decay: boolean;
-}
+};
 
-export interface CameraZoomConfig {
+export type CameraZoomConfig = {
   targetFov: number;
   duration: number;
   easing: (t: number) => number;
-} 
+}; 
 
  

@@ -3,7 +3,7 @@ import { MAX_REMOTE_CHAT_TEXT_LENGTH, isRemoteStringWithinLimit } from './remote
 
 type PlayerNetworkLogLevel = 'none' | 'error' | 'warn' | 'info' | 'debug';
 
-export interface PlayerNetworkManagerOptions {
+export type PlayerNetworkManagerOptions = {
   url: string;
   roomId: string;
   playerName: string;
@@ -28,7 +28,7 @@ export interface PlayerNetworkManagerOptions {
   onPing?: (rttMs: number) => void;
   onReliableFailed?: (info: { ackId: string; messageType: string }) => void;
   onError?: (error: string) => void;
-}
+};
 
 type TextReadablePayload = {
   text: () => Promise<string>;
@@ -451,6 +451,7 @@ export class PlayerNetworkManager {
 
       case 'PlayerUpdate':
         this.debug('[PlayerNetworkManager] PlayerUpdate', message.client_id);
+        if (message.client_id === this.localPlayerId) break;
         {
           const existingPlayer = this.players.get(message.client_id);
           if (existingPlayer) {

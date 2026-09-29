@@ -45,7 +45,7 @@ export interface PhysicsSystemMetrics extends BaseMetrics {
 
 export type PhysicsSystemOptions = SystemOptions;
 
-export interface EntityStateRefs {
+export type EntityStateRefs = {
   activeState: ActiveStateType;
   gameStates: GameStatesType;
-}
+};

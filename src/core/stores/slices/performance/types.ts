@@ -11,7 +11,7 @@ export type EngineState = {
   programs: number;
 };
 
-export interface PerformanceState {
+export type PerformanceState = {
   performance: {
     render: RenderState;
     engine: EngineState;
@@ -20,4 +20,4 @@ export interface PerformanceState {
     render: RenderState;
     engine: EngineState;
   }) => void;
-} 
+}; 

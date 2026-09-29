@@ -14,6 +14,7 @@ export class ManagedMotionEntity {
   private rigidBody: RapierRigidBody | null = null;
   private targetPosition: THREE.Vector3 | null = null;
   private isAutomated = false;
+  private isHandlingAutomation = false;
   private unsubscribe: (() => void) | null = null;
   private latestSnapshot: MotionSnapshot | null = null;
   private tempDirection = new THREE.Vector3();
@@ -36,8 +37,13 @@ export class ManagedMotionEntity {
       if (snapshot) {
         this.latestSnapshot = snapshot;
       }
-      if (this.isAutomated && this.targetPosition) {
-        this.handleAutomatedMovement(snapshot);
+      if (this.isAutomated && this.targetPosition && !this.isHandlingAutomation) {
+        this.isHandlingAutomation = true;
+        try {
+          this.handleAutomatedMovement(snapshot);
+        } finally {
+          this.isHandlingAutomation = false;
+        }
       }
     });
   }

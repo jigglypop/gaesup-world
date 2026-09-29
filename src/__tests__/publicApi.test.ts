@@ -329,4 +329,28 @@ describe('public package API', () => {
       'RuntimeSaveDiagnosticsToasterProps',
     ].forEach((name) => expectNamedExport(source, name));
   });
+  test('루트 엔트리로 GI 볼륨과 건축 복셀 변환을 노출한다', () => {
+    const source = readRootEntry();
+    [
+      'GiVolume',
+      'ProbeVolume',
+      'buildingToVoxelBoxes',
+      'hexToLinearRgb',
+      'useBuildingVoxelBoxes',
+      'useGi',
+      'GiEnvironment',
+      'GiIrradiance',
+      'GiVolumeProps',
+      'ProbeVolumeConfig',
+      'VoxelSourceBox',
+      'BuildingVoxelSource',
+    ].forEach((name) => expectNamedExport(source, name));
+    const root = jest.requireActual('gaesup-world') as typeof import('gaesup-world');
+    expect(typeof root.GiVolume).toBe('function');
+    expect(typeof root.ProbeVolume).toBe('function');
+    expect(typeof root.buildingToVoxelBoxes).toBe('function');
+    expect(typeof root.hexToLinearRgb).toBe('function');
+    expect(typeof root.useBuildingVoxelBoxes).toBe('function');
+    expect(typeof root.useGi).toBe('function');
+  });
 });

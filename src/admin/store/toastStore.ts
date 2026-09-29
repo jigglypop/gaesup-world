@@ -1,18 +1,18 @@
 import { create } from 'zustand';
 
-interface ToastItem {
+type ToastItem = {
   id: string;
   text: string;
   type?: 'success' | 'error' | 'info';
-}
+};
 
-interface ToastState {
+type ToastState = {
   toasts: ToastItem[];
   timers: Map<string, ReturnType<typeof setTimeout>>;
   addToast: (toast: Omit<ToastItem, 'id'>) => void;
   addToastAsync: (toast: Omit<ToastItem, 'id'>) => Promise<void>;
   removeToast: (id: string) => void;
-}
+};
 
 export const useToast = create<ToastState>((set, get) => ({
   toasts: [],

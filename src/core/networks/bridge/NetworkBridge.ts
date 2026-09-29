@@ -3,10 +3,10 @@ import { CoreBridge, DomainBridge, EnableMetrics, ValidateCommand, LogSnapshot, 
 import { NetworkSystem } from '../core/NetworkSystem';
 import { NetworkSnapshot, NetworkCommand, NetworkConfig, NetworkSystemState } from '../types';
 
-export interface NetworkBridgeEntity {
+export type NetworkBridgeEntity = {
   system: NetworkSystem;
   dispose: () => void;
-}
+};
 
 @DomainBridge('networks')
 @EnableMetrics()

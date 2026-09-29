@@ -13,14 +13,14 @@ import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
 import { isTrustedRemoteModelUrl } from '../core/remoteInputLimits';
 import { PlayerState, MultiplayerConfig } from '../types';
 
-interface RemotePlayerProps {
+type RemotePlayerProps = {
   playerId: string;
   state: PlayerState;
   characterUrl?: string;
   config?: MultiplayerConfig;
   speechText?: string;
   allowedModelOrigins?: readonly string[];
-}
+};
 
 type RemotePlayerContentProps = {
   state: PlayerState;

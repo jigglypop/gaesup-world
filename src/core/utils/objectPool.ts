@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 
-interface PoolConfig {
+type PoolConfig = {
   initialSize: number;
   maxSize: number;
   growthRate: number;
-}
+};
 
 class ObjectPool<T> {
   private available: T[] = [];

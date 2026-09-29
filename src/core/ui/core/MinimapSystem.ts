@@ -27,7 +27,7 @@ interface MinimapSystemMetrics extends BaseMetrics {
   renderTime: number;
 }
 
-interface MinimapRenderOptions {
+type MinimapRenderOptions = {
   size: number;
   scale: number;
   position: THREE.Vector3;
@@ -35,7 +35,7 @@ interface MinimapRenderOptions {
   blockRotate?: boolean;
   tileGroups?: Map<string, TileGroupLike>;
   sceneObjects?: Map<string, { position: THREE.Vector3; size: THREE.Vector3 }>;
-}
+};
 
 type TileLike = {
   position: { x: number; y: number; z: number };

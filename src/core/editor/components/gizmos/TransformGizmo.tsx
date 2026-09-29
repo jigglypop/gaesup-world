@@ -8,7 +8,7 @@ import type { SceneObject, SceneObjectId, SceneTransform, SceneVector3 } from '.
 export type TransformGizmoMode = 'translate' | 'rotate' | 'scale';
 export type TransformGizmoSpace = 'local' | 'world';
 
-export interface SceneObjectTransformGizmoProps {
+export type SceneObjectTransformGizmoProps = {
   object?: Pick<SceneObject, 'id' | 'transform'>;
   enabled?: boolean;
   visible?: boolean;
@@ -20,7 +20,7 @@ export interface SceneObjectTransformGizmoProps {
   children?: React.ReactNode;
   onTransformChange?: (objectId: SceneObjectId, transform: SceneTransform) => void;
   onDraggingChange?: (dragging: boolean) => void;
-}
+};
 
 export function SceneObjectTransformGizmo({
   object,

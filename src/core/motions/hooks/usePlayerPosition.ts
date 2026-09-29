@@ -8,13 +8,13 @@ import { BridgeFactory } from '@core/boilerplate';
 import { useStateSystem } from './useStateSystem';
 import { MotionBridge } from '../bridge/MotionBridge';
 
-export interface UsePlayerPositionOptions {
+export type UsePlayerPositionOptions = {
   updateInterval?: number; // milliseconds, 0 means every frame
   entityId?: string; // Entity ID to track
   reactive?: boolean; // false: update vectors in place without triggering React re-renders
-}
+};
 
-export interface UsePlayerPositionResult {
+export type UsePlayerPositionResult = {
   position: THREE.Vector3;
   velocity: THREE.Vector3;
   rotation: THREE.Euler;
@@ -22,7 +22,7 @@ export interface UsePlayerPositionResult {
   isGrounded: boolean;
   speed: number;
   height: number; // Character height from bounding box
-}
+};
 
 const createDefaultResult = (): UsePlayerPositionResult => ({
   position: new THREE.Vector3(0, 0, 0),

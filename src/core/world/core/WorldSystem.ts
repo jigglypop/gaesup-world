@@ -6,7 +6,7 @@ import type { RuntimeRecord } from '@core/boilerplate/types';
 
 import { SpatialGrid } from './SpatialGrid';
 
-export interface WorldObject {
+export type WorldObject = {
   id: string;
   position: THREE.Vector3;
   rotation: THREE.Euler;
@@ -16,7 +16,7 @@ export interface WorldObject {
   boundingBox?: THREE.Box3;
   isActive?: boolean;
   canInteract?: boolean;
-}
+};
 
 export interface RideableObject extends WorldObject {
   type: 'rideable';
@@ -32,13 +32,13 @@ export interface RideableObject extends WorldObject {
   };
 }
 
-export interface InteractionEvent {
+export type InteractionEvent = {
   type: 'collision' | 'proximity' | 'custom';
   object1Id: string;
   object2Id?: string;
   timestamp: number;
   data?: RuntimeRecord;
-}
+};
 
 
 

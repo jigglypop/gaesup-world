@@ -25,13 +25,13 @@ import { AutomationSystem } from '../core/AutomationSystem';
 import { getDefaultAutomationSystem } from '../core/defaultAutomation';
 import type { InteractionSystem, KeyboardState, MouseState } from '../core/InteractionSystem';
 
-export interface InteractionBridgeOptions {
+export type InteractionBridgeOptions = {
   /** Borrowed systems remain owned by their provider. */
   interactionSystem?: InteractionSystem;
   inputBackend?: InputBackend;
   /** The caller disposes supplied automation engines. */
   automationSystem?: AutomationSystem;
-}
+};
 
 export class InteractionBridge {
   private static globalInstance: InteractionBridge | null = null;

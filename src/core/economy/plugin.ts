@@ -3,13 +3,13 @@ import { useShopStore } from './stores/shopStore';
 import { useWalletStore } from './stores/walletStore';
 import type { ShopSerialized, WalletSerialized } from './types';
 
-export interface EconomyPluginOptions {
+export type EconomyPluginOptions = {
   id?: string;
   walletSaveExtensionId?: string;
   shopSaveExtensionId?: string;
   walletStoreServiceId?: string;
   shopStoreServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.economy';
 const DEFAULT_WALLET_SAVE_EXTENSION_ID = 'wallet';

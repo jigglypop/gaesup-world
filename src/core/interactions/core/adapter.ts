@@ -7,12 +7,12 @@ import type { GamepadState, KeyboardState, MouseState, TouchState } from './type
 
 export const DEFAULT_INTERACTION_INPUT_EXTENSION_ID = 'interaction.input';
 
-export interface InputBackendSnapshot {
+export type InputBackendSnapshot = {
   keyboard: KeyboardState;
   mouse: MouseState;
   gamepad?: GamepadState;
   touch?: TouchState;
-}
+};
 
 export type InputStateListener = (state: InputBackendSnapshot) => void;
 
@@ -30,7 +30,7 @@ function notifyInputStateListener(
   }
 }
 
-export interface InputBackend {
+export type InputBackend = {
   getKeyboard(): KeyboardState;
   getMouse(): MouseState;
   getGamepad?(): GamepadState;
@@ -40,17 +40,17 @@ export interface InputBackend {
   updateGamepad?(input: Partial<GamepadState>): void;
   updateTouch?(input: Partial<TouchState>): void;
   subscribe?(listener: InputStateListener): () => void;
-}
+};
 
 export type InputAdapter = InputBackend;
 
-export interface InputBackendExtension {
+export type InputBackendExtension = {
   createAdapter: () => InputBackend;
-}
+};
 
 export type InteractionSystemResolver = () => InteractionSystem;
 
-export interface MemoryInputBackendInitialState {
+export type MemoryInputBackendInitialState = {
   keyboard?: Partial<KeyboardState>;
   mouse?: Partial<MouseState> & {
     buttons?: Partial<MouseState['buttons']>;
@@ -62,7 +62,7 @@ export interface MemoryInputBackendInitialState {
   touch?: Partial<TouchState> & {
     gestures?: Partial<TouchState['gestures']>;
   };
-}
+};
 
 let defaultInteractionSystemResolver: InteractionSystemResolver = () => InteractionSystem.getInstance();
 

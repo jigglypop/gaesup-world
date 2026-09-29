@@ -12,17 +12,17 @@ export interface RuntimeSaveDiagnostic extends SaveDiagnostic {
 
 export type RuntimeSaveDiagnosticListener = (diagnostic: RuntimeSaveDiagnostic) => void;
 
-export interface RuntimeSaveDiagnosticsOptions {
+export type RuntimeSaveDiagnosticsOptions = {
   maxEntries?: number;
-}
+};
 
-export interface RuntimeSaveDiagnosticsService {
+export type RuntimeSaveDiagnosticsService = {
   report(diagnostic: SaveDiagnostic): RuntimeSaveDiagnostic;
   getDiagnostics(): RuntimeSaveDiagnostic[];
   getLatest(): RuntimeSaveDiagnostic | undefined;
   clear(): void;
   subscribe(listener: RuntimeSaveDiagnosticListener): () => void;
-}
+};
 
 export function createRuntimeSaveDiagnostics(
   options: RuntimeSaveDiagnosticsOptions = {},

@@ -341,6 +341,37 @@ describe('PlayerNetworkManager', () => {
       expect(welcomeId).toBe('my-id-123');
     });
 
+    test('서버가 되돌려 보낸 자신의 PlayerUpdate는 원격 플레이어로 만들지 않는다', async () => {
+      const onPlayerJoin = jest.fn();
+      const onPlayerUpdate = jest.fn();
+      manager = new PlayerNetworkManager({
+        url: 'ws://localhost:9999',
+        roomId: 'room',
+        playerName: 'p',
+        playerColor: '#fff',
+        onPlayerJoin,
+        onPlayerUpdate,
+      });
+
+      manager.connect();
+      await new Promise(r => setTimeout(r, 10));
+      lastCreatedWs!.simulateMessage(JSON.stringify({
+        type: 'Welcome',
+        client_id: 'my-id-123',
+        room_state: {},
+      }));
+
+      lastCreatedWs!.simulateMessage(JSON.stringify({
+        type: 'PlayerUpdate',
+        client_id: 'my-id-123',
+        state: { position: [1, 2, 3] },
+      }));
+
+      expect(manager.getPlayers().has('my-id-123')).toBe(false);
+      expect(onPlayerJoin).not.toHaveBeenCalled();
+      expect(onPlayerUpdate).not.toHaveBeenCalled();
+    });
+
     test('PlayerUpdate는 불변 객체로 갱신한다', async () => {
       const updates: Array<{ id: string; state: Record<string, unknown> }> = [];
       manager = new PlayerNetworkManager({

@@ -2,11 +2,11 @@ import { createStoreDomainPlugin } from '../plugins';
 import { useQuestStore } from './stores/questStore';
 import type { QuestSerialized } from './types';
 
-export interface QuestsPluginOptions {
+export type QuestsPluginOptions = {
   id?: string;
   saveExtensionId?: string;
   storeServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.quests';
 const DEFAULT_SAVE_EXTENSION_ID = 'quests';

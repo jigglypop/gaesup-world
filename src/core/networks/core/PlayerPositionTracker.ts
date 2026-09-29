@@ -2,7 +2,7 @@ import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 
-export interface PlayerUpdateData {
+export type PlayerUpdateData = {
   name: string;
   color: string;
   position: [number, number, number];
@@ -10,13 +10,13 @@ export interface PlayerUpdateData {
   animation: string;
   velocity: [number, number, number];
   modelUrl?: string | undefined;
-}
+};
 
-export interface PlayerTrackingConfig {
+export type PlayerTrackingConfig = {
   updateRate: number;
   velocityThreshold: number;
   sendRateLimit: number;
-}
+};
 
 export class PlayerPositionTracker {
   private lastPosition = new THREE.Vector3();

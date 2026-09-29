@@ -6,26 +6,26 @@ import type { RuntimeRecord } from '@core/boilerplate/types';
 
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
 
-export interface NPCConnectionOptions {
+export type NPCConnectionOptions = {
   position: Vector3;
   metadata?: RuntimeRecord;
   autoConnect?: boolean;
   connectionRange?: number;
-}
+};
 
-export interface ConnectionOptions {
+export type ConnectionOptions = {
   reliable?: boolean;
   bandwidth?: number;
   priority?: 'low' | 'normal' | 'high' | 'critical';
   timeout?: number;
-}
+};
 
 export interface UseNPCConnectionOptions extends UseNetworkBridgeOptions {
   npcId: string;
   initialOptions?: NPCConnectionOptions;
 }
 
-export interface UseNPCConnectionResult {
+export type UseNPCConnectionResult = {
   // NPC 관리
   registerNPC: (options: NPCConnectionOptions) => void;
   unregisterNPC: () => void;
@@ -44,7 +44,7 @@ export interface UseNPCConnectionResult {
   executeCommand: ReturnType<typeof useNetworkBridge>['executeCommand'];
   getSnapshot: ReturnType<typeof useNetworkBridge>['getSnapshot'];
   isReady: boolean;
-}
+};
 
 /**
  * NPC 연결 관리를 위한 훅

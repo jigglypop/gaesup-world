@@ -9,12 +9,12 @@ export type CollisionHandlerFn = (...args: CollisionHandlerArg[]) => void;
 export type CollisionHandlerValue = CollisionHandlerFn | RuntimeValue;
 export type CollisionUserData = Record<string, CollisionHandlerValue>;
 
-export interface CollisionHandlerOptions {
+export type CollisionHandlerOptions = {
   onIntersectionEnter?: (payload: CollisionPayload) => void;
   onIntersectionExit?: (payload: CollisionPayload) => void;
   onCollisionEnter?: (payload: CollisionEnterPayload) => void;
   userData?: CollisionUserData;
-}
+};
 
 export function useCollisionHandler(options: CollisionHandlerOptions) {
   const {

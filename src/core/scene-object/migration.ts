@@ -10,32 +10,32 @@ export type UnknownSceneDocument = {
   [key: string]: unknown;
 };
 
-export interface SceneMigration {
+export type SceneMigration = {
   fromVersion: number;
   toVersion: number;
   description?: string;
   migrate: (document: UnknownSceneDocument) => UnknownSceneDocument;
-}
+};
 
-export interface SceneMigrationStep {
+export type SceneMigrationStep = {
   fromVersion: number;
   toVersion: number;
   description?: string;
-}
+};
 
-export interface MigrateSceneDocumentResult {
+export type MigrateSceneDocumentResult = {
   ok: boolean;
   document?: SceneDocument;
   version?: number;
   steps: SceneMigrationStep[];
   issues: SceneValidationIssue[];
-}
+};
 
-export interface SceneMigrationRegistry {
+export type SceneMigrationRegistry = {
   register: (migration: SceneMigration) => void;
   getMigrations: () => SceneMigration[];
   migrate: (input: string | unknown, targetVersion?: number) => MigrateSceneDocumentResult;
-}
+};
 
 export function createSceneMigrationRegistry(migrations: SceneMigration[] = []): SceneMigrationRegistry {
   const entries = [...migrations];

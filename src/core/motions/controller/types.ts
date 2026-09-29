@@ -7,7 +7,7 @@ export type EntityControllerOptions = Omit<
   'url' | 'isActive' | 'componentType'
 > & { enableKeyboard?: boolean };
 
-export interface EntityControllerProps {
+export type EntityControllerProps = {
   props: EntityControllerOptions;
   children?: ReactNode;
-}
+};

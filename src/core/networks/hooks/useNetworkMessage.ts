@@ -3,12 +3,12 @@ import { useCallback, useRef, useState } from 'react';
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
 import { NetworkMessage, NetworkPayload } from '../types';
 
-export interface MessageSendOptions {
+export type MessageSendOptions = {
   reliable?: boolean;
   priority?: 'low' | 'normal' | 'high' | 'critical';
   timeout?: number;
   retries?: number;
-}
+};
 
 export interface BroadcastOptions extends MessageSendOptions {
   range?: number;
@@ -24,7 +24,7 @@ export interface UseNetworkMessageOptions extends UseNetworkBridgeOptions {
   messageFilter?: (message: NetworkMessage) => boolean;
 }
 
-export interface UseNetworkMessageResult {
+export type UseNetworkMessageResult = {
   // 메시지 전송
   sendMessage: (receiverId: string, content: NetworkPayload, type?: string, options?: MessageSendOptions) => string;
   broadcastMessage: (content: NetworkPayload, type?: string, options?: BroadcastOptions) => string;
@@ -49,7 +49,7 @@ export interface UseNetworkMessageResult {
   
   // 브릿지 기능
   isReady: boolean;
-}
+};
 
 /**
  * 네트워크 메시지 송수신을 위한 훅

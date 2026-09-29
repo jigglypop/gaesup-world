@@ -5,11 +5,11 @@ import * as THREE from 'three';
 
 import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
 
-interface WaveEffectProps {
+type WaveEffectProps = {
   active?: boolean;
   color?: string;
   intensity?: number;
-}
+};
 
 export const WaveEffect = memo(({ 
   active = true, 

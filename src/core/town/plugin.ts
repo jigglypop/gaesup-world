@@ -2,11 +2,11 @@ import { createStoreDomainPlugin } from '../plugins';
 import { useTownStore } from './stores/townStore';
 import type { TownSerialized } from './types';
 
-export interface TownPluginOptions {
+export type TownPluginOptions = {
   id?: string;
   saveExtensionId?: string;
   storeServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.town';
 const DEFAULT_SAVE_EXTENSION_ID = 'town';

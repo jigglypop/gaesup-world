@@ -1,5 +1,5 @@
 import type { MinimapMarker } from '../types';
 
-export interface MinimapSystemState {
+export type MinimapSystemState = {
   markers: Map<string, MinimapMarker>;
-} 
+}; 

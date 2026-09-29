@@ -32,9 +32,12 @@ const DEFAULT_NPC_VOLUME: NPCVolumeConfig = {
   interactionRadius: 1.6,
 };
 
+const DEFAULT_NPC_POLICY_ID = 'openai';
+const NPC_SPEAK_EVENT_ID = 'npc-speak';
+
 const DEFAULT_NPC_BRAIN: NPCBrainConfig = {
   mode: 'reinforcement',
-  policyId: 'openai',
+  policyId: DEFAULT_NPC_POLICY_ID,
   autoRespond: false,
   prompt: 'Respond as an in-world NPC when a dialogue system is connected.',
 };
@@ -92,15 +95,15 @@ function getMoveAnimation(instance: NPCInstance, speed: number): string {
 
 function attachReinforcementBrainToInstances(state: NPCStore): void {
   state.instances.forEach((instance, id) => {
-    const current = instance.brain ?? DEFAULT_NPC_BRAIN;
-    if (current.mode === 'reinforcement' && (current.policyId ?? '').length > 0) return;
+    const current = instance.brain;
+    if (!current) {
+      state.instances.set(id, { ...instance, brain: { ...DEFAULT_NPC_BRAIN } });
+      return;
+    }
+    if (current.mode !== 'reinforcement' || current.policyId !== undefined) return;
     state.instances.set(id, {
       ...instance,
-      brain: {
-        ...current,
-        mode: 'reinforcement',
-        policyId: current.policyId ?? 'openai',
-      },
+      brain: { ...current, policyId: DEFAULT_NPC_POLICY_ID },
     });
   });
 }
@@ -856,7 +859,7 @@ export const useNPCStore = create<NPCStore>()(
 
         case 'speak':
           store.addInstanceEvent(instanceId, {
-            id: `npc-speak-${Date.now()}`,
+            id: NPC_SPEAK_EVENT_ID,
             type: 'onInteract',
             action: 'dialogue',
             payload: {
@@ -896,7 +899,7 @@ export const useNPCStore = create<NPCStore>()(
     addInstanceEvent: (instanceId, event) => set((state) => {
       const instance = state.instances.get(instanceId);
       if (instance) {
-        const events = instance.events || [];
+        const events = (instance.events ?? []).filter((entry) => entry.id !== event.id);
         events.push(event);
         state.instances.set(instanceId, { ...instance, events });
       }

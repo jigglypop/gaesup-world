@@ -1,11 +1,11 @@
 import { NPCInstance as NPCInstanceType, NPCPart } from '../../types';
-export interface NPCInstanceProps {
+export type NPCInstanceProps = {
     instance: NPCInstanceType;
     isEditMode?: boolean;
     onClick?: () => void;
-}
-export interface NPCPartMeshProps {
+};
+export type NPCPartMeshProps = {
     part: NPCPart;
     instanceId: string;
     currentAnimation?: string | undefined;
-}
+};

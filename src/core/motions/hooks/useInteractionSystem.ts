@@ -3,13 +3,13 @@ import { useCallback, useEffect, useState } from 'react';
 import type { KeyboardState, MouseState } from '../../interactions/bridge';
 import { useInputBackend } from '../../interactions/hooks';
 
-export interface UseInteractionSystemResult {
+export type UseInteractionSystemResult = {
   keyboard: KeyboardState;
   mouse: MouseState;
   updateKeyboard: (updates: Partial<KeyboardState>) => void;
   updateMouse: (updates: Partial<MouseState>) => void;
   dispatchInput: (updates: Partial<MouseState>) => void;
-}
+};
 
 export function useInteractionSystem(): UseInteractionSystemResult {
   const inputBackend = useInputBackend();

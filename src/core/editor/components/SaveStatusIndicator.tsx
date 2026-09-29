@@ -2,11 +2,11 @@ import React from 'react';
 
 import { getEditorSaveStatusLabel, type EditorSaveStatus } from '../saveState';
 
-export interface SaveStatusIndicatorProps {
+export type SaveStatusIndicatorProps = {
   status: EditorSaveStatus;
   onSave?: () => void | Promise<void>;
   onToggleAutosave?: (enabled: boolean) => void;
-}
+};
 
 export function SaveStatusIndicator({ status, onSave, onToggleAutosave }: SaveStatusIndicatorProps): React.ReactElement {
   const label = getEditorSaveStatusLabel(status);

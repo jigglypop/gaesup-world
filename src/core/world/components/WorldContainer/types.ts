@@ -54,7 +54,7 @@ export type WorldData = {
   };
 };
 
-export interface WorldContainerProps {
+export type WorldContainerProps = {
   children?: ReactNode;
   runtime?: GaesupRuntime;
   runtimeRevision?: number;
@@ -92,4 +92,4 @@ export interface WorldContainerProps {
   onWorldReady?: (worldData: WorldData) => void;
   onObjectSelect?: (objectId: string) => void;
   onObjectInteract?: (objectId: string, action: string) => void;
-}
+};

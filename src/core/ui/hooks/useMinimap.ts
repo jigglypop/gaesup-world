@@ -13,7 +13,7 @@ const MIN_SCALE = 0.5;
 const MAX_SCALE = 20;
 const MINIMAP_SIZE_PX = 200;
 
-export interface UseMinimapReturnType {
+export type UseMinimapReturnType = {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   scale: number;
   upscale: () => void;
@@ -22,7 +22,7 @@ export interface UseMinimapReturnType {
   setupWheelListener: () => void;
   updateCanvas: () => void;
   isReady: boolean;
-}
+};
 
 export const useMinimap = (props: MinimapProps): MinimapResult => {
   const { activeState } = useStateSystem();

@@ -19,7 +19,7 @@ export type airplaneConfigType = Pick<PhysicsConfigType,
   'gravityScale' | 'angleDelta' | 'maxAngle' | 'maxSpeed' | 'accelRatio'
 >;
 
-export interface ActiveStateType {
+export type ActiveStateType = {
   euler: THREE.Euler;
   position: THREE.Vector3;
   quaternion: THREE.Quaternion;
@@ -28,11 +28,11 @@ export interface ActiveStateType {
   direction: THREE.Vector3;
   dir: THREE.Vector3;
   angular: THREE.Vector3;
-}
+};
 
 export type ActiveState = ActiveStateType;
 
-export interface PhysicsCalcPropsLegacy {
+export type PhysicsCalcPropsLegacy = {
   rigidBodyRef: RefObject<RapierRigidBody>;
   innerGroupRef?: RefObject<THREE.Group>;
   outerGroupRef?: RefObject<THREE.Group>;
@@ -40,31 +40,31 @@ export interface PhysicsCalcPropsLegacy {
   matchSizes?: THREE.Vector3;
   worldContext?: StoreState;
   onStateUpdate?: (updates: Partial<ActiveStateType>) => void;
-}
+};
 
-export interface BaseState<T = RuntimeValue> {
+export type BaseState<T = RuntimeValue> = {
   isLoading: boolean;
   isReady: boolean;
   error: string | null;
   data: T;
-}
+};
 
-export interface PhysicsBridgeData {
+export type PhysicsBridgeData = {
   update: (delta: number) => void;
   state: BaseState<PhysicsLayerStatus>;
-}
+};
 
-export interface PhysicsLayerProps {
+export type PhysicsLayerProps = {
   children: RuntimeValue | RuntimeValue[];
   bridgeRef: RefObject<PhysicsBridgeData>;
-}
+};
 
-export interface PhysicsLayerStatus {
+export type PhysicsLayerStatus = {
   contextConnected: boolean;
   bridgeReady: boolean;
   frameReady: boolean;
   isPaused: boolean;
-}
+};
 
 export type PhysicsStateLegacy = {
   rigidBody: RapierRigidBody;

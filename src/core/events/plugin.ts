@@ -2,11 +2,11 @@ import { createStoreDomainPlugin } from '../plugins';
 import { useEventsStore } from './stores/eventsStore';
 import type { EventsSerialized } from './types';
 
-export interface EventsPluginOptions {
+export type EventsPluginOptions = {
   id?: string;
   saveExtensionId?: string;
   storeServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.events';
 const DEFAULT_SAVE_EXTENSION_ID = 'events';

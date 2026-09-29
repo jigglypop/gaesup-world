@@ -1,10 +1,10 @@
 import cache from "@core/utils/cache";
 
-interface APIResponse<T> {
+type APIResponse<T> = {
   data: T;
   headers: { [key: string]: string };
   status: number;
-}
+};
 
 type JsonPrimitive = string | number | boolean | null;
 type RequestBody = JsonPrimitive | object;

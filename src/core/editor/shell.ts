@@ -80,10 +80,10 @@ export type EditorCommandStack = {
   clear: () => void;
 };
 
-export interface SceneDocumentCommandStore {
+export type SceneDocumentCommandStore = {
   getDocument: () => SceneDocument;
   setDocument: (document: SceneDocument) => void;
-}
+};
 
 export type SceneObjectEditorPatch = Partial<Pick<SceneObject, 'name' | 'tags'>> & {
   parentId?: SceneObjectId | undefined;
@@ -91,7 +91,7 @@ export type SceneObjectEditorPatch = Partial<Pick<SceneObject, 'name' | 'tags'>>
   transform?: Partial<SceneTransform>;
 };
 
-export interface SceneObjectEditorCommandFactory {
+export type SceneObjectEditorCommandFactory = {
   createObject: (input: CreateSceneObjectInput) => EditorShellCommand;
   updateObject: (objectId: SceneObjectId, patch: SceneObjectEditorPatch) => EditorShellCommand;
   deleteObject: (objectId: SceneObjectId) => EditorShellCommand;
@@ -101,7 +101,7 @@ export interface SceneObjectEditorCommandFactory {
     component: CreateSceneComponentInput,
   ) => EditorShellCommand;
   removeComponent: (objectId: SceneObjectId, componentId: SceneComponentId) => EditorShellCommand;
-}
+};
 
 export function createEditorShell(options: EditorShellOptions = {}): EditorShell {
   const shell: EditorShell = {

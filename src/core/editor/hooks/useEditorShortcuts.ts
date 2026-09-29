@@ -6,11 +6,11 @@ import {
   type EditorShortcutRegistry,
 } from '../shortcuts';
 
-export interface UseEditorShortcutsOptions {
+export type UseEditorShortcutsOptions = {
   enabled?: boolean;
   target?: Window | Document | HTMLElement | null;
   registry?: EditorShortcutRegistry;
-}
+};
 
 export function useEditorShortcuts(
   bindings: EditorShortcutBinding[],

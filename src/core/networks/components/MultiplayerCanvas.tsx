@@ -8,14 +8,14 @@ import * as THREE from 'three';
 import { Grid } from '@/core/rendering/legacyDrei';
 
 import { RemotePlayer } from './RemotePlayer';
-import {
-  GaesupController,
-  GaesupWorld,
-  GaesupWorldContent,
-  Clicker,
-  GroundClicker
-} from '../../../index';
+import { Clicker } from '../../interactions/components/Clicker';
+import { GaesupController } from '../../interactions/components/ControllerWrapper';
+import { GroundClicker } from '../../interactions/components/GroundClicker';
 import { SpeechBalloon } from '../../ui/components/SpeechBalloon';
+import {
+  GaesupWorldContent,
+  WorldContainer as GaesupWorld,
+} from '../../world/components/WorldContainer';
 import { PlayerState, MultiplayerConfig } from '../types';
 
 declare global {

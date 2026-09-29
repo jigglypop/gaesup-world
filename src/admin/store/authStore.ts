@@ -1,15 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface ModalState {
+type ModalState = {
   on: boolean;
   type: string;
   file: number;
   username: string;
   gltf_url: string;
-}
+};
 
-interface AuthState {
+type AuthState = {
   isLoggedIn: boolean;
   user: { username: string } | null;
   loading: boolean;
@@ -18,7 +18,7 @@ interface AuthState {
   logout: () => void;
   setLoading: (loading: boolean) => void;
   setModal: (modal: ModalState) => void;
-}
+};
 
 export const useAuthStore = create<AuthState>()(
   persist(

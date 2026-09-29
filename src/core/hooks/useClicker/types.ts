@@ -1,6 +1,6 @@
 import { ThreeEvent } from '@react-three/fiber';
 
-export interface ClickerResult {
+export type ClickerResult = {
   moveClicker: (
     event: ThreeEvent<MouseEvent>,
     isRun: boolean,
@@ -9,9 +9,9 @@ export interface ClickerResult {
   stopClicker: () => void;
   onClick: (event: ThreeEvent<MouseEvent>) => void;
   isReady: boolean;
-}
+};
 
-export interface ClickerMoveOptions {
+export type ClickerMoveOptions = {
   minHeight?: number;
   offsetY?: number;
   useNavigation?: boolean;
@@ -22,4 +22,4 @@ export interface ClickerMoveOptions {
   agentWidth?: number;
   agentDepth?: number;
   clearance?: number;
-}
+};

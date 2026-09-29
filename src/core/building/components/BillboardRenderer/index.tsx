@@ -5,11 +5,11 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { BillboardConfig } from '../../types';
 import Billboard from '../mesh/billboard';
 
-interface Props {
+type Props = {
   billboards: BillboardConfig[];
   isEditMode: boolean;
   onClick?: (id: string) => void;
-}
+};
 
 export const BillboardRenderer = React.memo(function BillboardRenderer({
   billboards,

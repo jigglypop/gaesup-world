@@ -24,22 +24,22 @@ type CompressedSaveEnvelope = {
   payload: string;
 };
 
-export interface LegacySaveStorage {
+export type LegacySaveStorage = {
   readonly length: number;
   key(index: number): string | null;
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
-}
+};
 
 export type SaveFileWriter = (filename: string, data: SaveData) => void | Promise<void>;
 
-export interface SaveLoadManagerOptions {
+export type SaveLoadManagerOptions = {
   storage?: LegacySaveStorage;
   fileWriter?: SaveFileWriter;
   now?: () => number;
   version?: string;
-}
+};
 
 export class SaveLoadManager {
   private version: string;

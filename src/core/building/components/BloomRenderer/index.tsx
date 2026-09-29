@@ -199,11 +199,11 @@ function BloomBatch({ blooms }: { blooms: BloomConfig[] }) {
   );
 }
 
-interface Props {
+type Props = {
   blooms: BloomConfig[];
   isEditMode: boolean;
   onClick?: (id: string) => void;
-}
+};
 
 export const BloomRenderer = React.memo(function BloomRenderer({
   blooms,

@@ -42,11 +42,11 @@ export type GaesupStores = {
 
 export type PersistenceStoresResolver = () => GaesupStores;
 
-export interface PersistenceSliceOptions {
+export type PersistenceSliceOptions = {
   getStores?: PersistenceStoresResolver;
   saveLoadManager?: SaveLoadManager;
   saveSystem?: SaveSystem;
-}
+};
 
 const EMPTY_STORES_RESOLVER: PersistenceStoresResolver = () => ({});
 
@@ -219,7 +219,7 @@ async function readSaveSystemFileData(file: File): Promise<SaveSystemFileData | 
   throw new Error('Invalid SaveSystem file format');
 }
 
-export interface PersistenceState {
+export type PersistenceState = {
   saveLoadManager: SaveLoadManager;
   currentSaveId: string | null;
   saves: Array<{ id: string; timestamp: number; metadata?: SaveMetadata }>;
@@ -234,7 +234,7 @@ export interface PersistenceState {
   refreshSaveList: () => void;
   deleteSave: (saveId: string) => void;
   clearError: () => void;
-}
+};
 
 export function createPersistenceSliceWithOptions(
   options: PersistenceSliceOptions = {},

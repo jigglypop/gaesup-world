@@ -32,28 +32,28 @@ export type {
 
 export type InteractionPayload = object | string | number | boolean | null | undefined;
 
-export interface BridgeCommand {
+export type BridgeCommand = {
   type: 'input' | 'automation';
   action: string;
   data?: InteractionPayload;
   timestamp?: number;
-}
+};
 
-export interface BridgeState {
+export type BridgeState = {
   isActive: boolean;
   lastCommand: BridgeCommand | null;
   commandHistory: BridgeCommand[];
   syncStatus: 'idle' | 'syncing' | 'error';
-}
+};
 
-export interface BridgeEvent {
+export type BridgeEvent = {
   type: 'input' | 'automation' | 'sync';
   event: string;
   data?: InteractionPayload;
   timestamp: number;
-}
+};
 
-export interface InputCommand {
+export type InputCommand = {
   updateKeyboard: (data: Partial<KeyboardState>) => void;
   updateMouse: (data: Partial<MouseState>) => void;
   updateGamepad: (data: Partial<GamepadState>) => void;
@@ -61,9 +61,9 @@ export interface InputCommand {
   moveTo: (target: THREE.Vector3) => void;
   clickAt: (target: THREE.Vector3) => void;
   keyPress: (key: string) => void;
-}
+};
 
-export interface AutomationCommand {
+export type AutomationCommand = {
   addAction: (action: AutomationAction) => string;
   removeAction: (id: string) => boolean;
   start: () => void;
@@ -72,9 +72,9 @@ export interface AutomationCommand {
   stop: () => void;
   clearQueue: () => void;
   updateSettings: (settings: Partial<AutomationSettings>) => void;
-}
+};
 
-export interface BridgeSnapshot {
+export type BridgeSnapshot = {
   interaction: {
     state: InteractionState;
     config: InteractionConfig;
@@ -86,14 +86,14 @@ export interface BridgeSnapshot {
     metrics: AutomationMetrics;
   };
   bridge: BridgeState;
-}
+};
 
-export interface InteractionCommand {
+export type InteractionCommand = {
   type: 'updateKeyboard' | 'updateMouse' | 'updateGamepad' | 'updateTouch' | 'reset' | 'setConfig';
   payload?: InteractionPayload;
-}
+};
 
-export interface InteractionSnapshot {
+export type InteractionSnapshot = {
   keyboard: KeyboardState;
   mouse: MouseState;
   gamepad: GamepadState;
@@ -101,4 +101,4 @@ export interface InteractionSnapshot {
   isActive: boolean;
   config: InteractionConfig;
   metrics: InteractionMetrics;
-}
+};

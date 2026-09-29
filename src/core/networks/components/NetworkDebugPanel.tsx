@@ -24,20 +24,20 @@ function collectRecentMessages(
   return out;
 }
 
-interface NetworkDebugPanelProps {
+type NetworkDebugPanelProps = {
   systemId?: string;
   className?: string;
   style?: React.CSSProperties;
   onClose?: () => void;
-}
+};
 
-interface NetworkDebugState {
+type NetworkDebugState = {
   snapshot: NetworkSnapshot | null;
   system: NetworkSystemState | null;
   messages: NetworkMessage[];
   isExpanded: boolean;
   activeTab: 'overview' | 'nodes' | 'connections' | 'messages' | 'stats';
-}
+};
 
 export const NetworkDebugPanel: React.FC<NetworkDebugPanelProps> = ({
   systemId = 'main',

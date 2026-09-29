@@ -73,6 +73,22 @@ export { DynamicFog } from './rendering/fog/DynamicFog';
 export type { DynamicFogProps } from './rendering/fog/DynamicFog';
 export { DynamicSky } from './rendering/sky';
 export type { DynamicSkyProps, SkyKeyframe } from './rendering/sky';
+export {
+  GiVolume,
+  ProbeVolume,
+  buildingToVoxelBoxes,
+  hexToLinearRgb,
+  useBuildingVoxelBoxes,
+  useGi,
+} from './gi';
+export type {
+  BuildingVoxelSource,
+  GiEnvironment,
+  GiIrradiance,
+  GiVolumeProps,
+  ProbeVolumeConfig,
+  VoxelSourceBox,
+} from './gi';
 export { ColorGrade } from './rendering/postprocess/ColorGrade';
 export type { ColorGradeProps, GradePreset } from './rendering/postprocess/ColorGrade';
 export { LutOverlay } from './rendering/postprocess/LutOverlay';

@@ -114,6 +114,13 @@ export const EXAMPLE_ROUTES: ExampleRoute[] = [
     audience: 'developer',
   },
   {
+    path: '/gi',
+    label: '동적 전역 조명',
+    description: '복셀 추적과 프로브 캐시로 계산한 간접광과 색 번짐을 WebGPU에서 확인합니다.',
+    category: '실험',
+    audience: 'developer',
+  },
+  {
     path: '/admin',
     label: '관리자 셸',
     description: '관리자 도구에서 월드를 편집합니다.',

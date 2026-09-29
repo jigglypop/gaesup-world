@@ -16,7 +16,7 @@ import {
   type NPCBehaviorBlueprint,
 } from '../../../../npc';
 import { useGaesupRuntime } from '../../../../runtime';
-import { getSaveSystem } from '../../../../save';
+import { getSaveSystem, isAutoSaveSuspended } from '../../../../save';
 import { logger } from '../../../../utils/logger';
 import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
@@ -170,6 +170,10 @@ export function StudioPanel({
   }, [saveSystem]);
 
   const saveWorld = useCallback(async () => {
+    if (isAutoSaveSuspended()) {
+      setStatus({ kind: 'error', message: '다른 월드를 방문하는 동안에는 저장할 수 없습니다.' });
+      return;
+    }
     if (onSaveWorld) {
       await onSaveWorld(slot);
     } else {

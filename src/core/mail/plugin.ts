@@ -2,11 +2,11 @@ import { createStoreDomainPlugin } from '../plugins';
 import { useMailStore } from './stores/mailStore';
 import type { MailSerialized } from './types';
 
-export interface MailPluginOptions {
+export type MailPluginOptions = {
   id?: string;
   saveExtensionId?: string;
   storeServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.mail';
 const DEFAULT_SAVE_EXTENSION_ID = 'mail';

@@ -2,7 +2,7 @@ import type { RuntimeValue } from '@core/boilerplate/types';
 
 import type { QuestId, QuestStatus } from '../../quests/types';
 
-export interface NPCPart {
+export type NPCPart = {
   id: string;
   type: 'body' | 'hair' | 'top' | 'bottom' | 'shoes' | 'glasses' | 'hat' | 'accessory' | 'weapon';
   category?: 'basic' | 'casual' | 'formal' | 'fantasy' | 'military';
@@ -15,9 +15,9 @@ export interface NPCPart {
     material?: string;
     texture?: string;
   };
-}
+};
 
-export interface NPCTemplate {
+export type NPCTemplate = {
   id: string;
   name: string;
   description?: string;
@@ -28,35 +28,35 @@ export interface NPCTemplate {
   accessoryParts?: NPCPart[]; // 액세서리 파트 (glasses, hat 등)
   defaultAnimation?: string;
   defaultClothingSet?: string; // 기본 의상 세트 ID
-}
+};
 
-export interface ClothingSet {
+export type ClothingSet = {
   id: string;
   name: string;
   category: 'casual' | 'formal' | 'uniform' | 'fantasy' | 'sports';
   parts: NPCPart[];
   thumbnail?: string;
-}
+};
 
-export interface NPCNavigationState {
+export type NPCNavigationState = {
   waypoints: [number, number, number][];
   currentIndex: number;
   speed: number;
   state: 'idle' | 'moving' | 'arrived';
-}
+};
 
 export type NPCBrainMode = 'none' | 'scripted' | 'llm' | 'reinforcement';
 
-export interface NPCVolumeConfig {
+export type NPCVolumeConfig = {
   /** Total humanoid capsule height in meters. Defaults close to the player volume. */
   height: number;
   /** Capsule radius in meters. */
   radius: number;
   /** Extra proximity sensor radius for interaction/perception. */
   interactionRadius: number;
-}
+};
 
-export interface NPCBrainConfig {
+export type NPCBrainConfig = {
   mode: NPCBrainMode;
   providerId?: string | undefined;
   policyId?: string | undefined;
@@ -64,18 +64,18 @@ export interface NPCBrainConfig {
   prompt?: string;
   memory?: Record<string, RuntimeValue>;
   autoRespond?: boolean;
-}
+};
 
-export interface NPCPerceptionConfig {
+export type NPCPerceptionConfig = {
   enabled: boolean;
   sightRadius: number;
   hearingRadius: number;
   fieldOfView?: number;
-}
+};
 
 export type NPCBehaviorMode = 'idle' | 'patrol' | 'wander';
 
-export interface NPCBehaviorConfig {
+export type NPCBehaviorConfig = {
   mode: NPCBehaviorMode;
   speed: number;
   loop?: boolean;
@@ -85,7 +85,7 @@ export interface NPCBehaviorConfig {
   idleAnimation?: string;
   moveAnimation?: string;
   arriveAnimation?: string;
-}
+};
 
 export type NPCAction =
   | { type: 'idle'; animationId?: string }
@@ -116,22 +116,22 @@ export type NPCBrainBlueprintNode =
   | { id: string; type: 'condition'; label?: string; condition: NPCBrainBlueprintCondition }
   | { id: string; type: 'action'; label?: string; action: NPCAction | { type: 'moveToTarget'; target: NPCBrainBlueprintTarget; speed?: number; animationId?: string } };
 
-export interface NPCBrainBlueprintEdge {
+export type NPCBrainBlueprintEdge = {
   id: string;
   source: string;
   target: string;
   branch?: 'true' | 'false' | 'next';
-}
+};
 
-export interface NPCBrainBlueprint {
+export type NPCBrainBlueprint = {
   id: string;
   name: string;
   description?: string;
   nodes: NPCBrainBlueprintNode[];
   edges: NPCBrainBlueprintEdge[];
-}
+};
 
-export interface NPCBehaviorBlueprint {
+export type NPCBehaviorBlueprint = {
   id: string;
   name: string;
   description?: string;
@@ -141,11 +141,11 @@ export interface NPCBehaviorBlueprint {
   perception?: NPCPerceptionConfig;
   events?: NPCEvent[];
   tags?: string[];
-}
+};
 
 export type AgentBehaviorOwnerType = 'npc' | 'animal' | 'vendor' | 'service' | 'custom';
 
-export interface AgentBehaviorBlueprint {
+export type AgentBehaviorBlueprint = {
   id: string;
   name: string;
   description?: string;
@@ -156,17 +156,17 @@ export interface AgentBehaviorBlueprint {
   perception?: NPCPerceptionConfig;
   events?: NPCEvent[];
   tags?: string[];
-}
+};
 
-export interface NPCObservationTarget {
+export type NPCObservationTarget = {
   instanceId: string;
   name: string;
   position: [number, number, number];
   distance: number;
   brainMode: NPCBrainMode;
-}
+};
 
-export interface NPCObservation {
+export type NPCObservation = {
   instanceId: string;
   templateId: string;
   timestamp: number;
@@ -179,15 +179,15 @@ export interface NPCObservation {
   perceptionEnabled: boolean;
   perceived: NPCObservationTarget[];
   memory?: Record<string, RuntimeValue>;
-}
+};
 
-export interface NPCBrainDecision {
+export type NPCBrainDecision = {
   source: NPCBrainMode | 'external' | 'blueprint';
   actions: NPCAction[];
   reason?: string;
-}
+};
 
-export interface NPCInstance {
+export type NPCInstance = {
   id: string;
   templateId: string;
   name: string;
@@ -214,7 +214,7 @@ export interface NPCInstance {
     lastInteractionTargetId?: string;
   };
   events?: NPCEvent[];
-}
+};
 
 export type NPCEventPayload = 
   | { type: 'dialogue'; text: string; duration?: number }
@@ -222,36 +222,36 @@ export type NPCEventPayload =
   | { type: 'sound'; soundUrl: string; volume?: number }
   | { type: 'custom'; data: RuntimeValue };
 
-export interface NPCEvent {
+export type NPCEvent = {
   id: string;
   type: 'onClick' | 'onHover' | 'onInteract' | 'onProximity';
   action: 'dialogue' | 'animation' | 'sound' | 'custom';
   payload?: NPCEventPayload;
-}
+};
 
-export interface NPCCategory {
+export type NPCCategory = {
   id: string;
   name: string;
   description?: string;
   templateIds: string[];
-}
+};
 
-export interface ClothingCategory {
+export type ClothingCategory = {
   id: string;
   name: string;
   description?: string;
   clothingSetIds: string[];
-}
+};
 
-export interface NPCAnimation {
+export type NPCAnimation = {
   id: string;
   name: string;
   url?: string;
   loop?: boolean;
   speed?: number;
-}
+};
 
-export interface NPCSystemState {
+export type NPCSystemState = {
   templates: Map<string, NPCTemplate>;
   instances: Map<string, NPCInstance>;
   categories: Map<string, NPCCategory>;
@@ -265,4 +265,4 @@ export interface NPCSystemState {
   selectedClothingCategoryId?: string;
   selectedInstanceId?: string;
   editMode: boolean;
-} 
+}; 

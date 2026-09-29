@@ -8,7 +8,7 @@ import type {
   SceneVector3,
 } from './types';
 
-export interface SceneRuntime {
+export type SceneRuntime = {
   document: SceneDocument;
   objects: ReadonlyMap<SceneObjectId, SceneObject>;
   children: ReadonlyMap<SceneObjectId, SceneObject[]>;
@@ -16,15 +16,15 @@ export interface SceneRuntime {
   getObject: (id: SceneObjectId) => SceneObject | undefined;
   getChildren: (id?: SceneObjectId) => SceneObject[];
   getWorldTransform: (id: SceneObjectId) => SceneTransform | undefined;
-}
+};
 
 const ROOT_PARENT = Symbol('scene-root-parent');
 
-export interface LoadSceneRuntimeResult {
+export type LoadSceneRuntimeResult = {
   ok: boolean;
   runtime?: SceneRuntime;
   issues: SceneValidationIssue[];
-}
+};
 
 export function loadSceneRuntime(document: SceneDocument): LoadSceneRuntimeResult {
   const parsed = parseSceneDocument(document);

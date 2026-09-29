@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import { useTimeStore } from '../stores/timeStore';
 import type { GameTime } from '../types';
@@ -8,7 +9,7 @@ export function useGameTime(): GameTime {
 }
 
 export function useTimeOfDay(): { hour: number; minute: number } {
-  return useTimeStore((s) => ({ hour: s.time.hour, minute: s.time.minute }));
+  return useTimeStore(useShallow((s) => ({ hour: s.time.hour, minute: s.time.minute })));
 }
 
 export function useGameClock(enabled: boolean = true): void {

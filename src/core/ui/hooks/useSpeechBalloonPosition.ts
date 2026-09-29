@@ -4,10 +4,10 @@ import { useFrame } from '@react-three/fiber';
 import { Sprite } from 'three';
 import * as THREE from 'three';
 
-export interface UseSpeechBalloonPositionProps {
+export type UseSpeechBalloonPositionProps = {
   playerPosition: THREE.Vector3;
   offset: { x: number; y: number; z: number };
-}
+};
 
 export function useSpeechBalloonPosition({ 
   playerPosition, 

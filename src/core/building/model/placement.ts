@@ -17,11 +17,11 @@ export type WallMeta = { x: number; z: number; rotY: number };
 export type BuildingPlacementCoord =
   | { kind: 'cell'; cell: CellCoord }
   | { kind: 'edge'; edge: EdgeCoord };
-export interface BuildingPlacementEngineOptions {
+export type BuildingPlacementEngineOptions = {
   includeNoOverlapRule?: boolean;
   rules?: Array<PlacementRule<BuildingPlacementCoord>>;
   blocks?: Iterable<BuildingBlockConfig>;
-}
+};
 
 const MAX_CELLS_PER_OPERATION = 65_536;
 

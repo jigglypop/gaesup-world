@@ -12,7 +12,7 @@ import {
   type SelectSceneObjectOptions,
 } from '../selection';
 
-export interface EditorState {
+export type EditorState = {
   selectedObjectIds: string[];
   activeObjectId: string | undefined;
   hoveredObjectId: string | undefined;
@@ -34,7 +34,7 @@ export interface EditorState {
   
   clipboard: object | null;
   setClipboard: (data: object | null) => void;
-}
+};
 
 export const createEditorSlice: StateCreator<EditorState> = (set) => ({
   selectedObjectIds: EMPTY_EDITOR_SELECTION.selectedObjectIds,

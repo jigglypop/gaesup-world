@@ -1,11 +1,11 @@
 import { Text } from '@/core/rendering/legacyDrei';
 
-interface NameTagProps {
+type NameTagProps = {
   text: string;
   fontSize?: number;
   color?: string;
   background?: string;
-}
+};
 
 export default function NameTag({
   text,

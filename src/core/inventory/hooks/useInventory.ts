@@ -1,17 +1,20 @@
 import { useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import { useInventoryStore } from '../stores/inventoryStore';
 
 export function useInventory() {
-  return useInventoryStore((s) => ({
-    slots: s.slots,
-    add: s.add,
-    remove: s.remove,
-    removeById: s.removeById,
-    move: s.move,
-    countOf: s.countOf,
-    has: s.has,
-  }));
+  return useInventoryStore(
+    useShallow((s) => ({
+      slots: s.slots,
+      add: s.add,
+      remove: s.remove,
+      removeById: s.removeById,
+      move: s.move,
+      countOf: s.countOf,
+      has: s.has,
+    })),
+  );
 }
 
 export function useEquippedItem() {

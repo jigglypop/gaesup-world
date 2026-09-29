@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import { NetworkSnapshot, NPCNetworkNode, NetworkGroup, NetworkMessage } from '../types';
 
-interface NetworkState {
+type NetworkState = {
   snapshot: NetworkSnapshot | null;
   connectedNodes: Map<string, NPCNetworkNode>;
   activeGroups: Map<string, NetworkGroup>;
@@ -11,9 +11,9 @@ interface NetworkState {
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
   lastError: string | null;
   lastUpdate: number;
-}
+};
 
-interface NetworkStateStore {
+type NetworkStateStore = {
   state: NetworkState;
   updateSnapshot: (snapshot: NetworkSnapshot) => void;
   updateConnectedNodes: (nodes: NPCNetworkNode[]) => void;
@@ -26,7 +26,7 @@ interface NetworkStateStore {
   getNodesByGroup: (groupId: string) => NPCNetworkNode[];
   getMessagesForNode: (nodeId: string) => NetworkMessage[];
   resetState: () => void;
-}
+};
 
 const initialState: NetworkState = {
   snapshot: null,

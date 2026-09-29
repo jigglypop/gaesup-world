@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
 
-export interface NetworkStats {
+export type NetworkStats = {
   // 기본 통계
   totalNodes: number;
   totalConnections: number;
@@ -30,7 +30,7 @@ export interface NetworkStats {
   totalGroups: number;
   activeGroups: number;
   averageGroupSize: number;
-}
+};
 
 export interface UseNetworkStatsOptions extends UseNetworkBridgeOptions {
   updateInterval?: number;
@@ -39,7 +39,7 @@ export interface UseNetworkStatsOptions extends UseNetworkBridgeOptions {
   historyLength?: number;
 }
 
-export interface UseNetworkStatsResult {
+export type UseNetworkStatsResult = {
   // 현재 통계
   stats: NetworkStats | null;
   
@@ -57,7 +57,7 @@ export interface UseNetworkStatsResult {
   
   // 브릿지 기능
   isReady: boolean;
-}
+};
 
 /**
  * 네트워크 통계 조회를 위한 훅

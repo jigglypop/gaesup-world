@@ -2,14 +2,14 @@ import * as THREE from 'three';
 
 import { Profile, HandleError, MonitorMemory } from '@/core/boilerplate/decorators';
 
-export interface CameraDebugInfo {
+export type CameraDebugInfo = {
   position: THREE.Vector3;
   target: THREE.Vector3;
   distance: number;
   fov: number;
   state: string;
   timestamp: number;
-}
+};
 
 export class CameraDebugger {
   private isEnabled = false;
@@ -27,8 +27,9 @@ export class CameraDebugger {
 
   @HandleError()
   enable(scene?: THREE.Scene): void {
-    this.isEnabled = true;
     if (scene) this.scene = scene;
+    if (this.isEnabled) return;
+    this.isEnabled = true;
     this.setupCleanupInterval();
     this.setupEventListeners();
   }
@@ -36,6 +37,8 @@ export class CameraDebugger {
   @HandleError()
   disable(): void {
     this.isEnabled = false;
+    this.disposables.forEach((dispose) => dispose());
+    this.disposables.clear();
     this.cleanup();
   }
 
@@ -131,14 +134,6 @@ export class CameraDebugger {
       const line = new THREE.Line(geometry, material);
       this.scene.add(line);
       this.debugLines.push(line);
-
-      this.disposables.add(() => {
-        geometry.dispose();
-        material.dispose();
-        if (this.scene) {
-          this.scene.remove(line);
-        }
-      });
     }
   }
 

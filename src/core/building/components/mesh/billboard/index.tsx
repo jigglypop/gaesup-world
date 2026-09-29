@@ -10,7 +10,7 @@ import { weightFromDistance } from '@core/utils/sfe';
 import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
 import type { PlacedObject } from '../../../types';
 
-export interface BillboardProps {
+export type BillboardProps = {
   text?: string;
   imageUrl?: string;
   width?: number;
@@ -20,7 +20,7 @@ export interface BillboardProps {
   elevation?: number;
   intensity?: number;
   toon?: boolean;
-}
+};
 
 function createTextTexture(
   text: string,

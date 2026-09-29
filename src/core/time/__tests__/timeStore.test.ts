@@ -59,3 +59,15 @@ test('unpaused realtime saves keep elapsed wall-clock time across reloads', () =
   useTimeStore.getState().tick(16);
   expect(useTimeStore.getState().totalMinutes).toBe(482);
 });
+
+test('tick은 게임 분이 바뀌지 않는 동안 time 객체를 유지하고 분이 바뀌면 새로 만든다', () => {
+  const before = useTimeStore.getState().time;
+
+  useTimeStore.getState().tick(16);
+
+  expect(useTimeStore.getState().totalMinutes).toBeGreaterThan(before.totalMinutes);
+  expect(useTimeStore.getState().time).toBe(before);
+  useTimeStore.getState().tick(1000);
+  expect(useTimeStore.getState().time).not.toBe(before);
+  expect(useTimeStore.getState().time.totalMinutes).toBe(before.totalMinutes + 1);
+});

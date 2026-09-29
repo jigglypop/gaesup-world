@@ -15,7 +15,7 @@ import type { EditorCommandPaletteItem } from '../CommandPalette';
 import type { SceneObjectPatch } from '../panels/InspectorPanel';
 import type { ProjectAssetItem, ProjectPrefabRecord } from '../panels/ProjectAssetsPanel';
 
-export interface EditorLayoutProps {
+export type EditorLayoutProps = {
   children?: ReactNode;
   panels?: EditorShellPluginPanel[];
   defaultActivePanels?: string[];
@@ -53,7 +53,7 @@ export interface EditorLayoutProps {
   onSave?: () => void | Promise<void>;
   onAutosave?: () => void | Promise<void>;
   onToggleAutosave?: (enabled: boolean) => void;
-}
+};
 
 export type EditorSidebarPresetId = 'compact' | 'standard' | 'wide' | 'floating';
 export type EditorSidebarPreset = {
@@ -62,7 +62,7 @@ export type EditorSidebarPreset = {
 };
 export type EditorSidebarPresetInput = EditorSidebarPresetId | EditorSidebarPreset;
 
-export interface PanelConfig {
+export type PanelConfig = {
   id: string;
   title: string;
   component: ReactNode;
@@ -77,7 +77,7 @@ export interface PanelConfig {
   resizeHandles?: ('right' | 'bottom' | 'corner')[];
   className?: string;
   style?: CSSProperties;
-}
+};
 
 export type EditorPanelDefaults = Partial<Omit<PanelConfig, 'id' | 'component'>>;
 
@@ -85,19 +85,19 @@ export interface EditorShellPluginPanel extends PanelConfig {
   pluginId?: string;
 }
 
-export interface EditorShellAction {
+export type EditorShellAction = {
   id: string;
   label: string;
   disabled?: boolean;
   onClick: () => void | Promise<void>;
-}
+};
 
 export const EDITOR_PANEL_COMPONENT_KIND = 'editor.panel' as const;
 
-export interface EditorPanelComponentExtension {
+export type EditorPanelComponentExtension = {
   kind: typeof EDITOR_PANEL_COMPONENT_KIND;
   panel: EditorShellPluginPanel;
-}
+};
 
 export function isEditorPanelComponentExtension(
   value: unknown,

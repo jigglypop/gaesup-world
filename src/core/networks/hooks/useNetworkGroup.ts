@@ -3,12 +3,12 @@ import { useCallback, useRef, useEffect, useState } from 'react';
 import { useNetworkBridge, UseNetworkBridgeOptions } from './useNetworkBridge';
 import type { NetworkGroup, NetworkMessage, NetworkPayload } from '../types';
 
-export interface GroupCreateOptions {
+export type GroupCreateOptions = {
   maxSize?: number;
   isPrivate?: boolean;
   requireInvite?: boolean;
   metadata?: Record<string, NetworkPayload>;
-}
+};
 
 export interface UseNetworkGroupOptions extends UseNetworkBridgeOptions {
   npcId: string;
@@ -19,7 +19,7 @@ export interface UseNetworkGroupOptions extends UseNetworkBridgeOptions {
   onGroupMemberLeft?: (memberId: string, groupId: string) => void;
 }
 
-export interface UseNetworkGroupResult {
+export type UseNetworkGroupResult = {
   // 그룹 생성 및 관리
   createGroup: (groupId: string, initialMembers?: string[], options?: GroupCreateOptions) => void;
   joinGroup: (groupId: string) => void;
@@ -44,7 +44,7 @@ export interface UseNetworkGroupResult {
   
   // 브릿지 기능
   isReady: boolean;
-}
+};
 
 /**
  * 네트워크 그룹 관리를 위한 훅

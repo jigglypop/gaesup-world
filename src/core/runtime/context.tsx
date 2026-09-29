@@ -7,11 +7,11 @@ type GaesupRuntimeContextValue = {
   revision: number;
 };
 
-export interface GaesupRuntimeProviderProps {
+export type GaesupRuntimeProviderProps = {
   runtime?: GaesupRuntime | null;
   revision?: number;
   children?: ReactNode;
-}
+};
 
 const GaesupRuntimeContext = createContext<GaesupRuntimeContextValue>({
   runtime: null,

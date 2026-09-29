@@ -3,27 +3,27 @@ import type { SceneDocument, SceneLayerId, SceneObject, SceneTag } from './types
 
 export type SceneLayerPurpose = 'collision' | 'rendering' | 'editor' | 'selection';
 
-export interface SceneLayerDefinition {
+export type SceneLayerDefinition = {
   id: SceneLayerId;
   name?: string;
   index?: number;
   purposes: SceneLayerPurpose[];
   visible: boolean;
   selectable: boolean;
-}
+};
 
-export interface SceneTagDefinition {
+export type SceneTagDefinition = {
   id: SceneTag;
   name?: string;
   color?: string;
-}
+};
 
-export interface SceneLayerTagRegistry {
+export type SceneLayerTagRegistry = {
   layers: SceneLayerDefinition[];
   tags: SceneTagDefinition[];
-}
+};
 
-export interface SceneLayerTagIssue {
+export type SceneLayerTagIssue = {
   code:
     | 'duplicate-layer'
     | 'duplicate-layer-index'
@@ -35,32 +35,32 @@ export interface SceneLayerTagIssue {
     | 'unknown-object-tag';
   path: string;
   message: string;
-}
+};
 
-export interface SceneLayerTagValidationResult {
+export type SceneLayerTagValidationResult = {
   valid: boolean;
   issues: SceneLayerTagIssue[];
-}
+};
 
-export interface CreateSceneLayerDefinitionInput {
+export type CreateSceneLayerDefinitionInput = {
   id: SceneLayerId;
   name?: string;
   index?: number;
   purposes?: SceneLayerPurpose[];
   visible?: boolean;
   selectable?: boolean;
-}
+};
 
-export interface CreateSceneTagDefinitionInput {
+export type CreateSceneTagDefinitionInput = {
   id: SceneTag;
   name?: string;
   color?: string;
-}
+};
 
-export interface CreateSceneLayerTagRegistryInput {
+export type CreateSceneLayerTagRegistryInput = {
   layers?: CreateSceneLayerDefinitionInput[];
   tags?: CreateSceneTagDefinitionInput[];
-}
+};
 
 export const DEFAULT_SCENE_LAYERS: SceneLayerDefinition[] = [
   createSceneLayerDefinition({ id: 'default', index: 0, purposes: ['collision', 'rendering', 'editor', 'selection'] }),

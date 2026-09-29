@@ -8,7 +8,7 @@ export type PluginStatus =
   | 'disposed'
   | 'failed';
 
-export interface PluginManifest {
+export type PluginManifest = {
   id: string;
   name: string;
   version: string;
@@ -16,31 +16,31 @@ export interface PluginManifest {
   capabilities: string[];
   dependencies?: Record<string, string>;
   optionalDependencies?: Record<string, string>;
-}
+};
 
-export interface PluginLogger {
+export type PluginLogger = {
   debug(message: string, meta?: unknown): void;
   info(message: string, meta?: unknown): void;
   warn(message: string, meta?: unknown): void;
   error(message: string, meta?: unknown): void;
-}
+};
 
 export type EventUnsubscribe = () => void;
 export type EventHandler<TPayload = unknown> = (payload: TPayload) => void;
 
-export interface EventBus {
+export type EventBus = {
   on<TPayload = unknown>(eventName: string, handler: EventHandler<TPayload>): EventUnsubscribe;
   once<TPayload = unknown>(eventName: string, handler: EventHandler<TPayload>): EventUnsubscribe;
   off<TPayload = unknown>(eventName: string, handler: EventHandler<TPayload>): void;
   emit<TPayload = unknown>(eventName: string, payload: TPayload): void;
   clear(eventName?: string): void;
-}
+};
 
-export interface RegistryEntry<TValue> {
+export type RegistryEntry<TValue> = {
   id: string;
   value: TValue;
   pluginId?: string;
-}
+};
 
 declare const extensionMapBrand: unique symbol;
 
@@ -62,7 +62,7 @@ export interface ComponentExtensionMap { readonly [extensionMapBrand]?: never; }
 
 export type KnownExtensionId<TMap extends object> = Extract<keyof TMap, string>;
 
-export interface ExtensionRegistry<TValue = unknown, TMap extends object = Record<never, never>> {
+export type ExtensionRegistry<TValue = unknown, TMap extends object = Record<never, never>> = {
   register<TId extends KnownExtensionId<TMap>>(id: TId, value: TMap[TId], pluginId?: string): void;
   register<TId extends string>(
     id: TId,
@@ -78,9 +78,9 @@ export interface ExtensionRegistry<TValue = unknown, TMap extends object = Recor
   removeByPlugin(pluginId: string): number;
   list(): Array<RegistryEntry<TValue>>;
   clear(): void;
-}
+};
 
-export interface PluginExtensionRegistries {
+export type PluginExtensionRegistries = {
   grid: ExtensionRegistry<unknown, GridExtensionMap>;
   placement: ExtensionRegistry<unknown, PlacementExtensionMap>;
   catalog: ExtensionRegistry<unknown, CatalogExtensionMap>;
@@ -96,7 +96,7 @@ export interface PluginExtensionRegistries {
   services: ExtensionRegistry<unknown, ServiceExtensionMap>;
   systems: ExtensionRegistry<unknown, SystemExtensionMap>;
   components: ExtensionRegistry<unknown, ComponentExtensionMap>;
-}
+};
 
 export interface PluginContext extends PluginExtensionRegistries {
   events: EventBus;
@@ -104,7 +104,7 @@ export interface PluginContext extends PluginExtensionRegistries {
   plugins: PluginRegistryApi;
 }
 
-export interface GaesupPlugin {
+export type GaesupPlugin = {
   id: string;
   name: string;
   version: string;
@@ -114,12 +114,12 @@ export interface GaesupPlugin {
   optionalDependencies?: PluginDependencyInput[];
   setup(ctx: PluginContext): void | Promise<void>;
   dispose?(ctx: PluginContext): void | Promise<void>;
-}
+};
 
-export interface PluginDependencyDeclaration {
+export type PluginDependencyDeclaration = {
   id: string;
   version?: string;
-}
+};
 
 export type PluginDependencyInput = string | PluginDependencyDeclaration;
 
@@ -127,31 +127,31 @@ export type PluginDiagnosticKind =
   | 'capability-conflict'
   | 'missing-capability';
 
-export interface PluginDiagnostic {
+export type PluginDiagnostic = {
   kind: PluginDiagnosticKind;
   message: string;
   pluginIds: string[];
   capabilities: string[];
-}
+};
 
-export interface PluginRecord {
+export type PluginRecord = {
   plugin: GaesupPlugin;
   manifest: PluginManifest;
   status: PluginStatus;
   error?: unknown;
-}
+};
 
-export interface PluginRegistryApi {
+export type PluginRegistryApi = {
   has(id: string): boolean;
   get(id: string): PluginRecord | undefined;
   list(): PluginRecord[];
   status(id: string): PluginStatus | undefined;
   getDiagnostics(): PluginDiagnostic[];
-}
+};
 
-export interface PluginContextOptions {
+export type PluginContextOptions = {
   logger?: Partial<PluginLogger>;
   exclusiveCapabilities?: string[];
   capabilityConflicts?: Record<string, string[]>;
   requiredCapabilities?: string[];
-}
+};

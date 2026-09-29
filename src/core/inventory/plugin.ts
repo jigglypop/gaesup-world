@@ -2,11 +2,11 @@ import { createStoreDomainPlugin } from '../plugins';
 import { useInventoryStore } from './stores/inventoryStore';
 import type { InventorySerialized } from './types';
 
-export interface InventoryPluginOptions {
+export type InventoryPluginOptions = {
   id?: string;
   saveExtensionId?: string;
   storeServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.inventory';
 const DEFAULT_SAVE_EXTENSION_ID = 'inventory';

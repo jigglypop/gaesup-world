@@ -815,8 +815,7 @@ export const useBuildingStore = create<BuildingStore>()(
         const group = state.wallGroups.get(groupId);
         if (group) {
           const materialId = wall.materialId ?? state.currentWallMaterialId;
-          const wallKind =
-            wall.wallKind ?? state.currentWallKind ?? group.defaultWallKind ?? 'solid';
+          const wallKind = wall.wallKind ?? state.currentWallKind;
           const wallWithEdge: WallConfig = {
             ...wall,
             ...(materialId ? { materialId } : {}),

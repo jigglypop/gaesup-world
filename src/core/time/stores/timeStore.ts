@@ -60,7 +60,8 @@ export const useTimeStore = create<TimeState>((set, get) => ({
     if (nextMinutes === s.totalMinutes) return;
     const newDay = isNewDay(s.totalMinutes, nextMinutes);
     const newHour = isNewHour(s.totalMinutes, nextMinutes);
-    const time = computeGameTime(nextMinutes);
+    const time =
+      Math.floor(nextMinutes) === s.time.totalMinutes ? s.time : computeGameTime(nextMinutes);
     set({ totalMinutes: nextMinutes, time });
     if (newHour) emit(s.listeners, 'newHour', time);
     if (newDay) emit(s.listeners, 'newDay', time);

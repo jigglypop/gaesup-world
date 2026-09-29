@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export interface SpeechBalloonProps {
+export type SpeechBalloonProps = {
   text: string;
   position?: THREE.Vector3;
   offset?: THREE.Vector3;
@@ -15,9 +15,9 @@ export interface SpeechBalloonProps {
   visible?: boolean;
   opacity?: number;
   children?: React.ReactNode;
-}
+};
 
-export interface SpeechBalloonState {
+export type SpeechBalloonState = {
   canvasTexture: THREE.CanvasTexture | null;
   spriteScale: THREE.Vector3;
-} 
+}; 

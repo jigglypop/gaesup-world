@@ -1,69 +1,69 @@
-export interface userType {
+export type userType = {
   id: string;
   username: string;
   roles: string[];
-}
+};
 
-export interface loginFormType {
+export type loginFormType = {
   username: string;
   password: string;
-}
+};
 
-export interface registerFormType {
+export type registerFormType = {
   username: string;
   password: string;
   confirmPassword: string;
-}
+};
 
-export interface tileType {
+export type tileType = {
   id: string;
   position: [number, number, number];
   type: string;
   color?: string;
-}
+};
 
-export interface wallType {
+export type wallType = {
   id: string;
   position: [number, number, number];
   rotation: [number, number, number];
   type: string;
-}
+};
 
-export interface threeObjectType {
+export type threeObjectType = {
   id: string;
   position: [number, number, number];
   rotation: [number, number, number];
   scale: [number, number, number];
   url: string;
-}
+};
 
-export interface npcType {
+export type npcType = {
   id: string;
   position: [number, number, number];
   name: string;
   type: string;
-}
+};
 
-export interface portalType {
+export type portalType = {
   id: string;
   position: [number, number, number];
   targetUrl: string;
   name: string;
-}
+};
 
-export interface boardRequestType {
+export type boardRequestType = {
   username: string;
   content: string;
-}
+};
 
-export interface saveRequestType {
+export type saveRequestType = {
   tile: tileType[];
   wall: wallType[];
   threeObject: threeObjectType[];
   npc: npcType[];
-}
+};
 
-export interface saveResponseType {
+export type saveResponseType = {
   success: boolean;
   message: string;
-} 
+}; 

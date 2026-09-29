@@ -2,11 +2,11 @@ import { createStoreDomainPlugin } from '../plugins';
 import { useFriendshipStore } from './stores/friendshipStore';
 import type { RelationsSerialized } from './types';
 
-export interface RelationsPluginOptions {
+export type RelationsPluginOptions = {
   id?: string;
   saveExtensionId?: string;
   storeServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.relations';
 const DEFAULT_SAVE_EXTENSION_ID = 'relations';

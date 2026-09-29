@@ -11,8 +11,10 @@ import type {
   BuildingSerializedState,
   MeshConfig,
   PlacedObject,
+  TileCategory,
   TileConfig,
   TileGroupConfig,
+  WallCategory,
   WallConfig,
   WallGroupConfig,
 } from '../types';
@@ -25,6 +27,8 @@ export type BuildingSerializableState = Pick<
   | 'tileGroups'
   | 'blocks'
   | 'objects'
+  | 'wallCategories'
+  | 'tileCategories'
   | 'showSnow'
   | 'showFog'
   | 'fogColor'
@@ -40,6 +44,8 @@ export type BuildingHydrationTarget = {
   selectedTileGroupId?: string;
   blocks: BuildingBlockConfig[];
   objects: PlacedObject[];
+  wallCategories: Map<string, WallCategory>;
+  tileCategories: Map<string, TileCategory>;
   tileIndex: Map<number, Set<string>>;
   tileCells: Map<string, number[]>;
   tileMeta: Map<string, TileMeta>;
@@ -62,6 +68,8 @@ export function serializeBuildingState(state: BuildingSerializableState): Buildi
     tileGroups: Array.from(state.tileGroups.values(), cloneBuildingValue),
     blocks: state.blocks.map(cloneBuildingValue),
     objects: state.objects.map(cloneBuildingValue),
+    wallCategories: Array.from(state.wallCategories.values(), cloneBuildingValue),
+    tileCategories: Array.from(state.tileCategories.values(), cloneBuildingValue),
     showSnow: state.showSnow,
     showFog: state.showFog,
     fogColor: state.fogColor,
@@ -103,7 +111,15 @@ export function hydrateBuildingState(
   if (data.version !== undefined && data.version !== 1) {
     throw new Error('Unsupported building snapshot version');
   }
-  const collections = ['meshes', 'wallGroups', 'tileGroups', 'blocks', 'objects'] as const;
+  const collections = [
+    'meshes',
+    'wallGroups',
+    'tileGroups',
+    'blocks',
+    'objects',
+    'wallCategories',
+    'tileCategories',
+  ] as const;
   const settings = ['showSnow', 'showFog', 'fogColor', 'weatherEffect', 'worldSurface'] as const;
   if (![...collections, ...settings].some((key) => Object.prototype.hasOwnProperty.call(data, key))) {
     throw new Error('Empty building snapshot');
@@ -143,6 +159,11 @@ export function hydrateBuildingState(
     }
   }
   for (const object of data.objects ?? []) validateVector(object.position);
+  for (const category of [...(data.wallCategories ?? []), ...(data.tileCategories ?? [])]) {
+    if (!category || typeof category.id !== 'string') {
+      throw new Error('Invalid building snapshot category');
+    }
+  }
 
   data = cloneBuildingValue(data);
 
@@ -168,6 +189,8 @@ export function hydrateBuildingState(
     cell: block.cell ?? tilePositionToCell(block.position),
   }));
   state.objects = (data.objects ?? []).map((object) => ({ ...object }));
+  if (data.wallCategories) replaceCategories(state.wallCategories, data.wallCategories);
+  if (data.tileCategories) replaceCategories(state.tileCategories, data.tileCategories);
   state.showSnow = data.showSnow ?? false;
   state.showFog = data.showFog ?? false;
   state.fogColor = data.fogColor ?? '#cfd8e3';
@@ -182,6 +205,7 @@ export function applyBuildingHydration(state: BuildingHydrationTarget, prepared:
   Object.assign(state, {
     meshes: prepared.meshes, wallGroups: prepared.wallGroups, tileGroups: prepared.tileGroups,
     blocks: prepared.blocks, objects: prepared.objects,
+    wallCategories: prepared.wallCategories, tileCategories: prepared.tileCategories,
     tileIndex: prepared.tileIndex, tileCells: prepared.tileCells, tileMeta: prepared.tileMeta,
     wallIndex: prepared.wallIndex, wallCells: prepared.wallCells, wallMeta: prepared.wallMeta,
     initialized: prepared.initialized, showSnow: prepared.showSnow, showFog: prepared.showFog,
@@ -189,6 +213,14 @@ export function applyBuildingHydration(state: BuildingHydrationTarget, prepared:
   });
   applySelectedGroupId(state, 'selectedTileGroupId', state.tileGroups);
   applySelectedGroupId(state, 'selectedWallGroupId', state.wallGroups);
+}
+
+function replaceCategories<T extends { id: string }>(
+  target: Map<string, T>,
+  categories: T[],
+): void {
+  target.clear();
+  for (const category of categories) target.set(category.id, category);
 }
 
 function applySelectedGroupId(

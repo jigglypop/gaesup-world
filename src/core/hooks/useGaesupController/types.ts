@@ -12,7 +12,7 @@ export type GaesupControllerProps = Omit<
   enableKeyboard?: boolean;
 };
 
-export interface UseGaesupControllerResult {
+export type UseGaesupControllerResult = {
   state: ActiveStateType | null;
   mode: ModeState | null;
   states: GameStatesType;
@@ -23,4 +23,4 @@ export interface UseGaesupControllerResult {
     control: ControllerOptionsType;
   };
   controller: GaesupState;
-}
+};
