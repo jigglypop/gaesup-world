@@ -5,9 +5,12 @@ import * as THREE from 'three';
 import { dot, float, floor, fract, length, mix, positionWorld, sin, smoothstep, vec2, vec3, vec4 } from 'three/tsl';
 import { MeshStandardNodeMaterial, type Node } from 'three/webgpu';
 
+import { paintCover } from './cover/geometry';
+import { SAND, SNOW } from './cover/looks';
+import { useCoverMaterial } from './cover/material';
 import { getDefaultToonMode, getToonGradient } from '../../../rendering/toon';
 import { rendererKind } from '../../../rendering/webgpu';
-import { buildDirtCover, type CoverSpread } from '../../terrain/dirt';
+import { buildDirtCover, COVER_REACH, type CoverSpread } from '../../terrain/dirt';
 
 const disableRaycast = () => undefined;
 const covers = new Map<string, THREE.Material>();
@@ -50,19 +53,30 @@ function dirtMaterial(detail: boolean, toon: boolean): THREE.Material {
 /**
  * A cover's soft layer over its tiles (`coverSpreads`): packed earth over dirt paths, whose edge wanders onto the
  * neighboring tiles and fades out with rounded corners, and the same fringe of sand or snow around a beach or snowfield.
- * One draw for each cover of a tile group; it receives shadows. On node renderers dirt adds fine grit and pebbles.
+ * One draw for each cover of a tile group; it receives shadows. On node renderers dirt adds fine grit and pebbles, and
+ * sand and snow fringes shade like the cover they spread from.
  */
 export function DirtCover({ spread, toon }: { spread: CoverSpread; toon?: boolean | undefined }) {
   const node = rendererKind(useThree((state) => state.gl)) !== 'webgl';
-  const { squares, ground, color, accent } = spread;
-  const geometry = useMemo(() => buildDirtCover({ dirt: squares, ground, color, accent }), [squares, ground, color, accent]);
+  const useToon = toon ?? getDefaultToonMode();
+  const fringe = useCoverMaterial(spread.cover === 'snowfield' ? 'snow' : 'sand', useToon, { fringe: true, enabled: spread.cover !== 'dirt' });
+  const { squares, ground, color, accent, cover } = spread;
+  const geometry = useMemo(() => {
+    // A beach or snowfield fringe takes the paint of its surface, so the two meet without a seam.
+    const look = cover === 'sand' ? SAND : cover === 'snowfield' ? SNOW : null;
+    const tile = new THREE.Color(color), tint = new THREE.Color(accent);
+    return buildDirtCover({
+      dirt: squares, ground, color, accent, reach: COVER_REACH[cover],
+      ...(look ? { paint: (x: number, z: number, target: THREE.Color) => paintCover(look, x, z, tile, tint, target) } : {}),
+    });
+  }, [squares, ground, color, accent, cover]);
   useEffect(() => () => geometry?.dispose(), [geometry]);
   if (!geometry) return null;
   return (
     <mesh
       name="dirt-cover"
       geometry={geometry}
-      material={dirtMaterial(node && spread.cover === 'dirt', toon ?? getDefaultToonMode())}
+      material={fringe ?? dirtMaterial(node && spread.cover === 'dirt', useToon)}
       receiveShadow
       raycast={disableRaycast}
       userData={{ nonInteractive: true }}

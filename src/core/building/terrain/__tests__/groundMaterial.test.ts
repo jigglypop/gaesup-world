@@ -31,4 +31,16 @@ describe('groundMaterial', () => {
     source.dispose();
     expect(gone).toHaveBeenCalledTimes(1);
   });
+
+  it('makes a separate variant for tiles under grass, disposed with the source too', () => {
+    const source = new THREE.MeshStandardMaterial();
+    const plain = groundMaterial(source), grassy = groundMaterial(source, true);
+    expect(grassy).not.toBe(plain);
+    expect(groundMaterial(source, true)).toBe(grassy);
+    const gone = jest.fn();
+    plain.addEventListener('dispose', gone);
+    grassy.addEventListener('dispose', gone);
+    source.dispose();
+    expect(gone).toHaveBeenCalledTimes(2);
+  });
 });

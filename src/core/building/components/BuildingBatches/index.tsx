@@ -23,7 +23,7 @@ export type BuildingBatchesProps = {
 };
 
 const sameTileBatch = (a: BoxTileBatch, b: BoxTileBatch) =>
-  a.material === b.material && a.castShadow === b.castShadow && sameItems(a.tiles, b.tiles);
+  a.material === b.material && a.castShadow === b.castShadow && a.grass === b.grass && sameItems(a.tiles, b.tiles);
 const sameWallBatch = (a: WallBatch, b: WallBatch) => sameItems(a.materials, b.materials) && sameItems(a.walls, b.walls);
 const samePieceBatch = (a: WallPieceBatch, b: WallPieceBatch) => a.material === b.material && sameItems(a.walls, b.walls);
 
@@ -66,7 +66,7 @@ export const BuildingBatches = memo(function BuildingBatches({
         let batch = byMaterial.get(key);
         if (!batch) {
           const material = mesh ? manager.getMaterial(mesh) : resources.fallback;
-          batch = { key, tiles: [], material, castShadow: isRaisedTile(tile) };
+          batch = { key, tiles: [], material, castShadow: isRaisedTile(tile), grass: Boolean(mesh?.grass) };
           byMaterial.set(key, batch);
         }
         batch.tiles.push(tile);

@@ -102,18 +102,23 @@ type Rgb = readonly [number, number, number];
 type Look = {
   width: readonly [number, number]; calm: number; gust: number; flutter: number; thicken: number; round: number; upward: number;
   trample: number; base: Rgb; body: Rgb; tip: Rgb; fresh: Rgb;
+  /** How far tips turn to straw in dry patches, and anywhere. */
+  dry: number; parched: number;
 };
 /** Lawn: short, soft pastel blades that take the ground tint and brighten to warm tips. Tall: broad, stiff, deeper green. */
 const LOOKS: Record<GrassLook, Look> = {
   lawn: {
     width: [0.085, 0.14], calm: 0.1, gust: 0.5, flutter: 0.06, thicken: 0.7, round: 0.7, upward: 0.42, trample: 0.9,
-    base: [0.72, 0.74, 0.7], body: [1, 1.01, 0.98], tip: [1.2, 1.16, 0.88], fresh: [1.04, 1.15, 1.06],
+    base: [0.5, 0.58, 0.47], body: [0.95, 1, 0.93], tip: [1.2, 1.16, 0.88], fresh: [1.04, 1.15, 1.06], dry: 0.55, parched: 0.12,
   },
   tall: {
     width: [0.13, 0.2], calm: 0.06, gust: 0.3, flutter: 0.08, thicken: 0.55, round: 0.8, upward: 0.28, trample: 1.25,
-    base: [0.22, 0.38, 0.28], body: [0.46, 0.72, 0.48], tip: [0.9, 1.08, 0.66], fresh: [0.72, 1.02, 0.78],
+    base: [0.22, 0.38, 0.28], body: [0.46, 0.72, 0.48], tip: [0.9, 1.08, 0.66], fresh: [0.72, 1.02, 0.78], dry: 0.45, parched: 0.1,
   },
 };
+
+/** Straw as a multiple of the ground tint: sun-dried tips. */
+const STRAW = [2.1, 1.25, 0.7] as const;
 
 /** Lattice cells per repeat of the baked gust noise. */
 const GUST_PERIOD = 8;
@@ -224,7 +229,10 @@ export class FieldGrassMaterial extends MeshStandardNodeMaterial {
     const level = toon ? floor(along.mul(4)).div(3) : along;
     const lower = mix(ground.mul(vec3(...look.base)), ground.mul(vec3(...look.body)), smoothstep(0, 0.42, level));
     const crown = tipColor ? vec3(tipColor.r, tipColor.g, tipColor.b) : ground.mul(mix(vec3(...look.tip), vec3(...look.fresh), shade));
-    const blade = mix(lower, crown, smoothstep(0.38, 1, level));
+    // Dry patches some 5 m across, from the gust noise at another scale: their tips fade toward straw, and every tip a little.
+    const patch = varying(smoothstep(0.5, 0.78, texture(gustTexture(), world.xz.div(37).add(vec2(0.31, 0.17))).r));
+    const straw = ground.mul(vec3(...STRAW)).mul(float(1).sub(shade.mul(0.3)));
+    const blade = mix(mix(lower, crown, smoothstep(0.38, 1, level)), straw, smoothstep(0.45, 1, level).mul(patch.mul(look.dry).add(look.parched)));
     const rib = float(1).sub(smoothstep(0, 0.5, abs(uv().x.sub(0.5))));
     this.colorNode = blade.mul(mix(float(0.84), float(1.13), shade)).mul(mix(float(0.95), float(1.04), rib)).mul(breeze.mul(along).mul(0.1).add(1));
   }

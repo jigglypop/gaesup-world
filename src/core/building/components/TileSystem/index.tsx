@@ -216,7 +216,7 @@ export const TileSystem = memo(function TileSystem({
       let batch = byKey.get(key);
       if (!batch) {
         const material = materialById.get(materialId) ?? defaultMaterial;
-        batch = { key, tiles: [], material, castShadow: isRaisedTile(tile) };
+        batch = { key, tiles: [], material, castShadow: isRaisedTile(tile), grass: Boolean(meshes.get(materialId)?.grass) };
         byKey.set(key, batch);
       }
       batch.tiles.push(tile);

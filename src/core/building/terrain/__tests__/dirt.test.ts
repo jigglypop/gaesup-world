@@ -1,6 +1,6 @@
 import type * as THREE from 'three';
 
-import { buildDirtCover, COVER_COLORS, coverSpreads, DIRT_COVER, type GroundSquare } from '../dirt';
+import { buildDirtCover, COVER_COLORS, COVER_REACH, coverSpreads, DIRT_COVER, dirtAlpha, type GroundSquare } from '../dirt';
 import { ALL_NEIGHBORS, borderDistance } from '../grid';
 
 const square = (x: number, z: number, y = 0): GroundSquare => ({ x, y, z, size: 4 });
@@ -72,4 +72,19 @@ test('each cover spreads with its first painted colors or its defaults, never on
   expect(dirt!.color).toBe('#aa8855');
   expect(sand!.color).toBe(COVER_COLORS.sand.color);
   expect(sand!.ground.map((square) => square.x)).toEqual([4, 8]);
+});
+
+test('a beach or snowfield fringe stays solid across its tile edge and takes its surface paint', () => {
+  // At its edge a path may already be fading; a raised cover's fringe is solid there, whatever the wander.
+  const xs = [-5, -1.5, 0.5, 3, 7];
+  for (const x of xs) expect(dirtAlpha(x, 2, 0, COVER_REACH.sand)).toBe(1);
+  expect(Math.min(...xs.map((x) => dirtAlpha(x, 2, 0)))).toBeLessThan(1);
+  const paint = (x: number, _z: number, target: THREE.Color) => target.setRGB(x > 0 ? 1 : 0, 0.5, 0);
+  const geometry = buildDirtCover({ ...field(), reach: COVER_REACH.sand, paint })!;
+  const position = geometry.getAttribute('position'), color = geometry.getAttribute('color');
+  for (let index = 0; index < position.count; index += 7) {
+    expect(color.getX(index)).toBe(position.getX(index) > 0 ? 1 : 0);
+    expect(color.getY(index)).toBe(0.5);
+  }
+  expect(alphaAt(geometry, 0, 2)).toBe(1);
 });

@@ -3,18 +3,18 @@ import { getDefaultBuildingObject, type BuildingSerializedState, type MeshConfig
 /** Grid cell in meters; one character (1.7m) is a little under half a cell. */
 export const CELL = 4;
 /** Bump when the island's layout changes: saves are kept per version, so returning visitors see the new island. */
-export const VILLAGE_VERSION = 6;
+export const VILLAGE_VERSION = 7;
 
 /**
  * The island, one character per 4m cell, north at the top.
- * T forest cliff · . lawn · = dirt path · ~ pond · " tall grass · * flower bed · # field · F miniroom floor · s beach
+ * T forest cliff · . lawn · = dirt path · ~ pond · " tall grass · * flower bed · # field · F miniroom floor · s beach · S snow
  */
 const MAP = [
   'TTTTTTTTTTTTTT',
   'TTTTTTTTTTTTTT',
-  'TT.FF...""""TT',
-  'TT.FF...""""TT',
-  'T.......=....T',
+  'TT.FF...""""SS',
+  'TT.FF...""""SS',
+  'T.......=...SS',
   'T.==========.T',
   'T.=..**.=....T',
   'T~~..**.=.##.T',
@@ -99,6 +99,7 @@ function tileAt(x: number, z: number): TileConfig {
   const base = { id: `tile-${x}-${z}`, tileGroupId: 'ground', size: 1, position: { x: at(x), y: raised ? 1 : 0, z: at(z) } };
   if (kind === '~') return { ...base, objectType: 'water' };
   if (kind === 's') return { ...base, objectType: 'sand' };
+  if (kind === 'S') return { ...base, objectType: 'snowfield' };
   if (kind === '=') return { ...base, materialId: 'lawn', objectType: 'dirt', objectConfig: ROAD };
   if (kind === '"') return { ...base, materialId: 'lawn', objectType: 'grass', objectConfig: { grassDensity: TALL_GRASS } };
   return { ...base, materialId: MATERIAL[kind] ?? 'lawn', ...(raised ? { objectConfig: DIRT } : {}) };
@@ -204,7 +205,7 @@ export function createVillage(): BuildingSerializedState {
     { id: 'plaza-flag', type: 'flag', position: { x: at(9) + 1.2, y: 0, z: at(9) - 1.2 }, config: { flagWidth: 1.6, flagHeight: 1, flagStyle: 'flag', primaryColor: '#ff8a65' } },
     { id: 'notice', type: 'billboard', position: { x: at(7), y: 0, z: at(4) + 1.4 }, config: { billboardText: '미니홈피 섬', billboardColor: '#2bb3a3', billboardWidth: 2.2, billboardHeight: 0.8, billboardElevation: 1.3 } },
     model('oak-1', 'nature-tree-oak', at(2), at(4), 0.4),
-    model('oak-2', 'nature-tree-round', at(12), at(4), 2.1),
+    model('oak-2', 'nature-tree-round', at(11), at(4) + 0.6, 2.1),
     model('oak-3', 'nature-tree-oak', at(6), at(9) + 1, 4.2),
     model('oak-4', 'nature-tree-fat', at(12), at(9), 1.3, 0.9),
     model('maple-1', 'nature-tree-round', at(1), at(10), 5.5, 0.9),
@@ -227,6 +228,9 @@ export function createVillage(): BuildingSerializedState {
     model('flower-d', 'nature-flower-yellow', at(11) + 1.5, at(6) - 1.3, 0.7),
     model('rock-path', 'nature-rock-small', at(9) + 1.6, at(10) - 1.2, 0.9),
     model('log-beach', 'nature-fallen-log', at(6) + 1.2, at(11) - 1.2, 0.6),
+    // The snowy corner: a few pines in the drifts.
+    model('snow-pine-a', 'nature-tree-pine', at(12) - 0.4, at(2) - 1.2, 1.2),
+    model('snow-pine-b', 'nature-tree-pine', at(13) + 0.9, at(3) - 0.5, 3.9, 0.8),
     ...woodsEdge(),
     ...forest(),
   ];

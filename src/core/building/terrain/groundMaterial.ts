@@ -1,5 +1,7 @@
 import * as THREE from 'three';
-import { cos, mx_noise_float, normalGeometry, positionWorld, reference, select, sin, smoothstep, texture, uv, vec3 } from 'three/tsl';
+import {
+  cameraPosition, cos, distance, mix, mx_noise_float, normalGeometry, positionWorld, reference, select, sin, smoothstep, texture, uv, vec3,
+} from 'three/tsl';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 
 import { DRIFT, DRIFT_TINT } from './grid';
@@ -11,22 +13,33 @@ const TEXTURE_METERS = TILE_CONSTANTS.GRID_CELL_SIZE;
 const PATCH_METERS = 19;
 const DETAIL_METERS = 6.5;
 const PATCH_SHADE = 0.12;
+/**
+ * Under a grass layer the ground lies in the blades' shade, deeper green, until the blades thin out with distance
+ * (the lawn's LOD, `GRASS_LOD.lawn`): past that the ground alone carries the lawn's color.
+ */
+const UNDER_GRASS = { shade: [0.78, 0.85, 0.74], near: 22, far: 60 } as const;
 
-const variants = new WeakMap<THREE.Material, { map: THREE.Texture | null; material: MeshStandardNodeMaterial }>();
+type Variant = { map: THREE.Texture | null; material: MeshStandardNodeMaterial };
+const variants = new WeakMap<THREE.Material, Map<boolean, Variant>>();
 
 /**
  * The node-renderer version of an opaque standard tile material. Its top face samples the map in world coordinates, so
  * the texture runs on across tiles whatever their size or turn. A tint the same on every load keeps a field of equal
  * tiles from showing its 4 m repeat: brighter and darker patches some 20 m across, and the island-wide drift the lawn
- * blades take (`driftPatch`), so ground and grass shift color together. Sides keep their own UVs and color. Color,
- * roughness and metalness follow the source as the editor changes them; a new map makes a new variant.
+ * blades take (`driftPatch`), so ground and grass shift color together. With `grass` the tops lie in the blades' shade
+ * where they grow thick. Sides keep their own UVs and color. Color, roughness and metalness follow the source as the
+ * editor changes them; a new map makes a new variant.
  */
-export function groundMaterial(source: THREE.Material): THREE.Material {
+export function groundMaterial(source: THREE.Material, grass = false): THREE.Material {
   if (!(source instanceof THREE.MeshStandardMaterial) || 'isNodeMaterial' in source || source.transparent) return source;
-  const known = variants.get(source);
+  let kinds = variants.get(source);
+  if (!kinds) {
+    variants.set(source, (kinds = new Map()));
+    source.addEventListener('dispose', () => kinds!.forEach((variant) => variant.material.dispose()));
+  }
+  const known = kinds.get(grass);
   if (known?.map === source.map) return known.material;
   known?.material.dispose();
-  if (!known) source.addEventListener('dispose', () => variants.get(source)?.material.dispose());
   const material = new MeshStandardNodeMaterial();
   material.name = `${source.name || 'tile'}:ground`;
   const top = normalGeometry.y.greaterThan(0.5);
@@ -36,9 +49,12 @@ export function groundMaterial(source: THREE.Material): THREE.Material {
     sin(x.mul(DRIFT.x).add(sin(z.mul(DRIFT.warp)).mul(DRIFT.bend))).mul(cos(z.mul(DRIFT.z).add(x.mul(DRIFT.skew)))));
   const patch = mx_noise_float(positionWorld.xz.div(PATCH_METERS)).mul(0.7).add(mx_noise_float(positionWorld.xz.div(DETAIL_METERS)).mul(0.3));
   const tint = vec3(...DRIFT_TINT.base).add(vec3(...DRIFT_TINT.swing).mul(drift)).mul(patch.mul(PATCH_SHADE).add(1));
-  material.colorNode = base.mul(reference('color', 'color', source)).mul(select(top, tint, vec3(1)));
+  const shaded = grass
+    ? tint.mul(mix(vec3(...UNDER_GRASS.shade), vec3(1), smoothstep(UNDER_GRASS.near, UNDER_GRASS.far, distance(cameraPosition, positionWorld))))
+    : tint;
+  material.colorNode = base.mul(reference('color', 'color', source)).mul(select(top, shaded, vec3(1)));
   material.roughnessNode = reference('roughness', 'float', source);
   material.metalnessNode = reference('metalness', 'float', source);
-  variants.set(source, { map: source.map, material });
+  kinds.set(grass, { map: source.map, material });
   return material;
 }

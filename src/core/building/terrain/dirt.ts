@@ -14,6 +14,10 @@ export type DirtCoverInput = {
   ground: readonly GroundSquare[];
   color: THREE.ColorRepresentation;
   accent: THREE.ColorRepresentation;
+  /** Meters the edge spreads past `DIRT_COVER.spread`. */
+  reach?: number;
+  /** The color at world (x, z), instead of the mottle between `color` and `accent`: a raised cover's own paint. */
+  paint?: (x: number, z: number, target: THREE.Color) => THREE.Color;
 };
 
 /** Covers whose edge spreads softly onto their flat neighbors. */
@@ -25,6 +29,12 @@ export const COVER_COLORS: Record<SpreadCover, { color: string; accent: string }
   sand: { color: '#b89b66', accent: '#e0c27a' },
   snowfield: { color: '#dcecff', accent: '#ffffff' },
 };
+
+/**
+ * How far past `DIRT_COVER.spread` each cover's edge reaches (m). A path is only its cover; a beach or snowfield has a
+ * raised surface of its own, so its fringe stays solid across the tile edge and fades out on the neighbor instead.
+ */
+export const COVER_REACH: Record<SpreadCover, number> = { dirt: 0, sand: 0.6, snowfield: 0.6 };
 
 export type CoverSpread = { cover: SpreadCover; squares: GroundSquare[]; ground: GroundSquare[]; color: string; accent: string };
 
@@ -65,11 +75,11 @@ export const DIRT_COVER = {
 /** Below this alpha a quad is left out: the floor shows through untouched. */
 const CLEAR = 0.004;
 
-/** How much of the path covers a point: 1 inside, fading across a wandering band around its border. */
-export function dirtAlpha(x: number, z: number, signedDistance: number): number {
+/** How much of the path covers a point: 1 inside, fading across a wandering band around its border `reach` further out. */
+export function dirtAlpha(x: number, z: number, signedDistance: number, reach = 0): number {
   const { feather, spread, wobble } = DIRT_COVER;
   const wander = (valueNoise(x * 0.55 + 1.3, z * 0.55 - 4.1) - 0.5) * 1.4 + (valueNoise(x * 1.6 - 2.2, z * 1.6 + 0.9) - 0.5) * 0.6;
-  return 1 - smooth(-feather / 2, feather / 2, signedDistance - spread + wander * wobble);
+  return 1 - smooth(-feather / 2, feather / 2, signedDistance - spread - reach + wander * wobble);
 }
 
 /**
@@ -77,7 +87,7 @@ export function dirtAlpha(x: number, z: number, signedDistance: number): number 
  * fades the path across a soft, wandering edge with rounded corners, so the tile squares never show. RGB carries a
  * broad mottle between `color` and `accent`. The same tiles build the same cover on every client; null without any.
  */
-export function buildDirtCover({ dirt, ground, color, accent }: DirtCoverInput): THREE.BufferGeometry | null {
+export function buildDirtCover({ dirt, ground, color, accent, reach = 0, paint }: DirtCoverInput): THREE.BufferGeometry | null {
   if (dirt.length === 0) return null;
   const isDirt = new Set(dirt.map((square) => cellKey(square.x, square.z)));
   const bears = (x: number, z: number) => isDirt.has(cellKey(x, z));
@@ -114,10 +124,10 @@ export function buildDirtCover({ dirt, ground, color, accent }: DirtCoverInput):
         const signed = inside
           ? (mask === ALL_NEIGHBORS ? -Infinity : -borderDistance(mask, lx, lz, cell.size))
           : borderDistance(~mask & ALL_NEIGHBORS, lx, lz, cell.size);
-        const alpha = dirtAlpha(x, z, signed);
+        const alpha = dirtAlpha(x, z, signed, reach);
         alphas.push(alpha);
-        const mottle = valueNoise(x * 0.32 + 9.7, z * 0.32 - 2.3) * 0.6 + valueNoise(x * 1.1 - 4.4, z * 1.1 + 6.2) * 0.4;
-        mixed.copy(base).lerp(tint, mottle * 0.75);
+        if (paint) paint(x, z, mixed);
+        else mixed.copy(base).lerp(tint, (valueNoise(x * 0.32 + 9.7, z * 0.32 - 2.3) * 0.6 + valueNoise(x * 1.1 - 4.4, z * 1.1 + 6.2) * 0.4) * 0.75);
         positions.push(x, cell.y + DIRT_COVER.lift, z);
         colors.push(mixed.r, mixed.g, mixed.b, alpha);
       }

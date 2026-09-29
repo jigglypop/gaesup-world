@@ -15,6 +15,8 @@ export type BoxTileBatch = {
   material: THREE.Material;
   /** Raised tiles cast shadows; ground-level tiles only receive them. */
   castShadow: boolean;
+  /** The mesh grows a grass layer, which shades the tile tops under it. */
+  grass?: boolean;
 };
 
 const GROUND_LEVEL = 0.02;
@@ -43,7 +45,7 @@ export function BoxTileBatchMesh({
   const capacity = useInstanceCapacity(batch.tiles.length);
   // Node renderers draw tile tops with world-space texture coordinates and broad tint patches.
   const nodeRenderer = useThree((state) => rendererKind(state.gl) !== 'webgl');
-  const material = nodeRenderer ? groundMaterial(batch.material) : batch.material;
+  const material = nodeRenderer ? groundMaterial(batch.material, batch.grass) : batch.material;
 
   useLayoutEffect(() => {
     const mesh = ref.current;
