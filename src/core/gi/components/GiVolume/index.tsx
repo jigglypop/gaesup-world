@@ -10,10 +10,10 @@ import type { GiRuntime, GiVolumeProps } from './types';
 
 const DEFAULT_VOXEL_SIZE = 0.5;
 const DEFAULT_PROBE_SPACING = 2;
-const DEFAULT_RAYS_PER_PROBE = 48;
-const DEFAULT_PROBES_PER_FRAME = 48;
+const DEFAULT_RAYS_PER_PROBE = 64;
+const DEFAULT_PROBES_PER_FRAME = 32;
 const DEFAULT_PADDING = 4;
-const DEFAULT_BLEND = 0.2;
+const DEFAULT_BLEND = 0.1;
 const DEFAULT_UPLOAD_INTERVAL_MS = 100;
 
 function reportError(message: string, error: unknown): void {

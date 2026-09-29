@@ -6,6 +6,7 @@ export { useBuildingVoxelBoxes } from './hooks/useBuildingVoxelBoxes';
 export { buildingToVoxelBoxes } from './utils/buildingVoxelBoxes';
 export type { BuildingVoxelSource } from './utils/types';
 export type { GiIrradiance } from '../rendering/tsl/types';
+export { ProbeCascade } from './core/probeCascade';
 export { ProbeVolume } from './core/probeVolume';
 export {
   cosineHemisphereDirection,
@@ -45,10 +46,12 @@ export {
 } from './core/voxelScene';
 export type {
   Aabb,
+  FieldSampler,
   GiEnvironment,
   Mat3,
   MutableRgb,
   ProbeFaceBuffers,
+  ProbeLevelUpload,
   ProbeVolumeConfig,
   Rgb,
   VoxelDims,

@@ -1,6 +1,7 @@
 import type { Vec3 } from '../../grid';
 import type {
   Aabb,
+  FieldSampler,
   GiEnvironment,
   Mat3,
   MutableRgb,
@@ -15,8 +16,19 @@ import {
   CUBE_FACE_COUNT,
   CUBE_STRIDE,
   accumulateAmbientCube,
-  evaluateAmbientCube,
 } from './cube';
+import {
+  RADIANCE_LIMIT,
+  clampFinite,
+  normalizeEnvironment,
+  skyRadianceInto,
+} from './giEnvironment';
+import {
+  BACKFACE_FLOOR,
+  FEED_BACKFACE_FLOOR,
+  sampleProbeField,
+  type ProbeFieldSource,
+} from './probeField';
 import { fibonacciSphereDirection, r2Sample, rotationFromSample } from './sampling';
 import { createVoxelHitScratch, traceVoxelRayInto } from './traceVoxels';
 import { isVoxelOccupied, voxelMaterialId } from './voxelGrid';
@@ -30,15 +42,8 @@ const IRRADIANCE_ESTIMATOR_SCALE = 4;
 const INVERSE_PI = 1 / Math.PI;
 const GOLDEN_FRACTION = 0.6180339887498949;
 const CONTACT_BIAS_RATIO = 1e-3;
-const BACKFACE_FLOOR = 0.2;
-const HALF = 0.5;
-const WEIGHT_EPSILON = 1e-6;
-const DISTANCE_EPSILON = 1e-6;
 const DIRTY_MARGIN_SPACINGS = 2;
-const RADIANCE_LIMIT = 64;
-const IRRADIANCE_LIMIT = 1024;
 const ALBEDO_LIMIT = 0.95;
-const FALLBACK_SUN: Vec3 = { x: 0, y: 1, z: 0 };
 const MISSING_MATERIAL: VoxelMaterial = { albedo: [0, 0, 0], emissive: [0, 0, 0] };
 
 function validateConfig(config: ProbeVolumeConfig): void {
@@ -61,54 +66,6 @@ function validateConfig(config: ProbeVolumeConfig): void {
   if (!(blend > 0 && blend <= 1)) {
     throw new RangeError('[ProbeVolume Error]: blend must be within (0, 1]');
   }
-}
-
-function clampFinite(value: number, limit: number): number {
-  if (!(value > 0)) return 0;
-  return value < limit ? value : limit;
-}
-
-function sanitizeRgb(color: Rgb, limit: number): Rgb {
-  return [
-    clampFinite(color[0], limit),
-    clampFinite(color[1], limit),
-    clampFinite(color[2], limit),
-  ];
-}
-
-function normalizeEnvironment(environment: GiEnvironment): GiEnvironment {
-  const { x, y, z } = environment.sunDirection;
-  const length = Math.hypot(x, y, z);
-  const usable = Number.isFinite(length) && length > DISTANCE_EPSILON;
-  return {
-    sunDirection: usable ? { x: x / length, y: y / length, z: z / length } : FALLBACK_SUN,
-    sunIrradiance: sanitizeRgb(environment.sunIrradiance, IRRADIANCE_LIMIT),
-    skyZenith: sanitizeRgb(environment.skyZenith, RADIANCE_LIMIT),
-    skyHorizon: sanitizeRgb(environment.skyHorizon, RADIANCE_LIMIT),
-    skyGround: sanitizeRgb(environment.skyGround, RADIANCE_LIMIT),
-  };
-}
-
-function skyRadianceInto(environment: GiEnvironment, dy: number, out: MutableRgb): void {
-  const { skyZenith, skyHorizon, skyGround } = environment;
-  if (dy < 0) {
-    out[0] = skyGround[0];
-    out[1] = skyGround[1];
-    out[2] = skyGround[2];
-    return;
-  }
-  const t = Math.min(1, dy);
-  out[0] = skyHorizon[0] + (skyZenith[0] - skyHorizon[0]) * t;
-  out[1] = skyHorizon[1] + (skyZenith[1] - skyHorizon[1]) * t;
-  out[2] = skyHorizon[2] + (skyZenith[2] - skyHorizon[2]) * t;
-}
-
-function cellFloor(coordinate: number, count: number): number {
-  return count <= 1 ? 0 : Math.min(Math.max(Math.floor(coordinate), 0), count - 2);
-}
-
-function cellFraction(coordinate: number, cell: number, count: number): number {
-  return count <= 1 ? 0 : Math.min(Math.max(coordinate - cell, 0), 1);
 }
 
 function probeRange(
@@ -138,6 +95,7 @@ export class ProbeVolume {
   private environment: GiEnvironment;
   private readonly cube: Float32Array;
   private readonly valid: Uint8Array;
+  private readonly field: ProbeFieldSource;
   private readonly age: Uint32Array;
   private readonly queued: Uint8Array;
   private readonly dirtyQueue: number[] = [];
@@ -150,6 +108,7 @@ export class ProbeVolume {
   private readonly cornerSample: MutableRgb = [0, 0, 0];
   private readonly rayHit = createVoxelHitScratch();
   private readonly shadowHit = createVoxelHitScratch();
+  private feed: FieldSampler | null = null;
   private cursor = 0;
 
   constructor(grid: VoxelGrid, config: ProbeVolumeConfig, environment: GiEnvironment) {
@@ -160,6 +119,7 @@ export class ProbeVolume {
     this.probeCount = config.counts[0] * config.counts[1] * config.counts[2];
     this.cube = new Float32Array(this.probeCount * CUBE_STRIDE);
     this.valid = new Uint8Array(this.probeCount);
+    this.field = { config: this.config, cube: this.cube, valid: this.valid };
     this.age = new Uint32Array(this.probeCount);
     this.queued = new Uint8Array(this.probeCount);
     this.baseDirections = new Float64Array(config.raysPerProbe * 3);
@@ -173,6 +133,13 @@ export class ProbeVolume {
 
   setEnvironment(environment: GiEnvironment): void {
     this.environment = normalizeEnvironment(environment);
+  }
+
+  /**
+   * 히트 지점의 간접광을 이 볼륨 대신 다른 샘플러에서 읽게 한다. 캐스케이드가 여러 볼륨을 합쳐 되먹일 때 쓴다.
+   */
+  setFeed(feed: FieldSampler | null): void {
+    this.feed = feed;
   }
 
   markAllDirty(): void {
@@ -227,6 +194,22 @@ export class ProbeVolume {
     const out: MutableRgb = [0, 0, 0];
     this.sampleInto(position.x, position.y, position.z, normal.x, normal.y, normal.z, out);
     return out;
+  }
+
+  /**
+   * 할당 없이 이 볼륨만으로 조도/PI를 구해 out에 쓴다. 캐스케이드가 레벨별 값을 섞을 때 쓴다.
+   */
+  sampleInto(
+    px: number,
+    py: number,
+    pz: number,
+    nx: number,
+    ny: number,
+    nz: number,
+    out: MutableRgb,
+    backfaceFloor: number = BACKFACE_FLOOR,
+  ): void {
+    sampleProbeField(this.field, px, py, pz, nx, ny, nz, out, backfaceFloor, this.cornerSample);
   }
 
   /**
@@ -405,73 +388,17 @@ export class ProbeVolume {
       if (!blocked) sunFactor = cosSun * INVERSE_PI;
     }
     const bias = this.config.normalBias;
-    this.sampleInto(px + nx * bias, py + ny * bias, pz + nz * bias, nx, ny, nz, this.fieldSample);
+    const fed = this.fieldSample;
+    const lx = px + nx * bias;
+    const ly = py + ny * bias;
+    const lz = pz + nz * bias;
+    if (this.feed) this.feed(lx, ly, lz, nx, ny, nz, fed);
+    else this.sampleInto(lx, ly, lz, nx, ny, nz, fed, FEED_BACKFACE_FLOOR);
     for (const c of CHANNELS) {
       const albedo = Math.min(clampFinite(material.albedo[c], 1), ALBEDO_LIMIT);
       const emissive = clampFinite(material.emissive[c], RADIANCE_LIMIT);
-      const incoming = environment.sunIrradiance[c] * sunFactor + this.fieldSample[c];
+      const incoming = environment.sunIrradiance[c] * sunFactor + fed[c];
       out[c] = clampFinite(emissive + albedo * incoming, RADIANCE_LIMIT);
     }
-  }
-
-  private sampleInto(
-    px: number,
-    py: number,
-    pz: number,
-    nx: number,
-    ny: number,
-    nz: number,
-    out: MutableRgb,
-  ): void {
-    const { origin, spacing, counts } = this.config;
-    const gx = (px - origin.x) / spacing;
-    const gy = (py - origin.y) / spacing;
-    const gz = (pz - origin.z) / spacing;
-    const x0 = cellFloor(gx, counts[0]);
-    const y0 = cellFloor(gy, counts[1]);
-    const z0 = cellFloor(gz, counts[2]);
-    const tx = cellFraction(gx, x0, counts[0]);
-    const ty = cellFraction(gy, y0, counts[1]);
-    const tz = cellFraction(gz, z0, counts[2]);
-    const corner = this.cornerSample;
-    let red = 0;
-    let green = 0;
-    let blue = 0;
-    let weightSum = 0;
-    for (let index8 = 0; index8 < 8; index8++) {
-      const cx = index8 & 1;
-      const cy = (index8 >> 1) & 1;
-      const cz = (index8 >> 2) & 1;
-      const ix = Math.min(x0 + cx, counts[0] - 1);
-      const iy = Math.min(y0 + cy, counts[1] - 1);
-      const iz = Math.min(z0 + cz, counts[2] - 1);
-      const index = ix + counts[0] * (iy + counts[1] * iz);
-      if (this.valid[index] !== 1) continue;
-      let weight = (cx === 1 ? tx : 1 - tx) * (cy === 1 ? ty : 1 - ty) * (cz === 1 ? tz : 1 - tz);
-      if (weight <= 0) continue;
-      const vx = origin.x + ix * spacing - px;
-      const vy = origin.y + iy * spacing - py;
-      const vz = origin.z + iz * spacing - pz;
-      const distance = Math.hypot(vx, vy, vz);
-      if (distance > DISTANCE_EPSILON) {
-        const facing = (HALF * (distance + vx * nx + vy * ny + vz * nz)) / distance;
-        weight *= facing * facing + BACKFACE_FLOOR;
-      }
-      evaluateAmbientCube(this.cube, index * CUBE_STRIDE, nx, ny, nz, corner);
-      red += weight * corner[0];
-      green += weight * corner[1];
-      blue += weight * corner[2];
-      weightSum += weight;
-    }
-    if (weightSum < WEIGHT_EPSILON) {
-      out[0] = 0;
-      out[1] = 0;
-      out[2] = 0;
-      return;
-    }
-    const inverse = 1 / weightSum;
-    out[0] = red * inverse;
-    out[1] = green * inverse;
-    out[2] = blue * inverse;
   }
 }

@@ -70,3 +70,18 @@ export type ProbeFaceBuffers = readonly [
   Float32Array,
   Float32Array,
 ];
+
+export type FieldSampler = (
+  px: number,
+  py: number,
+  pz: number,
+  nx: number,
+  ny: number,
+  nz: number,
+  out: MutableRgb,
+) => void;
+
+export type ProbeLevelUpload = {
+  config: ProbeVolumeConfig;
+  faces: ProbeFaceBuffers;
+};
