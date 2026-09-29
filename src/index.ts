@@ -359,6 +359,7 @@ export {
   DynamicFog,
   DynamicSky,
   GiVolume,
+  ProbeCascade,
   ProbeVolume,
   buildingToVoxelBoxes,
   hexToLinearRgb,

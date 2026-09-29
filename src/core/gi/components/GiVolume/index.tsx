@@ -5,7 +5,8 @@ import { useFrame } from '@react-three/fiber';
 import type { GiIrradiance } from '../../../rendering/tsl/types';
 import { logger } from '../../../utils/logger';
 import { GiContext } from '../../hooks/useGi';
-import { createGiRuntime } from './runtime';
+import { boundsKey, createGiRuntime } from './runtime';
+import type { Aabb } from '../../types';
 import type { GiRuntime, GiVolumeProps } from './types';
 
 const DEFAULT_VOXEL_SIZE = 0.5;
@@ -28,6 +29,7 @@ function reportError(message: string, error: unknown): void {
 export function GiVolume({
   boxes,
   environment,
+  fineBounds,
   voxelSize = DEFAULT_VOXEL_SIZE,
   probeSpacing = DEFAULT_PROBE_SPACING,
   raysPerProbe = DEFAULT_RAYS_PER_PROBE,
@@ -41,8 +43,11 @@ export function GiVolume({
   const giRef = useRef<GiIrradiance | null>(null);
   const runtimeRef = useRef<GiRuntime | null>(null);
   const environmentRef = useRef(environment);
+  const fineBoundsRef = useRef<Aabb | null>(fineBounds ?? null);
+  const fineKey = fineBounds ? boundsKey(fineBounds) : 'none';
   const lastUploadRef = useRef(0);
   environmentRef.current = environment;
+  fineBoundsRef.current = fineBounds ?? null;
 
   useEffect(() => {
     let cancelled = false;
@@ -67,29 +72,41 @@ export function GiVolume({
       runtimeRef.current = createGiRuntime(
         runtimeRef.current,
         boxes,
-        { voxelSize, probeSpacing, raysPerProbe, padding, blend },
+        {
+          voxelSize,
+          probeSpacing,
+          raysPerProbe,
+          padding,
+          blend,
+          fineBounds: fineBoundsRef.current,
+        },
         environmentRef.current,
       );
     } catch (error) {
       runtimeRef.current = null;
       reportError('GI 볼륨을 만들지 못했습니다', error);
     }
-  }, [boxes, voxelSize, probeSpacing, raysPerProbe, padding, blend]);
+  }, [boxes, voxelSize, probeSpacing, raysPerProbe, padding, blend, fineKey]);
 
   useEffect(() => {
-    runtimeRef.current?.volume.setEnvironment(environment);
+    runtimeRef.current?.cascade.setEnvironment(environment);
   }, [environment]);
 
   useFrame(() => {
     const runtime = runtimeRef.current;
     const irradiance = giRef.current;
     if (!runtime || !irradiance) return;
-    runtime.volume.update(probesPerFrame);
-    if (runtime.volume.version === runtime.uploadedVersion) return;
+    runtime.cascade.update(probesPerFrame);
+    if (runtime.cascade.version === runtime.uploadedVersion) return;
     const now = performance.now();
     if (now - lastUploadRef.current < uploadIntervalMs) return;
-    irradiance.update(runtime.volume.config, runtime.volume.exportFaceData(runtime.exportBuffer));
-    runtime.uploadedVersion = runtime.volume.version;
+    irradiance.update(
+      runtime.cascade.levels.map((level, index) => ({
+        config: level.config,
+        faces: level.exportFaceData(runtime.exportBuffers[index]),
+      })),
+    );
+    runtime.uploadedVersion = runtime.cascade.version;
     lastUploadRef.current = now;
   });
 

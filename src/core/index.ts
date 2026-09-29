@@ -75,6 +75,7 @@ export { DynamicSky } from './rendering/sky';
 export type { DynamicSkyProps, SkyKeyframe } from './rendering/sky';
 export {
   GiVolume,
+  ProbeCascade,
   ProbeVolume,
   buildingToVoxelBoxes,
   hexToLinearRgb,

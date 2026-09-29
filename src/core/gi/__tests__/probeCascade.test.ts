@@ -1,10 +1,11 @@
-import {
-  ProbeCascade,
-  createVoxelGrid,
-  fillVoxelBox,
-  registerVoxelMaterial,
+import { ProbeCascade, createVoxelGrid, fillVoxelBox, registerVoxelMaterial } from '../index';
+import type {
+  GiEnvironment,
+  MutableRgb,
+  ProbeVolume,
+  ProbeVolumeConfig,
+  VoxelGrid,
 } from '../index';
-import type { GiEnvironment, MutableRgb, ProbeVolume, ProbeVolumeConfig } from '../index';
 
 const ZERO = { x: 0, y: 0, z: 0 };
 const DARK: GiEnvironment = {
@@ -48,17 +49,26 @@ function uniformSky(value: number): GiEnvironment {
   };
 }
 
-function createSealedRoom(): ReturnType<typeof createVoxelGrid> {
+function createSealedRoom(): VoxelGrid {
   const grid = createVoxelGrid(ZERO, 1, [10, 10, 10]);
   const id = registerVoxelMaterial(grid, { albedo: [0.5, 0.5, 0.5], emissive: [0.2, 0.2, 0.2] });
   const size = 10;
   for (const [min, max] of [
     [ZERO, { x: 1, y: size, z: size }],
-    [{ x: 9, y: 0, z: 0 }, { x: size, y: size, z: size }],
+    [
+      { x: 9, y: 0, z: 0 },
+      { x: size, y: size, z: size },
+    ],
     [ZERO, { x: size, y: 1, z: size }],
-    [{ x: 0, y: 9, z: 0 }, { x: size, y: size, z: size }],
+    [
+      { x: 0, y: 9, z: 0 },
+      { x: size, y: size, z: size },
+    ],
     [ZERO, { x: size, y: size, z: 1 }],
-    [{ x: 0, y: 0, z: 9 }, { x: size, y: size, z: size }],
+    [
+      { x: 0, y: 0, z: 9 },
+      { x: size, y: size, z: size },
+    ],
   ] as const) {
     fillVoxelBox(grid, { min, max }, id);
   }

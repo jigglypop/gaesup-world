@@ -14,6 +14,12 @@ const WINDOW_BOTTOM = 2.5;
 const WINDOW_TOP = 4.5;
 const GROUND_HALF = 16;
 const LAMP_EMISSIVE: Triple = [3, 1.9, 0.9];
+const FINE_MARGIN = 0.5;
+
+export const FINE_BOUNDS = {
+  min: { x: -ROOM_HALF - FINE_MARGIN, y: 1, z: -ROOM_HALF - FINE_MARGIN },
+  max: { x: ROOM_HALF + FINE_MARGIN, y: ROOF_TOP, z: ROOM_HALF + FINE_MARGIN },
+};
 
 function box(min: Triple, max: Triple, color: string, emissive?: Triple): GiSceneItem {
   return emissive ? { min, max, color, emissive } : { min, max, color };

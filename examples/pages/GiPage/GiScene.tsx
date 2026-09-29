@@ -6,7 +6,7 @@ import { MeshStandardNodeMaterial } from 'three/webgpu';
 
 import { GiVolume, hexToLinearRgb, useGi, type GiEnvironment } from 'gaesup-world';
 
-import { createGiSceneItems, toVoxelBoxes } from './scene';
+import { FINE_BOUNDS, createGiSceneItems, toVoxelBoxes } from './scene';
 import type { GiBinderProps, GiSceneItem, GiSceneProps } from './types';
 
 const SUN_COLOR = '#fff2d9';
@@ -97,7 +97,7 @@ export function GiScene({ controls }: GiSceneProps) {
         shadow-camera-bottom={-SHADOW_EXTENT}
         shadow-camera-far={SUN_DISTANCE * 2}
       />
-      <GiVolume boxes={boxes} environment={environment}>
+      <GiVolume boxes={boxes} environment={environment} fineBounds={FINE_BOUNDS}>
         <GiBinder lit={lit} enabled={giEnabled} strength={giStrength} />
         {items.map((item, index) => {
           const size = item.max.map((value, axis) => value - (item.min[axis] ?? 0));

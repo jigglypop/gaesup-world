@@ -333,6 +333,7 @@ describe('public package API', () => {
     const source = readRootEntry();
     [
       'GiVolume',
+      'ProbeCascade',
       'ProbeVolume',
       'buildingToVoxelBoxes',
       'hexToLinearRgb',
@@ -347,6 +348,7 @@ describe('public package API', () => {
     ].forEach((name) => expectNamedExport(source, name));
     const root = jest.requireActual('gaesup-world') as typeof import('gaesup-world');
     expect(typeof root.GiVolume).toBe('function');
+    expect(typeof root.ProbeCascade).toBe('function');
     expect(typeof root.ProbeVolume).toBe('function');
     expect(typeof root.buildingToVoxelBoxes).toBe('function');
     expect(typeof root.hexToLinearRgb).toBe('function');

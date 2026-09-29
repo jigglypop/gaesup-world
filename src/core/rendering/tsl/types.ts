@@ -1,11 +1,11 @@
 import type { MeshStandardNodeMaterial, Node } from 'three/webgpu';
 
-import type { ProbeFaceBuffers, ProbeVolumeConfig } from '../../gi/types';
+import type { ProbeLevelUpload } from '../../gi/types';
 
 export type GiIrradiance = {
   node: Node<'vec3'>;
   setIntensity: (value: number) => void;
-  update: (config: ProbeVolumeConfig, data: ProbeFaceBuffers) => void;
+  update: (levels: readonly ProbeLevelUpload[]) => void;
   applyToMaterial: (material: MeshStandardNodeMaterial) => void;
   dispose: () => void;
 };
