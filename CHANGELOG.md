@@ -1,3 +1,11 @@
+# [1.5.0](https://github.com/jigglypop/gaesup-world/compare/v1.4.0...v1.5.0) (2026-09-29)
+
+
+### Features
+
+* **gi:** master의 복셀 추적·프로브 래디언스 캐시 GI를 main에 합친다 ([06a6f2c](https://github.com/jigglypop/gaesup-world/commit/06a6f2cb10de7d805558f3e56b93ac001a364a90))
+* **gi:** WorldGi로 월드의 건물·해·하늘을 GI 프로브에 이어 섬 전체에 튄 빛을 입힌다 ([3598514](https://github.com/jigglypop/gaesup-world/commit/359851421fb328b067093f7f195d31fc6696bcf6))
+
 # [1.4.0](https://github.com/jigglypop/gaesup-world/compare/v1.3.2...v1.4.0) (2026-09-29)
 
 
