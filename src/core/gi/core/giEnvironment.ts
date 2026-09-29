@@ -3,6 +3,7 @@ import type { GiEnvironment, MutableRgb, Rgb } from '../types';
 
 export const RADIANCE_LIMIT = 64;
 export const IRRADIANCE_LIMIT = 1024;
+export const ALBEDO_LIMIT = 0.95;
 const DIRECTION_EPSILON = 1e-6;
 const FALLBACK_SUN: Vec3 = { x: 0, y: 1, z: 0 };
 
@@ -15,11 +16,7 @@ export function clampFinite(value: number, limit: number): number {
 }
 
 function sanitizeRgb(color: Rgb, limit: number): Rgb {
-  return [
-    clampFinite(color[0], limit),
-    clampFinite(color[1], limit),
-    clampFinite(color[2], limit),
-  ];
+  return [clampFinite(color[0], limit), clampFinite(color[1], limit), clampFinite(color[2], limit)];
 }
 
 export function normalizeEnvironment(environment: GiEnvironment): GiEnvironment {

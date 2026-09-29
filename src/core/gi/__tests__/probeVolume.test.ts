@@ -137,10 +137,15 @@ describe('프로브 볼륨', () => {
 
   it('벽 안에 묻힌 프로브는 유효하지 않고 내보내기에서 이웃 값으로 채워진다', () => {
     const grid = createSealedRoom(0.5, 0.2);
+    const block = registerVoxelMaterial(grid, {
+      albedo: [0.5, 0.5, 0.5],
+      emissive: [0.2, 0.2, 0.2],
+    });
+    fillVoxelBox(grid, { min: { x: 6, y: 6, z: 6 }, max: { x: 10, y: 10, z: 10 } }, block);
     const volume = new ProbeVolume(grid, createConfig({ counts: [5, 5, 5] }), DARK);
     sweep(volume, 14);
 
-    const wallProbe = 4;
+    const wallProbe = 3 + 5 * (3 + 5 * 3);
     const interiorProbe = 2 + 5 * (2 + 5 * 2);
     expect(volume.isProbeValid(wallProbe)).toBe(false);
     expect(volume.isProbeValid(interiorProbe)).toBe(true);
@@ -246,21 +251,60 @@ describe('프로브 볼륨', () => {
     expect(first.exportFaceData()[2]).toEqual(second.exportFaceData()[2]);
   });
 
-  it('갱신은 지수 이동평균으로 진행되어 첫 갱신은 전부 바꾸고 이후에는 blend 비율만 반영한다', () => {
-    const grid = createVoxelGrid(ZERO, 1, [8, 8, 8]);
-    const volume = new ProbeVolume(grid, createConfig({ blend: 0.25 }), uniformSky(0.2));
+  it('작은 변화는 blend 비율만 반영하고 큰 변화일수록 더 빠르게 따라간다', () => {
     const center = { x: 4, y: 4, z: 4 };
     const up = { x: 0, y: 1, z: 0 };
+    const afterSwitch = (from: number, to: number): number => {
+      const grid = createVoxelGrid(ZERO, 1, [8, 8, 8]);
+      const volume = new ProbeVolume(grid, createConfig({ blend: 0.25 }), uniformSky(from));
+      sweep(volume, 1);
+      expect(Math.abs((volume.sample(center, up)[0] ?? 0) - from)).toBeLessThan(0.01);
+      volume.setEnvironment(uniformSky(to));
+      sweep(volume, 1);
+      return volume.sample(center, up)[0] ?? 0;
+    };
 
-    sweep(volume, 1);
-    expect(Math.abs((volume.sample(center, up)[0] ?? 0) - 0.2)).toBeLessThan(0.01);
+    expect(Math.abs(afterSwitch(0.2, 0.22) - 0.205)).toBeLessThan(0.003);
+    const moderate = afterSwitch(0.2, 0.6);
+    expect(moderate).toBeGreaterThan(0.2 + 0.25 * 0.4 + 0.05);
+    expect(moderate).toBeLessThan(0.6);
+    expect(Math.abs(afterSwitch(0.2, 2) - 2)).toBeLessThan(0.02);
+  });
 
-    volume.setEnvironment(uniformSky(0.6));
-    sweep(volume, 1);
-    expect(Math.abs((volume.sample(center, up)[0] ?? 0) - 0.3)).toBeLessThan(0.02);
+  it('표면 경계에 걸친 프로브는 빈 쪽으로 옮겨 유효해지고 그쪽 빛만 받는다', () => {
+    const grid = createVoxelGrid(ZERO, 1, [16, 16, 16]);
+    const wall = registerVoxelMaterial(grid, { albedo: [0.5, 0.5, 0.5], emissive: [0, 0, 0] });
+    for (const [min, max] of [
+      [2, 3],
+      [11, 12],
+    ] as const) {
+      fillVoxelBox(grid, { min: { x: min, y: 2, z: 2 }, max: { x: max, y: 12, z: 12 } }, wall);
+      fillVoxelBox(grid, { min: { x: 2, y: min, z: 2 }, max: { x: 12, y: max, z: 12 } }, wall);
+      fillVoxelBox(grid, { min: { x: 2, y: 2, z: min }, max: { x: 12, y: 12, z: max } }, wall);
+    }
+    const volume = new ProbeVolume(grid, createConfig({ counts: [7, 7, 7] }), uniformSky(1));
+    sweep(volume, 2);
 
-    sweep(volume, 1);
-    expect(Math.abs((volume.sample(center, up)[0] ?? 0) - 0.375)).toBeLessThan(0.02);
+    const boundaryProbe = 5 + 7 * (3 + 7 * 3);
+    const outsideProbe = 6 + 7 * (3 + 7 * 3);
+    const faces = volume.exportFaceData();
+    expect(volume.isProbeValid(boundaryProbe)).toBe(true);
+    for (const face of faces) expect(face[boundaryProbe * 4] ?? 1).toBeLessThan(0.01);
+    expect(faces[0][outsideProbe * 4] ?? 0).toBeGreaterThan(0.5);
+  });
+
+  it('얇은 벽 한가운데의 프로브는 대표할 쪽이 모호하므로 무효로 두고 벽 면 위 프로브는 옮긴다', () => {
+    const probe = 5 + 7 * (3 + 7 * 3);
+    const withSlab = (from: number, to: number): ProbeVolume => {
+      const grid = createVoxelGrid(ZERO, 0.25, [64, 64, 64]);
+      fillVoxelBox(grid, { min: { x: from, y: 0, z: 0 }, max: { x: to, y: 16, z: 16 } });
+      const volume = new ProbeVolume(grid, createConfig({ counts: [7, 7, 7] }), uniformSky(1));
+      sweep(volume, 1);
+      return volume;
+    };
+
+    expect(withSlab(10.75, 11.25).isProbeValid(probe)).toBe(false);
+    expect(withSlab(11, 11.5).isProbeValid(probe)).toBe(true);
   });
 
   it('NaN과 무한대가 섞인 환경과 재질도 프로브 값을 오염시키지 않는다', () => {

@@ -1,3 +1,4 @@
+import { instantiateGiWasm } from '../../core/giWasm';
 import { ProbeCascade } from '../../core/probeCascade';
 import { createVoxelGrid } from '../../core/voxelGrid';
 import {
@@ -100,4 +101,19 @@ export function createGiRuntime(
     exportBuffers: cascade.levels.map((level) => level.exportFaceData()),
     uploadedVersion: -1,
   };
+}
+
+/**
+ * 컴파일된 GI 커널 모듈로 런타임 캐스케이드에 WASM 인스턴스를 붙인다. 이미 붙어 있거나 인스턴스를 만들 수 없으면
+ * 아무것도 하지 않으며 캐스케이드는 JS 경로로 계속 갱신된다.
+ */
+export async function attachGiWasm(
+  runtime: GiRuntime,
+  module: WebAssembly.Module,
+): Promise<boolean> {
+  if (runtime.cascade.usesWasm) return true;
+  const wasm = await instantiateGiWasm(module);
+  if (!wasm || runtime.cascade.usesWasm) return runtime.cascade.usesWasm;
+  runtime.cascade.attachWasm(wasm);
+  return true;
 }

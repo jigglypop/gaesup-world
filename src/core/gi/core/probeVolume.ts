@@ -6,18 +6,16 @@ import type {
   Mat3,
   MutableRgb,
   ProbeFaceBuffers,
+  ProbeKernel,
+  ProbeStorage,
   ProbeVolumeConfig,
   Rgb,
   VoxelGrid,
   VoxelMaterial,
 } from '../types';
+import { CUBE_CHANNELS, CUBE_FACE_COUNT, CUBE_STRIDE, accumulateAmbientCube } from './cube';
 import {
-  CUBE_CHANNELS,
-  CUBE_FACE_COUNT,
-  CUBE_STRIDE,
-  accumulateAmbientCube,
-} from './cube';
-import {
+  ALBEDO_LIMIT,
   RADIANCE_LIMIT,
   clampFinite,
   normalizeEnvironment,
@@ -43,7 +41,12 @@ const INVERSE_PI = 1 / Math.PI;
 const GOLDEN_FRACTION = 0.6180339887498949;
 const CONTACT_BIAS_RATIO = 1e-3;
 const DIRTY_MARGIN_SPACINGS = 2;
-const ALBEDO_LIMIT = 0.95;
+const CHANGE_LOW = 0.25;
+const CHANGE_HIGH = 0.7;
+const CHANGE_EPSILON = 1e-6;
+const RELOCATION_REACH = 0.35;
+const RELOCATION_STEPS = 3;
+const AXIS_SIGNS = [1, -1] as const;
 const MISSING_MATERIAL: VoxelMaterial = { albedo: [0, 0, 0], emissive: [0, 0, 0] };
 
 function validateConfig(config: ProbeVolumeConfig): void {
@@ -93,10 +96,13 @@ export class ProbeVolume {
   version = 0;
   private readonly grid: VoxelGrid;
   private environment: GiEnvironment;
-  private readonly cube: Float32Array;
-  private readonly valid: Uint8Array;
-  private readonly field: ProbeFieldSource;
-  private readonly age: Uint32Array;
+  private cube: Float32Array;
+  private valid: Uint8Array;
+  private offsets: Float32Array;
+  private field: ProbeFieldSource;
+  private age: Uint32Array;
+  private readonly pending: Uint32Array;
+  private kernel: ProbeKernel | null = null;
   private readonly queued: Uint8Array;
   private readonly dirtyQueue: number[] = [];
   private dirtyHead = 0;
@@ -119,8 +125,10 @@ export class ProbeVolume {
     this.probeCount = config.counts[0] * config.counts[1] * config.counts[2];
     this.cube = new Float32Array(this.probeCount * CUBE_STRIDE);
     this.valid = new Uint8Array(this.probeCount);
+    this.offsets = new Float32Array(this.probeCount * 3);
     this.field = { config: this.config, cube: this.cube, valid: this.valid };
     this.age = new Uint32Array(this.probeCount);
+    this.pending = new Uint32Array(this.probeCount);
     this.queued = new Uint8Array(this.probeCount);
     this.baseDirections = new Float64Array(config.raysPerProbe * 3);
     for (let ray = 0; ray < config.raysPerProbe; ray++) {
@@ -140,6 +148,36 @@ export class ProbeVolume {
    */
   setFeed(feed: FieldSampler | null): void {
     this.feed = feed;
+  }
+
+  /**
+   * 프로브 저장소를 외부 버퍼(WASM 메모리 뷰 등)로 옮긴다. 현재 값을 복사한 뒤 이후 갱신과 조회는 새 버퍼를 쓴다.
+   */
+  bindStorage(storage: ProbeStorage): void {
+    if (
+      storage.cube.length !== this.cube.length ||
+      storage.valid.length !== this.valid.length ||
+      storage.offsets.length !== this.offsets.length ||
+      storage.age.length !== this.age.length
+    ) {
+      throw new RangeError('[ProbeVolume Error]: storage size does not match the probe count');
+    }
+    storage.cube.set(this.cube);
+    storage.valid.set(this.valid);
+    storage.offsets.set(this.offsets);
+    storage.age.set(this.age);
+    this.cube = storage.cube;
+    this.valid = storage.valid;
+    this.offsets = storage.offsets;
+    this.age = storage.age;
+    this.field = { config: this.config, cube: this.cube, valid: this.valid };
+  }
+
+  /**
+   * 한 번의 update에서 고른 프로브 목록을 JS 대신 처리할 커널을 지정한다. null이면 JS로 갱신한다.
+   */
+  setKernel(kernel: ProbeKernel | null): void {
+    this.kernel = kernel;
   }
 
   markAllDirty(): void {
@@ -184,7 +222,14 @@ export class ProbeVolume {
   update(probeBudget: number): number {
     const budget = Math.min(Math.max(0, Math.floor(probeBudget)), this.probeCount);
     for (let processed = 0; processed < budget; processed++) {
-      this.updateProbe(this.nextProbe());
+      this.pending[processed] = this.nextProbe();
+    }
+    if (this.kernel) {
+      this.kernel(this.pending, budget);
+    } else {
+      for (let processed = 0; processed < budget; processed++) {
+        this.updateProbe(this.pending[processed] ?? 0);
+      }
     }
     if (budget > 0) this.version += 1;
     return budget;
@@ -295,26 +340,94 @@ export class ProbeVolume {
     return index;
   }
 
+  private isSolidAt(x: number, y: number, z: number): boolean {
+    const grid = this.grid;
+    return isVoxelOccupied(
+      grid,
+      Math.floor((x - grid.origin.x) / grid.voxelSize),
+      Math.floor((y - grid.origin.y) / grid.voxelSize),
+      Math.floor((z - grid.origin.z) / grid.voxelSize),
+    );
+  }
+
+  /**
+   * 격자점이 복셀 안(표면 경계 포함)이면 축 방향으로 가장 가까운 빈 곳으로 추적 원점을 옮긴다.
+   * 같은 축의 양쪽이 같은 거리에서 동시에 비면 얇은 벽 한가운데라 어느 쪽을 대표할지 모호하므로 무효로 둔다.
+   * 조회는 계속 격자 위치로 하므로 셰이더의 하드웨어 보간과 어긋나지 않는다.
+   */
+  private placeProbe(index: number, px: number, py: number, pz: number): boolean {
+    const base = index * 3;
+    this.offsets[base] = 0;
+    this.offsets[base + 1] = 0;
+    this.offsets[base + 2] = 0;
+    if (!this.isSolidAt(px, py, pz)) return true;
+    const reach = this.config.spacing * RELOCATION_REACH;
+    for (let step = 1; step <= RELOCATION_STEPS; step++) {
+      const distance = (reach * step) / RELOCATION_STEPS;
+      let escapeAxis = -1;
+      let escapeSign = 0;
+      for (let axis = 0; axis < 3; axis++) {
+        let openSides = 0;
+        for (const sign of AXIS_SIGNS) {
+          const shift = sign * distance;
+          const open = !this.isSolidAt(
+            px + (axis === 0 ? shift : 0),
+            py + (axis === 1 ? shift : 0),
+            pz + (axis === 2 ? shift : 0),
+          );
+          if (!open) continue;
+          openSides += 1;
+          if (escapeAxis < 0) {
+            escapeAxis = axis;
+            escapeSign = sign;
+          }
+        }
+        if (openSides > 1) return false;
+      }
+      if (escapeAxis >= 0) {
+        this.offsets[base + escapeAxis] = escapeSign * distance;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * 새 추정값의 전체 조도(18개 성분 합)가 저장값과 크게 다르면 blend를 1 쪽으로 올려 조명 변화와
+   * 다중 바운스 전파를 빠르게 따라가고, 차이가 잡음 수준이면 blend를 유지해 떨림을 억제한다.
+   * 변화량은 |새 값 - 이전 값| / (새 값 + 이전 값)으로 0에서 1 사이이며 절대 밝기와 무관하다.
+   */
+  private adaptiveBlend(base: number, scale: number, blend: number): number {
+    let previous = 0;
+    let next = 0;
+    for (let i = 0; i < CUBE_STRIDE; i++) {
+      previous += this.cube[base + i] ?? 0;
+      next += (this.accumulator[i] ?? 0) * scale;
+    }
+    const change = Math.abs(next - previous) / Math.max(next + previous, CHANGE_EPSILON);
+    const t = Math.min(1, Math.max(0, (change - CHANGE_LOW) / (CHANGE_HIGH - CHANGE_LOW)));
+    return blend + (1 - blend) * t * t * (3 - 2 * t);
+  }
+
   private updateProbe(index: number): void {
     const { origin, spacing, counts, raysPerProbe, blend } = this.config;
     const layer = counts[0] * counts[1];
-    const px = origin.x + (index % counts[0]) * spacing;
-    const py = origin.y + (Math.floor(index / counts[0]) % counts[1]) * spacing;
-    const pz = origin.z + Math.floor(index / layer) * spacing;
-    const grid = this.grid;
-    const inSolid = isVoxelOccupied(
-      grid,
-      Math.floor((px - grid.origin.x) / grid.voxelSize),
-      Math.floor((py - grid.origin.y) / grid.voxelSize),
-      Math.floor((pz - grid.origin.z) / grid.voxelSize),
-    );
-    if (inSolid) {
-      this.valid[index] = 0;
-      return;
-    }
-    this.valid[index] = 1;
-
     const age = this.age[index] ?? 0;
+    const base3 = index * 3;
+    if (age === 0) {
+      const gx = origin.x + (index % counts[0]) * spacing;
+      const gy = origin.y + (Math.floor(index / counts[0]) % counts[1]) * spacing;
+      const gz = origin.z + Math.floor(index / layer) * spacing;
+      const placed = this.placeProbe(index, gx, gy, gz);
+      this.valid[index] = placed ? 1 : 0;
+      if (!placed) return;
+    }
+    const px = origin.x + (index % counts[0]) * spacing + (this.offsets[base3] ?? 0);
+    const py =
+      origin.y +
+      (Math.floor(index / counts[0]) % counts[1]) * spacing +
+      (this.offsets[base3 + 1] ?? 0);
+    const pz = origin.z + Math.floor(index / layer) * spacing + (this.offsets[base3 + 2] ?? 0);
     const [u1, u2] = r2Sample(age);
     rotationFromSample(u1, u2, (age * GOLDEN_FRACTION) % 1, this.rotation);
     const r = this.rotation;
@@ -332,8 +445,8 @@ export class ProbeVolume {
     }
 
     const scale = IRRADIANCE_ESTIMATOR_SCALE / raysPerProbe;
-    const alpha = age === 0 ? 1 : blend;
     const base = index * CUBE_STRIDE;
+    const alpha = age === 0 ? 1 : this.adaptiveBlend(base, scale, blend);
     for (let i = 0; i < CUBE_STRIDE; i++) {
       const previous = this.cube[base + i] ?? 0;
       const next = previous + alpha * ((this.accumulator[i] ?? 0) * scale - previous);

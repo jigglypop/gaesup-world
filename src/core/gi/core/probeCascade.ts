@@ -2,6 +2,7 @@ import type { Vec3 } from '../../grid';
 import type {
   Aabb,
   GiEnvironment,
+  GiWasmExports,
   MutableRgb,
   ProbeVolumeConfig,
   Rgb,
@@ -9,6 +10,7 @@ import type {
 } from '../types';
 import { BACKFACE_FLOOR, FEED_BACKFACE_FLOOR } from './probeField';
 import { ProbeVolume } from './probeVolume';
+import { ProbeWasmKernel } from './probeWasmKernel';
 
 /**
  * 성긴 프로브 볼륨 위에 촘촘한 볼륨을 한 겹 더 얹은 2단계 캐스케이드.
@@ -21,6 +23,9 @@ export class ProbeCascade {
   readonly levels: readonly ProbeVolume[];
   private readonly scratchFine: MutableRgb = [0, 0, 0];
   private readonly scratchCoarse: MutableRgb = [0, 0, 0];
+  private readonly grid: VoxelGrid;
+  private environment: GiEnvironment;
+  private kernel: ProbeWasmKernel | null = null;
 
   constructor(
     grid: VoxelGrid,
@@ -28,6 +33,8 @@ export class ProbeCascade {
     fineConfig: ProbeVolumeConfig | null,
     environment: GiEnvironment,
   ) {
+    this.grid = grid;
+    this.environment = environment;
     this.coarse = new ProbeVolume(grid, coarseConfig, environment);
     this.fine = fineConfig ? new ProbeVolume(grid, fineConfig, environment) : null;
     this.levels = this.fine ? [this.coarse, this.fine] : [this.coarse];
@@ -54,16 +61,38 @@ export class ProbeCascade {
     return this.levels.reduce((sum, level) => sum + level.version, 0);
   }
 
+  get usesWasm(): boolean {
+    return this.kernel !== null;
+  }
+
+  /**
+   * 두 레벨의 프로브 갱신을 WASM 커널로 옮긴다. 현재 프로브 값은 WASM 메모리로 복사되어 이어진다.
+   * 복셀 격자는 markAllDirty와 markDirtyBox, 환경은 setEnvironment에서 WASM 쪽으로 다시 복사된다.
+   */
+  attachWasm(wasm: GiWasmExports): void {
+    if (this.kernel) return;
+    const kernel = new ProbeWasmKernel(wasm, this.grid, this.levels, this.environment);
+    this.levels.forEach((level, index) => {
+      level.bindStorage(kernel.storage(index));
+      level.setKernel((indices, count) => kernel.run(index, indices, count));
+    });
+    this.kernel = kernel;
+  }
+
   setEnvironment(environment: GiEnvironment): void {
+    this.environment = environment;
     for (const level of this.levels) level.setEnvironment(environment);
+    this.kernel?.syncEnvironment(environment);
   }
 
   markAllDirty(): void {
     for (const level of this.levels) level.markAllDirty();
+    this.kernel?.syncGrid();
   }
 
   markDirtyBox(box: Aabb): void {
     for (const level of this.levels) level.markDirtyBox(box);
+    this.kernel?.syncGrid();
   }
 
   /**

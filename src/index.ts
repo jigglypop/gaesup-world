@@ -363,6 +363,8 @@ export {
   ProbeVolume,
   buildingToVoxelBoxes,
   hexToLinearRgb,
+  instantiateGiWasm,
+  loadGiWasmModule,
   useBuildingVoxelBoxes,
   useGi,
   // Scene / dimensions
@@ -453,6 +455,7 @@ export type {
   GiEnvironment,
   GiIrradiance,
   GiVolumeProps,
+  GiWasmExports,
   ProbeVolumeConfig,
   VoxelSourceBox,
   CameraOptionType,

@@ -85,3 +85,27 @@ export type ProbeLevelUpload = {
   config: ProbeVolumeConfig;
   faces: ProbeFaceBuffers;
 };
+
+export type GiWasmExports = {
+  readonly memory: WebAssembly.Memory;
+  readonly alloc_f32: (len: number) => number;
+  readonly alloc_f64: (len: number) => number;
+  readonly alloc_u8: (len: number) => number;
+  readonly alloc_u32: (len: number) => number;
+  readonly gi_update_probes: (
+    header: number,
+    pointers: number,
+    level: number,
+    indices: number,
+    count: number,
+  ) => void;
+};
+
+export type ProbeStorage = {
+  cube: Float32Array;
+  valid: Uint8Array;
+  offsets: Float32Array;
+  age: Uint32Array;
+};
+
+export type ProbeKernel = (indices: Uint32Array, count: number) => void;

@@ -6,6 +6,7 @@ export { useBuildingVoxelBoxes } from './hooks/useBuildingVoxelBoxes';
 export { buildingToVoxelBoxes } from './utils/buildingVoxelBoxes';
 export type { BuildingVoxelSource } from './utils/types';
 export type { GiIrradiance } from '../rendering/tsl/types';
+export { instantiateGiWasm, loadGiWasmModule } from './core/giWasm';
 export { ProbeCascade } from './core/probeCascade';
 export { ProbeVolume } from './core/probeVolume';
 export {
@@ -48,6 +49,7 @@ export type {
   Aabb,
   FieldSampler,
   GiEnvironment,
+  GiWasmExports,
   Mat3,
   MutableRgb,
   ProbeFaceBuffers,

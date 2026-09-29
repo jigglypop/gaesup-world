@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
   materialColor,
+  materialEmissive,
   min,
   mix,
   normalWorld,
@@ -162,8 +163,8 @@ export function createGiIrradiance(): GiIrradiance {
     applyToMaterial: (material: MeshStandardNodeMaterial) => {
       if (appliedMaterials.has(material)) return;
       appliedMaterials.add(material);
-      const bounced = materialColor.mul(irradiance);
-      material.emissiveNode = material.emissiveNode ? material.emissiveNode.add(bounced) : bounced;
+      const emitted = (material.emissiveNode as Node<'vec3'> | null) ?? materialEmissive;
+      material.emissiveNode = emitted.add(materialColor.mul(irradiance));
       material.needsUpdate = true;
     },
     dispose: () => {

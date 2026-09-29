@@ -79,6 +79,8 @@ export {
   ProbeVolume,
   buildingToVoxelBoxes,
   hexToLinearRgb,
+  instantiateGiWasm,
+  loadGiWasmModule,
   useBuildingVoxelBoxes,
   useGi,
 } from './gi';
@@ -87,6 +89,7 @@ export type {
   GiEnvironment,
   GiIrradiance,
   GiVolumeProps,
+  GiWasmExports,
   ProbeVolumeConfig,
   VoxelSourceBox,
 } from './gi';

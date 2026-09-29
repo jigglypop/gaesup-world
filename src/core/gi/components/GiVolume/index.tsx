@@ -5,7 +5,8 @@ import { useFrame } from '@react-three/fiber';
 import type { GiIrradiance } from '../../../rendering/tsl/types';
 import { logger } from '../../../utils/logger';
 import { GiContext } from '../../hooks/useGi';
-import { boundsKey, createGiRuntime } from './runtime';
+import { loadGiWasmModule } from '../../core/giWasm';
+import { attachGiWasm, boundsKey, createGiRuntime } from './runtime';
 import type { Aabb } from '../../types';
 import type { GiRuntime, GiVolumeProps } from './types';
 
@@ -23,6 +24,7 @@ function reportError(message: string, error: unknown): void {
 
 /**
  * 복셀 박스를 추적해 프로브 래디언스 캐시를 갱신하고 GPU 텍스처로 올린다.
+ * 프로브 갱신은 wasm/gaesup_gi.wasm을 받을 수 있으면 WASM 커널로, 받을 수 없으면 같은 결과를 내는 JS로 수행한다.
  * WebGPURenderer에서만 셰이더 모듈이 로드되며, 로드에 실패하면 children은 GI 없이 그대로 렌더링된다.
  * children은 useGi()로 받은 값의 applyToMaterial로 MeshStandardNodeMaterial에 간접광을 연결한다.
  */
@@ -42,6 +44,7 @@ export function GiVolume({
   const [gi, setGi] = useState<GiIrradiance | null>(null);
   const giRef = useRef<GiIrradiance | null>(null);
   const runtimeRef = useRef<GiRuntime | null>(null);
+  const wasmModuleRef = useRef<WebAssembly.Module | null>(null);
   const environmentRef = useRef(environment);
   const fineBoundsRef = useRef<Aabb | null>(fineBounds ?? null);
   const fineKey = fineBounds ? boundsKey(fineBounds) : 'none';
@@ -68,9 +71,23 @@ export function GiVolume({
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    void loadGiWasmModule().then((module) => {
+      if (cancelled || !module) return;
+      wasmModuleRef.current = module;
+      const runtime = runtimeRef.current;
+      if (runtime) void attachGiWasm(runtime, module);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     try {
-      runtimeRef.current = createGiRuntime(
-        runtimeRef.current,
+      const previous = runtimeRef.current;
+      const next = createGiRuntime(
+        previous,
         boxes,
         {
           voxelSize,
@@ -82,6 +99,9 @@ export function GiVolume({
         },
         environmentRef.current,
       );
+      runtimeRef.current = next;
+      const module = wasmModuleRef.current;
+      if (next && next !== previous && module) void attachGiWasm(next, module);
     } catch (error) {
       runtimeRef.current = null;
       reportError('GI 볼륨을 만들지 못했습니다', error);

@@ -337,11 +337,14 @@ describe('public package API', () => {
       'ProbeVolume',
       'buildingToVoxelBoxes',
       'hexToLinearRgb',
+      'instantiateGiWasm',
+      'loadGiWasmModule',
       'useBuildingVoxelBoxes',
       'useGi',
       'GiEnvironment',
       'GiIrradiance',
       'GiVolumeProps',
+      'GiWasmExports',
       'ProbeVolumeConfig',
       'VoxelSourceBox',
       'BuildingVoxelSource',
@@ -352,6 +355,8 @@ describe('public package API', () => {
     expect(typeof root.ProbeVolume).toBe('function');
     expect(typeof root.buildingToVoxelBoxes).toBe('function');
     expect(typeof root.hexToLinearRgb).toBe('function');
+    expect(typeof root.instantiateGiWasm).toBe('function');
+    expect(typeof root.loadGiWasmModule).toBe('function');
     expect(typeof root.useBuildingVoxelBoxes).toBe('function');
     expect(typeof root.useGi).toBe('function');
   });
