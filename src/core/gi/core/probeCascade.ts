@@ -26,6 +26,7 @@ export class ProbeCascade {
   private readonly grid: VoxelGrid;
   private environment: GiEnvironment;
   private kernel: ProbeWasmKernel | null = null;
+  private updatedSinceChange = 0;
 
   constructor(
     grid: VoxelGrid,
@@ -66,6 +67,14 @@ export class ProbeCascade {
   }
 
   /**
+   * 복셀이나 빛이 마지막으로 바뀐 뒤 모든 프로브를 몇 번 돌았는지(갱신한 프로브 수 / 전체 수). 호출자는 이 값으로
+   * 수렴한 캐시의 갱신 속도를 낮춘다(probeSchedule.ts).
+   */
+  get passesSinceChange(): number {
+    return this.updatedSinceChange / Math.max(1, this.probeCount);
+  }
+
+  /**
    * 두 레벨의 프로브 갱신을 WASM 커널로 옮긴다. 현재 프로브 값은 WASM 메모리로 복사되어 이어진다.
    * 복셀 격자는 markAllDirty와 markDirtyBox, 환경은 setEnvironment에서 WASM 쪽으로 다시 복사된다.
    */
@@ -81,16 +90,19 @@ export class ProbeCascade {
 
   setEnvironment(environment: GiEnvironment): void {
     this.environment = environment;
+    this.updatedSinceChange = 0;
     for (const level of this.levels) level.setEnvironment(environment);
     this.kernel?.syncEnvironment(environment);
   }
 
   markAllDirty(): void {
+    this.updatedSinceChange = 0;
     for (const level of this.levels) level.markAllDirty();
     this.kernel?.syncGrid();
   }
 
   markDirtyBox(box: Aabb): void {
+    this.updatedSinceChange = 0;
     for (const level of this.levels) level.markDirtyBox(box);
     this.kernel?.syncGrid();
   }
@@ -101,12 +113,18 @@ export class ProbeCascade {
   update(probeBudget: number): number {
     const total = this.probeCount;
     const budget = Math.min(Math.max(0, Math.floor(probeBudget)), total);
-    if (!this.fine || budget === 0) return this.coarse.update(budget);
-    const fineShare = Math.min(
-      this.fine.probeCount,
-      Math.max(1, Math.round((budget * this.fine.probeCount) / total)),
-    );
-    return this.coarse.update(budget - fineShare) + this.fine.update(fineShare);
+    let processed: number;
+    if (!this.fine || budget === 0) {
+      processed = this.coarse.update(budget);
+    } else {
+      const fineShare = Math.min(
+        this.fine.probeCount,
+        Math.max(1, Math.round((budget * this.fine.probeCount) / total)),
+      );
+      processed = this.coarse.update(budget - fineShare) + this.fine.update(fineShare);
+    }
+    this.updatedSinceChange += processed;
+    return processed;
   }
 
   /**

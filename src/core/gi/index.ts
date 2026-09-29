@@ -54,6 +54,7 @@ export type {
   GiWasmExports,
   Mat3,
   MutableRgb,
+  ProbeAtlasUpload,
   ProbeFaceBuffers,
   ProbeLevelUpload,
   ProbeVolumeConfig,

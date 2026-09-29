@@ -21,6 +21,7 @@ import {
   normalizeEnvironment,
   skyRadianceInto,
 } from './giEnvironment';
+import { packProbeAtlas } from './probeAtlas';
 import {
   BACKFACE_FLOOR,
   FEED_BACKFACE_FLOOR,
@@ -236,19 +237,30 @@ export class ProbeVolume {
       new Float32Array(size),
     ];
     for (let index = 0; index < this.probeCount; index++) {
-      if (this.valid[index] === 1) this.loadProbe(index);
-      else this.loadDilated(index);
+      const cube = this.probeCube(index);
       for (let face = 0; face < CUBE_FACE_COUNT; face++) {
         const buffer = faces[face];
         if (!buffer) continue;
         const texel = index * TEXEL_STRIDE;
         for (const c of CHANNELS) {
-          buffer[texel + c] = this.accumulator[face * CUBE_CHANNELS + c] ?? 0;
+          buffer[texel + c] = cube[face * CUBE_CHANNELS + c] ?? 0;
         }
         buffer[texel + CUBE_CHANNELS] = 1;
       }
     }
     return faces;
+  }
+
+  /** exportFaceData와 같은 값을 반정밀도 아틀라스(probeAtlas.ts)에 면별 float 버퍼 없이 바로 쓴다. */
+  packAtlas(target: Uint16Array): void {
+    packProbeAtlas(target, this.config.counts, (index) => this.probeCube(index));
+  }
+
+  /** 프로브의 조도 큐브(복셀 안에 묻힌 프로브는 이웃 평균). 다음 호출이 덮어쓰는 내부 버퍼다. */
+  private probeCube(index: number): Float64Array {
+    if (this.valid[index] === 1) this.loadProbe(index);
+    else this.loadDilated(index);
+    return this.accumulator;
   }
 
   private loadProbe(index: number): void {

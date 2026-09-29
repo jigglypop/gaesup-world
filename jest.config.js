@@ -16,6 +16,8 @@ export const base = {
   // Asset and style stubs come first so an aliased .css or .glsl import never loads the raw file.
   moduleNameMapper: {
     '\\.(glsl|vert|frag|wasm|glb)$': '<rootDir>/test/mocks/assetModule.ts',
+    // Vite's inline worker constructors; tests drive the worker's logic (GiWorkerHost) directly instead.
+    '\\?worker&inline$': '<rootDir>/test/mocks/inlineWorker.ts',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '^@react-three/postprocessing$': '<rootDir>/test/mocks/reactThreePostprocessing.tsx',
     ...pathAliases,

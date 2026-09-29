@@ -86,6 +86,12 @@ export type ProbeLevelUpload = {
   faces: ProbeFaceBuffers;
 };
 
+/** One level as its half-float atlas: six faces side by side along x, RGBA per probe (see ProbeVolume.packAtlas). */
+export type ProbeAtlasUpload = {
+  config: ProbeVolumeConfig;
+  atlas: Uint16Array;
+};
+
 export type GiWasmExports = {
   readonly memory: WebAssembly.Memory;
   readonly alloc_f32: (len: number) => number;
