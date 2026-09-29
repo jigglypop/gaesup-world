@@ -2,11 +2,11 @@ import { createStoreDomainPlugin } from '../plugins';
 import { useI18nStore } from './stores/i18nStore';
 import type { I18nSerialized } from './types';
 
-export interface I18nPluginOptions {
+export type I18nPluginOptions = {
   id?: string;
   saveExtensionId?: string;
   storeServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.i18n';
 const DEFAULT_SAVE_EXTENSION_ID = 'i18n';

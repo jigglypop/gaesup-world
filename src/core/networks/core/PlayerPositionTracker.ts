@@ -2,7 +2,7 @@ import type { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
 
-export interface PlayerUpdateData {
+export type PlayerUpdateData = {
   name: string;
   color: string;
   position: [number, number, number];
@@ -10,14 +10,14 @@ export interface PlayerUpdateData {
   animation: string;
   velocity: [number, number, number];
   modelUrl?: string | undefined;
-}
+};
 
-export interface PlayerTrackingConfig {
+export type PlayerTrackingConfig = {
   updateRate: number;
   velocityThreshold: number;
   /** @deprecated Has no effect on the tracker; `PlayerNetworkManager` applies `sendRateLimit` on the send path. */
   sendRateLimit: number;
-}
+};
 
 // Send thresholds: 1 cm, ~0.1 degree per quaternion component, and 5 cm/s, which moves the
 // receiver's 120 ms prediction by under 1 cm. Physics noise of a resting body stays below all three.

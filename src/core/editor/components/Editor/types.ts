@@ -10,7 +10,7 @@ import type { SceneComponentDataUpdate, SceneObjectPatch } from '../panels/Inspe
 import type { InspectorPrefabActions } from '../panels/PrefabInstanceView/types';
 import type { ProjectAssetItem, ProjectPrefabRecord } from '../panels/ProjectAssetsPanel';
 
-export interface EditorProps {
+export type EditorProps = {
     children?: ReactNode;
     className?: string;
     style?: CSSProperties;
@@ -43,4 +43,4 @@ export interface EditorProps {
     onSave?: () => void | Promise<void>;
     onAutosave?: () => void | Promise<void>;
     onToggleAutosave?: (enabled: boolean) => void;
-}
+};

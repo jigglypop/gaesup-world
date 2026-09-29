@@ -9,23 +9,23 @@ export type ControlType =
   | 'fixed'
   | 'chase';
 
-export interface ModeState {
+export type ModeState = {
   type: ModeType;
   controller: ControllerType;
   control: ControlType;
-}
+};
 
-export interface ControllerOptionsType {
+export type ControllerOptionsType = {
   lerp: {
     cameraTurn: number;
     cameraPosition: number;
   };
-}
+};
 
-export interface ModeSlice {
+export type ModeSlice = {
   mode: ModeState;
   controllerOptions: ControllerOptionsType;
   setMode: (update: Partial<ModeState>) => void;
   setControllerOptions: (update: Partial<ControllerOptionsType>) => void;
   resetMode: () => void;
-}
+};

@@ -422,4 +422,37 @@ describe('public package API', () => {
       'PluginManifestValidationError',
     ].forEach((name) => expect(root).toHaveProperty(name));
   });
+  test('루트 엔트리로 GI 볼륨과 건축 복셀 변환을 노출한다', () => {
+    // The root re-exports core, where the GI names are listed.
+    expect(readRootEntry()).toContain("export * from './core'");
+    const source = fs.readFileSync(CORE_ENTRY, 'utf8');
+    [
+      'GiVolume',
+      'ProbeCascade',
+      'ProbeVolume',
+      'buildingToVoxelBoxes',
+      'hexToLinearRgb',
+      'instantiateGiWasm',
+      'loadGiWasmModule',
+      'useBuildingVoxelBoxes',
+      'useGi',
+      'GiEnvironment',
+      'GiIrradiance',
+      'GiVolumeProps',
+      'GiWasmExports',
+      'ProbeVolumeConfig',
+      'VoxelSourceBox',
+      'BuildingVoxelSource',
+    ].forEach((name) => expectNamedExport(source, name));
+    const root = jest.requireActual('gaesup-world') as typeof import('gaesup-world');
+    expect(typeof root.GiVolume).toBe('function');
+    expect(typeof root.ProbeCascade).toBe('function');
+    expect(typeof root.ProbeVolume).toBe('function');
+    expect(typeof root.buildingToVoxelBoxes).toBe('function');
+    expect(typeof root.hexToLinearRgb).toBe('function');
+    expect(typeof root.instantiateGiWasm).toBe('function');
+    expect(typeof root.loadGiWasmModule).toBe('function');
+    expect(typeof root.useBuildingVoxelBoxes).toBe('function');
+    expect(typeof root.useGi).toBe('function');
+  });
 });

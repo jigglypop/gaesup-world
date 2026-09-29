@@ -11,7 +11,7 @@ import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/fra
 import type { PlacedObject } from '../../../types';
 import { useInstanceCapacity } from '../../BuildingBatches/capacity';
 
-export interface BillboardProps {
+export type BillboardProps = {
   text?: string;
   imageUrl?: string;
   width?: number;
@@ -21,7 +21,7 @@ export interface BillboardProps {
   elevation?: number;
   intensity?: number;
   toon?: boolean;
-}
+};
 
 function createTextTexture(
   text: string,

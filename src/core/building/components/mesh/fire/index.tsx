@@ -127,12 +127,12 @@ function getSharedMat() {
   return _sharedMat;
 }
 
-interface FireProps {
+type FireProps = {
   intensity?: number;
   width?: number;
   height?: number;
   color?: string;
-}
+};
 
 const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color = '#ffffff' }) => {
   extendFireMaterial();

@@ -165,19 +165,23 @@ function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
 }
 
-function getWasmUrl(): string {
+export function resolveWasmUrl(fileName: string): string {
   try {
     const baseUrl = (globalThis as GaesupWasmGlobal).__GAESUP_WASM_BASE_URL__;
     if (baseUrl) {
-      return new URL('wasm/gaesup_core.wasm', normalizeBaseUrl(baseUrl)).toString();
+      return new URL(`wasm/${fileName}`, normalizeBaseUrl(baseUrl)).toString();
     }
     if (typeof document !== 'undefined' && typeof document.baseURI === 'string' && document.baseURI.length > 0) {
-      return new URL('wasm/gaesup_core.wasm', document.baseURI).toString();
+      return new URL(`wasm/${fileName}`, document.baseURI).toString();
     }
   } catch {
     // ignore
   }
-  return '/wasm/gaesup_core.wasm';
+  return `/wasm/${fileName}`;
+}
+
+function getWasmUrl(): string {
+  return resolveWasmUrl('gaesup_core.wasm');
 }
 
 /** Missing or invalid modules stay cached as unavailable; network and server failures are retried after a cooldown. */

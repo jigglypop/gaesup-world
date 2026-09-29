@@ -554,7 +554,8 @@ export class PlayerNetworkManager {
 
       case 'PlayerUpdate':
         this.debug('[PlayerNetworkManager] PlayerUpdate', message.client_id);
-        if (!this.allowPeerMessage(message.client_id)) break;
+        // A server that echoes our own update back must not turn us into a remote player.
+        if (message.client_id === this.localPlayerId || !this.allowPeerMessage(message.client_id)) break;
         {
           const update = this.copyPlayerState(message.state);
           const existingPlayer = this.players.get(message.client_id);

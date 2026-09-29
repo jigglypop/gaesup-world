@@ -30,9 +30,9 @@ export class MissingExtensionError extends Error {
   }
 }
 
-export interface InMemoryExtensionRegistryOptions {
+export type InMemoryExtensionRegistryOptions = {
   name?: string;
-}
+};
 
 export class InMemoryExtensionRegistry<
   TValue = unknown,

@@ -5,7 +5,7 @@ import * as THREE from 'three';
 
 type ControllerPropValue = ReactNode | object | string | number | boolean | null | undefined;
 
-export interface ControllerWrapperProps {
+export type ControllerWrapperProps = {
   children?: ReactNode;
   position?: THREE.Vector3;
   rotation?: THREE.Euler;
@@ -15,11 +15,11 @@ export interface ControllerWrapperProps {
   inputMode?: 'keyboard' | 'gamepad' | 'touch';
   enableDebug?: boolean;
   [key: string]: ControllerPropValue;
-}
+};
 
-export interface ControllerGroupProps {
+export type ControllerGroupProps = {
   position?: THREE.Vector3;
   rotation?: THREE.Euler;
   scale?: THREE.Vector3;
   [key: string]: ControllerPropValue;
-}
+};

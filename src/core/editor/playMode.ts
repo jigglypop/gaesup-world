@@ -2,22 +2,22 @@ import { createUniqueId } from '../utils/id';
 
 export type EditorPlayMode = 'edit' | 'play' | 'paused';
 
-export interface EditorPlayModeSnapshot<TSnapshot = unknown> {
+export type EditorPlayModeSnapshot<TSnapshot = unknown> = {
   id: string;
   createdAt: number;
   data: TSnapshot;
-}
+};
 
-export interface EditorPlayModeState<TSnapshot = unknown> {
+export type EditorPlayModeState<TSnapshot = unknown> = {
   mode: EditorPlayMode;
   snapshot?: EditorPlayModeSnapshot<TSnapshot>;
-}
+};
 
 export type EditorPlayModeListener<TSnapshot = unknown> = (
   state: EditorPlayModeState<TSnapshot>,
 ) => void;
 
-export interface EditorPlayModeController<TSnapshot = unknown> {
+export type EditorPlayModeController<TSnapshot = unknown> = {
   getState: () => EditorPlayModeState<TSnapshot>;
   enter: () => Promise<EditorPlayModeSnapshot<TSnapshot>>;
   exit: () => Promise<void>;
@@ -25,14 +25,14 @@ export interface EditorPlayModeController<TSnapshot = unknown> {
   resume: () => void;
   toggle: () => Promise<void>;
   subscribe: (listener: EditorPlayModeListener<TSnapshot>) => () => void;
-}
+};
 
-export interface CreateEditorPlayModeControllerOptions<TSnapshot> {
+export type CreateEditorPlayModeControllerOptions<TSnapshot> = {
   createSnapshot: () => TSnapshot | Promise<TSnapshot>;
   restoreSnapshot: (snapshot: TSnapshot) => void | Promise<void>;
   onEnter?: (snapshot: EditorPlayModeSnapshot<TSnapshot>) => void | Promise<void>;
   onExit?: (snapshot: EditorPlayModeSnapshot<TSnapshot>) => void | Promise<void>;
-}
+};
 
 export function createEditorPlayModeController<TSnapshot>(
   options: CreateEditorPlayModeControllerOptions<TSnapshot>,

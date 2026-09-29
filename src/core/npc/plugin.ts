@@ -25,11 +25,11 @@ export type NPCSerializedState = {
   brainBlueprints: NPCBrainBlueprint[];
 };
 
-export interface NPCPluginOptions {
+export type NPCPluginOptions = {
   id?: string;
   saveExtensionId?: string;
   storeServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.npc';
 const DEFAULT_SAVE_EXTENSION_ID = 'npc';

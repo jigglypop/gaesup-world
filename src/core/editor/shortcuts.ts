@@ -1,6 +1,6 @@
 export type EditorShortcutHandler = (event: KeyboardEvent) => void | Promise<void>;
 
-export interface EditorShortcutBinding {
+export type EditorShortcutBinding = {
   id: string;
   label: string;
   key: string;
@@ -12,18 +12,18 @@ export interface EditorShortcutBinding {
   preventDefault?: boolean;
   disabled?: boolean;
   run: EditorShortcutHandler;
-}
+};
 
-export interface EditorShortcutMatchOptions {
+export type EditorShortcutMatchOptions = {
   platform?: 'auto' | 'mac' | 'windows' | 'linux';
-}
+};
 
-export interface EditorShortcutRegistry {
+export type EditorShortcutRegistry = {
   register: (binding: EditorShortcutBinding) => () => void;
   unregister: (id: string) => void;
   list: () => EditorShortcutBinding[];
   handleKeyDown: (event: KeyboardEvent) => boolean;
-}
+};
 
 export const DEFAULT_EDITOR_SHORTCUTS = {
   undo: { key: 'z', ctrl: true, meta: true },

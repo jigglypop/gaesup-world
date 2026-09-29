@@ -1,6 +1,6 @@
 export type EditorSaveState = 'clean' | 'dirty' | 'saving' | 'saved' | 'error';
 
-export interface EditorSaveStatus {
+export type EditorSaveStatus = {
   state: EditorSaveState;
   dirty: boolean;
   autosaveEnabled: boolean;
@@ -10,9 +10,9 @@ export interface EditorSaveStatus {
   nextAutosaveAt?: number;
   message?: string;
   error?: string;
-}
+};
 
-export interface EditorSaveStatusInput {
+export type EditorSaveStatusInput = {
   state?: EditorSaveState;
   dirty?: boolean;
   autosaveEnabled?: boolean;
@@ -22,7 +22,7 @@ export interface EditorSaveStatusInput {
   nextAutosaveAt?: number;
   message?: string;
   error?: string;
-}
+};
 
 export function createEditorSaveStatus(input: EditorSaveStatusInput = {}): EditorSaveStatus {
   const state = input.state ?? (input.dirty ? 'dirty' : 'clean');

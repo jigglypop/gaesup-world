@@ -1,0 +1,61 @@
+.gi-example {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  background: var(--gp-glass-bg-strong, #171c29);
+  color: var(--gp-text, #f3f4f8);
+}
+.gi-example__canvas {
+  position: absolute;
+  inset: 0;
+}
+.gi-example__panel {
+  position: absolute;
+  top: calc(var(--app-header-height, 56px) + 16px);
+  right: 16px;
+  z-index: 10;
+  display: grid;
+  gap: 10px;
+  width: min(340px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 18px;
+  border: 1px solid #ffffff26;
+  border-radius: 16px;
+  background: #171c29f2;
+}
+.gi-example__panel h1 {
+  margin: 0;
+  font-size: 18px;
+}
+.gi-example__panel p {
+  margin: 0;
+  color: var(--gp-text-dim, #b4bac8);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.gi-example__row {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.gi-example__status {
+  color: var(--gp-accent, #93d4bd);
+  font-size: 12px;
+}
+.gi-example__fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+}
+@media (max-width: 600px) {
+  .gi-example__panel {
+    top: calc(var(--app-header-height, 56px) + 8px);
+    right: 8px;
+    width: calc(100vw - 16px);
+  }
+}

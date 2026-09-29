@@ -6,7 +6,7 @@ import { WorldObject } from '@core/world/types';
 import { WorldBridge } from '../bridge/WorldBridge';
 
 
-export interface WorldSliceState {
+export type WorldSliceState = {
   objects: WorldObject[];
   selectedObjectId?: string | undefined;
   interactionMode: 'view' | 'edit' | 'interact';
@@ -14,7 +14,7 @@ export interface WorldSliceState {
   events: InteractionEvent[];
   loading: boolean;
   error?: string | undefined;
-}
+};
 
 export interface WorldSlice extends WorldSliceState {
   addObject: (object: Omit<WorldObject, 'id'> & { id?: string }) => string;

@@ -1,7 +1,7 @@
 import { InteractionState, AutomationState, InteractionConfig, AutomationConfig, InteractionMetrics, AutomationMetrics, BridgeState } from '../bridge/types';
 import { MouseState } from '../core/InteractionSystem';
 
-export interface InteractionSliceState {
+export type InteractionSliceState = {
   interaction: InteractionState;
   automation: AutomationState;
   bridge: BridgeState;
@@ -13,9 +13,9 @@ export interface InteractionSliceState {
     interaction: InteractionMetrics;
     automation: AutomationMetrics;
   };
-}
+};
 
-export interface InteractionActions {
+export type InteractionActions = {
   updateKeyboard: (updates: Partial<InteractionState['keyboard']>) => void;
   updateMouse: (updates: Partial<InteractionState['mouse']>) => void;
   updateGamepad: (updates: Partial<InteractionState['gamepad']>) => void;
@@ -37,4 +37,4 @@ export interface InteractionActions {
   setBridgeStatus: (status: BridgeState['syncStatus']) => void;
   addCommandToHistory: (command: BridgeState['commandHistory'][0]) => void;
   dispatchInput: (updates: Partial<MouseState>) => void;
-}
+};

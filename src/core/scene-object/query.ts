@@ -8,7 +8,7 @@ import type {
   SceneTag,
 } from './types';
 
-export interface SceneObjectQuery {
+export type SceneObjectQuery = {
   id?: SceneObjectId;
   name?: string;
   parentId?: SceneObjectId;
@@ -17,7 +17,7 @@ export interface SceneObjectQuery {
   layer?: SceneLayerId;
   componentType?: SceneComponentType;
   componentTypes?: SceneComponentType[];
-}
+};
 
 export function findSceneObjects(runtime: SceneRuntime, query: SceneObjectQuery = {}): SceneObject[] {
   return Array.from(runtime.objects.values()).filter((object) => matchesSceneObjectQuery(object, query));

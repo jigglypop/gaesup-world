@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 
 // The room loads after the first paint, so three.js never blocks the initial UI chunk.
 const Minihome = lazy(() => import('./minihome/Minihome'));
+const GiPage = lazy(() => import('./pages/GiPage').then((module) => ({ default: module.GiPage })));
 
 function Loading() {
   return (
@@ -24,6 +25,7 @@ const root = document.getElementById('root');
 if (root)
   createRoot(root).render(
     <Suspense fallback={<Loading />}>
-      <Minihome />
+      {/* `/gi` under any base path is the dynamic GI showcase; everything else is the minihome. */}
+      {/\/gi\/?$/.test(location.pathname) ? <GiPage /> : <Minihome />}
     </Suspense>,
   );

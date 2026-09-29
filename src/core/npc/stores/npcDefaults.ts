@@ -71,11 +71,19 @@ function repairRemovedAssets(state: NPCStore): void {
   });
 }
 
-/** Gives NPCs without a brain the default one; a brain the author picked, including 'none', is kept. */
+/**
+ * Gives NPCs without a brain the default one; a brain the author picked, including 'none', is kept. A reinforcement
+ * brain that names no policy gets the default policy; one that names its own keeps it.
+ */
 function attachDefaultBrainToInstances(state: NPCStore): void {
   state.instances.forEach((instance, id) => {
-    if (instance.brain) return;
-    state.instances.set(id, { ...instance, brain: { ...DEFAULT_NPC_BRAIN } });
+    const brain = instance.brain;
+    if (!brain) {
+      state.instances.set(id, { ...instance, brain: { ...DEFAULT_NPC_BRAIN } });
+      return;
+    }
+    if (brain.mode !== 'reinforcement' || brain.policyId !== undefined) return;
+    state.instances.set(id, { ...instance, brain: { ...brain, policyId: DEFAULT_NPC_BRAIN.policyId } });
   });
 }
 

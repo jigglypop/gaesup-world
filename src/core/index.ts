@@ -213,3 +213,23 @@ export type { GaesupCoreWasmExports } from './wasm/loader';
 
 export { NavigationSystem } from './navigation';
 export type { NavigationConfig, Waypoint } from './navigation';
+export {
+  GiVolume,
+  ProbeCascade,
+  ProbeVolume,
+  buildingToVoxelBoxes,
+  hexToLinearRgb,
+  instantiateGiWasm,
+  loadGiWasmModule,
+  useBuildingVoxelBoxes,
+  useGi,
+} from './gi';
+export type {
+  BuildingVoxelSource,
+  GiEnvironment,
+  GiIrradiance,
+  GiVolumeProps,
+  GiWasmExports,
+  ProbeVolumeConfig,
+  VoxelSourceBox,
+} from './gi';

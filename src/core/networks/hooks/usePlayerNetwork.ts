@@ -3,21 +3,21 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { PlayerNetworkManager } from '../core/PlayerNetworkManager';
 import type { PlayerState } from '../types';
 
-interface UsePlayerNetworkOptions {
+type UsePlayerNetworkOptions = {
   url: string;
   roomId: string;
   playerName: string;
   playerColor: string;
-}
+};
 
-interface UsePlayerNetworkResult {
+type UsePlayerNetworkResult = {
   isConnected: boolean;
   players: Map<string, PlayerState>;
   error: string | undefined;
   connect: (overrideOptions?: Partial<UsePlayerNetworkOptions>) => void;
   disconnect: () => void;
   updateLocalPlayer: (state: Partial<PlayerState>) => void;
-}
+};
 
 export function usePlayerNetwork(defaultOptions: UsePlayerNetworkOptions): UsePlayerNetworkResult {
   const [isConnected, setIsConnected] = useState(false);

@@ -26,26 +26,26 @@ export type AnimationConfig = {
   autoPlay: boolean;
 }
 
-export interface EntityAnimationStates {
+export type EntityAnimationStates = {
   character: AnimationState;
   vehicle: AnimationState;
   airplane: AnimationState;
-}
+};
 
-export interface AnimationState {
+export type AnimationState = {
   current: string;
   default: string;
   store: Record<string, THREE.AnimationAction>;
-}
+};
 
-export interface AnimationSystemState {
+export type AnimationSystemState = {
   currentAnimation: string;
   animationMixer: THREE.AnimationMixer | null;
   actions: Map<string, THREE.AnimationAction>;
   isPlaying: boolean;
   currentWeight: number;
   blendDuration: number;
-}
+};
 
 export type AnimationSystemCallback = (metrics: AnimationMetrics) => void;
 

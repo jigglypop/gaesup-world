@@ -15,14 +15,14 @@ export type RuntimeSaveDiagnosticsToastIcon =
   | string
   | ((diagnostic: RuntimeSaveDiagnostic) => string | undefined);
 
-export interface RuntimeSaveDiagnosticsToasterProps {
+export type RuntimeSaveDiagnosticsToasterProps = {
   enabled?: boolean;
   includeExisting?: boolean;
   durationMs?: number;
   kind?: RuntimeSaveDiagnosticsToastKind;
   icon?: RuntimeSaveDiagnosticsToastIcon;
   formatMessage?: (diagnostic: RuntimeSaveDiagnostic) => string;
-}
+};
 
 export function formatRuntimeSaveDiagnosticToastMessage(
   diagnostic: RuntimeSaveDiagnostic,

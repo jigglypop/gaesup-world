@@ -1,21 +1,21 @@
 import * as THREE from 'three';
 
-export interface MinimapMarker {
+export type MinimapMarker = {
   id: string;
   type: 'normal' | 'ground';
   text: string;
   center: THREE.Vector3;
   size: THREE.Vector3;
-}
+};
 
-export interface UINotification {
+export type UINotification = {
   id: string;
   message: string;
   type: 'info' | 'warning' | 'error' | 'success';
   timestamp: number;
-}
+};
 
-export interface UIState {
+export type UIState = {
   minimapVisible: boolean;
   hudVisible: boolean;
   tooltipText: string;
@@ -25,7 +25,7 @@ export interface UIState {
   modalContent: React.ReactNode | null;
   notifications: UINotification[];
   lastUpdate: number;
-}
+};
 
 export type UICommand = 
   | { type: 'showTooltip'; text: string; position: THREE.Vector2 }
@@ -40,16 +40,16 @@ export type UICommand =
   | { type: 'removeMinimapMarker'; id: string }
   | { type: 'updateMinimapMarker'; id: string; updates: Partial<{ text: string; position: THREE.Vector3; size: THREE.Vector3 }> };
 
-export interface UISnapshot {
+export type UISnapshot = {
   minimapVisible: boolean;
   hudVisible: boolean;
   tooltipVisible: boolean;
   modalVisible: boolean;
   notificationCount: number;
   lastUpdate: number;
-}
+};
 
-export interface UIConfig {
+export type UIConfig = {
   minimap: {
     enabled: boolean;
     position: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
@@ -97,4 +97,4 @@ export interface UIConfig {
     scaleMultiplier: number;
     defaultOffset: { x: number; y: number; z: number };
   };
-} 
+}; 

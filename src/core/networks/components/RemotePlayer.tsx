@@ -24,14 +24,14 @@ import {
 } from '../core/remoteMotion';
 import { PlayerState, MultiplayerConfig } from '../types';
 
-interface RemotePlayerProps {
+type RemotePlayerProps = {
   playerId: string;
   state: PlayerState;
   characterUrl?: string;
   config?: MultiplayerConfig;
   speechText?: string;
   allowedModelOrigins?: readonly string[];
-}
+};
 
 export type RemoteAvatarProps = {
   motion: RemoteMotion;

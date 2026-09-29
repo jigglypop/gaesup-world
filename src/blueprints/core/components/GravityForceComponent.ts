@@ -4,11 +4,11 @@ import * as THREE from 'three';
 import { BaseComponent } from '../BaseComponent';
 import { ComponentContext, IForceComponent } from '../types';
 
-export interface GravityForceProperties {
+export type GravityForceProperties = {
   gravity?: number;
   maxFallSpeed?: number;
   enabled?: boolean;
-}
+};
 
 export class GravityForceComponent extends BaseComponent implements IForceComponent {
   private gravity: number;

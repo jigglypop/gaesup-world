@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { EditorShortcutBinding } from '../shortcuts';
 
-export interface EditorCommandPaletteItem {
+export type EditorCommandPaletteItem = {
   id: string;
   label: string;
   group?: string;
@@ -10,14 +10,14 @@ export interface EditorCommandPaletteItem {
   shortcut?: string;
   disabled?: boolean;
   run: () => void | Promise<void>;
-}
+};
 
-export interface CommandPaletteProps {
+export type CommandPaletteProps = {
   open: boolean;
   items: EditorCommandPaletteItem[];
   placeholder?: string;
   onClose: () => void;
-}
+};
 
 export function CommandPalette({
   open,

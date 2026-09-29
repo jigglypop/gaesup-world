@@ -2,12 +2,12 @@ import { useCallback, useState } from 'react';
 
 import { MultiplayerState } from '../types';
 
-interface PlayerInfoOverlayProps {
+type PlayerInfoOverlayProps = {
   state: MultiplayerState;
   playerName?: string;
   onDisconnect: () => void;
   onSendChat?: (text: string) => void;
-}
+};
 
 export function PlayerInfoOverlay({
   state,

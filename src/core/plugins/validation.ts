@@ -22,29 +22,29 @@ export type PluginValidationIssueCode =
   | 'save-namespace'
   | 'setup';
 
-export interface PluginValidationIssue {
+export type PluginValidationIssue = {
   code: PluginValidationIssueCode;
   message: string;
   pluginId: string;
   details?: unknown;
-}
+};
 
-export interface PluginValidationOptions {
+export type PluginValidationOptions = {
   dependencies?: GaesupPlugin[];
   expectedRuntime?: PluginRuntime | PluginRuntime[];
   requiredSaveNamespaces?: string[];
   allowedSaveNamespaces?: string[];
   registry?: PluginContextOptions;
-}
+};
 
-export interface PluginValidationResult {
+export type PluginValidationResult = {
   ok: boolean;
   pluginId: string;
   manifest: PluginManifest | null;
   issues: PluginValidationIssue[];
   diagnostics: PluginDiagnostic[];
   saveNamespaces: string[];
-}
+};
 
 export class PluginValidationAssertionError extends Error {
   readonly result: PluginValidationResult;

@@ -886,6 +886,14 @@ ${createInteractionAggregateTypeProbe('rootModule.')}`;
           'SCENE_DOCUMENT_SAVE_KEY',
           'createRenderer',
           'isWebGPUAvailable',
+          'GiVolume',
+          'ProbeCascade',
+          'ProbeVolume',
+          'buildingToVoxelBoxes',
+          'hexToLinearRgb',
+          'loadGiWasmModule',
+          'useBuildingVoxelBoxes',
+          'useGi',
           'requestCameraCloseUp',
           'playCameraCinematic',
           'CAMERA_CONTROLLER_DEFAULT_COLLISION_MODES',
@@ -1181,6 +1189,18 @@ const unknownPreset: WorldPostProcessingProps = { quality: 'ultra' };
 const cinematicPipeline = <WorldPostProcessing {...cinematicLighting} />;
 const cinematicWorld = <GaesupWorldContent quality="high" postProcessing={{ quality: 'cinematic', giIntensity: 6 }} />;
 void unknownPreset; void cinematicPipeline; void cinematicWorld;
+import { GiVolume, buildingToVoxelBoxes, hexToLinearRgb, type GiEnvironment, type GiVolumeProps, type VoxelSourceBox } from 'gaesup-world';
+const giBoxes: VoxelSourceBox[] = [{ min: { x: 0, y: 0, z: 0 }, max: { x: 4, y: 3, z: 4 }, albedo: hexToLinearRgb('#d9d2c5') }];
+const giEnvironment: GiEnvironment = {
+  sunDirection: { x: 0.4, y: 0.8, z: 0.4 },
+  sunIrradiance: [3, 2.9, 2.6],
+  skyZenith: [0.35, 0.55, 0.95],
+  skyHorizon: [0.75, 0.8, 0.85],
+  skyGround: [0.18, 0.16, 0.14],
+};
+const giVolume: GiVolumeProps = { boxes: giBoxes, environment: giEnvironment };
+const giWorld = <GiVolume {...giVolume} />;
+void giWorld; void buildingToVoxelBoxes;
 import { Avatar, AvatarRuntime, createAvatarStore } from 'gaesup-world/avatar';
 const modularAvatar = <Avatar body="body-sd-neutral-v1" equipment={{ top: 'top-001' }} />;
 void modularAvatar; void AvatarRuntime; void createAvatarStore;

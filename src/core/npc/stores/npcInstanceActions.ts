@@ -175,7 +175,8 @@ export function createNPCInstanceActions(set: NPCSet, get: NPCGet, { invalidateB
     addInstanceEvent: (instanceId, event) => set((state) => {
       const instance = state.instances.get(instanceId);
       if (instance) {
-        const events = instance.events || [];
+        // An event with the same id replaces the old one, so repeated events do not pile up.
+        const events = (instance.events ?? []).filter((entry) => entry.id !== event.id);
         events.push(event);
         state.instances.set(instanceId, { ...instance, events });
       }

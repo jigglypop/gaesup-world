@@ -15,10 +15,10 @@ import {
 } from '../../runtime';
 import { createUniqueId } from '../../utils/id';
 
-export interface TeleportResult {
+export type TeleportResult = {
   teleport: (position: Vector3, rotation?: Euler, options?: TeleportOptions) => void;
   canTeleport: boolean;
-}
+};
 
 export type TeleportOptions = {
   dropHeight?: number;

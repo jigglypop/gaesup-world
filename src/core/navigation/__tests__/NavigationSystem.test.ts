@@ -333,6 +333,22 @@ describe('NavigationSystem', () => {
     expect(weighted.some(([x, , z]) => z === 0.5 && x > 0.5 && x < 4.5)).toBe(false);
   });
 
+  it('WASM 경로가 출력 버퍼 용량에 닿으면 절단된 것으로 보고 JS 경로로 다시 계산한다', async () => {
+    mockWasm = createMockWasm();
+    mockWasm.astar_find_path.mockImplementation(
+      (_grid, _width, _height, _startX, _startZ, _goalX, _goalZ, _out, outCapacity) => outCapacity,
+    );
+    const navigation = createNavigation();
+    await navigation.init();
+
+    const path = navigation.findPath(0.5, 0.5, 3.5, 0.5);
+
+    expect(mockWasm.astar_find_path).toHaveBeenCalledTimes(1);
+    expect(path[0]).toEqual([0.5, 0, 0.5]);
+    expect(path[path.length - 1]).toEqual([3.5, 0, 0.5]);
+    expect(path.length).toBeLessThan(512);
+  });
+
   it('uses WASM pathfinding when the core module is available', async () => {
     mockWasm = createMockWasm();
     const navigation = createNavigation();

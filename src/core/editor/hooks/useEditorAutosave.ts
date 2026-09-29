@@ -3,11 +3,11 @@ import { useEffect } from 'react';
 import { reportError } from '../../utils/reportError';
 import { shouldRunEditorAutosave, type EditorSaveStatus } from '../saveState';
 
-export interface UseEditorAutosaveOptions {
+export type UseEditorAutosaveOptions = {
   status?: EditorSaveStatus;
   onAutosave?: () => void | Promise<void>;
   enabled?: boolean;
-}
+};
 
 export function useEditorAutosave({ status, onAutosave, enabled = true }: UseEditorAutosaveOptions): void {
   useEffect(() => {

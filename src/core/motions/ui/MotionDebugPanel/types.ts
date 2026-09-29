@@ -6,14 +6,14 @@ export type DebugFieldValue =
   | [number, number, number]  // for 'vector3'
   | { x: number; y: number; z: number };  // alternative vector3 format
 
-export interface DebugField {
+export type DebugField = {
   key: string;
   label: string;
   type: DebugFieldType;
   value?: DebugFieldValue;
-}
+};
 
-export interface MotionMetrics {
+export type MotionMetrics = {
   currentSpeed: number;
   averageSpeed: number;
   totalDistance: number;
@@ -21,9 +21,9 @@ export interface MotionMetrics {
   physicsTime: number;
   isAccelerating: boolean;
   groundContact: boolean;
-}
+};
 
-export interface MotionDebugPanelProps {
+export type MotionDebugPanelProps = {
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   updateInterval?: number;
   customFields?: DebugField[];
@@ -33,7 +33,7 @@ export interface MotionDebugPanelProps {
   theme?: 'dark' | 'light' | 'glass';
   /** When true, disables fixed positioning (for embedding inside editor panels). */
   embedded?: boolean;
-}
+};
 
 export const DEFAULT_DEBUG_FIELDS: DebugField[] = [
   { key: 'motionType', label: '이동 유형', type: 'text' },

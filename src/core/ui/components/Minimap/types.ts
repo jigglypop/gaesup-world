@@ -2,7 +2,7 @@ import { CSSProperties, ReactElement, RefObject, WheelEventHandler } from 'react
 
 import * as THREE from 'three';
 
-export interface MinimapMarker {
+export type MinimapMarker = {
   id: string;
   x: number;
   y: number;
@@ -11,9 +11,9 @@ export interface MinimapMarker {
   icon?: string | ReactElement;
   color?: string;
   size?: 'small' | 'medium' | 'large';
-}
+};
 
-export interface MinimapResult {
+export type MinimapResult = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   scale: number;
   upscale: () => void;
@@ -22,10 +22,10 @@ export interface MinimapResult {
   setupWheelListener: () => (() => void) | undefined;
   updateCanvas: () => void;
   isReady: boolean;
-}
+};
 
 
-export interface MinimapProps {
+export type MinimapProps = {
   initialScale?: number;
   scale?: number;
   minScale?: number;
@@ -46,43 +46,43 @@ export interface MinimapProps {
   markers?: MinimapMarker[];
   onMarkerClick?: (marker: MinimapMarker) => void;
   theme?: 'light' | 'dark' | 'glass';
-}
+};
 
-export interface MinimapMarkerProps {
+export type MinimapMarkerProps = {
   marker: MinimapMarker;
   onClick?: (marker: MinimapMarker) => void;
-}
+};
 
-export interface MinimapState {
+export type MinimapState = {
   scale: number;
   rotation: number;
   center: THREE.Vector2;
   markers: MinimapMarker[];
   isTracking: boolean;
   trackingTarget?: string;
-}
+};
 
-export interface InternalMinimapMarkerProps {
+export type InternalMinimapMarkerProps = {
   id: string;
   position: THREE.Vector3 | [number, number, number];
   size?: THREE.Vector3 | [number, number, number];
   text?: string;
   type?: 'normal' | 'ground';
   children?: React.ReactNode;
-}
+};
 
-export interface MinimapPlatformProps {
+export type MinimapPlatformProps = {
   id: string;
   position: THREE.Vector3 | [number, number, number];
   size: THREE.Vector3 | [number, number, number];
   label: string;
   children?: React.ReactNode;
-}
+};
 
-export interface MinimapObjectProps {
+export type MinimapObjectProps = {
   id: string;
   position: THREE.Vector3 | [number, number, number];
   emoji: string;
   size?: THREE.Vector3 | [number, number, number];
   children?: React.ReactNode;
-}
+};

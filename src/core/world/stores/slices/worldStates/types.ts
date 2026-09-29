@@ -62,7 +62,7 @@ export type NpcType = {
   };
 };
 
-export interface WorldSlice {
+export type WorldSlice = {
   meshes: Map<string, MeshType>;
   currentMeshId: string | null;
   addMesh: (mesh: MeshType) => void;
@@ -106,4 +106,4 @@ export interface WorldSlice {
     id: string,
     newObj: Partial<InteractableObjectType>
   ) => void;
-} 
+}; 

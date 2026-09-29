@@ -9,11 +9,11 @@ import type {
   SceneValidationResult,
 } from './types';
 
-export interface ParseSceneDocumentResult {
+export type ParseSceneDocumentResult = {
   ok: boolean;
   document?: SceneDocument;
   issues: SceneValidationIssue[];
-}
+};
 
 const MISSING_PROPERTY = Symbol('missing-scene-property');
 

@@ -13,7 +13,7 @@ export type CameraSystemEvents = {
   error: { message: string; details?: CameraEventValue };
 };
 
-export interface CameraSystemConfig {
+export type CameraSystemConfig = {
   mode: string;
   distance: { x: number; y: number; z: number };
   smoothing: { position: number; rotation: number; fov: number };
@@ -39,7 +39,7 @@ export interface CameraSystemConfig {
   fixedPosition?: THREE.Vector3 | undefined;
   damping?: number;
   enableDamping?: boolean;
-}
+};
 
 export type CameraSystemState = {
   config: CameraSystemConfig;
@@ -50,13 +50,13 @@ export type CameraSystemState = {
   };
 };
 
-export interface ICameraSystemMonitor {
+export type ICameraSystemMonitor = {
   getState(): CameraSystemState;
   getMetrics(): {
     frameCount: number;
     averageFrameTime: number;
     lastUpdateTime: number;
   };
-}
+};
 
 export type CameraSystemEmitter = TypedEventBus<CameraSystemEvents>;

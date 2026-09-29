@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 import { EntityAnimationStates, AnimationState } from '../core/types';
 
-export interface AnimationSlice {
+export type AnimationSlice = {
   animationState: EntityAnimationStates;
   setAnimation: (type: keyof EntityAnimationStates, animation: string) => void;
   resetAnimations: () => void;
@@ -13,4 +13,4 @@ export interface AnimationSlice {
   ) => void;
   getAnimation: (type: keyof EntityAnimationStates) => AnimationState;
   getCurrentAnimation: (type: keyof EntityAnimationStates) => string;
-}
+};

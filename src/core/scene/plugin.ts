@@ -2,11 +2,11 @@ import { createStoreDomainPlugin } from '../plugins';
 import { useSceneStore, type SceneStore, SCENE_STORE_SERVICE } from './stores/sceneStore';
 import type { SceneSerialized } from './types';
 
-export interface ScenePluginOptions {
+export type ScenePluginOptions = {
   id?: string;
   saveExtensionId?: string;
   storeServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.scene';
 const DEFAULT_SAVE_EXTENSION_ID = 'scene';

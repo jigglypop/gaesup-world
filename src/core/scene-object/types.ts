@@ -22,23 +22,23 @@ export type CanonicalSceneJsonObject = SceneJsonObject;
 export type CanonicalSceneData<TData extends SceneJsonAuthoringObject> = TData &
   CanonicalSceneJsonObject;
 
-export interface SceneTransform {
+export type SceneTransform = {
   position: SceneVector3;
   rotation: SceneEuler;
   scale: SceneVector3;
-}
+};
 
-export interface SceneComponent<
+export type SceneComponent<
   TType extends SceneComponentType = SceneComponentType,
   TData extends SceneJsonAuthoringObject = SceneJsonObject,
-> {
+> = {
   id: SceneComponentId;
   type: TType;
   enabled: boolean;
   data: CanonicalSceneData<TData>;
-}
+};
 
-export interface SceneObject {
+export type SceneObject = {
   id: SceneObjectId;
   name: string;
   parentId?: SceneObjectId;
@@ -46,26 +46,26 @@ export interface SceneObject {
   components: SceneComponent[];
   tags: SceneTag[];
   layer?: SceneLayerId;
-}
+};
 
-export interface SceneDocument {
+export type SceneDocument = {
   version: 1;
   id: string;
   name?: string;
   objects: SceneObject[];
-}
+};
 
-export interface CreateSceneComponentInput<
+export type CreateSceneComponentInput<
   TType extends SceneComponentType = SceneComponentType,
   TData extends SceneJsonAuthoringObject = SceneJsonAuthoringObject,
-> {
+> = {
   id?: SceneComponentId;
   type: TType;
   enabled?: boolean;
   data?: TData;
-}
+};
 
-export interface CreateSceneObjectInput {
+export type CreateSceneObjectInput = {
   id?: SceneObjectId;
   name?: string;
   parentId?: SceneObjectId;
@@ -73,7 +73,7 @@ export interface CreateSceneObjectInput {
   components?: Array<SceneComponent | CreateSceneComponentInput>;
   tags?: SceneTag[];
   layer?: SceneLayerId;
-}
+};
 
 export type SceneValidationIssueCode =
   | 'duplicate-object-id'
@@ -91,17 +91,17 @@ export type SceneValidationIssueCode =
   | 'unsupported-scene-version'
   | 'revision-conflict';
 
-export interface SceneValidationIssue {
+export type SceneValidationIssue = {
   code: SceneValidationIssueCode;
   objectId?: SceneObjectId;
   componentId?: SceneComponentId;
   message: string;
-}
+};
 
-export interface SceneValidationResult {
+export type SceneValidationResult = {
   valid: boolean;
   issues: SceneValidationIssue[];
-}
+};
 
 export type SceneObjectCommandTransformPatch = {
   readonly position?: SceneVector3;

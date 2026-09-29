@@ -2,18 +2,18 @@ import * as THREE from 'three';
 
 import { rideableType } from '@hooks/useRideable/types';
 
-export interface RideableState {
+export type RideableState = {
   [key: string]: rideableType;
-}
+};
 
-export interface RideableSlice {
+export type RideableSlice = {
   rideable: RideableState;
   setRideable: (key: string, value: Partial<rideableType>) => void;
   removeRideable: (key: string) => void;
-}
+};
 
-export interface RideableType {
+export type RideableType = {
   offset?: THREE.Vector3;
   visible?: boolean;
   isOccupied?: boolean;
-}
+};

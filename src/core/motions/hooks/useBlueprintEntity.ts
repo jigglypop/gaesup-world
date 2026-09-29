@@ -10,7 +10,7 @@ import { blueprintRegistry } from '../../../blueprints/registry';
 import { useEngineFrame } from '../../runtime/frame';
 import { logger } from '../../utils/logger';
 
-export interface UseBlueprintEntityProps {
+export type UseBlueprintEntityProps = {
   blueprint: BlueprintDefinition | string;
   rigidBodyRef: RefObject<RapierRigidBody>;
   innerGroupRef?: RefObject<Group>;
@@ -18,7 +18,7 @@ export interface UseBlueprintEntityProps {
   animationClips?: BlueprintAnimationClips;
   enabled?: boolean;
   getMovementInput?: () => BlueprintMovementInput | undefined;
-}
+};
 
 export function useBlueprintEntity({
   blueprint,

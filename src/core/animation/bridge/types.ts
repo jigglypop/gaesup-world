@@ -34,16 +34,16 @@ export type AnimationMetrics = {
   blendProgress: number;
 };
 
-export interface AnimationBridgeInterface {
+export type AnimationBridgeInterface = {
   execute(type: AnimationType, command: AnimationCommand): void;
   snapshot(type: AnimationType): AnimationSnapshot;
   subscribe(listener: (snapshot: AnimationSnapshot, type: AnimationType) => void): () => void;
   update(type: AnimationType, deltaTime: number): void;
   dispose(): void;
-}
+};
 
-export interface AnimationEvents {
+export type AnimationEvents = {
   onAnimationChange: (type: AnimationType, animation: string) => void;
   onAnimationStart: (type: AnimationType, animation: string) => void;
   onAnimationEnd: (type: AnimationType, animation: string) => void;
-}
+};

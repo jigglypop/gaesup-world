@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { lazyStore } from '../../stores/lazyStore';
 import { UIConfig } from '../types';
 
-interface UIConfigStore {
+type UIConfigStore = {
   config: UIConfig;
   updateConfig: (partial: Partial<UIConfig>) => void;
   updateMinimapConfig: (config: Partial<UIConfig['minimap']>) => void;
@@ -13,7 +13,7 @@ interface UIConfigStore {
   updateNotificationsConfig: (config: Partial<UIConfig['notifications']>) => void;
   updateSpeechBalloonConfig: (config: Partial<UIConfig['speechBalloon']>) => void;
   resetConfig: () => void;
-}
+};
 
 const defaultConfig: UIConfig = {
   minimap: {

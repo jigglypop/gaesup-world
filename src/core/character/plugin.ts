@@ -6,11 +6,11 @@ import type {
   CharacterSerializedV2,
 } from './types';
 
-export interface CharacterPluginOptions {
+export type CharacterPluginOptions = {
   id?: string;
   saveExtensionId?: string;
   storeServiceId?: string;
-}
+};
 
 const DEFAULT_PLUGIN_ID = 'gaesup.character';
 const DEFAULT_SAVE_EXTENSION_ID = 'character';

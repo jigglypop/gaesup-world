@@ -12,7 +12,7 @@ export interface ActiveObject extends WorldObject {
   controllerId?: string;
 }
 
-export interface ActiveObjectProps {
+export type ActiveObjectProps = {
   objects: ActiveObject[];
   selectedId?: string;
   onSelect?: (id: string) => void;
@@ -20,11 +20,11 @@ export interface ActiveObjectProps {
   enableSelection?: boolean;
   showHealthBars?: boolean;
   showEnergyBars?: boolean;
-}
+};
 
-export interface ObjectComponentProps {
+export type ObjectComponentProps = {
   object: ActiveObject;
   selected?: boolean;
   onSelect?: (id: string) => void;
   showDebugInfo?: boolean;
-}
+};
