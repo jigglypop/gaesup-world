@@ -1,3 +1,11 @@
+# [1.4.0](https://github.com/jigglypop/gaesup-world/compare/v1.3.2...v1.4.0) (2026-09-29)
+
+
+### Features
+
+* **camera:** 앞을 가린 물체를 카메라 앞으로 당기는 대신 반투명하게 하는 가림 처리 모드(collisionMode: 'fade')를 고를 수 있게 한다 ([43ea000](https://github.com/jigglypop/gaesup-world/commit/43ea000752f64689aea0655ab65e15e14034569e))
+* **rendering:** 후처리 preset cinematic이 WebGPU에서 화면 공간 GI(SSGI)와 반사(SSR)를 더해, 색 번짐·간접광·금속과 광택 면의 반사를 그리고 GTAO를 대신한다 (GI-1) ([37fefdc](https://github.com/jigglypop/gaesup-world/commit/37fefdca2dc9399bd10d5bf7b5cc7852fc861886))
+
 ## [1.3.2](https://github.com/jigglypop/gaesup-world/compare/v1.3.1...v1.3.2) (2026-09-28)
 
 
