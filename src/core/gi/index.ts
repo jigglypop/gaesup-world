@@ -1,4 +1,6 @@
 export { GiVolume } from './components/GiVolume';
+export { WorldGi } from './components/WorldGi';
+export type { WorldGiProps } from './components/WorldGi';
 export type { GiVolumeProps } from './components/GiVolume/types';
 export { hexToLinearRgb } from './core/color';
 export { GiContext, useGi } from './hooks/useGi';

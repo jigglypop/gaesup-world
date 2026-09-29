@@ -223,6 +223,7 @@ export {
   loadGiWasmModule,
   useBuildingVoxelBoxes,
   useGi,
+  WorldGi,
 } from './gi';
 export type {
   BuildingVoxelSource,
@@ -232,4 +233,5 @@ export type {
   GiWasmExports,
   ProbeVolumeConfig,
   VoxelSourceBox,
+  WorldGiProps,
 } from './gi';

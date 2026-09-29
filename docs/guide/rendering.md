@@ -197,6 +197,16 @@ export function ShadowAware() {
 - `lamp: { color?, intensity, distance?, height? }`: 구역 안의 점광원(바닥에서 `height`, 기본 2.6m). 처음부터 세기 0으로 장면에 있어 들어갈 때 빛 개수가 바뀌지 않으므로 셰이더를 다시 만들지 않는다. 그림자는 없다.
 - 예제 미니룸: 해 30%, 따뜻한 반구광 72%, 환경광 45%, 천장 등 하나.
 
+### 월드 GI: `WorldGi`
+
+`<WorldGi environment? intensity? receives? ... />`(루트 export, `src/core/gi`)는 월드에 동적 전역 조명을 붙인다. 건물 스토어(타일·벽·블록·모닥불)를 복셀로 바꿔 `GiVolume`의 프로브 래디언스 캐시로 추적하고, 장면의 불투명한 표준 재질(고전·노드 재질 모두)에 프로브 조도를 더한다. 월드 `Canvas` 안, 보통 `GaesupWorldContent` 아래에 둔다.
+
+- 해와 하늘: 장면에서 그림자를 드리우는 첫 방향광을 해로, 첫 반구광을 하늘로 1초에 두 번 읽는다. `environment`로 준 값이 우선한다. GI를 켜면 평평한 반구광·ambient가 하늘을 한 번 더 세므로 줄이거나 끄고, 하늘 색은 `environment`로 넘긴다(예제 섬: 반구광 0, `skyZenith`·`skyGround`에 반구광 색×세기).
+- 받는 면: 기본은 불투명한 `MeshStandardMaterial`·`MeshPhysicalMaterial`·노드 표준 재질이다. 재질이나 메시의 `userData.gi = false`는 빠지고, `receives(mesh, material)`로 더 거를 수 있다. 조도는 재질이 셰이딩하는 알베도(색·맵·정점 색·자체 `colorNode`, 금속도 반영)에 곱해 발광에 더한다. 끄면 재질의 발광을 원래대로 돌려준다.
+- 비용(예제 섬, 이 PC): 켜고 몇 초 동안 복셀화·셰이더 컴파일로 CPU가 프레임당 9~14ms 들고, 안정되면 프로브 갱신이 약 2ms 든다(WASM). 섬 전체 프로브를 0.2초마다 올린다.
+- 텍스처: 레벨마다 여섯 면을 3D 텍스처 한 장에 이어 붙여 재질당 샘플 텍스처가 2장만 는다(WebGPU 단계당 16장 한도).
+- 한계: WebGPU 렌더러에서만 그린다. 나무·캐릭터 같은 동적 물체는 복셀에 들어가지 않아 빛을 가리지 않는다(받기만 한다). 프로브 간격(2m)보다 작은 발광체의 근거리 빛은 잡지 못한다.
+
 ### 접지 그림자: `ContactShadows`
 
 `<ContactShadows max? opacity? always? />`는 `useContactShadow(ref, radius)`로 등록한 캐릭터의 발밑에 부드러운 원판 그림자를 그린다. 플레이어(`PhysicsEntity`)와 NPC는 이미 등록한다. 인스턴스 하나라 draw 하나이고, 카메라에서 가까운 `max`(기본 32)개까지 그린다.

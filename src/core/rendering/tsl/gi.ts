@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {
-  materialColor,
+  diffuseColor,
   materialEmissive,
   min,
   mix,
@@ -9,8 +9,9 @@ import {
   step,
   texture3D,
   uniform,
+  vec3,
 } from 'three/tsl';
-import type { MeshStandardNodeMaterial, Node } from 'three/webgpu';
+import type { Node } from 'three/webgpu';
 
 import type { GiIrradiance } from './types';
 import type { ProbeFaceBuffers, ProbeVolumeConfig, VoxelDims } from '../../gi/types';
@@ -21,11 +22,19 @@ const WEIGHT_FLOOR = 1e-6;
 const FAR = 1e9;
 const PLACEHOLDER_DIMS: VoxelDims = [1, 1, 1];
 
-type ProbeTexture = { texture: THREE.Data3DTexture; data: Uint16Array };
+const FACE_COUNT = 6;
 
-function createProbeTexture(dims: VoxelDims): ProbeTexture {
-  const data = new Uint16Array(dims[0] * dims[1] * dims[2] * TEXEL_STRIDE);
-  const texture = new THREE.Data3DTexture(data, dims[0], dims[1], dims[2]);
+type ProbeAtlas = { texture: THREE.Data3DTexture; data: Uint16Array };
+
+/**
+ * One RGBA half-float 3D texture per level, its six faces (+x -x +y -y +z -z) side by side along x. A single binding
+ * keeps materials that already sample shadow cascades, an environment map and their own maps within WebGPU's
+ * 16 sampled textures per stage.
+ */
+function createProbeAtlas(dims: VoxelDims): ProbeAtlas {
+  const width = dims[0] * FACE_COUNT;
+  const data = new Uint16Array(width * dims[1] * dims[2] * TEXEL_STRIDE);
+  const texture = new THREE.Data3DTexture(data, width, dims[1], dims[2]);
   texture.format = THREE.RGBAFormat;
   texture.type = THREE.HalfFloatType;
   texture.minFilter = THREE.LinearFilter;
@@ -38,81 +47,75 @@ function createProbeTexture(dims: VoxelDims): ProbeTexture {
   return { texture, data };
 }
 
-function writeHalfFloats(target: Uint16Array, source: Float32Array): void {
-  const count = Math.min(target.length, source.length);
-  for (let index = 0; index < count; index++) {
-    target[index] = THREE.DataUtils.toHalfFloat(source[index] ?? 0);
+/** Writes each face's probe rows into its slab of the atlas, as half floats. */
+function writeFaces(target: Uint16Array, dims: VoxelDims, faces: ProbeFaceBuffers): void {
+  const rowLength = dims[0] * TEXEL_STRIDE;
+  const rows = dims[1] * dims[2];
+  for (let face = 0; face < FACE_COUNT; face++) {
+    const source = faces[face];
+    if (!source) continue;
+    for (let row = 0; row < rows; row++) {
+      const from = row * rowLength;
+      const to = (row * FACE_COUNT + face) * rowLength;
+      for (let index = 0; index < rowLength; index++) {
+        target[to + index] = THREE.DataUtils.toHalfFloat(source[from + index] ?? 0);
+      }
+    }
   }
 }
 
 /**
- * 프로브 조도 큐브 한 레벨(면마다 RGBA 3D 텍스처 1장, 순서 +x -x +y -y +z -z)을 하드웨어 삼선형 보간으로 읽어
+ * 프로브 조도 큐브 한 레벨(여섯 면을 x로 이어 붙인 RGBA 3D 텍스처 1장)을 하드웨어 삼선형 보간으로 읽어
  * 표면 법선 방향의 조도/PI를 계산한다. CPU의 evaluateAmbientCube와 같은 n^2 가중 평균이다.
  */
 function createLevel(shifted: Node<'vec3'>) {
   const origin = uniform(new THREE.Vector3());
   const inverseSpacing = uniform(1);
-  const inverseCounts = uniform(new THREE.Vector3(1, 1, 1));
-  const coordinates = shifted.sub(origin).mul(inverseSpacing).add(HALF).mul(inverseCounts);
-  const createFace = () => {
-    const probe = createProbeTexture(PLACEHOLDER_DIMS);
-    return { ...probe, node: texture3D(probe.texture, coordinates) };
-  };
-  const faces = [
-    createFace(),
-    createFace(),
-    createFace(),
-    createFace(),
-    createFace(),
-    createFace(),
-  ] as const;
+  const counts = uniform(new THREE.Vector3(1, 1, 1));
+  // Probe texel position; x stays inside each face's own slab so filtering never reads the neighbouring face.
+  const texel = shifted.sub(origin).mul(inverseSpacing).add(HALF);
+  const slabX = texel.x.clamp(HALF, counts.x.sub(HALF));
+  const atlasWidth = counts.x.mul(FACE_COUNT);
+  const v = texel.y.div(counts.y);
+  const w = texel.z.div(counts.z);
+  let atlas = createProbeAtlas(PLACEHOLDER_DIMS);
+  const atlasNode = texture3D(atlas.texture);
+  const face = (index: number) => atlasNode.sample(vec3(slabX.add(counts.x.mul(index)).div(atlasWidth), v, w)).rgb;
   let dims: VoxelDims = PLACEHOLDER_DIMS;
 
   const weights = normalWorld.mul(normalWorld);
   const total = weights.x.add(weights.y).add(weights.z).max(WEIGHT_FLOOR);
-  const alongX = mix(faces[1].node.rgb, faces[0].node.rgb, step(0, normalWorld.x));
-  const alongY = mix(faces[3].node.rgb, faces[2].node.rgb, step(0, normalWorld.y));
-  const alongZ = mix(faces[5].node.rgb, faces[4].node.rgb, step(0, normalWorld.z));
+  const alongX = mix(face(1), face(0), step(0, normalWorld.x));
+  const alongY = mix(face(3), face(2), step(0, normalWorld.y));
+  const alongZ = mix(face(5), face(4), step(0, normalWorld.z));
   const irradiance = alongX
     .mul(weights.x)
     .add(alongY.mul(weights.y))
     .add(alongZ.mul(weights.z))
     .div(total);
 
-  const replaceTextures = (next: VoxelDims) => {
-    for (const face of faces) {
-      const probe = createProbeTexture(next);
-      face.texture.dispose();
-      face.texture = probe.texture;
-      face.data = probe.data;
-      face.node.value = probe.texture;
-    }
-    dims = next;
-  };
-
   return {
     irradiance,
     upload: (config: ProbeVolumeConfig, data: ProbeFaceBuffers) => {
-      const counts = config.counts;
-      if (counts[0] !== dims[0] || counts[1] !== dims[1] || counts[2] !== dims[2]) {
-        replaceTextures(counts);
+      const next = config.counts;
+      if (next[0] !== dims[0] || next[1] !== dims[1] || next[2] !== dims[2]) {
+        const replaced = atlas;
+        atlas = createProbeAtlas(next);
+        atlasNode.value = atlas.texture;
+        replaced.texture.dispose();
+        dims = next;
       }
-      faces.forEach((face, index) => {
-        const source = data[index];
-        if (source) writeHalfFloats(face.data, source);
-        face.texture.needsUpdate = true;
-      });
+      writeFaces(atlas.data, dims, data);
+      atlas.texture.needsUpdate = true;
       origin.value.set(config.origin.x, config.origin.y, config.origin.z);
       inverseSpacing.value = 1 / config.spacing;
-      inverseCounts.value.set(1 / counts[0], 1 / counts[1], 1 / counts[2]);
+      counts.value.set(next[0], next[1], next[2]);
     },
     dispose: () => {
-      for (const face of faces) face.texture.dispose();
+      atlas.texture.dispose();
     },
   };
 }
-
-const appliedMaterials = new WeakSet<object>();
 
 /**
  * 성긴 프로브 레벨 위에 촘촘한 레벨을 섞는 2단계 캐스케이드 조도 노드를 만든다.
@@ -133,6 +136,11 @@ export function createGiIrradiance(): GiIrradiance {
   const irradiance = mix(coarse.irradiance, fine.irradiance, fineWeight).mul(
     intensity,
   ) as Node<'vec3'>;
+
+  // Every surface given indirect light, with the emissive it had, so dispose() can hand it back unchanged.
+  const applied = new Map<THREE.Material, Node<'vec3'> | null | undefined>();
+  // The albedo the surface shades with (colour, map, vertex colours or its own colorNode, less its metalness).
+  const received = diffuseColor.rgb.mul(irradiance);
 
   return {
     node: irradiance,
@@ -160,14 +168,22 @@ export function createGiIrradiance(): GiIrradiance {
       );
       fineFade.value = spacing;
     },
-    applyToMaterial: (material: MeshStandardNodeMaterial) => {
-      if (appliedMaterials.has(material)) return;
-      appliedMaterials.add(material);
-      const emitted = (material.emissiveNode as Node<'vec3'> | null) ?? materialEmissive;
-      material.emissiveNode = emitted.add(materialColor.mul(irradiance));
+    applyToMaterial: (material) => {
+      if (applied.has(material)) return;
+      // Classic materials take it too: the renderer copies emissiveNode when it builds their node material.
+      const surface = material as THREE.Material & { emissiveNode?: Node<'vec3'> | null };
+      applied.set(material, surface.emissiveNode);
+      surface.emissiveNode = (surface.emissiveNode ?? materialEmissive).add(received);
       material.needsUpdate = true;
     },
     dispose: () => {
+      for (const [material, emissive] of applied) {
+        const surface = material as THREE.Material & { emissiveNode?: Node<'vec3'> | null };
+        if (emissive === undefined) delete surface.emissiveNode;
+        else surface.emissiveNode = emissive;
+        material.needsUpdate = true;
+      }
+      applied.clear();
       coarse.dispose();
       fine.dispose();
     },

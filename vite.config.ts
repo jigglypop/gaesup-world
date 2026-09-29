@@ -28,13 +28,20 @@ const libraryExternals = [
   /^zustand\//,
 ];
 
-/** The package ships only the WASM core from `public/`; copying the whole folder would put the example's models into `dist`. */
+/**
+ * The package ships only its WASM kernels from `public/` (the core and the GI probe updater); copying the whole folder
+ * would put the example's models into `dist`.
+ */
+const SHIPPED_WASM = ['gaesup_core.wasm', 'gaesup_gi.wasm'];
+
 function emitCoreWasm(): Plugin {
   return {
     name: 'emit-core-wasm',
     generateBundle() {
-      const source = readFileSync(path.resolve(import.meta.dirname, 'public/wasm/gaesup_core.wasm'));
-      this.emitFile({ type: 'asset', fileName: 'wasm/gaesup_core.wasm', source });
+      for (const name of SHIPPED_WASM) {
+        const source = readFileSync(path.resolve(import.meta.dirname, 'public/wasm', name));
+        this.emitFile({ type: 'asset', fileName: `wasm/${name}`, source });
+      }
     },
   };
 }

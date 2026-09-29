@@ -894,6 +894,7 @@ ${createInteractionAggregateTypeProbe('rootModule.')}`;
           'loadGiWasmModule',
           'useBuildingVoxelBoxes',
           'useGi',
+          'WorldGi',
           'requestCameraCloseUp',
           'playCameraCinematic',
           'CAMERA_CONTROLLER_DEFAULT_COLLISION_MODES',
@@ -1189,7 +1190,7 @@ const unknownPreset: WorldPostProcessingProps = { quality: 'ultra' };
 const cinematicPipeline = <WorldPostProcessing {...cinematicLighting} />;
 const cinematicWorld = <GaesupWorldContent quality="high" postProcessing={{ quality: 'cinematic', giIntensity: 6 }} />;
 void unknownPreset; void cinematicPipeline; void cinematicWorld;
-import { GiVolume, buildingToVoxelBoxes, hexToLinearRgb, type GiEnvironment, type GiVolumeProps, type VoxelSourceBox } from 'gaesup-world';
+import { GiVolume, WorldGi, buildingToVoxelBoxes, hexToLinearRgb, type GiEnvironment, type GiVolumeProps, type VoxelSourceBox, type WorldGiProps } from 'gaesup-world';
 const giBoxes: VoxelSourceBox[] = [{ min: { x: 0, y: 0, z: 0 }, max: { x: 4, y: 3, z: 4 }, albedo: hexToLinearRgb('#d9d2c5') }];
 const giEnvironment: GiEnvironment = {
   sunDirection: { x: 0.4, y: 0.8, z: 0.4 },
@@ -1200,7 +1201,9 @@ const giEnvironment: GiEnvironment = {
 };
 const giVolume: GiVolumeProps = { boxes: giBoxes, environment: giEnvironment };
 const giWorld = <GiVolume {...giVolume} />;
-void giWorld; void buildingToVoxelBoxes;
+const worldGiProps: WorldGiProps = { intensity: 0.8, environment: { skyZenith: [0.4, 0.5, 0.9] }, receives: (mesh) => mesh.visible };
+const worldGi = <WorldGi {...worldGiProps} />;
+void giWorld; void worldGi; void buildingToVoxelBoxes;
 import { Avatar, AvatarRuntime, createAvatarStore } from 'gaesup-world/avatar';
 const modularAvatar = <Avatar body="body-sd-neutral-v1" equipment={{ top: 'top-001' }} />;
 void modularAvatar; void AvatarRuntime; void createAvatarStore;

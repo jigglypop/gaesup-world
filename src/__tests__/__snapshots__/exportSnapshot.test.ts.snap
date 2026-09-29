@@ -403,6 +403,7 @@ exports[`runtime export snapshot . export 목록 1`] = `
   "WorldBridge",
   "WorldConfigProvider",
   "WorldGamepadInput",
+  "WorldGi",
   "WorldInputActions",
   "WorldInputScope",
   "WorldInputSurface",
