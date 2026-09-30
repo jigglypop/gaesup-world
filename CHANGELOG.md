@@ -1,3 +1,12 @@
+# [1.7.0](https://github.com/jigglypop/gaesup-world/compare/v1.6.0...v1.7.0) (2026-09-30)
+
+
+### Features
+
+* **ground:** 모래·눈·풀밭을 실제 재질처럼 다듬고 모래·눈에 발자국을 남긴다 ([fd60802](https://github.com/jigglypop/gaesup-world/commit/fd608024997ca3dd2bf2e8f11c05ea4fae62ab6c))
+* **water:** 바다와 연못을 투명하게 하고, 해저·굴절·깊이 착색·프레넬 반사·커스틱·물가 거품을 넣는다 ([7dbeb58](https://github.com/jigglypop/gaesup-world/commit/7dbeb58a52deadf7c392aab33db29975518a128d))
+* **weather:** 비·폭풍·눈·바람·안개와 자동 기후를 되살리고, 밭 타일 15작물과 날씨가 땅·풀·물·밭에 묻어나게 한다 ([dc67686](https://github.com/jigglypop/gaesup-world/commit/dc676864f9dbefa03958a7e67ba4ed8e5863767c))
+
 # [1.6.0](https://github.com/jigglypop/gaesup-world/compare/v1.5.0...v1.6.0) (2026-09-29)
 
 
