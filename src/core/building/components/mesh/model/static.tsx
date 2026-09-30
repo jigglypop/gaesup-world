@@ -2,7 +2,7 @@ import { memo, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRe
 
 import { useThree } from '@react-three/fiber';
 import type * as THREE from 'three';
-import { attribute } from 'three/tsl';
+import { attribute, vertexColor } from 'three/tsl';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 
 import { ModelBatch } from './batch';
@@ -10,6 +10,7 @@ import { bakeModel, layoutStaticModels, mergeStaticModels, sameStaticCell, type 
 import { useGLTFAsset } from '../../../../assets/useGLTFAsset';
 import { CompileGate } from '../../../../rendering/CompileGate';
 import { castNearShadowOnly } from '../../../../rendering/sky/nearShadow';
+import { weatheredSurface } from '../../../../rendering/tsl/weatherSurface';
 import { rendererKind } from '../../../../rendering/webgpu';
 import { useReusedByKey } from '../../../hooks/useReusedByKey';
 
@@ -19,14 +20,19 @@ type Report = (url: string, model: BakedModel | null | undefined) => void;
 
 const materials = new Map<THREE.Side, MeshStandardNodeMaterial>();
 
-/** The material of merged cells: every vertex carries its model material's color, emission and roughness. */
+/**
+ * The material of merged cells: every vertex carries its model material's color, emission and roughness. The live
+ * weather wets it and lays snow on its upward faces; that only moves shared uniforms, so it never rebuilds.
+ */
 function cellMaterial(side: THREE.Side): MeshStandardNodeMaterial {
   let material = materials.get(side);
   if (!material) {
-    material = new MeshStandardNodeMaterial({ side, metalness: 0, vertexColors: true });
+    material = new MeshStandardNodeMaterial({ side, metalness: 0 });
     material.name = 'static-models';
+    const surface = weatheredSurface(vertexColor().rgb, attribute('roughness', 'float'));
+    material.colorNode = surface.color;
+    material.roughnessNode = surface.roughness;
     material.emissiveNode = attribute('emissive', 'vec3');
-    material.roughnessNode = attribute('roughness', 'float');
     materials.set(side, material);
   }
   return material;

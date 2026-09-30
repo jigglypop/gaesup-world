@@ -47,7 +47,7 @@ export function createBuildingEditActions(set: BuildingSet, get: BuildingGet) {
         const floor = state.selectedTileGroupId ? state.tileGroups.get(state.selectedTileGroupId) : undefined;
         const materialId = state.currentTileMaterialId ?? floor?.floorMeshId;
         const objectType = state.selectedTileObjectType;
-        const objectConfig = defaultTileObjectConfig(objectType, state.currentTerrainColor, state.currentTerrainAccentColor);
+        const objectConfig = defaultTileObjectConfig(objectType, state.currentTerrainColor, state.currentTerrainAccentColor, state.currentFarm);
         state.updateTile(group.id, id, { ...(materialId ? { materialId } : {}), objectType, ...(objectConfig ? { objectConfig } : {}) });
         return;
       }
@@ -265,6 +265,11 @@ export function createBuildingEditActions(set: BuildingSet, get: BuildingGet) {
         }
       }),
 
+    setCurrentFarm: (farm) =>
+      set((state) => {
+        state.currentFarm = { ...farm };
+      }),
+
     setSelectedPlacedObjectType: (type) =>
       set((state) => {
         state.selectedPlacedObjectType = type;
@@ -448,6 +453,11 @@ export function createBuildingEditActions(set: BuildingSet, get: BuildingGet) {
       set((state) => {
         state.weatherEffect = effect;
         state.showSnow = effect === 'snow';
+      }),
+
+    setClimate: (climate) =>
+      set((state) => {
+        state.climate = climate;
       }),
 
     setWorldSurface: (surface) =>

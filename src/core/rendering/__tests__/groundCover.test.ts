@@ -10,7 +10,8 @@ test.each(['sand', 'snow'] as const)('a lit %s cover shades relief and glints in
   const material = createCoverMaterial({ kind, shore, trail });
   expect(material).toBeInstanceOf(MeshStandardNodeMaterial);
   const lit = material as MeshStandardNodeMaterial;
-  expect(lit.vertexColors).toBe(true);
+  // The tile colors are read in the color node, so rain and snow lie over them.
+  expect(lit.vertexColors).toBe(false);
   expect(lit.colorNode).not.toBeNull();
   expect(lit.normalNode).not.toBeNull();
   expect(lit.roughnessNode).not.toBeNull();

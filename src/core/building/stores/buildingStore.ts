@@ -45,6 +45,7 @@ export function createBuildingStore() {
     selectedTileObjectType: 'none',
     currentTerrainColor: '#5a7a35',
     currentTerrainAccentColor: '#8fbc5a',
+    currentFarm: {},
     selectedPlacedObjectType: 'none',
     selectedModelObjectId: 'door-basic',
     currentModelUrl: '',
@@ -79,6 +80,7 @@ export function createBuildingStore() {
     showFog: false,
     fogColor: '#cfd8e3',
     weatherEffect: 'none',
+    climate: 'off',
     worldSurface: 'ground',
 
     initializeDefaults: () => set(seedBuildingDefaults),

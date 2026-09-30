@@ -10,6 +10,7 @@ attribute float halfRootAngleCos;
 attribute float stretch;
 uniform float time;
 uniform float windScale;
+uniform vec2 windDirection;
 uniform float bladeHeight;
 uniform vec3 trampleCenter;
 uniform float trampleRadius;
@@ -68,8 +69,9 @@ void main() {
   vec3 vPosition = vec3(position.x, position.y + position.y * stretch, position.z);
   vPosition = rotateVectorByQuaternion(vPosition, bent);
 
+  // Tips bend downwind: about the ground axis across the wind (scaled like the old diagonal one).
   float windAngle = noise * 0.3 * windScale;
-  vec4 windQuat = vec4(sin(windAngle), 0.0, -sin(windAngle), cos(windAngle));
+  vec4 windQuat = vec4(vec3(windDirection.y, 0.0, -windDirection.x) * sin(windAngle) * 1.41421356, cos(windAngle));
   vPosition = rotateVectorByQuaternion(vPosition, windQuat);
 
   // Player trampling: blades within `trampleRadius` of `trampleCenter` get

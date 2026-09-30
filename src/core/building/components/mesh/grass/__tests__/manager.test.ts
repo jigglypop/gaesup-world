@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 
+import { climateTargets, createClimateState } from '../../../../../weather/core/climate';
+import { resetWeatherField, windSway, writeWeatherField } from '../../../../../weather/core/field';
 import { getGrassManager, type GrassTileRenderState } from '../manager';
 
 function makeFrustum(camera: THREE.PerspectiveCamera): THREE.Frustum {
@@ -94,6 +96,30 @@ describe('GrassManager', () => {
     expect(sample.instanceCount).toBe(0);
 
     mgr.unregister(handle.id);
+  });
+
+  it('sways with the live wind, harder in a storm than on a calm day', () => {
+    const mgr = getGrassManager();
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 200);
+    camera.position.set(0, 5, 0);
+    camera.lookAt(0, 0, 10);
+    const frustum = makeFrustum(camera);
+    const samples: GrassTileRenderState[] = [];
+    const handle = mgr.register({
+      width: 4, height: 1, center: new THREE.Vector3(0, 0, 10), maxInstances: 100, apply: (s) => samples.push({ ...s }),
+    });
+    try {
+      mgr.tick({ elapsedTime: 1, delta: 1 / 60, cameraPosition: camera.position, frustum });
+      writeWeatherField(createClimateState(climateTargets('storm', 1)));
+      mgr.tick({ elapsedTime: 2, delta: 1 / 60, cameraPosition: camera.position, frustum });
+      const [calm, storm] = samples;
+      expect(calm!.windScale).toBeCloseTo(0.92);
+      expect(storm!.windScale).toBeCloseTo(windSway());
+      expect(storm!.windScale).toBeGreaterThan(calm!.windScale * 2);
+    } finally {
+      resetWeatherField();
+      mgr.unregister(handle.id);
+    }
   });
 
   it('processes many tiles in a single tick', () => {

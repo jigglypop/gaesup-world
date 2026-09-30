@@ -40,7 +40,7 @@
 | `core/project-settings` | 547 | 유지 | 입력·레이어 등 프로젝트 설정 |
 | `core/stores` | 540 | 수정 | 월드 store(모드·URL·크기·성능 등) 슬라이스, `lazyScopedStore`. legacy 전역 store는 2.0에서 제거 예정 |
 | `core/perf` | 520 | 수정 | 기기 감지·품질 tier·렌더러 통계·`IdleFrameRate`. GPU 시간과 성능 HUD가 없다(PERF). 잔디는 월드 profile이 아니라 전역 `usePerfStore`를 읽는다. `IdleFrameRate`는 게임패드 입력을 활동으로 세지 않는다 |
-| `core/weather` | 454 | 유지 | 날씨 store·효과(TSL) |
+| `core/weather` | 1,183 | 유지 | 날씨 store·기후 필드·강수·조명(TSL) |
 | `core/time` | 443 | 유지 | 게임 시계·날짜 |
 | `core/effects` | 415 | 유지 | 발자국, 텔레포트 효과 |
 | `core/dialog` | 356 | 유지 | 대화 트리, `setFlag`·`custom` 효과, `flagEquals`·`custom` 조건(2026-09-27 일반화). 런타임마다 레지스트리를 갖고 legacy 경로만 `getDialogRegistry()`를 쓴다 |

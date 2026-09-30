@@ -2,11 +2,15 @@ import {
   createBlockFootprint,
   tilePositionToCell,
 } from '../model';
+import { createDefaultTileCategories, createDefaultWallCategories } from './defaultCategories';
 import { BuildingSpatialIndex } from './spatialIndex';
+import { clonePlainData } from '../../utils/clone';
+import { CLIMATE_MODES } from '../../weather/core/climate';
 import { wallEdge } from '../model/footprint';
 import { placeTileOnGrid } from '../model/placement';
 import type {
   BuildingBlockConfig,
+  BuildingClimate,
   BuildingSerializedState,
   MeshConfig,
   PlacedObject,
@@ -16,8 +20,6 @@ import type {
   WallConfig,
   WallGroupConfig,
 } from '../types';
-import { createDefaultTileCategories, createDefaultWallCategories } from './defaultCategories';
-import { clonePlainData } from '../../utils/clone';
 
 const SERIALIZED_KEYS = [
   'meshes',
@@ -29,6 +31,7 @@ const SERIALIZED_KEYS = [
   'showFog',
   'fogColor',
   'weatherEffect',
+  'climate',
   'worldSurface',
   'wallCategories',
   'tileCategories',
@@ -55,6 +58,7 @@ export type BuildingHydrationTarget = {
   showFog: boolean;
   fogColor: string;
   weatherEffect: BuildingSerializedState['weatherEffect'];
+  climate: BuildingClimate;
   worldSurface: BuildingSerializedState['worldSurface'];
   wallCategories: Map<string, WallCategory>;
   tileCategories: Map<string, TileCategory>;
@@ -72,6 +76,7 @@ export function serializeBuildingState(state: BuildingSerializableState): Buildi
     showFog: state.showFog,
     fogColor: state.fogColor,
     weatherEffect: state.weatherEffect,
+    climate: state.climate,
     worldSurface: state.worldSurface,
     wallCategories: Array.from(state.wallCategories.values(), clonePlainData),
     tileCategories: Array.from(state.tileCategories.values(), clonePlainData),
@@ -116,7 +121,7 @@ export function hydrateBuildingState(
     throw new Error('Unsupported building snapshot version');
   }
   const collections = ['meshes', 'wallGroups', 'tileGroups', 'blocks', 'objects', 'wallCategories', 'tileCategories'] as const;
-  const settings = ['showSnow', 'showFog', 'fogColor', 'weatherEffect', 'worldSurface'] as const;
+  const settings = ['showSnow', 'showFog', 'fogColor', 'weatherEffect', 'climate', 'worldSurface'] as const;
   if (![...collections, ...settings].some((key) => Object.prototype.hasOwnProperty.call(data, key))) {
     throw new Error('Empty building snapshot');
   }
@@ -130,6 +135,7 @@ export function hydrateBuildingState(
     (data.showFog !== undefined && typeof data.showFog !== 'boolean') ||
     (data.fogColor !== undefined && typeof data.fogColor !== 'string') ||
     (data.weatherEffect !== undefined && !['none', 'snow', 'rain', 'storm', 'wind'].includes(data.weatherEffect)) ||
+    (data.climate !== undefined && !CLIMATE_MODES.includes(data.climate)) ||
     (data.worldSurface !== undefined && !['ground', 'water'].includes(data.worldSurface))
   ) throw new Error('Invalid building snapshot settings');
   if (
@@ -185,6 +191,7 @@ export function hydrateBuildingState(
   state.showFog = data.showFog ?? false;
   state.fogColor = data.fogColor ?? '#cfd8e3';
   state.weatherEffect = data.weatherEffect ?? (state.showSnow ? 'snow' : 'none');
+  state.climate = data.climate ?? 'off';
   state.worldSurface = data.worldSurface ?? 'ground';
   // Snapshots without categories keep the current ones; an empty store falls back to the defaults.
   if (data.wallCategories) state.wallCategories = new Map(data.wallCategories.map((category) => [category.id, category]));
@@ -202,7 +209,7 @@ export function applyBuildingHydration(state: BuildingHydrationTarget, prepared:
     blocks: prepared.blocks, objects: prepared.objects,
     spatialIndex: prepared.spatialIndex,
     initialized: prepared.initialized, showSnow: prepared.showSnow, showFog: prepared.showFog,
-    fogColor: prepared.fogColor, weatherEffect: prepared.weatherEffect, worldSurface: prepared.worldSurface,
+    fogColor: prepared.fogColor, weatherEffect: prepared.weatherEffect, climate: prepared.climate, worldSurface: prepared.worldSurface,
     wallCategories: prepared.wallCategories, tileCategories: prepared.tileCategories,
   });
   applySelectedGroupId(state, 'selectedTileGroupId', state.tileGroups);

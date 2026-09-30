@@ -5,7 +5,8 @@ import type * as THREE from 'three';
 import { buildCoverGeometry, buildCoverSpecks, type CoverEntry, type CoverLook } from './geometry';
 import { useCoverMaterial } from './material';
 import { getDefaultToonMode } from '../../../../rendering/toon';
-import type { CoverKind } from '../../../../rendering/tsl/groundCover';
+import { COVER_POROSITY, type CoverKind } from '../../../../rendering/tsl/groundCover';
+import { classicWeather } from '../../../terrain/groundMaterial';
 
 const disableRaycast = () => undefined;
 const SKIRT_USER_DATA = { nonInteractive: true };
@@ -22,7 +23,7 @@ export type CoverBatchProps = {
 
 /**
  * Every tile of one cover as a surface and a skirt: two draws. Node renderers shade it with the cover's node material;
- * the classic renderer uses `classic` and scatters loose specks over it.
+ * the classic renderer uses `classic`, wet and snowed on by the live weather, and scatters loose specks over it.
  */
 export function CoverBatch({ name, kind, look, entries, toon, classic }: CoverBatchProps) {
   const useToon = toon ?? getDefaultToonMode();
@@ -36,7 +37,7 @@ export function CoverBatch({ name, kind, look, entries, toon, classic }: CoverBa
   }, [geometry]);
   useEffect(() => () => specks?.geometry.dispose(), [specks]);
   if (entries.length === 0) return null;
-  const material = node ?? classic(useToon);
+  const material = node ?? classicWeather(classic(useToon), COVER_POROSITY[kind]);
   return (
     <>
       <mesh name={`${name}-surface`} geometry={geometry.surface} material={material} receiveShadow />

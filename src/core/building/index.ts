@@ -37,6 +37,8 @@ export { default as Sand, SandBatch } from './components/mesh/sand';
 export type { SandEntry } from './components/mesh/sand';
 export { default as Snowfield, SnowfieldBatch } from './components/mesh/snowfield';
 export type { SnowfieldEntry } from './components/mesh/snowfield';
+export { FarmCover } from './components/mesh/farm/FarmCover';
+export { readFarmPlot, readTilePlot, type FarmPlot } from './terrain/farm/config';
 export { Snow } from './components/mesh/snow';
 export { default as Grass } from './components/mesh/grass/Grass';
 export { default as GrassDriver } from './components/mesh/grass/GrassDriver';

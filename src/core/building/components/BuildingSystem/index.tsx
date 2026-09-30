@@ -7,7 +7,6 @@ import { NPCPreview } from '../../../npc/components/NPCPreview';
 import { CompileGate } from '../../../rendering/CompileGate';
 import { DynamicFog } from '../../../rendering/fog/DynamicFog';
 import { GpuBatchBridge } from '../../../rendering/GpuBatchBridge';
-import { WeatherEffect } from '../../../weather';
 import { getDefaultBuildingObject } from '../../catalog/objects';
 import { useBuildingStore } from '../../stores/buildingStore';
 import { scatterDecor } from '../../terrain/scatter';
@@ -17,6 +16,7 @@ import { useBuildingVisibilityStore } from '../../visibility/store';
 import { BlockSystem } from '../BlockSystem';
 import { BuildingBatches } from '../BuildingBatches';
 import { BuildingColliders } from '../BuildingColliders';
+import { BuildingWeather } from '../BuildingWeather';
 import { EditOverlay } from '../EditOverlay';
 import { buildingEditItems } from '../EditOverlay/items';
 import { GridHelper } from '../GridHelper';
@@ -319,9 +319,7 @@ export const BuildingSystem = React.memo(function BuildingSystem({
           </group>
         ))}
 
-        {weatherEffect !== 'none' && (
-          <WeatherEffect kind={weatherEffect} count={weatherEffect === 'storm' ? 1800 : 1200} />
-        )}
+        <BuildingWeather />
         {showSnow && weatherEffect !== 'snow' && <Snow gpu />}
         {showFog && <DynamicFog color={fogColor} />}
         {worldSurface === 'water' && (

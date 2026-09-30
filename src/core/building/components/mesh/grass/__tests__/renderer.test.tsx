@@ -4,6 +4,8 @@ import { useThree } from '@react-three/fiber';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import * as THREE from 'three';
 
+import { weatherField } from '../../../../../weather/core/field';
+import { weatherGlUniforms } from '../../../../../weather/core/glsl';
 import Grass from '../Grass';
 import { getGrassManager } from '../manager';
 import type { GrassMaterialInstance } from '../type';
@@ -75,6 +77,11 @@ test.each([false, true])('grass preserves the shared manager update path (nodes:
   expect(material.uniforms['time']?.value).toBe(4);
   expect(material.uniforms['bladeHeight']?.value).toBe(0.32);
   expect(material.uniforms['windScale']?.value).toBe(0.6);
+  if (!nodes) {
+    // Classic blades bend downwind and frost from the shared weather uniforms.
+    expect(material.uniforms['windDirection']?.value).toEqual(new THREE.Vector2(weatherField.windX, weatherField.windZ));
+    expect(material.uniforms['weatherSnowCover']).toBe(weatherGlUniforms().weatherSnowCover);
+  }
   expect(material.uniforms['trampleCenter']?.value).toEqual(new THREE.Vector3(-19, 0, 2));
   expect(material.uniforms['trampleCenter']?.value).not.toBe(center);
   await renderer.update(<RendererMode nodes={nodes}>

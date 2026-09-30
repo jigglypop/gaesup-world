@@ -8,7 +8,7 @@ camera.position.set(0, 2, 0); camera.lookAt(0, 0, -8); camera.updateMatrixWorld(
 const frustum = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
 const tile = { width: 4, height: 1, center: new THREE.Vector3(0, 0, -8), maxInstances: 64 };
 const args = (elapsedTime: number) => ({ elapsedTime, delta: 1 / 144, cameraPosition: camera.position, frustum });
-const sources = { weather: () => null, trample: () => null };
+const sources = { trample: () => null };
 
 afterEach(() => { setGrassManagerWasm(null); });
 

@@ -282,7 +282,7 @@ const runtime = createGaesupRuntime({ plugins: [createWeatherPlugin(), plugin] }
 
 - `createRenderer(props)`(`webgpu.ts`)는 `<Canvas gl={createRenderer}>`에 넘기는 비동기 팩토리다. `navigator.gpu`와 어댑터가 있으면 `three/webgpu`를 동적 import해 `WebGPURenderer`를 만들고 `init()`한다. API·어댑터가 없거나 모듈·생성자를 못 쓰면 `createLegacyRenderer`로 `WebGLRenderer`를 만든다. `init()` 실패는 backend를 정리하고 그대로 던진다. `dispose`와 `forceContextLoss`는 한 번만 도는 호환 함수로 바꿔 둔다.
 - `rendererKind(renderer)`: `'webgpu'`(WebGPU 장치), `'webgpu-fallback'`(`WebGPURenderer`의 WebGL2 backend), `'webgl'`(`WebGLRenderer`). compute, storage buffer, GPU 배치는 `'webgpu'`에서만 쓴다. 렌더러·WebGPU 환경 검사는 이 파일에만 둔다(`src/__tests__/sourceRules.test.ts`).
-- TSL: `src/core/rendering/tsl/`(fire, flag, grassMaterial, snow, toonWater, weather)과 `Node*` 컴포넌트(`building/components/mesh/NodeTreeParticles.tsx`, `fire/NodeFireEffects.tsx`, `flag/NodeFlagMaterial.tsx`, `grass/NodeGrassMaterial.tsx`, `snow/NodeGpuSnow.tsx`, `water/NodeWaterMaterial.tsx`, `weather/components/WeatherEffect/NodeWeather.tsx`). 메시 컴포넌트는 `rendererKind !== 'webgl'`이면 이쪽을 쓴다.
+- TSL: `src/core/rendering/tsl/`(fire, flag, grassMaterial, snow, toonWater, weather, weatherSurface, burst)과 `Node*` 컴포넌트(`building/components/mesh/NodeTreeParticles.tsx`, `fire/NodeFireEffects.tsx`, `flag/NodeFlagMaterial.tsx`, `grass/NodeGrassMaterial.tsx`, `snow/NodeGpuSnow.tsx`, `water/NodeWaterMaterial.tsx`). 메시 컴포넌트는 `rendererKind !== 'webgl'`이면 이쪽을 쓴다.
 - `CompileGate`: 처음 보이는 콘텐츠를 숨긴 채 `compileAsync`로 파이프라인(그림자 cascade 포함)을 먼저 만들어 첫 그리기 프레임의 동기 셰이더 생성 멈춤을 없앤다. 콘텐츠의 Suspense 안에 둔다. three r185·r186에서만(`gpuBatchRevision.ts`) 켜진다. 건축의 벚꽃·깃발·불·빌보드·모델 오브젝트가 쓴다.
 - `GpuBatchBridge`: 이름이 `building-batch:`로 시작하는 `InstancedMesh`를 compute 셰이더로 frustum 컬링하고 indirect draw로 그린다. `'webgpu'`와 three r185·r186에서만 켜진다. raw `useFrame`을 쓰는 두 파일 중 하나다.
 - 후처리 `WorldPostProcessing`: WebGPU에서는 TSL `RenderPipeline`(TRAA, GTAO, bloom, 색 보정, `cinematic`이면 SSGI·SSR)을 캔버스의 단일 render owner로 돌린다. WebGL에서는 `@react-three/postprocessing` 기반 `ToonOutlines` + `ColorGrade`로 간다.
@@ -294,7 +294,7 @@ WebGL 전용 경로(GPU-1에서 지울 대상):
 | 경로 | 위치 |
 |---|---|
 | `WebGLRenderer` 생성 | `createLegacyRenderer`(`webgpu.ts`, 루트 export). `MultiplayerCanvas`(`src/core/networks/components/MultiplayerCanvas.tsx`)는 `gl`을 넘기지 않아 R3F 기본 `WebGLRenderer`로 그린다 |
-| `rendererKind`가 `'webgl'`과 비교되는 분기 | 9개 파일 10곳: `building/components/mesh/fire/index.tsx`(2), `flag/index.tsx`, `grass/Grass.tsx`, `sakura.tsx`, `snow/index.tsx`, `water/index.tsx`, `rendering/postprocess/WorldPostProcessing.tsx`, `rendering/shadow/ShadowDepthMaterials.tsx`, `weather/components/WeatherEffect/index.tsx`. `CascadedSun`에는 `!== 'webgpu'` 분기가 따로 있다 |
+| `rendererKind`가 `'webgl'`과 비교되는 분기 | 10개 파일 11곳: `building/components/mesh/fire/index.tsx`(2), `flag/index.tsx`, `grass/Grass.tsx`, `sakura.tsx`, `snow/index.tsx`, `water/index.tsx`, `rendering/postprocess/WorldPostProcessing.tsx`, `rendering/shadow/ShadowDepthMaterials.tsx`, `weather/components/Precipitation/index.tsx`, `effects/components/LandingBurst/index.tsx`. `CascadedSun`에는 `!== 'webgpu'` 분기가 따로 있다 |
 | GLSL | `.glsl` 6개(fire, flag, grass의 vert·frag), `shaderMaterial`·`ShaderMaterial`을 쓰는 파일 8개(위 메시 6개, `grass/GrassDepthMaterial.tsx`, `rendering/legacyDrei.ts`), `vite-plugin-glsl` |
 | WebGL 그림자 깊이 재질 | `rendering/shadow/ShadowDepthMaterials.tsx`, `depthMaterialCache.ts` |
 | `@react-three/postprocessing` | `rendering/outline.tsx`(`ToonOutlines`, `Outlined`), `postprocess/ColorGrade.tsx`, `postprocess/LutOverlay.tsx` |

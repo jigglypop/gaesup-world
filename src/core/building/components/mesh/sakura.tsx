@@ -4,7 +4,7 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
-import { useWeatherStoreApi } from '@core/weather/stores/weatherStore';
+import { windSway } from '@core/weather/core/field';
 
 import { CompileGate } from '../../../rendering/CompileGate';
 import { rendererKind } from '../../../rendering/webgpu';
@@ -442,7 +442,6 @@ function sakuraBatchSignature(trees: SakuraTreeEntry[]): string {
 
 export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: boolean }) {
   const nodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
-  const weatherStore = useWeatherStoreApi();
   const barkRef = useRef<THREE.InstancedMesh>(null!);
   const darkRef = useRef<THREE.InstancedMesh>(null!);
   const topRef = useRef<THREE.InstancedMesh>(null!);
@@ -633,18 +632,10 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
     if (m?.uniforms) {
       const uTime = m.uniforms['uTime'];
       const uScale = m.uniforms['uScale'];
-      const w = weatherStore.getState().current;
-      const intensity = w?.intensity ?? 0;
-      const base =
-        w?.kind === 'storm' ? 2.4 :
-        w?.kind === 'rain'  ? 1.6 :
-        w?.kind === 'snow'  ? 1.2 :
-        w?.kind === 'cloudy'? 1.1 :
-                              0.9;
       const uWind = m.uniforms['uWind'];
       if (uTime) uTime.value = elapsedSeconds;
       if (uScale) uScale.value = three.gl.domElement.height * 0.5;
-      if (uWind) uWind.value = base + intensity * 0.7;
+      if (uWind) uWind.value = windSway();
     }
   }, !nodes);
 

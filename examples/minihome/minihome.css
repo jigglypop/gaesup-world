@@ -256,7 +256,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
 .mh-progress { width: 200px; height: 6px; border-radius: 999px; overflow: hidden; background: rgba(118, 104, 170, 0.14); }
 .mh-progress i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #ff9a76, #b18cff); transition: width 0.3s ease; }
 .mh-hud { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 14px; }
-.mh-hud-top { display: flex; gap: 8px; }
+.mh-hud-top { display: flex; flex-wrap: wrap; gap: 8px; }
+.mh-weather { display: flex; flex-wrap: wrap; gap: 6px; pointer-events: auto; }
 .mh-keys {
   align-self: flex-start;
   display: flex;

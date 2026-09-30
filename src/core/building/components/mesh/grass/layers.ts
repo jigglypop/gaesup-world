@@ -14,7 +14,7 @@ const MEADOW_LIFT = 0.05;
 /** Blade roots on a textured mesh without a grass color. */
 const LAWN_TINT = '#86c460';
 /** Terrain covers that keep their own surface. */
-const COVERS = new Set(['water', 'sand', 'snowfield', 'dirt']);
+const COVERS = new Set(['water', 'sand', 'snowfield', 'dirt', 'farm']);
 
 /** Local x, z, tile top y and the bits of the grass-bearing neighbors (`neighborMask`). */
 type Cell = [number, number, number, number];

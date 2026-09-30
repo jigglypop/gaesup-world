@@ -3,8 +3,10 @@ import type { Draft } from 'immer';
 import type { BuildingSpatialIndex } from './spatialIndex';
 import type {
   BuildingBlockConfig,
+  BuildingClimate,
   BuildingSerializedState,
   BuildingTool,
+  FarmPlotConfig,
   BuildingSystemState,
   BuildingTreeKind,
   BuildingWallKind,
@@ -80,6 +82,9 @@ export interface BuildingStore extends BuildingSystemState {
   currentTerrainColor: string;
   currentTerrainAccentColor: string;
   setTerrainColors: (color: string, accentColor?: string) => void;
+  /** The plot that placed and painted `farm` tiles take (`objectConfig.farm`); unset fields read as the defaults. */
+  currentFarm: FarmPlotConfig;
+  setCurrentFarm: (farm: FarmPlotConfig) => void;
 
   selectedPlacedObjectType: PlacedObjectType | 'none';
   setSelectedPlacedObjectType: (type: PlacedObjectType | 'none') => void;
@@ -157,6 +162,8 @@ export interface BuildingStore extends BuildingSystemState {
   setFogColor: (color: string) => void;
   weatherEffect: BuildingWeatherEffect;
   setWeatherEffect: (effect: BuildingWeatherEffect) => void;
+  climate: BuildingClimate;
+  setClimate: (climate: BuildingClimate) => void;
   worldSurface: BuildingWorldSurface;
   setWorldSurface: (surface: BuildingWorldSurface) => void;
 

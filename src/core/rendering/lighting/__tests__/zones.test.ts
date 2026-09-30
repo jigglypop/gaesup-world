@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { sceneLighting } from '../zones';
+import { sceneLighting, type WeatherLight } from '../zones';
 
 function scene() {
   const root = new THREE.Scene();
@@ -53,4 +53,62 @@ test('levels changed while no zone applies are the ones the next zone scales', (
   lighting.zones.delete(zone);
   lighting.apply();
   expect(sun.intensity).toBe(4);
+});
+
+const weather = (overrides: Partial<WeatherLight> = {}): WeatherLight => ({
+  sun: 0.5, fill: 0.8, environment: 0.5, tint: new THREE.Color('#8899aa'), tintAmount: 0.5, sky: new THREE.Color('#556677'), skyAmount: 1,
+  ...overrides,
+});
+
+test('the weather layer scales on top of a zone, tints the fill and greys the background, then hands them back', () => {
+  const { root, sun, fill } = scene();
+  root.background = new THREE.Color('#8fd3ee');
+  const lighting = sceneLighting(root);
+  const zone = { blend: 1, profile: { sun: 0.5 } };
+  lighting.zones.set(zone, zone);
+  lighting.setWeather(weather());
+  lighting.apply();
+  expect(sun.intensity).toBeCloseTo(2 * 0.5 * 0.5);
+  expect(fill.intensity).toBeCloseTo(1.2 * 0.8);
+  expect(fill.color.getHexString()).not.toBe(new THREE.Color('#eaf6ff').getHexString());
+  expect((root.background as THREE.Color).getHexString()).toBe('556677');
+  expect(root.environmentIntensity).toBeCloseTo(0.2);
+  lighting.zones.delete(zone);
+  lighting.setWeather(null);
+  lighting.apply();
+  expect(sun.intensity).toBe(2);
+  expect(fill.intensity).toBe(1.2);
+  expect(fill.color.getHexString()).toBe(new THREE.Color('#eaf6ff').getHexString());
+  expect((root.background as THREE.Color).getHexString()).toBe(new THREE.Color('#8fd3ee').getHexString());
+  expect(root.environmentIntensity).toBe(0.4);
+});
+
+test('a level written by someone else while the weather applies becomes its new base', () => {
+  const { root, fill } = scene();
+  const lighting = sceneLighting(root);
+  lighting.setWeather(weather({ fill: 0.5 }));
+  lighting.apply();
+  fill.intensity = 0;
+  lighting.apply();
+  expect(fill.intensity).toBe(0);
+  fill.intensity = 2;
+  lighting.apply();
+  expect(fill.intensity).toBeCloseTo(1);
+  lighting.setWeather(null);
+  lighting.apply();
+  expect(fill.intensity).toBe(2);
+});
+
+test('lights that apply the weather themselves and lights added later are handled', () => {
+  const { root, sun } = scene();
+  sun.userData['weather'] = false;
+  const lighting = sceneLighting(root);
+  lighting.setWeather(weather());
+  lighting.apply();
+  expect(sun.intensity).toBe(2);
+  const late = new THREE.AmbientLight('#ffffff', 1);
+  root.add(late);
+  lighting.refresh();
+  lighting.apply();
+  expect(late.intensity).toBeCloseTo(0.8);
 });

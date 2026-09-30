@@ -13,6 +13,7 @@ import { Scene, type SceneSettings } from './Scene';
 import { StatusPanel } from './StatusPanel';
 import { countVisit, useStored } from './stored';
 import { createVillage } from './village';
+import { WeatherControl } from './WeatherControl';
 import { createMinihomeRuntime, modelUrl, type MinimeModel } from './world';
 import { WorldLoading } from './WorldLoading';
 
@@ -116,6 +117,7 @@ export default function Minihome() {
                 <div className="mh-hud-top">
                   <Clock />
                   <span className="mh-chip">🏝️ 미니홈피 섬</span>
+                  <WeatherControl />
                 </div>
                 {tab !== 'decorate' && (
                   <div className="mh-keys">

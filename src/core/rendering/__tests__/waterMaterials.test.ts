@@ -1,7 +1,9 @@
 import { Vector4 } from 'three';
 import { DataTexture } from 'three/webgpu';
 
+import { createGlslWaterMaterial } from '../../building/components/mesh/water/glsl';
 import { WATER_BED_MARK } from '../../building/components/mesh/water/shading';
+import { weatherGlUniforms } from '../../weather/core/glsl';
 import { createToonWaterMaterial } from '../tsl/toonWater';
 import { createWaterBedMaterial } from '../tsl/waterBed';
 
@@ -34,4 +36,14 @@ test('a water floor marks the frame, and a pond floor ends at its bank over the 
   expect(WATER_BED_MARK).toBeLessThan(1);
   sea.dispose();
   pond.dispose();
+});
+
+test('classic water rings with rain, swells with the wind and reads both from the shared uniforms', () => {
+  const material = createGlslWaterMaterial({ normals: field.texture });
+  const shared = weatherGlUniforms();
+  expect(material.uniforms['weatherRain']).toBe(shared.weatherRain);
+  expect(material.uniforms['weatherWind']).toBe(shared.weatherWind);
+  expect(material.vertexShader).toContain('(weatherWind + 0.8)');
+  expect(material.fragmentShader).toContain('rainRipples(p)');
+  material.dispose();
 });

@@ -1,11 +1,13 @@
 import {
-  abs, cameraPosition, cameraViewMatrix, cos, diffuseColor, dot, float, floor, Fn, fract, length, max, mix, normalize, normalView,
-  normalWorldGeometry, positionViewDirection, positionWorld, sin, smoothstep, step, texture, time, uniform, vec2, vec3, vec4,
+  abs, cameraPosition, cameraViewMatrix, cos, diffuseColor, dot, float, floor, Fn, fract, If, length, max, mix, normalize, normalView,
+  normalWorldGeometry, positionViewDirection, positionWorld, sin, smoothstep, step, texture, time, uniform, vec2, vec3, vec4, vertexColor,
 } from 'three/tsl';
 import {
   MeshStandardNodeMaterial, MeshToonNodeMaterial, type LightingModel, type LightingModelDirectInput, type Node, type NodeBuilder,
   type Texture, type Vector2, type Vector4,
 } from 'three/webgpu';
+
+import { rainRipples, snowSurface, weatherNodes, wetSurface } from './weatherSurface';
 
 export type CoverKind = 'sand' | 'snow';
 /** Water coverage around the ground (a `ShoreField`): 0 land, 0.5 on the shoreline, sampled at `(xz - xy) * zw`. */
@@ -33,20 +35,20 @@ const TAU = Math.PI * 2;
 const WIND = vec2(0.848, 0.53);
 
 /** Hash without sines (Dave Hoskins), stable at island-wide coordinates. */
-const hash12 = Fn(([p]: [Vec2Node]) => {
+export const hash12 = Fn(([p]: [Vec2Node]) => {
   const q = fract(vec3(p.x, p.y, p.x).mul(0.1031)).toVar();
   q.addAssign(dot(q, q.yzx.add(33.33)));
   return fract(q.x.add(q.y).mul(q.z));
 });
 
-const hash22 = Fn(([p]: [Vec2Node]) => {
+export const hash22 = Fn(([p]: [Vec2Node]) => {
   const q = fract(vec3(p.x, p.y, p.x).mul(vec3(0.1031, 0.103, 0.0973))).toVar();
   q.addAssign(dot(q, q.yzx.add(33.33)));
   return fract(q.xx.add(q.yz).mul(q.zy));
 });
 
 /** Value noise in [0, 1] and its gradient per lattice unit: (value, d/dx, d/dy). */
-const noise = Fn(([p]: [Vec2Node]) => {
+export const noise = Fn(([p]: [Vec2Node]) => {
   const i = floor(p), f = fract(p);
   const u = f.mul(f).mul(f.mul(-2).add(3)), du = f.mul(f.oneMinus()).mul(6);
   const a = hash12(i), b = hash12(i.add(vec2(1, 0))), c = hash12(i.add(vec2(0, 1))), d = hash12(i.add(1));
@@ -59,7 +61,63 @@ const noise = Fn(([p]: [Vec2Node]) => {
 });
 
 /** 1 within `near` meters of the camera, 0 past `far`: detail finer than a pixel fades instead of shimmering. */
-const within = (near: number, far: number) => smoothstep(far, near, length(cameraPosition.sub(positionWorld)));
+export const within = (near: number, far: number) => smoothstep(far, near, length(cameraPosition.sub(positionWorld)));
+
+/** How far rain darkens a cover (`weatherGround`): sand soaks, snow only glazes. */
+export const COVER_POROSITY: Record<CoverKind, number> = { sand: 1, snow: 0.35 };
+
+export type GroundWeatherOptions = {
+  /** How far rain darkens it: sand 1, soil 0.85, grass 0.7, snow 0.35. */
+  porosity?: number;
+  /** Puddles on flat ground once soaked. */
+  puddles?: boolean;
+  /** Lying snow; off for what is snow already. */
+  snow?: boolean;
+};
+
+/**
+ * The live weather over a ground: wet (darker, glossier, puddles on flat spots), then lying snow that builds up and
+ * melts. Flat and upward read the geometry's normal, so a material's own normal node stays out of them. Uniforms only:
+ * a weather change rebuilds nothing, and uniform branches skip the noise on a dry, snowless day.
+ */
+export function weatherGround(color: Node<'vec3'>, roughness: Node<'float'>, { porosity = 1, puddles = true, snow = true }: GroundWeatherOptions = {}) {
+  const { wetness, snowCover } = weatherNodes();
+  const surface = Fn(() => {
+    // Declared before the branches that read them.
+    const normal = normalWorldGeometry.toVar(), out = vec4(color, roughness).toVar();
+    If(wetness.greaterThan(0), () => {
+      const wet = wetSurface(out.rgb, out.a, { normal, porosity, puddles });
+      out.assign(vec4(wet.color, wet.roughness));
+    });
+    if (snow) {
+      If(snowCover.greaterThan(0), () => {
+        const lying = snowSurface(out.rgb, out.a, { normal });
+        out.assign(vec4(lying.color, lying.roughness));
+      });
+    }
+    return out;
+  })();
+  return { color: surface.rgb, roughness: surface.a };
+}
+
+/** The geometry's normal tilted by a height slope `lean` (per meter, xz), in view space. */
+const viewNormal = (lean: Node<'vec2'>): Node<'vec3'> =>
+  normalize(cameraViewMatrix.mul(vec4(normalize(normalWorldGeometry.sub(vec3(lean.x, 0, lean.y))), 0)).xyz);
+
+/**
+ * The view normal of a ground sloping by `lean`, with rain rings in the puddles `weatherGround` pools while it rains
+ * on ground without snow. Only then does it pay for them.
+ */
+export function groundNormal(lean: Node<'vec2'>): Node<'vec3'> {
+  const { rain, snowCover } = weatherNodes();
+  return viewNormal(Fn(() => {
+    const normal = normalWorldGeometry.toVar(), tilt = vec2(lean).toVar();
+    If(rain.greaterThan(0).and(snowCover.lessThan(0.02)), () => {
+      tilt.subAssign(rainRipples(positionWorld.xz).mul(wetSurface(vec3(0), float(0), { normal }).puddle));
+    });
+    return tilt;
+  })());
+}
 
 /**
  * Glints: a few round grains per cell with a facet tilted at random, so the sun flashes off them from some angles and
@@ -167,22 +225,24 @@ function shaded<T extends LightingModel>(model: T, glint: Node<'vec3'> | null, l
 /**
  * A node material for a sand or snow cover, its vertex colors carrying the tile colors. Detail lives in world space, so
  * it runs on across tiles without a seam, and fades with distance before it can shimmer. Lit covers add relief (ripples,
- * drifts, footprints) and glints; toon covers keep the color detail and snow's blue shade on their steps.
+ * drifts, footprints) and glints; toon covers keep the color detail and snow's blue shade on their steps. The live
+ * weather wets sand, with puddles and rain rings on the flat, and snows over it; rain only glazes snow a little.
  */
 export function createCoverMaterial(options: CoverMaterialOptions): MeshStandardNodeMaterial | MeshToonNodeMaterial {
   const { kind, toon = false, gradientMap = null, fringe = false } = options;
-  const surface = kind === 'sand' ? sand(options) : snow(options);
-  const material = toon
-    ? new MeshToonNodeMaterial({ vertexColors: true, gradientMap })
-    : new MeshStandardNodeMaterial({ vertexColors: true, metalness: 0 });
+  const sandy = kind === 'sand';
+  const surface = sandy ? sand(options) : snow(options);
+  const material = toon ? new MeshToonNodeMaterial({ gradientMap }) : new MeshStandardNodeMaterial({ metalness: 0 });
   material.name = `${kind}-cover${fringe ? '-fringe' : ''}`;
-  material.colorNode = vec4(surface.color, 1);
+  // Vertex colors carry the tile colors and the fringe's alpha; rain and snow lie over them.
+  const tile = vertexColor();
+  const ground = weatherGround(surface.color.mul(tile.rgb), surface.roughness, { porosity: COVER_POROSITY[kind], puddles: sandy, snow: sandy });
+  material.colorNode = vec4(ground.color, tile.a);
   let glint: Node<'vec3'> | null = null;
   if (material instanceof MeshStandardNodeMaterial) {
-    const facing = (lean: Node<'vec2'>) => normalize(cameraViewMatrix.mul(vec4(normalize(normalWorldGeometry.sub(vec3(lean.x, 0, lean.y))), 0)).xyz);
-    material.normalNode = facing(surface.lean);
-    material.roughnessNode = surface.roughness;
-    glint = facing(surface.lean.add(surface.glint.tilt));
+    material.normalNode = sandy ? groundNormal(surface.lean) : viewNormal(surface.lean);
+    material.roughnessNode = ground.roughness;
+    glint = viewNormal(surface.lean.add(surface.glint.tilt));
   }
   const setup = material.setupLightingModel.bind(material);
   material.setupLightingModel = () => shaded(setup(), glint, surface.glint.lit, kind === 'snow');

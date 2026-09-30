@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
 import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { lazyScopedStore } from '../../stores/scopedStore';
-import type { WeatherEntry, WeatherKind, WeatherSerialized } from '../types';
+import { WEATHER_KINDS, type WeatherEntry, type WeatherKind, type WeatherSerialized } from '../types';
 
 type State = {
   current: WeatherEntry | null;
@@ -40,7 +40,7 @@ function poolBySeason(season?: string): WeatherKind[] {
 
 function prepareWeatherEntry(entry: WeatherEntry): WeatherEntry {
   if (!entry || typeof entry !== 'object' || !Number.isSafeInteger(entry.day) || entry.day < 0 ||
-    !['sunny', 'cloudy', 'rain', 'snow', 'storm'].includes(entry.kind) ||
+    !WEATHER_KINDS.includes(entry.kind) ||
     typeof entry.intensity !== 'number' || !Number.isFinite(entry.intensity) || entry.intensity < 0 || entry.intensity > 1) {
     throw new TypeError('Invalid weather entry');
   }

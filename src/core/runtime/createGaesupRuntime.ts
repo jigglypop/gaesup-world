@@ -135,7 +135,6 @@ export function createGaesupRuntime(options: GaesupRuntimeOptions = {}): GaesupR
   const worldBridge = worldObjectStore.getState().getBridge()!;
   const worldViews = new WorldViews(); worldViews.suspend();
   const grassManager = createGrassManager({
-    weather: () => weatherStore.getState().current,
     trample: () => ({ position: stateManager.getActiveState().position,
       isMoving: stateManager.getGameStates().isMoving, isGrounded: stateManager.getActiveState().isGround }),
   });

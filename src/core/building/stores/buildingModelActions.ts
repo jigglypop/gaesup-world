@@ -12,7 +12,7 @@ import {
 } from '../model';
 import { snapTilePosition, wallEdge } from '../model/footprint';
 import { blockPlacementCells, placeTileOnGrid } from '../model/placement';
-import type { TileConfig, TileObjectType, WallConfig, WallGroupConfig } from '../types';
+import type { FarmPlotConfig, TileConfig, TileObjectType, WallConfig, WallGroupConfig } from '../types';
 
 const DEFAULT_GRASS_DENSITY = 90;
 
@@ -20,7 +20,9 @@ export function defaultTileObjectConfig(
   objectType: TileObjectType | undefined,
   terrainColor: string,
   terrainAccentColor: string,
+  farm: FarmPlotConfig = {},
 ): TileConfig['objectConfig'] {
+  if (objectType === 'farm') return { farm: { ...farm } };
   if (objectType === 'grass') return { grassDensity: DEFAULT_GRASS_DENSITY, terrainColor, terrainAccentColor };
   if (objectType === 'sand' || objectType === 'snowfield' || objectType === 'dirt') return { terrainColor, terrainAccentColor };
   return undefined;
@@ -182,7 +184,7 @@ export function createBuildingModelActions(set: BuildingSet, get: BuildingGet) {
         if (group) {
           const objectType = tile.objectType ?? state.selectedTileObjectType;
           const objectConfig = tile.objectConfig
-            ?? defaultTileObjectConfig(objectType, state.currentTerrainColor, state.currentTerrainAccentColor);
+            ?? defaultTileObjectConfig(objectType, state.currentTerrainColor, state.currentTerrainAccentColor, state.currentFarm);
           const materialId = tile.materialId ?? state.currentTileMaterialId;
           const tileWithObject = placeTileOnGrid({
             ...tile,

@@ -5,7 +5,7 @@ import { attribute, cos, exp, float, fract, pow, sin, uniform, uv, vec3 } from '
 import { InstancedBufferAttribute, PointsNodeMaterial, Sprite } from 'three/webgpu';
 
 import { useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
-import { useWeatherStoreApi } from '../../../weather/stores/weatherStore';
+import { windSway } from '../../../weather/core/field';
 
 const TREE_PARTICLE_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:tree-particles' };
 const PARTICLE_ATTRIBUTES = [
@@ -27,7 +27,6 @@ type TreeParticleProps = {
  * trees added or rescaled reuse the pipeline.
  */
 export default function NodeTreeParticles({ geometry, size, opacity, falling = false }: TreeParticleProps) {
-  const weatherStore = useWeatherStoreApi();
   const hasTreePosition = geometry.hasAttribute('aTreePos');
   const hasPointScale = geometry.hasAttribute('aPointScale');
   const owned = useMemo(() => {
@@ -87,10 +86,7 @@ export default function NodeTreeParticles({ geometry, size, opacity, falling = f
   useSharedFrame(TREE_PARTICLE_FRAME, (_, elapsedSeconds) => {
     if (owned.sprite.parent && !owned.sprite.parent.visible) return;
     owned.time.value = elapsedSeconds;
-    const weather = weatherStore.getState().current;
-    const base = weather?.kind === 'storm' ? 2.4 : weather?.kind === 'rain' ? 1.6
-      : weather?.kind === 'snow' ? 1.2 : weather?.kind === 'cloudy' ? 1.1 : 0.9;
-    owned.wind.value = base + (weather?.intensity ?? 0) * 0.7;
+    owned.wind.value = windSway();
   }, falling);
 
   return <primitive object={owned.sprite} dispose={null} />;

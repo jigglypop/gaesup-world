@@ -4,8 +4,7 @@ import { BridgeFactory } from '@core/boilerplate';
 import { MotionBridge } from '@core/motions/bridge/MotionBridge';
 import { logger } from '@core/utils/logger';
 import type { GaesupCoreWasmExports } from '@core/wasm/loader';
-import { useWeatherStore } from '@core/weather/stores/weatherStore';
-import type { WeatherEntry } from '@core/weather/types';
+import { windSway } from '@core/weather/core/field';
 
 /**
  * Per-tile grass record consumed by the manager. Tiles register on
@@ -51,7 +50,7 @@ export type GrassTileRenderState = {
   instanceCount: number;
   /** Animation time (seconds, scaled). */
   time: number;
-  /** Wind multiplier blended from current weather. */
+  /** Sway multiplier from the live wind (`windSway`): about 0.9 calm, 2 windy, near 3 in a storm's gusts. */
   windScale: number;
   /** XZ trample center expressed in world-space. */
   trampleCenter: THREE.Vector3;
@@ -65,12 +64,10 @@ export function setGrassManagerWasm(w: GaesupCoreWasmExports | null): void {
 }
 
 export type GrassManagerSources = {
-  weather: () => WeatherEntry | null;
   trample: () => { position: { x: number; y: number; z: number }; isMoving: boolean; isGrounded: boolean } | null;
 };
 
 const legacySources: GrassManagerSources = {
-  weather: () => useWeatherStore.getState().current,
   trample: () => {
     const bridge = BridgeFactory.getOrCreateFor(MotionBridge);
     const id = bridge.getPlayerEntityId();
@@ -142,7 +139,7 @@ export class GrassManager {
   }
 
   private hide(tile: GrassTileHandle): void {
-    this.apply(tile, { visible: false, instanceCount: 0, time: 0, windScale: 0.85, trampleCenter: this.trampleWorld, trampleStrength: 0 });
+    this.apply(tile, { visible: false, instanceCount: 0, time: 0, windScale: windSway(), trampleCenter: this.trampleWorld, trampleStrength: 0 });
   }
 
   private apply(tile: GrassTileHandle, state: GrassTileRenderState): void {
@@ -204,7 +201,7 @@ export class GrassManager {
     if (this.builds.size > 0) this.runBuilds(args.cameraPosition);
     this.refreshTrample(args.delta);
 
-    const wind = this.computeWindScale();
+    const wind = windSway();
     const time = args.elapsedTime / 4;
 
     this.ensureCapacity(this.tiles.size);
@@ -325,18 +322,6 @@ export class GrassManager {
     }
     const desired = snap?.isMoving && snap?.isGrounded ? 0.85 : 0.35;
     this.trampleStrength += (desired - this.trampleStrength) * lerp;
-  }
-
-  private computeWindScale(): number {
-    const w = this.sources.weather();
-    const intensity = w?.intensity ?? 0;
-    const base =
-      w?.kind === 'storm'  ? 2.6 :
-      w?.kind === 'rain'   ? 1.7 :
-      w?.kind === 'snow'   ? 1.3 :
-      w?.kind === 'cloudy' ? 1.15 :
-                             0.85;
-    return base + intensity * 0.9;
   }
 }
 

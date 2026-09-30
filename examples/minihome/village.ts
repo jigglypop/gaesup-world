@@ -1,27 +1,30 @@
-import { getDefaultBuildingObject, type BuildingSerializedState, type MeshConfig, type MeshScatterConfig, type PlacedObject, type TileConfig, type WallConfig } from 'gaesup-world/building';
+import {
+  getDefaultBuildingObject, type BuildingSerializedState, type FarmPlotConfig, type MeshConfig, type MeshScatterConfig, type PlacedObject, type TileConfig,
+  type WallConfig,
+} from 'gaesup-world/building';
 
 /** Grid cell in meters; one character (1.7m) is a little under half a cell. */
 export const CELL = 4;
 /** Bump when the island's layout changes: saves are kept per version, so returning visitors see the new island. */
-export const VILLAGE_VERSION = 7;
+export const VILLAGE_VERSION = 8;
 
 /**
  * The island, one character per 4m cell, north at the top.
- * T forest cliff · . lawn · = dirt path · ~ pond · " tall grass · * flower bed · # field · F miniroom floor · s beach · S snow
+ * T forest cliff · . lawn · = dirt path · ~ pond · " tall grass · * flower bed · F miniroom floor · s beach · S snow · other letters: farm beds (`FARM`)
  */
 const MAP = [
   'TTTTTTTTTTTTTT',
   'TTTTTTTTTTTTTT',
   'TT.FF...""""SS',
   'TT.FF...""""SS',
-  'T.......=...SS',
+  'T.......=d.eSS',
   'T.==========.T',
-  'T.=..**.=....T',
-  'T~~..**.=.##.T',
-  'T~~""...=.##.T',
-  'T~~""...==...T',
-  'T.......=.""..',
-  's.......=.""..',
+  'T.=..**.=wwcCT',
+  'T~~..**.=tlbuT',
+  'T~~""...=apmyT',
+  'T~~""...==hvnT',
+  'T.......=xiirr',
+  's.......=fiirr',
   'ssssssss=sssss',
   'ssssssssssssss',
 ];
@@ -63,11 +66,6 @@ const FLOWERS = svg(
   }),
   '#6fbf53',
 );
-const FIELD = svg(
-  [16, 48, 80, 112].map((y) => `<rect x="6" y="${y - 9}" width="116" height="18" rx="9" fill="#6b4529"/>`).join('') +
-    [16, 48, 80, 112].map((y) => [20, 44, 68, 92, 112].map((x) => `<path d="M${x} ${y}c-6-8-2-12 0-12c2 0 6 4 0 12zM${x} ${y}c6-6 10-4 8 0" fill="#5fbf45"/>`).join('')).join(''),
-  '#8a5f3a',
-);
 const PLANKS = svg([0, 32, 64, 96].map((y, i) => `<rect y="${y}" width="128" height="31" fill="${i % 2 ? '#d9ab73' : '#d3a36a'}"/><path d="M${40 + i * 24} ${y}v31" stroke="#b98a52" stroke-width="2"/>`).join(''), '#b98a52');
 
 /** Flowers, stones and shrubs along the roads, and now and then a mushroom or fern out on the lawn. */
@@ -82,13 +80,35 @@ const LAWN_DECOR: MeshScatterConfig[] = [
 const MESHES: MeshConfig[] = [
   { id: 'lawn', color: '#ffffff', mapTextureUrl: LAWN, roughness: 0.95, grass: { profile: 'lawn', color: '#86c460' }, scatter: LAWN_DECOR },
   { id: 'flowers', color: '#ffffff', mapTextureUrl: FLOWERS, roughness: 0.9 },
-  { id: 'field', color: '#ffffff', mapTextureUrl: FIELD, roughness: 1 },
   { id: 'floor', color: '#ffffff', mapTextureUrl: PLANKS, roughness: 0.7 },
   { id: 'wallpaper', color: '#ffe8ec' },
   { id: 'wall-outside', color: '#fff7ec' },
 ];
 
-const MATERIAL: Record<string, string> = { '.': 'lawn', T: 'lawn', '*': 'flowers', '#': 'field', F: 'floor' };
+const MATERIAL: Record<string, string> = { '.': 'lawn', T: 'lawn', '*': 'flowers', F: 'floor' };
+/** Farm beds by map letter; neighbors with the same letter join into one bed whose rows run on across them. */
+const FARM: Record<string, FarmPlotConfig> = {
+  x: {},
+  e: { crop: 'lettuce', stage: 'sprout', soil: 'watered' },
+  d: { soil: 'dry' },
+  f: { soil: 'fallow' },
+  w: { crop: 'wheat' },
+  c: { crop: 'corn', rows: 'z' },
+  C: { crop: 'corn', stage: 'young', rows: 'z' },
+  t: { crop: 'tomato', edge: 'wood' },
+  l: { crop: 'lettuce' },
+  b: { crop: 'cabbage', stage: 'young', soil: 'watered' },
+  u: { crop: 'pumpkin', rows: 'z' },
+  a: { crop: 'carrot' },
+  p: { crop: 'potato' },
+  m: { crop: 'melon', rows: 'z' },
+  y: { crop: 'strawberry', edge: 'wood' },
+  h: { crop: 'herb', edge: 'wood' },
+  v: { crop: 'lavender', rows: 'z' },
+  n: { crop: 'sunflower' },
+  i: { crop: 'tulip', rows: 'z' },
+  r: { crop: 'rice', stage: 'young' },
+};
 const DIRT = { terrainColor: '#a57b52', terrainAccentColor: '#7f5b3a' };
 /** Roads: packed earth over the lawn, fading into it. */
 const ROAD = { terrainColor: '#e8d2a2', terrainAccentColor: '#cfab74' };
@@ -102,6 +122,8 @@ function tileAt(x: number, z: number): TileConfig {
   if (kind === 'S') return { ...base, objectType: 'snowfield' };
   if (kind === '=') return { ...base, materialId: 'lawn', objectType: 'dirt', objectConfig: ROAD };
   if (kind === '"') return { ...base, materialId: 'lawn', objectType: 'grass', objectConfig: { grassDensity: TALL_GRASS } };
+  const farm = FARM[kind];
+  if (farm) return { ...base, materialId: 'lawn', objectType: 'farm', objectConfig: { farm } };
   return { ...base, materialId: MATERIAL[kind] ?? 'lawn', ...(raised ? { objectConfig: DIRT } : {}) };
 }
 
@@ -156,19 +178,6 @@ function woodsEdge(): PlacedObject[] {
   return props;
 }
 
-/** The fence around the field, one catalog fence per cell edge. */
-function fieldFence(): PlacedObject[] {
-  const [x0, x1, z0, z1] = [at(10) - CELL / 2, at(11) + CELL / 2, at(7) - CELL / 2, at(8) + CELL / 2];
-  const posts: PlacedObject[] = [];
-  for (const x of [at(10), at(11)]) {
-    posts.push(model(`fence-n-${x}`, 'fence-basic', x, z0));
-    posts.push(model(`fence-s-${x}`, 'fence-basic', x, z1));
-  }
-  for (const z of [at(7), at(8)]) posts.push(model(`fence-e-${z}`, 'fence-basic', x1, z, Math.PI / 2));
-  posts.push(model('fence-w', 'fence-basic', x0, at(7), Math.PI / 2));
-  return posts;
-}
-
 export function createVillage(): BuildingSerializedState {
   const tiles: TileConfig[] = [];
   for (let z = 0; z < SIDE; z++) for (let x = 0; x < SIDE; x++) tiles.push(tileAt(x, z));
@@ -200,14 +209,11 @@ export function createVillage(): BuildingSerializedState {
     // Village.
     model('mailbox', 'mailbox-basic', at(5) + 1, at(4) - 1),
     model('stall', 'shop-stall-basic', at(10), at(4), Math.PI),
-    ...fieldFence(),
     { id: 'campfire', type: 'fire', position: { x: at(4), y: 0, z: at(12) }, config: { fireIntensity: 1.2 } },
-    { id: 'plaza-flag', type: 'flag', position: { x: at(9) + 1.2, y: 0, z: at(9) - 1.2 }, config: { flagWidth: 1.6, flagHeight: 1, flagStyle: 'flag', primaryColor: '#ff8a65' } },
+    { id: 'plaza-flag', type: 'flag', position: { x: at(7) + 1.2, y: 0, z: at(9) - 1.2 }, config: { flagWidth: 1.6, flagHeight: 1, flagStyle: 'flag', primaryColor: '#ff8a65' } },
     { id: 'notice', type: 'billboard', position: { x: at(7), y: 0, z: at(4) + 1.4 }, config: { billboardText: '미니홈피 섬', billboardColor: '#2bb3a3', billboardWidth: 2.2, billboardHeight: 0.8, billboardElevation: 1.3 } },
     model('oak-1', 'nature-tree-oak', at(2), at(4), 0.4),
-    model('oak-2', 'nature-tree-round', at(11), at(4) + 0.6, 2.1),
     model('oak-3', 'nature-tree-oak', at(6), at(9) + 1, 4.2),
-    model('oak-4', 'nature-tree-fat', at(12), at(9), 1.3, 0.9),
     model('maple-1', 'nature-tree-round', at(1), at(10), 5.5, 0.9),
     model('pond-tree', 'nature-tree-thin', at(3), at(9), 2.7),
     tree('sakura-1', 'sakura', at(7) - 1, at(7) - 1, 3.4),
@@ -220,13 +226,10 @@ export function createVillage(): BuildingSerializedState {
     model('lily-c', 'nature-lily', at(1) - 0.4, at(9) + 0.8, 4.1, 1.8),
     // Along the paths: bushes and flowers.
     model('bush-a', 'nature-bush', at(4) + 1.4, at(5) - 1.6, 0.2),
-    model('bush-b', 'nature-bush', at(9) + 1.6, at(6) + 1.2, 1.7, 0.8),
     model('bush-c', 'nature-bush', at(7) - 1.6, at(10) + 1.2, 3.3),
     model('flower-a', 'nature-flower-yellow', at(5) - 1.2, at(6) + 1.6),
     model('flower-b', 'nature-flower-red', at(6) + 1.6, at(7) + 1.5, 1.1),
-    model('flower-c', 'nature-flower-purple', at(9) - 1.4, at(8) + 0.4, 2.2),
-    model('flower-d', 'nature-flower-yellow', at(11) + 1.5, at(6) - 1.3, 0.7),
-    model('rock-path', 'nature-rock-small', at(9) + 1.6, at(10) - 1.2, 0.9),
+    model('rock-path', 'nature-rock-small', at(7) + 1.4, at(10) - 1.2, 0.9),
     model('log-beach', 'nature-fallen-log', at(6) + 1.2, at(11) - 1.2, 0.6),
     // The snowy corner: a few pines in the drifts.
     model('snow-pine-a', 'nature-tree-pine', at(12) - 0.4, at(2) - 1.2, 1.2),

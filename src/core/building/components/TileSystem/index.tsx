@@ -21,6 +21,7 @@ import type { BuildingColliderBox } from '../BuildingColliders/types';
 import { EditOverlay } from '../EditOverlay';
 import { tileEditItem, type EditOverlayItem } from '../EditOverlay/items';
 import { DirtCover } from '../mesh/dirt';
+import { FarmCover } from '../mesh/farm/FarmCover';
 import { GrassChunks } from '../mesh/grass/chunks';
 import { SandBatch, type SandEntry } from '../mesh/sand';
 import { SnowfieldBatch, type SnowfieldEntry } from '../mesh/snowfield';
@@ -541,6 +542,8 @@ export const TileSystem = memo(function TileSystem({
         {grassTiles.length > 0 && <GrassChunks tiles={grassTiles} meshOf={grassMeshOf} />}
 
         {spreads.map((spread) => <DirtCover key={spread.cover} spread={spread} />)}
+
+        <FarmCover tiles={tileGroup.tiles} />
 
         {sandEntries.length > 0 && <SandBatch entries={sandEntries} />}
 

@@ -244,6 +244,42 @@ export function TimeOfDayLights() {
 }
 ```
 
+## 날씨·기후: `Weather`
+
+런타임 `weatherStore.current`(`sunny`·`cloudy`·`rain`·`snow`·`storm`·`wind`)를 그린다(`src/core/weather/`). `BuildingSystem`이 늘 올리므로 섬 월드는 따로 둘 것이 없다.
+
+- **정하는 쪽**: 섬 데이터의 `weatherEffect`(고른 날씨)가 이기고, `'none'`이면 `climate`(`'off' | 'auto' | 계절`)가 6게임시간마다 시드로 정한 날씨를 쓴다(`auto`는 게임 달력의 계절 풀). 둘 다 꺼져 있으면 `weatherStore`를 건드리지 않는다. 앱이 직접 정하려면 `useWeatherSource({ manual, climate, seed })` 또는 `weatherStore.setWeather`를 쓴다. `DynamicFog`·`DynamicSky`·`ColorGrade`·배경음악도 같은 store를 읽는다.
+- **기후 필드**: `useWeatherClimate`가 매 프레임 비·눈·흐림·폭풍을 몇 초에 걸쳐 바꾸고, `wetness`(비 25초에 흠뻑, 90초에 걸쳐 마름)·`snowCover`(눈 45초에 덮임, 150초에 걸쳐 녹고 비에 더 빨리)·돌풍 섞인 `windStrength`·번개를 쌓는다. 불러온 월드는 첫 4초 동안 저장된 날씨의 정상 상태로 바로 간다. 값은 `weatherField`(CPU), `weatherNodes()`(TSL uniform), `weatherGlUniforms()`(classic `ShaderMaterial` uniform)로 읽는다. 날씨가 바뀌어도 uniform 값만 바뀌어 재질을 다시 만들지 않는다.
+- **그리기**: 비 줄기(바람에 기울고 거리에 따라 옅어짐)·땅 물튀김 고리·크기가 다른 눈송이·바람에 뒹구는 잎(봄 꽃잎, 가을 단풍)을 시야 앞 상자 안 인스턴스 쿼드로 그린다. 위치는 모두 셰이더가 시드·시간으로 정하고, CPU는 프레임마다 그릴 개수와 uniform 몇 개만 바꾼다. 층마다 draw 1번이다. Lambert로 빛을 받아 시간대·안개·번개를 따른다. 흐리면 해와 하늘빛을 줄이고 차갑게 물들이며 `scene.background` 색을 회색으로 옮긴다(`LightingZone`과 같은 층에서 곱한다. `DynamicSky`의 빛은 스스로 날씨를 반영하므로 제외). 번개는 폭풍에서 9~22초에 한 번 부드럽게 한 번만 번쩍이고, `lightning={false}`나 `prefers-reduced-motion`이면 끈다.
+- **표면**: 정적 모델 병합 재질(`static-models`: 지붕·나무·바위)은 젖으면 어둡고 매끈해지고, 눈이 윗면부터 쌓인다. 지면·물 재질은 `wetSurface`·`snowSurface`·`weatheredSurface`·`rainRipples`(TSL)나 `WEATHER_SURFACE_GLSL`로 같은 값을 읽는다.
+- **WebGL(classic)**: 같은 움직임의 GLSL 재질로 그리되 빛을 받지 않고 흐림·번개만 밝기에 반영한다. 착지 효과는 그리지 않는다.
+
+| prop | 기본값 | 뜻 |
+|---|---|---|
+| `density` | 품질 profile의 `instanceScale`(없으면 1) | 입자 수 배율. 최대 비 7000, 눈 6000, 물튀김 600, 잎 700 |
+| `radius`, `height` | 14, 24 | 시야 앞 상자의 반폭, 최대 높이(m). 높이는 카메라 높이에 맞춰 줄어든다 |
+| `ground` | 0 | 비·눈이 떨어지고 물튀김이 생기는 높이 |
+| `lighting` | `true` | 날씨로 빛·배경을 바꾼다 |
+| `lightning` | `true` | 폭풍 번개 |
+
+```tsx
+import { Weather, useWeatherSource } from 'gaesup-world';
+import { useBuildingStoreApi } from 'gaesup-world/building';
+
+// 섬 설정: 고른 날씨가 이기고, 자동 기후는 weatherEffect가 'none'일 때 돈다. 둘 다 섬 데이터에 저장된다.
+const building = useBuildingStoreApi().getState();
+building.setWeatherEffect('snow');
+building.setWeatherEffect('none'); building.setClimate('auto');
+
+// BuildingSystem 없이 쓰는 캔버스
+function IslandWeather({ manual }: { manual: 'rain' | null }) {
+  useWeatherSource({ manual, climate: 'off' });
+  return <Weather />;
+}
+```
+
+`WeatherEffect`는 날씨 하나의 입자만 그리는 예전 API다(`kind`를 주면 그 날씨를 최대로, 없으면 store 날씨). 효과로는 `Footprints weather`(눈이나 젖은 땅에만 발자국), `LandingBurst`(착지하면 먼지·눈·물보라, WebGPU)가 있다.
+
 ## 후처리
 
 ### `WorldPostProcessing`

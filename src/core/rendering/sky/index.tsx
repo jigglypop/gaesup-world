@@ -29,6 +29,9 @@ export type DynamicSkyProps = {
   damping?: number;
 };
 
+/** The rig tints and dims for the weather itself, so the scene's weather light leaves its lights alone. */
+const SKY_OWNS_WEATHER = { weather: false };
+
 /** About 0.2 degrees. */
 const SUN_DIRECTION_EPSILON = 0.0035;
 
@@ -103,9 +106,10 @@ export function DynamicSky({
 
   return (
     <>
-      <ambientLight ref={ambientRef} intensity={0.3} color="#b6c2d8" />
+      <ambientLight ref={ambientRef} intensity={0.3} color="#b6c2d8" userData={SKY_OWNS_WEATHER} />
       <directionalLight
         ref={sunRef}
+        userData={SKY_OWNS_WEATHER}
         castShadow={castShadow}
         shadow-mapSize={[shadowMapSize, shadowMapSize]}
         shadow-normalBias={0.06}

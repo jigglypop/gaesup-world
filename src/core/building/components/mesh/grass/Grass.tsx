@@ -2,12 +2,17 @@ import { FC, lazy, memo, Suspense, useEffect, useMemo, useRef, useState } from "
 
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { float, vertexColor } from 'three/tsl';
+import { MeshStandardNodeMaterial, MeshToonNodeMaterial } from 'three/webgpu';
 
 import { extendOnce } from '@/core/rendering/extendOnce';
 import { shaderMaterial } from '@/core/rendering/legacyDrei';
 import { usePerfStore } from "@core/perf/stores/perfStore";
-import { createToonMaterial, getDefaultToonMode } from "@core/rendering/toon";
+import { createToonMaterial, getDefaultToonMode, getToonGradient } from "@core/rendering/toon";
+import { weatherGround } from '@core/rendering/tsl/groundCover';
 import { getLoadedCoreWasm, loadCoreWasm, type GaesupCoreWasmExports } from "@core/wasm/loader";
+import { weatherField } from '@core/weather/core/field';
+import { WEATHER_SURFACE_GLSL, weatherGlUniforms } from '@core/weather/core/glsl';
 
 import {
   DEFAULT_BLADE_ALPHA_URL,
@@ -24,9 +29,9 @@ import { useGrassManager } from "./useGrassManager";
 import vertexShader from "./vert.glsl";
 import { castNearShadowOnly } from '../../../../rendering/sky/nearShadow';
 import { rendererKind } from '../../../../rendering/webgpu';
+import { classicWeather, GROUND_POROSITY } from '../../../terrain/groundMaterial';
 
-let _grassGroundToon: THREE.MeshToonMaterial | null = null;
-let _grassGroundPbr: THREE.MeshStandardMaterial | null = null;
+const grassGrounds = new Map<string, THREE.Material>();
 let _fallbackBladeDiffuse: THREE.DataTexture | null = null;
 let _fallbackBladeAlpha: THREE.DataTexture | null = null;
 let _grassTextureLoader: THREE.TextureLoader | null = null;
@@ -75,31 +80,32 @@ function loadBladeTexture(url: string, fallbackUrl: string, fallbackTexture: THR
   return load(url).catch(() => (url === fallbackUrl ? fallbackTexture : load(fallbackUrl).catch(() => fallbackTexture)));
 }
 
-export function getGrassGroundMaterial(toon: boolean): THREE.Material {
-  if (toon) {
-    if (!_grassGroundToon) {
-      _grassGroundToon = createToonMaterial({
-        color: '#ffffff',
-        vertexColors: true,
-        steps: 3,
-      });
-    }
-    return _grassGroundToon;
+/** The painted meadow on a node renderer: its vertex colors under the live weather, wet and snowed on. */
+function nodeGrassGround(toon: boolean): THREE.Material {
+  const material = toon ? new MeshToonNodeMaterial({ gradientMap: getToonGradient(3) }) : new MeshStandardNodeMaterial({ metalness: 0 });
+  const ground = weatherGround(vertexColor().rgb, float(0.95), { porosity: GROUND_POROSITY.grass, puddles: false });
+  material.colorNode = ground.color;
+  if (material instanceof MeshStandardNodeMaterial) material.roughnessNode = ground.roughness;
+  return material;
+}
+
+/** The painted meadow's shared material, wet and snowed on by the live weather on either renderer. */
+export function getGrassGroundMaterial(toon: boolean, node = false): THREE.Material {
+  const key = `${toon}:${node}`;
+  let material = grassGrounds.get(key);
+  if (!material) {
+    material = node ? nodeGrassGround(toon) : classicWeather(toon
+      ? createToonMaterial({ color: '#ffffff', vertexColors: true, steps: 3 })
+      : new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.95, metalness: 0 }), GROUND_POROSITY.grass);
+    grassGrounds.set(key, material);
   }
-  if (!_grassGroundPbr) {
-    _grassGroundPbr = new THREE.MeshStandardMaterial({
-      color: '#ffffff',
-      vertexColors: true,
-      roughness: 0.95,
-      metalness: 0.0,
-    });
-  }
-  return _grassGroundPbr;
+  return material;
 }
 
 /** Blades never stop the camera or other ray probes. */
 const GRASS_USER_DATA = { intangible: true };
 
+/** Classic blades: `windDirection` follows the live wind, and the shared weather uniforms frost and wet them. */
 const GrassMaterial = shaderMaterial(
   {
     ...Object.fromEntries(Object.entries(THREE.UniformsLib.lights).map(([key, uniform]) => [key, uniform.value])),
@@ -108,6 +114,7 @@ const GrassMaterial = shaderMaterial(
     alphaMap: null as THREE.Texture | null,
     time: 0,
     windScale: 1.0,
+    windDirection: new THREE.Vector2(weatherField.windX, weatherField.windZ),
     trampleCenter: new THREE.Vector3(0, -9999, 0),
     trampleRadius: 1.4,
     trampleStrength: 0.85,
@@ -117,7 +124,8 @@ const GrassMaterial = shaderMaterial(
     uToonSteps: 4,
   },
   vertexShader,
-  fragmentShader
+  `${WEATHER_SURFACE_GLSL}\n${fragmentShader}`,
+  (material) => { if (material) Object.assign(material.uniforms, weatherGlUniforms()); },
 );
 
 const extendGrassMaterial = extendOnce({ GrassMaterial });
@@ -383,7 +391,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
     }, [instances, density, width, maxInstances, instanceScale, cells, cellSize]);
     const maxCellHeight = useMemo(() => cells?.reduce((max, cell) => Math.max(max, Math.abs(cell[2] ?? 0)), 0) ?? 0, [cells]);
     const useToon = toon ?? getDefaultToonMode();
-    const groundMat = getGrassGroundMaterial(useToon);
+    const groundMat = getGrassGroundMaterial(useToon, useNodes);
     const baseGroundColor = useMemo(() => new THREE.Color(groundColor ?? MEADOW.base), [groundColor]);
     const accentGroundColor = useMemo(() => new THREE.Color(groundAccentColor ?? MEADOW.accent), [groundAccentColor]);
     const tipBladeColor = useMemo(
@@ -505,6 +513,7 @@ const GrassContent: FC<GrassMeshProps> = memo(
         if (u['bladeHeight']) u['bladeHeight'].value = bH;
         if (u['time']) u['time'].value = s.time;
         if (u['windScale']) u['windScale'].value = s.windScale;
+        (u['windDirection']?.value as THREE.Vector2 | undefined)?.set(weatherField.windX, weatherField.windZ);
         if (u['trampleCenter']) {
           const v = u['trampleCenter'].value as THREE.Vector3;
           v.copy(s.trampleCenter);

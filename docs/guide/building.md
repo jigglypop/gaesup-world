@@ -64,7 +64,8 @@
 | `wallGroups` | `WallGroupConfig[]` | 벽 묶음 |
 | `blocks` | `BuildingBlockConfig[]` | 복셀형 상자 |
 | `objects` | `PlacedObject[]` | 나무·깃발·불·간판·모델 |
-| `showSnow`, `weatherEffect` | `boolean`, `'none' \| 'snow' \| 'rain' \| 'storm' \| 'wind'` | 건축에 붙은 날씨 효과(그린다) |
+| `showSnow`, `weatherEffect` | `boolean`, `'none' \| 'snow' \| 'rain' \| 'storm' \| 'wind'` | 섬의 고른 날씨. 자동 기후보다 우선한다([날씨·기후](rendering.md#날씨기후-weather)) |
+| `climate` | `'off' \| 'auto' \| 'spring' \| 'summer' \| 'autumn' \| 'winter'`, 선택 | `weatherEffect`가 `'none'`일 때의 자동 기후. 없으면 `'off'` |
 | `showFog`, `fogColor` | `boolean`, `string` | 켜면 `fogColor`를 기본 색으로 시간·날씨를 따르는 안개(`DynamicFog`)를 그린다 |
 | `worldSurface` | `'ground' \| 'water'` | `water`면 월드 둘레에 카메라를 따라가는 바다를 깐다(섬 월드) |
 | `wallCategories`, `tileCategories` | 선택 | 에디터 분류. 없으면 현재 분류를 유지한다 |
@@ -82,9 +83,10 @@
 - 그룹: `{ id, name, floorMeshId, tiles }`.
 - 타일: `{ id, position, tileGroupId, materialId?, size?, rotation?, shape?, objectType?, objectConfig?, cell?, footprint? }`. `materialId`가 있으면 그룹의 `floorMeshId` 대신 쓴다. `cell`·`footprint`는 store가 채운다.
 - `shape`: `'box'`(기본) · `'stairs'` · `'round'` · `'ramp'`.
-- `objectType`(지형 덮개): `'none'` · `'grass'` · `'water'` · `'sand'` · `'snowfield'` · `'dirt'`. **`box` 타일에만 그려진다.** 잔디는 인스턴스 풀잎, 물은 인접 물 타일을 묶은 수면(물가 필드로 둑·젖은 모래·거품·수심을 그린다), 모래·눈밭은 전용 지면이다. 모래 사구와 눈 더미는 월드 좌표의 시드 고정 노이즈라 이웃 타일과 턱 없이 이어지고 새로고침해도 같다. 같은 덮개가 아닌 쪽 가장자리에서는 1.4m에 걸쳐 바닥까지 내려앉고, 흙길처럼 같은 높이 이웃 타일로 모래·눈 색이 불규칙하게 번져 해변과 잔디밭 경계에 곧은 선이 없다.
+- `objectType`(지형 덮개): `'none'` · `'grass'` · `'water'` · `'sand'` · `'snowfield'` · `'dirt'` · `'farm'`. **`box` 타일에만 그려진다.** 잔디는 인스턴스 풀잎, 물은 인접 물 타일을 묶은 수면(물가 필드로 둑·젖은 모래·거품·수심을 그린다), 모래·눈밭은 전용 지면이다. 모래 사구와 눈 더미는 월드 좌표의 시드 고정 노이즈라 이웃 타일과 턱 없이 이어지고 새로고침해도 같다. 같은 덮개가 아닌 쪽 가장자리에서는 1.4m에 걸쳐 바닥까지 내려앉고, 흙길처럼 같은 높이 이웃 타일로 모래·눈 색이 불규칙하게 번져 해변과 잔디밭 경계에 곧은 선이 없다.
 - `dirt`(흙길)는 타일 바닥 재질 위에 덮는 흙이다(모래·눈밭의 번짐과 같은 덮개 한 겹, 덮개마다 draw 하나). 가장자리가 같은 높이의 이웃 타일로 0.35m쯤 번지고, 둥근 모서리와 불규칙한 선으로 흐려져 타일 사각형이 보이지 않는다. 흙길 타일에는 잔디 층이 자라지 않는다. 그룹의 첫 흙길 타일 색이 길 전체 색이고, 타일 그룹마다 draw 하나다.
-- `objectConfig`: `grassDensity`(m²당 풀잎, 기본 90), `terrainColor`, `terrainAccentColor`(모래·눈밭·흙길 색).
+- `farm`(밭)은 `objectConfig.farm: { crop?, soil?, stage?, rows?, edge? }`로 정한다. `crop`은 `'none'`(빈 밭)·상추·양배추·당근·감자·토마토(지주)·옥수수·밀·벼·호박·멜론·딸기·해바라기·튤립(이랑마다 꽃색)·라벤더·허브, `soil`은 `'tilled'`(갈아엎은 이랑, 고랑이 젖어 어둡다)·`'watered'`·`'dry'`(갈라짐)·`'paddy'`(이랑 사이 얕은 물)·`'fallow'`(잡초), `stage`는 `'sprout'`·`'young'`·`'ripe'`, `rows`는 이랑 방향 `'x'`·`'z'`, `edge`는 열린 경계의 `'ridge'`(풀 난 흙두둑)·`'wood'`(나무 테두리)·`'none'`이다. 빠진 값은 작물의 흙(벼는 논), 다 자람, 타일 회전의 이랑 방향, 흙두둑으로 읽고, 모르는 값과 옛 이름(`'carrot-bed'`, 단계 숫자 0–2)도 기본값·오늘 이름으로 읽는다(`readFarmPlot`). 같은 설정·높이의 이웃 타일은 한 밭이 되어 이랑이 월드 격자로 이어진다. 흙은 16m 청크마다 draw 하나, 작물은 청크·작물·단계마다 인스턴스 draw 하나다. 거리 LOD로 줄이며(노드 렌더러는 셰이더가 마지막 몫을 줄여 튀지 않는다) 먼 이랑은 흙이 작물 색을 띤다. 흔들림은 잔디와 같은 바람, 비의 젖음은 공유 날씨(`weatherNodes().wetness`)를 따른다. classic WebGL은 정점색 흙과 흔들리지 않는 작물이다. 선택지 라벨은 `BUILDING_FARM_CROP_OPTIONS`·`_SOIL_`·`_STAGE_`·`_ROWS_`·`_EDGE_OPTIONS`에 있다.
+- `objectConfig`: `grassDensity`(m²당 풀잎, 기본 90), `terrainColor`, `terrainAccentColor`(모래·눈밭·흙길 색), `farm`(밭).
 
 ### 벽 `WallGroupConfig` / `WallConfig`
 
@@ -170,7 +172,7 @@ export const plaza: BuildingSerializedState = {
 | 오브젝트 | `addObject(object)`, `updateObject(id, patch)`, `removeObject(id)` |
 
 - 그룹이 없으면 `addWall`·`addTile`은 아무것도 하지 않는다.
-- `addWall`은 `materialId`가 없으면 `currentWallMaterialId`를, `wallKind`가 없으면 `currentWallKind`(기본 `solid`)를 채운다. `addTile`은 `objectType`이 없으면 `selectedTileObjectType`(기본 `none`), `materialId`가 없으면 `currentTileMaterialId`를 채우고, `objectConfig`가 없으면 잔디는 밀도 90과 현재 지형 색, 모래·눈밭은 현재 지형 색을 넣는다. 데이터를 코드로 넣을 때는 이 값들을 명시하는 편이 안전하다.
+- `addWall`은 `materialId`가 없으면 `currentWallMaterialId`를, `wallKind`가 없으면 `currentWallKind`(기본 `solid`)를 채운다. `addTile`은 `objectType`이 없으면 `selectedTileObjectType`(기본 `none`), `materialId`가 없으면 `currentTileMaterialId`를 채우고, `objectConfig`가 없으면 잔디는 밀도 90과 현재 지형 색, 모래·눈밭은 현재 지형 색, 밭은 `currentFarm`을 넣는다. 데이터를 코드로 넣을 때는 이 값들을 명시하는 편이 안전하다.
 - `add*`는 **겹침을 검사하지 않는다.** 겹치지 않게 하려면 먼저 검사한다: `checkTilePosition(position)`(현재 `currentTileMultiplier` 크기로), `checkBlockPosition({ position, size })`, `checkWallPosition(position, rotationY)`. 모두 겹치면 `true`다. 타일·블록 겹침은 같은 칸·같은 `level`일 때만 본다. `getSupportHeightAt(position)`은 그 자리에 새로 쌓을 높이를 준다: 겹치는 타일 윗면 + 1단계와 블록 윗면 중 큰 값, 없으면 0.
 - `moveWallToGroup`은 벽의 `materialId`를 지운다.
 
@@ -182,12 +184,12 @@ export const plaza: BuildingSerializedState = {
 | 도구 | `buildingTool`: `'place'`(기본) \| `'paint'` \| `'erase'`, `setBuildingTool(tool)`(선택을 푼다), `applyToolTo(id)`: 지금 모드의 조각을 칠하거나 지운다. 칠하기는 타일에 `currentTileMaterialId`(없으면 선택한 바닥 그룹의 재질)와 `selectedTileObjectType` 덮개를, 벽에 선택한 벽 그룹과 `currentWallKind`를 준다. 지우기는 오브젝트·타일·벽·블록 모두 |
 | 격자 | `setShowGrid`, `setGridSize`(기본 100m), `setSnapToGrid`(기본 켬), `snapPosition(position)` |
 | 커서 | `hoverPosition`, `setHoverPosition` |
-| 타일 | `currentTileMultiplier` / `setTileMultiplier`(패널은 1–4), `currentTileHeight` / `setTileHeight`(0–6 정수, 계단·경사는 최소 1), `currentTileShape` / `setTileShape`, `currentTileRotation` / `setTileRotation`, `currentTileMaterialId` / `setCurrentTileMaterialId`, `selectedTileObjectType` / `setSelectedTileObjectType`(지형별 기본 색도 바꾼다), `setTerrainColors(color, accent?)` |
+| 타일 | `currentTileMultiplier` / `setTileMultiplier`(패널은 1–4), `currentTileHeight` / `setTileHeight`(0–6 정수, 계단·경사는 최소 1), `currentTileShape` / `setTileShape`, `currentTileRotation` / `setTileRotation`, `currentTileMaterialId` / `setCurrentTileMaterialId`, `selectedTileObjectType` / `setSelectedTileObjectType`(지형별 기본 색도 바꾼다), `setTerrainColors(color, accent?)`, `currentFarm` / `setCurrentFarm(farm)`(밭 타일이 받을 설정, 통째로 바꾼다) |
 | 벽 | `currentWallRotation` / `setWallRotation`, `currentWallKind` / `setWallKind`(선택한 벽이 있으면 그 벽도 바꾼다), `currentWallMaterialId` / `setCurrentWallMaterialId` |
 | 오브젝트 | `selectedPlacedObjectType` / `setSelectedPlacedObjectType`, `currentObjectRotation`, 나무(`setTreeKind`는 색 프리셋도 넣는다, `setObjectPrimaryColor`, `setObjectSecondaryColor`), 깃발(`setFlagStyle`는 기본 크기도 넣는다, `setFlagWidth`, `setFlagHeight`, `setFlagImageUrl`), 불(`setFireIntensity`, `setFireWidth`, `setFireHeight`, `setFireColor`), 간판(`setBillboard*` 9개), 모델(`setSelectedModelObjectId`, `setModelUrl`, `setModelScale` 0.1–10, `setModelColor`) |
 | 프리셋 | `applyTilePreset(presetId)` → 그룹 `<id>-floor`와 재질 `tile-<id>`를 만들고 선택한다. `applyWallPreset(presetId)` → 그룹 `<id>-walls`와 재질 세 개. `setCustomTileDraft({ name?, color?, textureUrl? })` + `applyCustomTile()` |
 | 선택 | `selectedTileId` / `selectedWallId` / `selectedBlockId`와 setter. 하나를 고르면 나머지는 풀린다 |
-| 환경 | `setShowSnow`(켜면 `weatherEffect: 'snow'`), `setWeatherEffect`(`showSnow`도 맞춘다), `setShowFog`, `setFogColor`, `setWorldSurface` |
+| 환경 | `setShowSnow`(켜면 `weatherEffect: 'snow'`), `setWeatherEffect`(`showSnow`도 맞춘다), `setClimate`, `setShowFog`, `setFogColor`, `setWorldSurface` |
 
 ## 편집 입력
 

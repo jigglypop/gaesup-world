@@ -1,10 +1,11 @@
 import {
-  abs, cameraPosition, color, dot, exp, max, min, mix, modelWorldMatrix, normalize, normalMap as perturbNormal, normalView,
+  abs, cameraPosition, cameraViewMatrix, color, dot, exp, length, max, min, mix, modelWorldMatrix, normalize, normalMap as perturbNormal, normalView,
   positionGeometry, positionView, positionWorld, pow, screenUV, sin, smoothstep, texture, uniform, vec2, vec3, vec4, viewportTexture,
 } from 'three/tsl';
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial, type Node, type Texture } from 'three/webgpu';
 
 import { shoreEdge, waterDepthAt, waterShore, type WaterFieldBinding } from './waterBed';
+import { rainRipples, weatherNodes } from './weatherSurface';
 import { getSharedWaterNormals } from '../../building/components/mesh/water/normals';
 import { WATER_BED_MARK, WATER_COLORS, WATER_OPTICS, WATER_SHORE, type WaterLodState } from '../../building/components/mesh/water/shading';
 
@@ -38,7 +39,8 @@ const onFloor = (alpha: Node<'float'>) => smoothstep(WATER_BED_MARK + (1 - WATER
  * Node water over its floor (`createWaterBedMaterial`). The frame behind shows through, bent by the ripples and absorbed
  * with the water in front of the floor, so shallows over sand are clear turquoise and deep water turns blue and opaque.
  * Fresnel trades that view for the reflection at grazing angles; foam gathers in the shallows and along the shore.
- * One copy of the frame per render, no extra pass.
+ * The live weather rings it with raindrops, raises its swell and chop with the wind, and whitens it with spray in rain
+ * and whitecaps in a gale. One copy of the frame per render, no extra pass.
  */
 export function createToonWaterMaterial(
   normalMap: Texture = getSharedWaterNormals(),
@@ -49,6 +51,9 @@ export function createToonWaterMaterial(
   const brightness = uniform(1);
   const detail = uniform(1).onRenderUpdate(() => (lod?.detailed === false ? 0 : 1));
   const shore = waterShore(field);
+  const { rain, windStrength } = weatherNodes();
+  // 1 on a calm day, about 2 in wind and 2.6 in a storm's gusts.
+  const blow = windStrength.add(0.8);
 
   // A slow world-space swell that continues across surfaces and stays flat over the bank; a pond barely stirs.
   const local = positionGeometry;
@@ -57,13 +62,16 @@ export function createToonWaterMaterial(
     .add(sin(origin.y.mul(0.78).sub(time.mul(1.05)).add(origin.x.mul(0.33))).mul(0.025))
     .add(sin(origin.x.add(origin.y).mul(1.4).add(time.mul(1.6))).mul(0.012));
   const stir = smoothstep(0.7, 0.9, shore.coverageAt(origin)).mul(detail).mul(open ? 1 : 0.3);
-  const positionNode = vec3(local.x, local.y, local.z.add(swell.mul(stir)));
+  const positionNode = vec3(local.x, local.y, local.z.add(swell.mul(stir).mul(blow)));
 
   const world = positionWorld.xz;
   const edge = shoreEdge(world, shore.coverageAt(world));
   const a = texture(normalMap, world.mul(0.055).add(vec2(time.mul(0.009), time.mul(0.004))));
   const b = texture(normalMap, world.mul(0.12).add(vec2(time.mul(-0.006), time.mul(0.008))));
-  const tilt = vec2(a.x.add(b.x).sub(1), a.y.add(b.y).sub(1)).mul(detail);
+  // Wind roughens the ripples; raindrops ring them.
+  const chop = blow.mul(0.45).add(0.55);
+  const drops = rainRipples(world).mul(detail);
+  const tilt = vec2(a.x.add(b.x).sub(1), a.y.add(b.y).sub(1)).mul(detail).mul(chop).add(drops);
   const n = normalize(vec3(tilt.x.mul(0.7), 1, tilt.y.mul(0.7)));
   const view = normalize(cameraPosition.sub(positionWorld));
 
@@ -84,8 +92,11 @@ export function createToonWaterMaterial(
   const ripple = sin(world.x.mul(0.7).add(world.y.mul(0.5)).sub(time.mul(0.55))).mul(0.5).add(0.5);
   const lace = smoothstep(0.35, 0.65, a.x.add(b.y).mul(0.5)).mul(detail).mul(0.6).add(0.4);
   const shallows = smoothstep(0, WATER_OPTICS.foam, thickness).oneMinus().mul(lace);
+  // Rain spatters the whole surface and whitens the rings of its drops; a gale whips whitecaps where the ripples crest.
+  const crest = smoothstep(0.55, 0.8, a.x.add(b.y).mul(0.5)).mul(detail);
+  const spray = rain.mul(0.14).add(crest.mul(smoothstep(0.9, 1.8, windStrength).mul(0.55).add(rain.mul(0.3)))).add(length(drops).mul(1.6));
   const foam = max(band(edge, [foamIn, foamPeak]).mul(band(edge, [foamOut, foamEnd]).oneMinus()), shallows)
-    .mul(ripple.mul(detail).mul(0.45).add(0.55));
+    .mul(ripple.mul(detail).mul(0.45).add(0.55)).add(spray).min(1);
   const bank = mix(color(WATER_COLORS.bank), color(WATER_COLORS.wet), band(edge, WATER_SHORE.wet));
   const body = mix(color(WATER_COLORS.shallow), color(WATER_COLORS.deep), exp(thickness.div(-WATER_OPTICS.deepening)).oneMinus());
 
@@ -106,8 +117,9 @@ export function createToonWaterMaterial(
   } else {
     const lit = new MeshStandardNodeMaterial({ metalness: 0 });
     // NormalMapNode's declaration omits its vec3 result type.
-    const ripples = perturbNormal(a.rgb.add(b.rgb).mul(0.5), vec2(0.35, 0.35)) as unknown as Node<'vec3'>;
-    lit.normalNode = normalize(mix(normalView, ripples, wet.mul(detail)));
+    const ripples = perturbNormal(a.rgb.add(b.rgb).mul(0.5), vec2(chop.mul(0.35))) as unknown as Node<'vec3'>;
+    const rings = cameraViewMatrix.mul(vec4(drops.x, 0, drops.y, 0)).xyz;
+    lit.normalNode = normalize(mix(normalView, ripples, wet.mul(detail)).add(rings.mul(wet)));
     lit.roughnessNode = mix(0.95, 0.06, wet);
     material = lit;
   }

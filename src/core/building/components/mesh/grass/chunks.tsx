@@ -26,13 +26,13 @@ function samePlacement(a: Placed, b: Placed): boolean {
     && a.cells.every((cell, index) => sameNumbers(cell, b.cells[index]!));
 }
 
-const GrassGroundMesh = memo(function GrassGroundMesh({ ground }: { ground: GrassGround }) {
+const GrassGroundMesh = memo(function GrassGroundMesh({ ground, node }: { ground: GrassGround; node: boolean }) {
   const geometry = useMemo(
     () => createGrassGround(ground.cells, ground.cellSize, ground.terrainColor, ground.terrainAccentColor, ground.origin[0], ground.origin[2]),
     [ground],
   );
   useEffect(() => () => geometry.dispose(), [geometry]);
-  return <mesh position={ground.origin} geometry={geometry} material={getGrassGroundMaterial(getDefaultToonMode())} receiveShadow />;
+  return <mesh position={ground.origin} geometry={geometry} material={getGrassGroundMaterial(getDefaultToonMode(), node)} receiveShadow />;
 });
 
 /**
@@ -51,7 +51,7 @@ export const GrassChunks = memo(function GrassChunks({ tiles, meshOf }: { tiles:
   const grounds = useReusedByKey(useMemo(() => groupGrassGrounds(tiles, lookup), [tiles, lookup]), samePlacement);
   return (
     <>
-      {grounds.map((ground) => <GrassGroundMesh key={ground.key} ground={ground} />)}
+      {grounds.map((ground) => <GrassGroundMesh key={ground.key} ground={ground} node={node} />)}
       {chunks.map((chunk) => (node ? <FieldGrassChunk key={chunk.key} chunk={chunk} /> : (
         <Grass
           key={chunk.key}

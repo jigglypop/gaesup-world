@@ -8,6 +8,14 @@ import {
   type Texture,
 } from 'three/webgpu';
 
+import { snowAmount, weatherNodes } from './weatherSurface';
+
+const UP = vec3(0, 1, 0);
+const SNOW = vec3(0.9, 0.93, 0.98);
+
+/** Lying snow at a blade's root, from the live `snowCover`: the same patches as the ground it grows from. */
+const bladeSnow = (root: Node<'vec3'>) => snowAmount({ position: root, normal: UP });
+
 const permute = Fn(([x]: [Node<'vec3'>]) => {
   const value = x.mul(34).add(1).mul(x).toVar();
   return value.sub(floor(value.mul(1 / 289)).mul(289));
@@ -53,11 +61,14 @@ export class GrassNodeMaterial extends MeshStandardNodeMaterial {
     const p = positionGeometry;
     const fraction = p.y.div(u.bladeHeight);
     const windNoise = float(1).sub(simplex(vec2(u.time.sub(offset.x.div(50)), u.time.sub(offset.z.div(50)))));
+    const { windDirection } = weatherNodes();
     this.positionNode = Fn(() => {
       const bent = normalize(mix(vec4(0, rootSin, 0, rootCos), vec4(orientation.z.negate(), 0, orientation.x, orientation.w), fraction));
       const angle = windNoise.mul(0.3).mul(u.windScale);
       const rotated = rotate(vec3(p.x, p.y.add(p.y.mul(stretch)), p.z), bent);
-      const position = rotate(rotated, vec4(sin(angle), 0, sin(angle).negate(), cos(angle))).toVar();
+      // Tips bend downwind: about the ground axis across the wind (scaled like the old diagonal one).
+      const axis = vec2(windDirection.y, windDirection.x.negate()).mul(sin(angle).mul(Math.SQRT2));
+      const position = rotate(rotated, vec4(axis.x, 0, axis.y, cos(angle))).toVar();
       const toCenter = offset.xz.sub(u.trampleCenter.xz).toVar();
       const distance = length(toCenter).toVar();
       const falloff = u.trampleRadius.greaterThan(0.0001)
@@ -72,15 +83,18 @@ export class GrassNodeMaterial extends MeshStandardNodeMaterial {
     const dryness = varying(clamp(simplex(offset.xz.mul(0.18).add(vec2(-5.4, 12.6))).mul(0.5).add(0.5)
       .mul(0.7).add(float(1).sub(stretch).mul(0.45)), 0, 1));
     const shade = varying(clamp(float(0.82).add(windNoise.mul(0.08)).add(orientation.w.mul(0.06)), 0.72, 1.1));
+    const snowy = varying(bladeSnow(offset.add(modelPosition)));
     this.maskNode = texture(alphaMap).r.greaterThanEqual(0.15);
     this.colorNode = Fn(() => {
       const bottom = mix(mix(u.bottomColor, vec3(0.18, 0.31, 0.12), cluster.mul(0.35)), vec3(0.3, 0.23, 0.08), dryness.mul(0.85));
       const tip = mix(mix(u.tipColor, vec3(0.63, 0.82, 0.42), cluster.mul(0.28)), vec3(0.8, 0.74, 0.34), dryness);
       const denominator = max(u.uToonSteps.sub(1), 1);
       const stepped = mix(smoothstep(0, 1, frc), floor(frc.mul(u.uToonSteps)).div(denominator), u.uToon);
-      const gradient = mix(bottom, tip, stepped).toVar();
+      // Rain darkens the blades and snow settles on their tips, bright enough to read white through the tone curve below.
+      const gradient = mix(bottom, tip, stepped).mul(mix(float(1), float(0.8), weatherNodes().wetness)).toVar();
       const rib = float(1).sub(smoothstep(0, 0.52, uv().x.sub(0.5).abs()));
-      const color = mix(gradient.mul(0.72), texture(map).rgb.mul(gradient), mix(0.62, 0.35, u.uToon))
+      const textured = mix(gradient.mul(0.72), texture(map).rgb.mul(gradient), mix(0.62, 0.35, u.uToon));
+      const color = mix(textured, SNOW.mul(2.2), smoothstep(0.35, 1, frc).mul(snowy))
         .mul(mix(0.9, 1.1, cluster)).mul(mix(1, 0.82, dryness.mul(0.35))).mul(mix(0.94, 1.05, rib))
         .mul(mix(shade, floor(shade.mul(u.uToonSteps)).div(denominator), u.uToon)).toVar();
       const display = mix(color.div(color.add(vec3(1))), clamp(color, 0, 1), u.uToon).pow(1 / 2.2);
@@ -94,8 +108,6 @@ export type GrassLook = 'lawn' | 'tall';
 /** Blades past their distance share shrink away over this fraction of the draw order instead of popping. */
 export const GRASS_FADE_BAND = 0.18;
 
-/** Wind travels along this ground direction; gusts roll across the field at a few meters per second. */
-const WIND = { x: 0.848, z: 0.53 };
 const TAU = Math.PI * 2;
 
 type Rgb = readonly [number, number, number];
@@ -104,16 +116,20 @@ type Look = {
   trample: number; base: Rgb; body: Rgb; tip: Rgb; fresh: Rgb;
   /** How far tips turn to straw in dry patches, and anywhere. */
   dry: number; parched: number;
+  /** Share of the blade deep snow buries. */
+  bury: number;
 };
 /** Lawn: short, soft pastel blades that take the ground tint and brighten to warm tips. Tall: broad, stiff, deeper green. */
 const LOOKS: Record<GrassLook, Look> = {
   lawn: {
     width: [0.085, 0.14], calm: 0.1, gust: 0.5, flutter: 0.06, thicken: 0.7, round: 0.7, upward: 0.42, trample: 0.9,
     base: [0.5, 0.58, 0.47], body: [0.95, 1, 0.93], tip: [1.2, 1.16, 0.88], fresh: [1.04, 1.15, 1.06], dry: 0.55, parched: 0.12,
+    bury: 0.55,
   },
   tall: {
     width: [0.13, 0.2], calm: 0.06, gust: 0.3, flutter: 0.08, thicken: 0.55, round: 0.8, upward: 0.28, trample: 1.25,
     base: [0.22, 0.38, 0.28], body: [0.46, 0.72, 0.48], tip: [0.9, 1.08, 0.66], fresh: [0.72, 1.02, 0.78], dry: 0.45, parched: 0.1,
+    bury: 0.25,
   },
 };
 
@@ -164,6 +180,8 @@ export type GrassMaterialOptions = { look?: GrassLook; toon?: boolean; tipColor?
  * a constant-length arc bend under rolling gust fronts and per-blade flutter, player trample, edge-on blades thickened
  * in screen space, rounded normals leaning to the sky, and a root-to-tip gradient over the ground tint beneath. Each
  * blade also shrinks along its draw rank with camera distance, matching the CPU draw count, so density thins smoothly.
+ * The live weather steers it: gusts roll and blades bend along `windDirection` as hard as the `wind` uniform says
+ * (`windSway`), rain darkens and glosses them, and lying snow buries them partway and whitens their tips.
  * Instance attributes: `offset` (root, rank), `shape` (lean x, lean z, height, yaw + 8 × tone step) and `tint`.
  * Blade roots are local to an unrotated, unscaled object.
  */
@@ -178,6 +196,7 @@ export class FieldGrassMaterial extends MeshStandardNodeMaterial {
     super({ side: DoubleSide, roughness: 0.9, metalness: 0, envMapIntensity: 0.35 });
     const look = LOOKS[name];
     const { time, wind, keep, near, far, strength, trample } = this.uniforms;
+    const { windDirection, wetness } = weatherNodes();
     const offset = attribute<'vec4'>('offset', 'vec4'), shape = attribute<'vec4'>('shape', 'vec4');
     const root = offset.xyz, rank = offset.w, world = root.add(modelPosition);
     const toneStep = floor(shape.w.div(8)), yaw = shape.w.sub(toneStep.mul(8)), tone = toneStep.div(15);
@@ -192,8 +211,8 @@ export class FieldGrassMaterial extends MeshStandardNodeMaterial {
     const away = world.xz.sub(trample.xy), awayLength = max(length(away), 0.001);
     const press = clamp(float(1).sub(awayLength.div(look.trample)), 0, 1), pressed = press.mul(press).mul(trample.z);
 
-    const clock = time.mul(4), downwind = world.x.mul(WIND.x).add(world.z.mul(WIND.z));
-    const crosswind = world.z.mul(WIND.x).sub(world.x.mul(WIND.z));
+    const clock = time.mul(4), downwind = dot(world.xz, windDirection);
+    const crosswind = world.z.mul(windDirection.x).sub(world.x.mul(windDirection.y));
     // Broad gust fronts roll downwind; a quicker ripple and per-blade flutter keep the field alive between them.
     const front = texture(gustTexture(), vec2(downwind.sub(clock.mul(3.2)).div(10), crosswind.div(17)).div(GUST_PERIOD)).r;
     const ripple = sin(downwind.mul(0.8).sub(clock.mul(4.1)).add(sin(crosswind.mul(0.35)).mul(1.7))).mul(0.5).add(0.5);
@@ -201,10 +220,11 @@ export class FieldGrassMaterial extends MeshStandardNodeMaterial {
     const flutter = sin(clock.mul(mix(float(2.2), float(3.4), seed)).add(seed.mul(TAU)).add(downwind.mul(0.9)))
       .mul(look.flutter).mul(gust.add(0.35));
     const sway = wind.mul(gust.mul(look.gust).add(look.calm).add(flutter));
-    const bend = shape.xy.add(vec2(WIND.x, WIND.z).mul(sway)).add(away.div(awayLength).mul(pressed.mul(1.15)));
+    const bend = shape.xy.add(windDirection.mul(sway)).add(away.div(awayLength).mul(pressed.mul(1.15)));
     const bendLength = max(length(bend), 0.001), theta = clamp(bendLength, 0.001, 1.4), heading = bend.div(bendLength);
     const arc = theta.mul(along);
-    const height = shape.z.mul(grow).mul(float(1).sub(pressed.mul(0.3)));
+    const snow = bladeSnow(world);
+    const height = shape.z.mul(grow).mul(float(1).sub(pressed.mul(0.3))).mul(float(1).sub(snow.mul(look.bury)));
     // Constant-length circular bend: the tip travels along an arc instead of stretching sideways.
     const reach = height.mul(float(1).sub(cos(arc))).div(theta), rise = height.mul(sin(arc)).div(theta);
     const side = vec3(sin(yaw).negate(), 0, cos(yaw));
@@ -234,6 +254,9 @@ export class FieldGrassMaterial extends MeshStandardNodeMaterial {
     const straw = ground.mul(vec3(...STRAW)).mul(float(1).sub(shade.mul(0.3)));
     const blade = mix(mix(lower, crown, smoothstep(0.38, 1, level)), straw, smoothstep(0.45, 1, level).mul(patch.mul(look.dry).add(look.parched)));
     const rib = float(1).sub(smoothstep(0, 0.5, abs(uv().x.sub(0.5))));
-    this.colorNode = blade.mul(mix(float(0.84), float(1.13), shade)).mul(mix(float(0.95), float(1.04), rib)).mul(breeze.mul(along).mul(0.1).add(1));
+    const frosted = mix(blade, SNOW, smoothstep(0.3, 1, level).mul(varying(snow)).mul(0.85));
+    this.colorNode = frosted.mul(mix(float(0.84), float(1.13), shade)).mul(mix(float(0.95), float(1.04), rib)).mul(breeze.mul(along).mul(0.1).add(1))
+      .mul(mix(float(1), float(0.8), wetness));
+    this.roughnessNode = mix(float(0.9), float(0.5), wetness);
   }
 }

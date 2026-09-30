@@ -195,7 +195,7 @@ npm 스크립트 전체와 검증 체인은 [verification.md](verification.md)�
 | `ui` | 2,015 | 21 | 5 | 토스트, 말풍선, 미니맵, 세이브 진단 토스터, `MinimapSystem`, `UIBridge`, `useUIConfigStore`(전역) |
 | `utils` | 1,007 | 16 | 5 | `logger`, `reportError`, id, clone, guards, env, 벡터·수학·메모이제이션·오브젝트 풀 |
 | `wasm` | 245 | 1 | 1 | Rust 코어 WASM 로더 `loadCoreWasm`. Rust 소스 `src/*.rs`(잔디 데이터, 행렬, 벡터, 입자, 가중 A*, 공간 격자)와 `build.sh` |
-| `weather` | 454 | 11 | 3 | 날씨 store·플러그인, `WeatherEffect`(TSL `NodeWeather`), `WeatherHUD` |
+| `weather` | 1,183 | 17 | 6 | 날씨 store·플러그인, 기후(`core/climate`·`core/field`), `Weather`(강수·조명·번개), `useWeatherSource`, `WeatherEffect`, `WeatherHUD` |
 | `world` | 4,027 | 43 | 12 | `GaesupWorld`(= `WorldConfigProvider`), `GaesupWorldContent`, `WorldPhysics`, `WorldBridge`·`WorldSystem`·`SpatialGrid`, 탈것 `Rideable`, 영속화 `SaveLoadManager` |
 | 합계 | 90,197 | 855 | 374 | 루트 배럴 `src/core/index.ts`(209줄)와 `src/core/__tests__`의 테스트 1개는 별도 |
 

@@ -30,10 +30,13 @@ void main() {
   vec3 dryTip = mix(lushTip, warmTip, vDryness);
 
   float frcStepped = mix(smoothstep(0.0, 1.0, frc), floor(frc * uToonSteps) / max(uToonSteps - 1.0, 1.0), uToon);
-  vec3 bladeGradient = mix(dryBottom, dryTip, frcStepped);
+  // Rain darkens the blades and snow settles on their tips (WEATHER_SURFACE_GLSL is prepended); the snow is bright
+  // enough to read white through the tone curve below.
+  vec3 bladeGradient = mix(dryBottom, dryTip, frcStepped) * mix(1.0, 0.8, clamp(weatherWetness, 0.0, 1.0));
   vec3 tex = texture2D(map, vUv).rgb;
   float rib = 1.0 - smoothstep(0.0, 0.52, abs(vUv.x - 0.5));
   vec3 color = mix(bladeGradient * 0.72, tex * bladeGradient, mix(0.62, 0.35, uToon));
+  color = mix(color, vec3(2.0, 2.05, 2.15), smoothstep(0.35, 1.0, frc) * weatherSnowAmount(1.0));
   color *= mix(0.9, 1.1, vCluster);
   color *= mix(1.0, 0.82, vDryness * 0.35);
   color *= mix(0.94, 1.05, rib);

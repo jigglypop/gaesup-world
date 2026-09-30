@@ -1,5 +1,6 @@
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 
+import { useWeatherSource } from '../../../weather';
 import { useBuildingStore } from '../../stores/buildingStore';
 import { WallGroupConfig, TileGroupConfig, MeshConfig } from '../../types';
 import { useBuildingVisibilityStore } from '../../visibility/store';
@@ -85,7 +86,8 @@ jest.mock('../../../npc/components/NPCPreview', () => ({
 }));
 
 jest.mock('../../../weather', () => ({
-  WeatherEffect: ({ kind }: { kind: string }) => <group name={`weather-effect-${kind}`} />,
+  Weather: () => <group name="weather" />,
+  useWeatherSource: jest.fn(),
 }));
 
 // mesh 하위 컴포넌트들은 GLSL 셰이더를 import하므로 jsdom 환경에서는 모킹.
@@ -195,6 +197,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       showFog: false,
       fogColor: '#cfd8e3',
       weatherEffect: 'none',
+      climate: 'off',
       worldSurface: 'ground',
       objects: [],
       ...overrides,
@@ -277,12 +280,13 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       renderer.unmount();
     });
 
-    test('건축 날씨 효과가 선택된 weatherEffect로 렌더링되어야 함', async () => {
-      mockStore({ weatherEffect: 'storm' });
+    test('건축 날씨(weatherEffect·climate)가 런타임 날씨를 정하고 날씨를 그려야 함', async () => {
+      mockStore({ weatherEffect: 'storm', climate: 'auto' });
 
       const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
 
-      expectSceneHasName(renderer, 'weather-effect-storm');
+      expectSceneHasName(renderer, 'weather');
+      expect(jest.mocked(useWeatherSource)).toHaveBeenLastCalledWith({ manual: 'storm', climate: 'auto' });
 
       renderer.unmount();
     });

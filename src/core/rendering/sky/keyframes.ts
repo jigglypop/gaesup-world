@@ -41,6 +41,7 @@ export const WEATHER_FACTORS: Record<WeatherKind, { sun: number; ambient: number
   rain:   { sun: 0.30, ambient: 0.85, tint: new THREE.Color('#90a0b8') },
   snow:   { sun: 0.65, ambient: 1.10, tint: new THREE.Color('#dfeaf5') },
   storm:  { sun: 0.20, ambient: 0.75, tint: new THREE.Color('#5a6a82') },
+  wind:   { sun: 0.92, ambient: 1.0,  tint: new THREE.Color('#f2f6fa') },
 };
 
 export type SkySample = {

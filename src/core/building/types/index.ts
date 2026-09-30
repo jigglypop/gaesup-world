@@ -1,4 +1,8 @@
+import type { FarmPlotConfig } from './farm';
 import type { CellCoord, EdgeCoord } from '../../grid';
+import type { ClimateMode } from '../../weather/core/climate';
+
+export * from './farm';
 
 export interface Position3D {
   x: number;
@@ -117,7 +121,7 @@ export interface WallGroupConfig {
   walls: WallConfig[];
 }
 
-export type TileObjectType = 'water' | 'grass' | 'sand' | 'snowfield' | 'dirt' | 'none';
+export type TileObjectType = 'water' | 'grass' | 'sand' | 'snowfield' | 'dirt' | 'farm' | 'none';
 export type BuildingTreeKind =
   | 'sakura'
   | 'oak'
@@ -217,6 +221,8 @@ export interface TileConfig {
     grassDensity?: number;
     terrainColor?: string;
     terrainAccentColor?: string;
+    /** A `farm` tile's soil, crop, stage, rows and edge. */
+    farm?: FarmPlotConfig;
   };
 }
 
@@ -244,6 +250,8 @@ export interface BuildingSerializedState {
   showFog: boolean;
   fogColor: string;
   weatherEffect: BuildingWeatherEffect;
+  /** Automatic weather while `weatherEffect` is `'none'`; absent in snapshots written before climates, read as `'off'`. */
+  climate?: BuildingClimate;
   worldSurface: BuildingWorldSurface;
   /** Absent in snapshots written before categories were persisted. */
   wallCategories?: WallCategory[];
@@ -251,6 +259,8 @@ export interface BuildingSerializedState {
 }
 
 export type BuildingWeatherEffect = 'none' | 'snow' | 'rain' | 'storm' | 'wind';
+/** `off`: only the picked weather. `auto`: a seeded schedule from the game season. A season fixes the schedule's pool. */
+export type BuildingClimate = ClimateMode;
 export type BuildingWorldSurface = 'ground' | 'water';
 
 export const BUILDING_WEATHER_EFFECT_OPTIONS: BuildingOptionMeta<BuildingWeatherEffect>[] = [
@@ -259,6 +269,15 @@ export const BUILDING_WEATHER_EFFECT_OPTIONS: BuildingOptionMeta<BuildingWeather
   { type: 'rain', labelEn: 'Rain', labelKo: '비' },
   { type: 'storm', labelEn: 'Storm', labelKo: '폭풍' },
   { type: 'wind', labelEn: 'Wind', labelKo: '바람' },
+];
+
+export const BUILDING_CLIMATE_OPTIONS: BuildingOptionMeta<BuildingClimate>[] = [
+  { type: 'off', labelEn: 'Off', labelKo: '끔' },
+  { type: 'auto', labelEn: 'Auto', labelKo: '자동' },
+  { type: 'spring', labelEn: 'Spring', labelKo: '봄' },
+  { type: 'summer', labelEn: 'Summer', labelKo: '여름' },
+  { type: 'autumn', labelEn: 'Autumn', labelKo: '가을' },
+  { type: 'winter', labelEn: 'Winter', labelKo: '겨울' },
 ];
 
 export const BUILDING_WORLD_SURFACE_OPTIONS: BuildingOptionMeta<BuildingWorldSurface>[] = [
@@ -706,6 +725,7 @@ export const BUILDING_TILE_OBJECT_OPTIONS: BuildingOptionMeta<TileObjectType>[] 
   { type: 'sand', labelEn: 'Sand', labelKo: '모래' },
   { type: 'snowfield', labelEn: 'Snowfield', labelKo: '눈밭' },
   { type: 'dirt', labelEn: 'Dirt path', labelKo: '흙길' },
+  { type: 'farm', labelEn: 'Farm field', labelKo: '밭' },
 ];
 
 export const BUILDING_TILE_SHAPE_OPTIONS: BuildingOptionMeta<TileShapeType>[] = [
@@ -779,5 +799,6 @@ export interface BuildingSystemState {
   showFog: boolean;
   fogColor: string;
   weatherEffect: BuildingWeatherEffect;
+  climate: BuildingClimate;
   worldSurface: BuildingWorldSurface;
 }

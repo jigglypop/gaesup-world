@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
-import { groundMaterial } from '../groundMaterial';
+import { weatherGlUniforms } from '../../../weather/core/glsl';
+import { classicWeather, groundMaterial } from '../groundMaterial';
 
 describe('groundMaterial', () => {
   it('keeps materials it cannot redraw: toon, transparent and already node-built', () => {
@@ -30,6 +31,32 @@ describe('groundMaterial', () => {
     replaced.addEventListener('dispose', gone);
     source.dispose();
     expect(gone).toHaveBeenCalledTimes(1);
+  });
+
+  it('pools rain rings on bare tiles only: grass soaks the rain up', () => {
+    const source = new THREE.MeshStandardMaterial();
+    const bare = groundMaterial(source) as THREE.Material & { normalNode: unknown; roughnessNode: unknown };
+    const grassy = groundMaterial(source, true) as THREE.Material & { normalNode: unknown; roughnessNode: unknown };
+    expect(bare.normalNode).toBeTruthy();
+    expect(grassy.normalNode).toBeNull();
+    expect(bare.roughnessNode).toBeTruthy();
+    expect(grassy.roughnessNode).toBeTruthy();
+    source.dispose();
+  });
+
+  it('patches a classic material once to read the shared weather uniforms', () => {
+    const material = new THREE.MeshStandardMaterial();
+    expect(classicWeather(material, 0.5)).toBe(material);
+    const patch = material.onBeforeCompile;
+    classicWeather(material, 0.5);
+    expect(material.onBeforeCompile).toBe(patch);
+    expect(material.customProgramCacheKey()).toBe('weather:0.5');
+    const shader = { uniforms: {}, vertexShader: '', fragmentShader: THREE.ShaderLib.physical.fragmentShader };
+    material.onBeforeCompile(shader as unknown as THREE.WebGLProgramParametersWithUniforms, {} as THREE.WebGLRenderer);
+    expect((shader.uniforms as Record<string, unknown>)['weatherWetness']).toBe(weatherGlUniforms().weatherWetness);
+    expect(shader.fragmentShader).toContain('uniform float weatherSnowCover;');
+    expect(shader.fragmentShader).toMatch(/#include <normal_fragment_maps>\s+float weatherSoak/);
+    expect(shader.fragmentShader).toContain('roughnessFactor = mix(roughnessFactor, 0.3, weatherSoak)');
   });
 
   it('makes a separate variant for tiles under grass, disposed with the source too', () => {

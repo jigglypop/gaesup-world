@@ -21,6 +21,7 @@ function createTarget(): BuildingHydrationTarget {
     showFog: false,
     fogColor: '#cfd8e3',
     weatherEffect: 'none',
+    climate: 'off',
     worldSurface: 'ground',
     wallCategories: new Map(),
     tileCategories: new Map(),
@@ -97,7 +98,7 @@ describe('building persistence helpers', () => {
     {}, { version: 1 }, { unexpected: true }, [], 'invalid', false,
     { version: 2, meshes: [] }, { meshes: {} }, { blocks: null },
     { meshes: [], objects: 'invalid' }, { meshes: [], showFog: 'false' },
-    { meshes: [], weatherEffect: 'unknown' }, { meshes: [], worldSurface: 'unknown' },
+    { meshes: [], weatherEffect: 'unknown' }, { meshes: [], worldSurface: 'unknown' }, { meshes: [], climate: 'monsoon' },
   ])('rejects malformed envelopes before changing existing buildings: %j', (invalid) => {
     const target = createTarget();
     target.meshes.set('existing', { id: 'existing', color: '#fff', material: 'STANDARD' });
@@ -105,6 +106,14 @@ describe('building persistence helpers', () => {
     expect(() => hydrateBuildingState(target, invalid as unknown as BuildingSerializedState)).toThrow();
     expect(serializeBuildingState(target)).toEqual(before);
     expect(target.initialized).toBe(false);
+  });
+
+  it('keeps the island climate and reads snapshots from before climates as off', () => {
+    const target = createTarget();
+    hydrateBuildingState(target, { meshes: [], weatherEffect: 'snow', climate: 'winter' });
+    expect(serializeBuildingState(target)).toMatchObject({ weatherEffect: 'snow', climate: 'winter' });
+    hydrateBuildingState(target, { meshes: [], weatherEffect: 'rain' });
+    expect(target.climate).toBe('off');
   });
 
   it('accepts explicit empty collections and legacy partial snapshots', () => {
@@ -139,6 +148,7 @@ describe('building persistence helpers', () => {
       showFog: false,
       fogColor: '#cfd8e3',
       weatherEffect: 'none',
+      climate: 'off',
       worldSurface: 'ground',
       wallCategories: [],
       tileCategories: [],

@@ -6,12 +6,14 @@ import {
   CascadedSun,
   ContactShadows,
   createRenderer,
+  Footprints,
   GaesupController,
   GaesupWorldContent,
   GameplayArea,
   hexToLinearRgb,
   IdleFrameRate,
   InteractionTracker,
+  LandingBurst,
   LightingZone,
   Nameplates,
   SkyEnvironment,
@@ -80,6 +82,8 @@ export function Scene({ quality, postProcessing, cinematic, idleThrottle }: Scen
           {AREAS.map((area) => <GameplayArea key={area.id} {...area} />)}
           <LightingZone center={MINIROOM.center} size={MINIROOM.size} profile={ROOM_LIGHT} lamp={ROOM_LAMP} />
           <ContactShadows />
+          <Footprints weather />
+          <LandingBurst />
           <Nameplates />
         </GaesupWorldContent>
       </Suspense>

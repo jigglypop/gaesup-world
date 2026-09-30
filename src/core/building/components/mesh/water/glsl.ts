@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import { POND_FLOOR_OFFSET, WATER_BED, WATER_COLORS, WATER_OPTICS, WATER_SHORE } from './shading';
+import { WEATHER_SURFACE_GLSL, weatherGlUniforms } from '../../../../weather/core/glsl';
 import { SHORE_DISTANCE_RANGE } from '../../../terrain/shoreField';
 
 const f = (value: number) => value.toFixed(4);
@@ -50,11 +51,29 @@ vec2 shoreHere() {
 #endif
 }`;
 
+/** The live weather (`WEATHER_SURFACE_GLSL`) and raindrop rings, the GLSL twin of `rainRipples`. */
+const WEATHER = /* glsl */ `
+${WEATHER_SURFACE_GLSL}
+float dropHash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+vec2 dropRings(vec2 xz, float shift, float rate) {
+  vec2 p = xz * 1.6 + shift;
+  vec2 cell = floor(p);
+  float h = dropHash(cell + shift * 7.1);
+  vec2 offset = p - (cell + vec2(h, dropHash(cell + 3.7 + shift)) * 0.6 + 0.2);
+  float phase = fract(uTime * rate + h * 7.3);
+  float d = length(offset), ring = d - phase * 0.45;
+  float wave = sin(ring * 38.0) * exp(-ring * ring * 420.0) * (1.0 - phase) * (1.0 - phase);
+  return offset / max(d, 1e-3) * wave * step(h * 0.97, weatherRain);
+}
+vec2 rainRipples(vec2 xz) { return (dropRings(xz, 0.0, 1.1) + dropRings(xz, 0.5, 0.83)) * weatherRain * 0.35; }
+`;
+
 /** `displace(p, origin)`: how far below the surface a vertex at world xz `origin` lies. */
 const vertex = (displace: string) => /* glsl */ `
 #include <common>
 #include <fog_pars_vertex>
 ${SHORE}
+uniform float weatherWind;
 attribute float waterCoverage;
 attribute float waterDistance;
 
@@ -83,13 +102,15 @@ const SURFACE_VERTEX = vertex(/* glsl */ `
 #else
   float stir = 0.3;
 #endif
-  p.z += swell * smoothstep(0.7, 0.9, shore.x) * uDetail * stir;`);
+  // The wind raises the swell: 1 on a calm day, about 2 in wind.
+  p.z += swell * smoothstep(0.7, 0.9, shore.x) * uDetail * stir * (weatherWind + 0.8);`);
 
 const SURFACE_FRAGMENT = /* glsl */ `
 #include <common>
 #include <fog_pars_fragment>
 ${SHORE}
 ${FRAGMENT_SHORE}
+${WEATHER}
 uniform sampler2D uNormals;
 uniform vec3 uBank;
 uniform vec3 uWet;
@@ -104,7 +125,9 @@ void main() {
   float edge = shoreEdge(p, shore.x);
   vec3 a = texture2D(uNormals, p * 0.055 + vec2(uTime * 0.009, uTime * 0.004)).xyz;
   vec3 b = texture2D(uNormals, p * 0.12 + vec2(-uTime * 0.006, uTime * 0.008)).xyz;
-  vec2 tilt = (a.xy + b.xy - 1.0) * uDetail;
+  // Wind roughens the ripples; raindrops ring them.
+  vec2 drops = rainRipples(p) * uDetail;
+  vec2 tilt = (a.xy + b.xy - 1.0) * (weatherWind * 0.45 + 0.91) * uDetail + drops;
   vec3 n = normalize(vec3(tilt.x * 0.7, 1.0, tilt.y * 0.7));
   vec3 view = normalize(cameraPosition - vWorldPos);
   float fresnel = ${f(WATER_OPTICS.reflectance)} + ${f(1 - WATER_OPTICS.reflectance)} * pow(1.0 - max(dot(n, view), 0.0), 5.0);
@@ -115,7 +138,10 @@ void main() {
   float ripple = sin(p.x * 0.7 + p.y * 0.5 - uTime * 0.55) * 0.5 + 0.5;
   float lace = smoothstep(0.35, 0.65, (a.x + b.y) * 0.5) * uDetail * 0.6 + 0.4;
   float shallows = (1.0 - smoothstep(0.0, ${f(WATER_OPTICS.foam)}, thickness)) * lace;
-  float foam = max(${band('edge', [foamIn, foamPeak])} * (1.0 - ${band('edge', [foamOut, foamEnd])}), shallows) * (0.55 + 0.45 * ripple * uDetail);
+  // Rain spatters the whole surface and whitens the rings of its drops; a gale whips whitecaps where the ripples crest.
+  float crest = smoothstep(0.55, 0.8, (a.x + b.y) * 0.5) * uDetail;
+  float spray = weatherRain * 0.14 + crest * (smoothstep(0.9, 1.8, weatherWind) * 0.55 + weatherRain * 0.3) + length(drops) * 1.6;
+  float foam = min(max(${band('edge', [foamIn, foamPeak])} * (1.0 - ${band('edge', [foamOut, foamEnd])}), shallows) * (0.55 + 0.45 * ripple * uDetail) + spray, 1.0);
   vec3 bank = mix(uBank, uWet, ${band('edge', WATER_SHORE.wet)});
   vec3 body = mix(uShallow, uDeep, 1.0 - exp(-thickness / ${f(WATER_OPTICS.deepening)}));
   body = mix(body, uSky, fresnel * 0.6) + highlight * 0.35;
@@ -197,8 +223,9 @@ function shaderOptions({ field = null, open = false }: Omit<GlslWaterOptions, 'n
 }
 
 /**
- * The classic WebGL renderer's water: the node material's look without TSL or a copy of the frame. The floor
- * (`createGlslWaterBedMaterial`) shows through by blending, as much as the water in front of it lets through.
+ * The classic WebGL renderer's water: the node material's look without TSL or a copy of the frame, rained on and blown
+ * by the live weather's shared uniforms. The floor (`createGlslWaterBedMaterial`) shows through by blending, as much as
+ * the water in front of it lets through.
  */
 export function createGlslWaterMaterial({ normals, ...options }: GlslWaterOptions): THREE.ShaderMaterial {
   const base = shaderOptions(options);
@@ -207,6 +234,7 @@ export function createGlslWaterMaterial({ normals, ...options }: GlslWaterOption
     name: 'water-surface',
     uniforms: {
       ...base.uniforms,
+      ...weatherGlUniforms(),
       uNormals: { value: normals },
       uBank: color(WATER_COLORS.bank),
       uWet: color(WATER_COLORS.wet),

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { useBuildingStoreApi, type BuildingStoreApi } from '../../../building/stores/buildingStore';
+import { readTilePlot } from '../../../building/terrain/farm/config';
 import { createTileSampler, type TileSampler } from '../../../building/terrain/sampler';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
 import { useEngineFrame } from '../../../runtime/frame';
@@ -47,6 +48,7 @@ function defaultResolveSurface(x: number, z: number, store: BuildingStoreApi): S
     case 'snowfield': return 'snow';
     case 'grass':     return 'grass';
     case 'dirt':      return 'sand';
+    case 'farm':      return readTilePlot(tile).soil === 'paddy' ? 'water' : 'sand';
     default: break;
   }
   if (meshes.get(sample.materialId)?.grass) return 'grass';
