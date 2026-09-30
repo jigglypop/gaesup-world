@@ -1,68 +1,19 @@
-import * as THREE from 'three' 
+import * as THREE from 'three'
+ 
+import type { GamepadState, KeyboardState, MouseState, TouchState } from '../../input/core/types';
 
-export type KeyboardState = {
-  forward: boolean;
-  backward: boolean;
-  leftward: boolean;
-  rightward: boolean;
-  shift: boolean;
-  space: boolean;
-  keyZ: boolean;
-  keyR: boolean;
-  keyF: boolean;
-  keyE: boolean;
-  escape: boolean;
-};
+export type { GamepadState, KeyboardState, MouseState, TouchState };
 
-export type MouseState = {
-  target: THREE.Vector3;
-  angle: number;
-  isActive: boolean;
-  /** Set when movement reaches its target. moveTo clears this before starting. */
-  hasArrived?: boolean;
-  shouldRun: boolean;
-  isLookAround?: boolean;
-  buttons: {
-    left: boolean;
-    right: boolean;
-    middle: boolean;
-  };
-  wheel: number;
-  position: THREE.Vector2;
-};
-
-export type GamepadState = {
-  connected: boolean;
-  leftStick: THREE.Vector2;
-  rightStick: THREE.Vector2;
-  triggers: { left: number; right: number };
-  buttons: Record<string, boolean>;
-  vibration: { weak: number; strong: number };
-};
-
-export type TouchState = {
-  touches: Array<{
-    id: number;
-    position: THREE.Vector2;
-    force: number;
-  }>;
-  gestures: {
-    pinch: number;
-    rotation: number;
-    pan: THREE.Vector2;
-  };
-};
-
-export type InteractionState = {
+export interface InteractionState {
   keyboard: KeyboardState;
   mouse: MouseState;
   gamepad: GamepadState;
   touch: TouchState;
   lastUpdate: number;
   isActive: boolean;
-};
+}
 
-export type InteractionConfig = {
+export interface InteractionConfig {
   sensitivity: {
     mouse: number;
     gamepad: number;
@@ -78,19 +29,19 @@ export type InteractionConfig = {
   };
   invertY: boolean;
   enableVibration: boolean;
-};
+}
 
-export type InteractionMetrics = {
+export interface InteractionMetrics {
   lastUpdate: number;
   inputLatency: number;
   frameTime: number;
   eventCount: number;
   activeInputs: string[];
   performanceScore: number;
-};
+}
 
 
-export type AutomationAction = {
+export interface AutomationAction {
   id: string;
   type: 'move' | 'click' | 'wait' | 'key' | 'custom';
   target?: THREE.Vector3;
@@ -101,7 +52,7 @@ export type AutomationAction = {
   afterCallback?: () => void;
   data?: Record<string, object | string | number | boolean | null | undefined>;
   timestamp?: number;
-};
+}
 
 type AutomationQueue = {
   actions: AutomationAction[];
@@ -112,14 +63,14 @@ type AutomationQueue = {
   maxRetries: number;
 }
 
-export type AutomationSettings = {
+export interface AutomationSettings {
   throttle: number;
   autoStart: boolean;
   trackProgress: boolean;
   showVisualCues: boolean;
-};
+}
 
-export type AutomationState = {
+export interface AutomationState {
   isActive: boolean;
   queue: AutomationQueue;
   currentAction: AutomationAction | null;
@@ -130,9 +81,9 @@ export type AutomationState = {
     errors: string[];
   };
   settings: AutomationSettings;
-};
+}
 
-export type AutomationConfig = {
+export interface AutomationConfig {
   maxConcurrentActions: number;
   defaultDelay: number;
   retryDelay: number;
@@ -144,12 +95,12 @@ export type AutomationConfig = {
     lineColor: string;
     targetColor: string;
   };
-};
+}
 
-export type AutomationMetrics = {
+export interface AutomationMetrics {
   queueLength: number;
   executionTime: number;
   performance: number;
   memoryUsage: number;
   errorRate: number;
-};
+}

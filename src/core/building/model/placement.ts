@@ -1,3 +1,4 @@
+import { snapTilePosition, wallBox, wallEdge } from './footprint';
 import { SquareGridAdapter } from '../../grid';
 import type { CellCoord, EdgeCoord, EdgeSide, Vec3 } from '../../grid';
 import type { GridAdapter } from '../../grid';
@@ -77,14 +78,15 @@ export const normalizeQuarterTurnRotation = (rotation: number): number => {
   return normalized * turn;
 };
 
+/** A wall runs along its local X: north and south edges run along X, east and west edges along Z. */
 export const edgeSideToWallRotation = (side: EdgeSide): number => {
   switch (side) {
     case 'north':
     case 'south':
-      return Math.PI / 2;
+      return 0;
     case 'east':
     case 'west':
-      return 0;
+      return Math.PI / 2;
   }
 };
 
@@ -109,37 +111,11 @@ export const edgeToWallTransform = (
   };
 };
 
+/** The edge a wall with this pivot and turn stands on; see `wallEdge`. */
 export const wallTransformToEdge = (
   position: Vec3,
   rotationY: number,
-): EdgeCoord => {
-  const normalized = normalizeQuarterTurnRotation(rotationY);
-  const half = TILE_CONSTANTS.WALL_SIZES.WIDTH / 2;
-  const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-  const center = {
-    x: position.x + Math.sin(normalized) * half,
-    y: position.y,
-    z: position.z + Math.cos(normalized) * half,
-  };
-
-  if (normalized === 0 || normalized === Math.PI) {
-    const cellX = Math.trunc(center.x / cellSize);
-    const edgeOffset = center.x - cellX * cellSize;
-    return {
-      x: cleanNumber(cellX),
-      z: cleanNumber(Math.round(center.z / cellSize)),
-      level: cleanNumber(Math.round(center.y / TILE_CONSTANTS.HEIGHT_STEP)),
-      side: edgeOffset >= 0 ? 'east' : 'west',
-    };
-  }
-
-  return {
-    x: cleanNumber(Math.round(center.x / cellSize)),
-    z: cleanNumber(Math.trunc(center.z / cellSize)),
-    level: cleanNumber(Math.round(center.y / TILE_CONSTANTS.HEIGHT_STEP)),
-    side: center.z - Math.trunc(center.z / cellSize) * cellSize >= 0 ? 'south' : 'north',
-  };
-};
+): EdgeCoord => wallEdge({ position, rotation: { x: 0, y: rotationY, z: 0 } });
 
 export const edgeKey = (edge: EdgeCoord): string => buildingGridAdapter.edgeKey(edge);
 
@@ -237,11 +213,22 @@ export const buildingPlacementAdapter: GridAdapter<BuildingPlacementCoord> = {
   },
 };
 
+/** Cells a tile occupies in the placement engine; the spatial index derives occupancy the same way. */
+export const tilePlacementCells = (tile: TileConfig): CellCoord[] =>
+  tile.footprint ?? createTileFootprint(tile.cell ?? tilePositionToCell(tile.position), tile.size || 1);
+
+/** A tile as the store keeps it: on the grid, with the anchor cell and the cells it covers. */
+export const placeTileOnGrid = (tile: TileConfig): TileConfig => {
+  const position = snapTilePosition(tile.position, tile.size);
+  const cell = tile.cell ?? tilePositionToCell(position);
+  return { ...tile, position, cell, footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1) };
+};
+
 export const tileToPlacementEntry = (
   tile: TileConfig,
 ): PlacementEntry<BuildingPlacementCoord> => {
   const cell = tile.cell ?? tilePositionToCell(tile.position);
-  const footprint = tile.footprint ?? createTileFootprint(cell, tile.size || 1);
+  const footprint = tilePlacementCells(tile);
   const entry: PlacementEntry<BuildingPlacementCoord> = {
     id: tile.id,
     subject: {
@@ -286,11 +273,15 @@ export const wallToPlacementEntry = (
   };
 };
 
+/** Cells a block occupies in the placement engine; the spatial index derives occupancy the same way. */
+export const blockPlacementCells = (block: Pick<BuildingBlockConfig, 'position' | 'cell' | 'size'>): CellCoord[] =>
+  createBlockFootprint(block.cell ?? tilePositionToCell(block.position), block.size);
+
 export const blockToPlacementEntry = (
   block: BuildingBlockConfig,
 ): PlacementEntry<BuildingPlacementCoord> => {
   const cell = block.cell ?? tilePositionToCell(block.position);
-  const footprint = createBlockFootprint(cell, block.size);
+  const footprint = blockPlacementCells(block);
   return {
     id: block.id,
     subject: {
@@ -386,27 +377,37 @@ export const indexAabb = (
   minZ: number,
   maxZ: number,
   cellSize: number,
-): void => {
+): void => insertCellKeys(cells, cellsById, id, aabbCellKeys(minX, maxX, minZ, maxZ, cellSize));
+
+/** The index keys of the cells an AABB covers; throws for ranges the index cannot hold, before anything changes. */
+export const aabbCellKeys = (minX: number, maxX: number, minZ: number, maxZ: number, cellSize: number): number[] => {
   if (!Number.isFinite(cellSize) || cellSize <= 0) throw new RangeError('Invalid building cell size');
   const minCellX = Math.floor(minX / cellSize);
   const maxCellX = Math.floor(maxX / cellSize);
   const minCellZ = Math.floor(minZ / cellSize);
   const maxCellZ = Math.floor(maxZ / cellSize);
-
   validateCellRange(minCellX, maxCellX, minCellZ, maxCellZ);
 
   const keys: number[] = [];
   for (let cx = minCellX; cx <= maxCellX; cx++) {
-    for (let cz = minCellZ; cz <= maxCellZ; cz++) {
-      const key = pair(cx, cz);
-      let set = cells.get(key);
-      if (!set) {
-        set = new Set<string>();
-        cells.set(key, set);
-      }
-      set.add(id);
-      keys.push(key);
+    for (let cz = minCellZ; cz <= maxCellZ; cz++) keys.push(pair(cx, cz));
+  }
+  return keys;
+};
+
+export const insertCellKeys = (
+  cells: Map<number, Set<string>>,
+  cellsById: Map<string, number[]>,
+  id: string,
+  keys: number[],
+): void => {
+  for (const key of keys) {
+    let set = cells.get(key);
+    if (!set) {
+      set = new Set<string>();
+      cells.set(key, set);
     }
+    set.add(id);
   }
   cellsById.set(id, keys);
 };
@@ -551,30 +552,32 @@ export const getBuildingSupportHeight = (
   getBlockSupportHeight(blocks, position, multiplier, anchorToCell),
 );
 
+/** Walls are indexed around their center, so walls on one edge meet in the index whichever way they face. */
+export const WALL_INDEX_TOLERANCE = 0.5;
+
+/** Whether a wall with this pivot and turn would stand where an indexed wall stands, along the same axis, facing either way. */
 export const hasWallCollision = (
   wallIndex: Map<number, Set<string>>,
   wallMeta: Map<string, WallMeta>,
   position: Vec3,
   rotation: number,
 ): boolean => {
-  const tolerance = 0.5;
+  const alongX = (rotationY: number): boolean => Math.abs(Math.cos(rotationY)) > Math.SQRT1_2;
+  const [x, , z] = wallBox({ position, rotation: { x: 0, y: rotation, z: 0 } }).center;
   const ids = queryAabbIds(
     wallIndex,
-    position.x - tolerance,
-    position.x + tolerance,
-    position.z - tolerance,
-    position.z + tolerance,
+    x - WALL_INDEX_TOLERANCE,
+    x + WALL_INDEX_TOLERANCE,
+    z - WALL_INDEX_TOLERANCE,
+    z + WALL_INDEX_TOLERANCE,
     1,
   );
 
   for (const id of ids) {
     const meta = wallMeta.get(id);
     if (!meta) continue;
-    if (
-      Math.abs(meta.x - position.x) < tolerance &&
-      Math.abs(meta.z - position.z) < tolerance &&
-      Math.abs(meta.rotY - rotation) < 0.1
-    ) {
+    const [mx, , mz] = wallBox({ position: { x: meta.x, y: 0, z: meta.z }, rotation: { x: 0, y: meta.rotY, z: 0 } }).center;
+    if (Math.abs(mx - x) < WALL_INDEX_TOLERANCE && Math.abs(mz - z) < WALL_INDEX_TOLERANCE && alongX(meta.rotY) === alongX(rotation)) {
       return true;
     }
   }

@@ -2,6 +2,7 @@ import type { BlueprintRecord, BlueprintValue } from '../types';
 import type { CharacterAnimationProps } from './components/CharacterAnimationComponent';
 import type { CharacterMovementProps } from './components/CharacterMovementComponent';
 import type { GravityForceProperties } from './components/GravityForceComponent';
+import { isRecord } from '../../core/utils/guards';
 
 const asNumber = (value: BlueprintValue | undefined, fallback: number): number =>
   typeof value === 'number' ? value : fallback;
@@ -19,9 +20,6 @@ const asStringOrStringArray = (
   }
   return fallback;
 };
-
-const isRecord = (value: BlueprintValue | undefined): value is BlueprintRecord =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 export const toGravityForceProperties = (
   props: BlueprintRecord,

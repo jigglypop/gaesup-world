@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import {
   CAMERA_CONTROLLER_DEFAULT_CLASSES,
+  CAMERA_CONTROLLER_DEFAULT_COLLISION_MODES,
   CAMERA_CONTROLLER_DEFAULT_LABELS,
   CAMERA_CONTROLLER_DEFAULT_MODES,
   CAMERA_CONTROLLER_MODE_OPTIONS,
@@ -16,7 +17,7 @@ import type {
   CameraControllerRenderContext,
 } from './types';
 import { useGaesupStore } from '../../../stores/gaesupStore';
-import type { CameraType } from '../../core/types';
+import type { CameraCollisionMode, CameraType } from '../../core/types';
 import './styles.css';
 
 export function CameraController({
@@ -25,6 +26,7 @@ export function CameraController({
   showTitle = false,
   compact = false,
   modes = CAMERA_CONTROLLER_DEFAULT_MODES,
+  collisionModes = CAMERA_CONTROLLER_DEFAULT_COLLISION_MODES,
   className,
   style,
   classNames,
@@ -32,16 +34,19 @@ export function CameraController({
   labels: labelOverrides,
   renderers,
   onModeChange,
+  onCollisionModeChange,
   children,
 }: CameraControllerProps = {}) {
-  const { mode, setCameraOption, setMode } = useGaesupStore(
+  const { mode, collisionMode, setCameraOption, setMode } = useGaesupStore(
     useShallow((state) => ({
       mode: state.mode,
+      collisionMode: state.cameraOption.collisionMode,
       setCameraOption: state.setCameraOption,
       setMode: state.setMode,
     })),
   );
   const activeMode = mode?.control || 'thirdPerson';
+  const activeCollisionMode = collisionMode ?? 'push';
   const labels = useMemo(() => mergeLabels(labelOverrides), [labelOverrides]);
   const selectMode = useCallback(
     (nextMode: CameraType) => {
@@ -50,6 +55,13 @@ export function CameraController({
       onModeChange?.(nextMode);
     },
     [onModeChange, setCameraOption, setMode],
+  );
+  const selectCollisionMode = useCallback(
+    (nextMode: CameraCollisionMode) => {
+      setCameraOption({ collisionMode: nextMode });
+      onCollisionModeChange?.(nextMode);
+    },
+    [onCollisionModeChange, setCameraOption],
   );
   const classNameFor = useCallback(
     (slot: CameraControllerClassNameSlot, extra?: string) =>
@@ -75,6 +87,8 @@ export function CameraController({
     () => ({
       activeMode,
       modes,
+      activeCollisionMode,
+      collisionModes,
       labels,
       showLabels,
       showTitle,
@@ -82,15 +96,18 @@ export function CameraController({
       position,
       classNameFor,
       styleFor,
-      actions: { selectMode },
+      actions: { selectMode, selectCollisionMode },
     }),
     [
+      activeCollisionMode,
       activeMode,
       classNameFor,
+      collisionModes,
       compact,
       labels,
       modes,
       position,
+      selectCollisionMode,
       selectMode,
       showLabels,
       showTitle,
@@ -107,11 +124,13 @@ export function CameraController({
 }
 export {
   CAMERA_CONTROLLER_DEFAULT_CLASSES,
+  CAMERA_CONTROLLER_DEFAULT_COLLISION_MODES,
   CAMERA_CONTROLLER_DEFAULT_LABELS,
   CAMERA_CONTROLLER_DEFAULT_MODES,
   CAMERA_CONTROLLER_MODE_OPTIONS,
 };
 export type {
+  CameraCollisionModeConfig,
   CameraControllerActions,
   CameraControllerClassNameSlot,
   CameraControllerClassNames,

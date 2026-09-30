@@ -1,9 +1,8 @@
-import { CoreBridge, DomainBridge, EnableEventLog } from '@core/boilerplate';
-import { ValidateCommand } from '@core/boilerplate';
+import { CoreBridge } from '@core/boilerplate';
 
 import type { PhysicsConfigType } from '../core/config';
 import { EntityStateManager } from '../core/system/EntityStateManager';
-import { PhysicsSystem } from '../core/system/PhysicsSystem';
+import { PhysicsSystem, type PhysicsWorldServices } from '../core/system/PhysicsSystem';
 import { PhysicsUpdateArgs } from '../core/system/PhysicsSystem';
 
 export type PhysicsBridgeEntity = {
@@ -20,22 +19,24 @@ export type PhysicsSnapshot = ReturnType<PhysicsSystem['getState']> & {
   metrics: ReturnType<PhysicsSystem['getMetrics']>;
 };
 
-@DomainBridge('physics')
-@EnableEventLog()
 export class PhysicsBridge extends CoreBridge<PhysicsBridgeEntity, PhysicsSnapshot, PhysicsCommand> {
   private readonly entitySnapshots = new WeakMap<PhysicsBridgeEntity, PhysicsSnapshot>();
+
+  constructor() {
+    super({ eventLog: true });
+  }
 
   protected buildEngine(
     _: string,
     config: PhysicsConfigType,
     stateManager?: EntityStateManager,
+    services?: PhysicsWorldServices,
   ): PhysicsBridgeEntity | null {
     void _;
-    const system = new PhysicsSystem(config, {}, stateManager);
+    const system = new PhysicsSystem(config, {}, stateManager, services);
     return { system, dispose: () => system.dispose() };
   }
 
-  @ValidateCommand()
   protected executeCommand(entity: PhysicsBridgeEntity, command: PhysicsCommand, _id: string): void {
     void _id;
     switch (command.type) {
@@ -65,5 +66,9 @@ export class PhysicsBridge extends CoreBridge<PhysicsBridgeEntity, PhysicsSnapsh
     if (!entity) return;
     entity.system.updateWithArgs(args);
     this.notifyListeners(id);
+  }
+
+  resolveEntity(id: string, args: PhysicsUpdateArgs): void {
+    this.getEngine(id)?.system.resolve(args.calcProp, args.physicsState);
   }
 }

@@ -19,7 +19,6 @@ export const CAMERA_DEBUG_PANEL_DEFAULT_FIELDS: DebugField[] = [
   { key: 'velocity', label: '조작 대상 속도', enabled: false, format: 'vector3', precision: 2 },
   { key: 'rotation', label: '조작 대상 회전', enabled: false, format: 'vector3', precision: 2 },
   { key: 'zoom', label: '확대', enabled: false, format: 'number', precision: 2 },
-  { key: 'activeController', label: '컨트롤러', enabled: true, format: 'text' },
 ];
 export const CAMERA_DEBUG_PANEL_DEFAULT_CLASSES: Record<CameraDebugPanelClassNameSlot, string> = {
   root: 'camera-debug-panel',
@@ -37,7 +36,6 @@ export function createInitialCameraMetrics(now = Date.now()): CameraMetrics {
     averageFrameTime: 0,
     lastUpdateTime: now,
     mode: 'unknown',
-    activeController: 'unknown',
     distance: null,
     fov: 0,
     position: null,

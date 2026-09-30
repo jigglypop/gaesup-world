@@ -1,23 +1,16 @@
-import React from 'react';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 
-import { BuildingSystem } from '../BuildingSystem';
-import {
-  createEmptyBuildingIndirectDrawMirror,
-  DRAW_CLUSTER_BILLBOARD,
-  DRAW_CLUSTER_BLOCK,
-  DRAW_CLUSTER_FIRE,
-  DRAW_CLUSTER_FLAG,
-  DRAW_CLUSTER_SAKURA,
-  DRAW_CLUSTER_TILE,
-  DRAW_CLUSTER_WALL,
-  INDIRECT_DRAW_STRIDE,
-} from '../../render/draw';
-import { useBuildingGpuCullingStore } from '../../render/cullingStore';
-import { useBuildingRenderStateStore } from '../../render/store';
+import { useWeatherSource } from '../../../weather';
 import { useBuildingStore } from '../../stores/buildingStore';
 import { WallGroupConfig, TileGroupConfig, MeshConfig } from '../../types';
 import { useBuildingVisibilityStore } from '../../visibility/store';
+import type { BlockSystemProps } from '../BlockSystem/types';
+import { BuildingSystem } from '../BuildingSystem';
+import type { GridHelperProps } from '../GridHelper/types';
+import type { TileSystemProps } from '../TileSystem/types';
+import type { WallSystemProps } from '../WallSystem/types';
+
+type TestRenderer = Awaited<ReturnType<typeof ReactThreeTestRenderer.create>>;
 
 // BuildingStore 모킹
 jest.mock('../../stores/buildingStore', () => ({
@@ -26,7 +19,7 @@ jest.mock('../../stores/buildingStore', () => ({
 
 // 하위 컴포넌트들 모킹
 jest.mock('../WallSystem', () => ({
-  WallSystem: ({ wallGroup, onWallClick }: any) => (
+  WallSystem: ({ wallGroup, onWallClick }: WallSystemProps) => (
     <group name={`wall-system-${wallGroup.id}`}>
       <mesh onClick={() => onWallClick?.(wallGroup.id)}>
         <boxGeometry />
@@ -37,7 +30,7 @@ jest.mock('../WallSystem', () => ({
 }));
 
 jest.mock('../TileSystem', () => ({
-  TileSystem: ({ tileGroup, onTileClick }: any) => (
+  TileSystem: ({ tileGroup, onTileClick }: TileSystemProps) => (
     <group name={`tile-system-${tileGroup.id}`}>
       <mesh onClick={() => onTileClick?.(tileGroup.id)}>
         <planeGeometry />
@@ -48,9 +41,9 @@ jest.mock('../TileSystem', () => ({
 }));
 
 jest.mock('../BlockSystem', () => ({
-  BlockSystem: ({ blocks }: any) => (
+  BlockSystem: ({ blocks }: BlockSystemProps) => (
     <group name="block-system">
-      {blocks.map((block: any) => (
+      {blocks.map((block) => (
         <mesh key={block.id} name={`block-${block.id}`}>
           <boxGeometry />
           <meshBasicMaterial />
@@ -60,8 +53,20 @@ jest.mock('../BlockSystem', () => ({
   ),
 }));
 
+const mockColliders = new Set<number>();
+jest.mock('@react-three/rapier', () => {
+  let handle = 0;
+  const desc = { setTranslation: () => desc, setRotation: () => desc };
+  const world = {
+    createCollider: () => { const collider = { handle: handle++ }; mockColliders.add(collider.handle); return collider; },
+    getCollider: (id: number) => mockColliders.has(id),
+    removeCollider: (collider: { handle: number }) => { mockColliders.delete(collider.handle); },
+  };
+  return { useRapier: () => ({ world, rapier: { ColliderDesc: { cuboid: () => desc } } }) };
+});
+
 jest.mock('../GridHelper', () => ({
-  GridHelper: ({ size }: any) => <gridHelper name="grid-helper" args={[size, 25]} />,
+  GridHelper: ({ size }: GridHelperProps) => <gridHelper name="grid-helper" args={[size, 25]} />,
 }));
 
 jest.mock('../PreviewTile', () => ({
@@ -81,12 +86,18 @@ jest.mock('../../../npc/components/NPCPreview', () => ({
 }));
 
 jest.mock('../../../weather', () => ({
-  WeatherEffect: ({ kind }: { kind: string }) => <group name={`weather-effect-${kind}`} />,
+  Weather: () => <group name="weather" />,
+  useWeatherSource: jest.fn(),
 }));
 
 // mesh 하위 컴포넌트들은 GLSL 셰이더를 import하므로 jsdom 환경에서는 모킹.
 jest.mock('../mesh/sakura', () => ({
-  SakuraBatch: () => <group name="sakura-batch" />,
+  SakuraBatch: ({ trees }: { trees: unknown[] }) => <group name="sakura-batch" userData={{ trees }} />,
+}));
+
+jest.mock('../mesh/model', () => ({
+  __esModule: true,
+  default: ({ label }: { label?: string }) => <group name={`model-${label}`} />,
 }));
 
 jest.mock('../mesh/flag', () => ({
@@ -106,11 +117,20 @@ jest.mock('../mesh/snow', () => ({
   Snow: () => <group name="snow" />,
 }));
 
-const expectSceneHasName = (renderer: any, name: string) => {
+jest.mock('../mesh/water', () => ({
+  __esModule: true,
+  default: ({ size }: { size: number }) => <group name={`ocean-${size}`} />,
+}));
+
+jest.mock('../../../rendering/fog/DynamicFog', () => ({
+  DynamicFog: ({ color }: { color: string }) => <group name={`fog-${color}`} />,
+}));
+
+const expectSceneHasName = (renderer: TestRenderer, name: string) => {
   expect(renderer.scene.findByProps({ name })).toBeDefined();
 };
 
-const expectSceneMissingName = (renderer: any, name: string) => {
+const expectSceneMissingName = (renderer: TestRenderer, name: string) => {
   expect(() => renderer.scene.findByProps({ name })).toThrow();
 };
 
@@ -177,6 +197,7 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       showFog: false,
       fogColor: '#cfd8e3',
       weatherEffect: 'none',
+      climate: 'off',
       worldSurface: 'ground',
       objects: [],
       ...overrides,
@@ -189,16 +210,12 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
 
   beforeEach(() => {
     mockUseBuildingStore = useBuildingStore as jest.MockedFunction<typeof useBuildingStore>;
-    useBuildingRenderStateStore.getState().reset();
-    useBuildingGpuCullingStore.getState().reset();
     useBuildingVisibilityStore.getState().reset();
     mockStore();
   });
 
   afterEach(() => {
     jest.clearAllMocks();
-    useBuildingRenderStateStore.getState().reset();
-    useBuildingGpuCullingStore.getState().reset();
     useBuildingVisibilityStore.getState().reset();
   });
 
@@ -216,15 +233,15 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
     });
 
     test('기본 구조가 올바르게 렌더링되어야 함', async () => {
-      let renderer: any;
+      let renderer: TestRenderer;
       try {
         renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
-      } catch (e: any) {
+      } catch (error: unknown) {
         // React may throw an AggregateError (multiple passive effect errors).
-        if (e && Array.isArray(e.errors) && e.errors.length > 0) {
-          throw e.errors[0];
+        if (error instanceof AggregateError && error.errors.length > 0) {
+          throw error.errors[0];
         }
-        throw e;
+        throw error;
       }
       // 메인 그룹이 존재해야 함
       expect(renderer.scene.findByProps({ name: 'building-system' })).toBeDefined();
@@ -263,12 +280,13 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       renderer.unmount();
     });
 
-    test('건축 날씨 효과가 선택된 weatherEffect로 렌더링되어야 함', async () => {
-      mockStore({ weatherEffect: 'storm' });
+    test('건축 날씨(weatherEffect·climate)가 런타임 날씨를 정하고 날씨를 그려야 함', async () => {
+      mockStore({ weatherEffect: 'storm', climate: 'auto' });
 
       const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
 
-      expectSceneHasName(renderer, 'weather-effect-storm');
+      expectSceneHasName(renderer, 'weather');
+      expect(jest.mocked(useWeatherSource)).toHaveBeenLastCalledWith({ manual: 'storm', climate: 'auto' });
 
       renderer.unmount();
     });
@@ -335,6 +353,85 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
       expectSceneMissingName(renderer, 'wall-system-wall-group-2');
       expectSceneHasName(renderer, 'tile-system-tile-group-1');
       expectSceneMissingName(renderer, 'tile-system-tile-group-2');
+
+      renderer.unmount();
+    });
+
+    test('residency changes filter models but never rebuild batched objects', async () => {
+      const object = (id: string, type: 'tree' | 'model', x: number) => ({
+        id, type, position: { x, y: 0, z: 0 }, ...(type === 'model' ? { config: { modelLabel: id } } : {}),
+      });
+      mockStore({ objects: [object('near-tree', 'tree', 0), object('far-tree', 'tree', 500), object('near-model', 'model', 0), object('far-model', 'model', 500)] });
+      useBuildingVisibilityStore.getState().setVisible({
+        tileIds: new Set(), wallIds: new Set(), blockIds: new Set(), objectIds: new Set(['near-tree', 'near-model']),
+      });
+
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+      try {
+        const treesOf = () => (renderer.scene.findByProps({ name: 'sakura-batch' }).props['userData'] as { trees: unknown[] }).trees;
+        const trees = treesOf();
+        expect(trees).toHaveLength(2);
+        expectSceneHasName(renderer, 'model-near-model');
+        expectSceneMissingName(renderer, 'model-far-model');
+        useBuildingVisibilityStore.getState().setVisible({
+          tileIds: new Set(), wallIds: new Set(), blockIds: new Set(), objectIds: new Set(['far-tree', 'far-model']),
+        });
+        await renderer.update(<BuildingSystem />);
+        expect(treesOf()).toBe(trees);
+        expectSceneHasName(renderer, 'model-far-model');
+        expectSceneMissingName(renderer, 'model-near-model');
+      } finally {
+        await renderer.unmount();
+      }
+    });
+
+    test('visibility로 숨겨진 그룹도 물리 collider는 유지해야 함', async () => {
+      const tile = (id: string, groupId: string, x: number) => ({ id, tileGroupId: groupId, position: { x, y: 0, z: 0 }, size: 1 });
+      const wall = (id: string, groupId: string, x: number) => ({
+        id, wallGroupId: groupId, position: { x, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 },
+      });
+      mockStore({
+        tileGroups: new Map<string, TileGroupConfig>([
+          ['tile-group-1', { id: 'tile-group-1', name: 'near', floorMeshId: 'wood-mesh', tiles: [tile('tile-1', 'tile-group-1', 0)] }],
+          ['tile-group-2', { id: 'tile-group-2', name: 'far', floorMeshId: 'wood-mesh', tiles: [tile('tile-2', 'tile-group-2', 200)] }],
+        ]),
+        wallGroups: new Map<string, WallGroupConfig>([
+          ['wall-group-1', { id: 'wall-group-1', name: 'near', walls: [wall('wall-1', 'wall-group-1', 0)] }],
+          ['wall-group-2', { id: 'wall-group-2', name: 'far', walls: [wall('wall-2', 'wall-group-2', 200)] }],
+        ]),
+      });
+      useBuildingVisibilityStore.getState().setVisible({
+        tileIds: new Set(['tile-group-1']),
+        wallIds: new Set(['wall-group-1']),
+        blockIds: new Set(),
+        objectIds: new Set(),
+      });
+
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+
+      expectSceneMissingName(renderer, 'tile-system-tile-group-2');
+      expectSceneMissingName(renderer, 'wall-system-wall-group-2');
+      expect(mockColliders.size).toBe(4);
+
+      await renderer.unmount();
+      expect(mockColliders.size).toBe(0);
+    });
+
+    test('벽 편집 모드에서는 벽 collider를 만들지 않아야 함', async () => {
+      mockStore({
+        editMode: 'wall',
+        tileGroups: new Map(),
+        wallGroups: new Map<string, WallGroupConfig>([
+          ['wall-group-1', {
+            id: 'wall-group-1', name: 'near',
+            walls: [{ id: 'wall-1', wallGroupId: 'wall-group-1', position: { x: 0, y: 0, z: 0 }, rotation: { x: 0, y: 0, z: 0 } }],
+          }],
+        ]),
+      });
+
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+
+      expect(mockColliders.size).toBe(0);
 
       renderer.unmount();
     });
@@ -434,6 +531,39 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
     });
   });
 
+  describe('편집 오버레이', () => {
+    const tiles = (groupId: string, count: number) =>
+      Array.from({ length: count }, (_, index) => ({ id: `${groupId}-${index}`, tileGroupId: groupId, size: 1, position: { x: index * 4, y: 0, z: 0 } }));
+
+    test('타일 편집 모드는 모든 그룹의 타일을 인스턴스 mesh 하나와 선택 mesh 하나로 그리고, 클릭한 인스턴스의 타일을 고른다', async () => {
+      const onTileClick = jest.fn();
+      mockStore({
+        editMode: 'tile',
+        selectedTileId: 'tile-group-2-3',
+        tileGroups: new Map([
+          ['tile-group-1', { ...mockTileGroups.get('tile-group-1')!, tiles: tiles('tile-group-1', 40) }],
+          ['tile-group-2', { ...mockTileGroups.get('tile-group-2')!, tiles: tiles('tile-group-2', 40) }],
+        ]),
+      });
+
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem onTileClick={onTileClick} />);
+      const overlay = renderer.scene.findByProps({ name: 'building-edit-overlay' });
+      expect(overlay.children.map((child) => (child.instance as { isInstancedMesh?: boolean }).isInstancedMesh === true)).toEqual([true, false]);
+      const instanced = overlay.children[0]!;
+      expect((instanced.instance as unknown as { count: number }).count).toBe(79);
+      await renderer.fireEvent(instanced, 'click', { instanceId: 40 });
+      expect(onTileClick).toHaveBeenCalledWith('tile-group-2-0');
+
+      renderer.unmount();
+    });
+
+    test('편집하지 않을 때는 오버레이를 그리지 않는다', async () => {
+      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+      expectSceneMissingName(renderer, 'building-edit-overlay');
+      renderer.unmount();
+    });
+  });
+
   describe('Suspense 경계', () => {
     test('Suspense fallback이 설정되어야 함', async () => {
       const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
@@ -518,110 +648,21 @@ describe('BuildingSystem 컴포넌트 테스트', () => {
   });
 
   describe('indirect draw execution MVP', () => {
-    test('draw args budget only renders the allowed number of wall and tile groups', async () => {
-      const drawMirror = createEmptyBuildingIndirectDrawMirror();
-      drawMirror.version = 11;
-      drawMirror.args[DRAW_CLUSTER_WALL * INDIRECT_DRAW_STRIDE + 1] = 1;
-      drawMirror.args[DRAW_CLUSTER_TILE * INDIRECT_DRAW_STRIDE + 1] = 1;
-      useBuildingRenderStateStore.getState().setDrawMirror(drawMirror);
-      useBuildingGpuCullingStore.getState().setResult({
-        version: 11,
-        tileIds: new Set(['tile-group-1', 'tile-group-2']),
-        wallIds: new Set(['wall-group-1', 'wall-group-2']),
-        blockIds: new Set(),
-        objectIds: new Set(),
-        clusterCounts: new Uint32Array(11),
-      });
-      useBuildingVisibilityStore.getState().setVisible({
-        tileIds: new Set(['tile-group-1', 'tile-group-2']),
-        wallIds: new Set(['wall-group-1', 'wall-group-2']),
-        blockIds: new Set(),
-        objectIds: new Set(),
-      });
+  });
 
-      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
-
-      expectSceneHasName(renderer, 'wall-system-wall-group-1');
-      expectSceneMissingName(renderer, 'wall-system-wall-group-2');
-      expectSceneHasName(renderer, 'tile-system-tile-group-1');
-      expectSceneMissingName(renderer, 'tile-system-tile-group-2');
-
-      renderer.unmount();
-    });
-
-    test('draw args budget clamps object batches by cluster', async () => {
-      const drawMirror = createEmptyBuildingIndirectDrawMirror();
-      drawMirror.version = 12;
-      drawMirror.args[DRAW_CLUSTER_SAKURA * INDIRECT_DRAW_STRIDE + 1] = 1;
-      drawMirror.args[DRAW_CLUSTER_FLAG * INDIRECT_DRAW_STRIDE + 1] = 0;
-      drawMirror.args[DRAW_CLUSTER_FIRE * INDIRECT_DRAW_STRIDE + 1] = 1;
-      drawMirror.args[DRAW_CLUSTER_BILLBOARD * INDIRECT_DRAW_STRIDE + 1] = 0;
-      useBuildingRenderStateStore.getState().setDrawMirror(drawMirror);
-      useBuildingGpuCullingStore.getState().setResult({
-        version: 12,
-        tileIds: new Set(),
-        wallIds: new Set(),
-        blockIds: new Set(),
-        objectIds: new Set(['s1', 's2', 'f1', 'b1']),
-        clusterCounts: new Uint32Array(11),
-      });
-      useBuildingVisibilityStore.getState().setVisible({
-        tileIds: new Set(),
-        wallIds: new Set(),
-        blockIds: new Set(),
-        objectIds: new Set(['s1', 's2', 'f1', 'b1']),
-      });
-      mockStore({
-        objects: [
-          { id: 's1', type: 'sakura', position: { x: 0, y: 0, z: 0 }, config: {} },
-          { id: 's2', type: 'sakura', position: { x: 1, y: 0, z: 0 }, config: {} },
-          { id: 'f1', type: 'fire', position: { x: 2, y: 0, z: 0 }, config: {} },
-          { id: 'b1', type: 'billboard', position: { x: 3, y: 0, z: 0 }, config: {} },
-        ],
-      });
-
-      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
-
-      expectSceneHasName(renderer, 'sakura-batch');
-      expectSceneHasName(renderer, 'fire-batch');
-      expectSceneMissingName(renderer, 'flag-batch');
-      expect(() => renderer.scene.findAllByProps({ name: 'billboard' })).not.toThrow();
-
-      renderer.unmount();
-    });
-
-    test('draw args budget clamps rendered blocks', async () => {
-      const drawMirror = createEmptyBuildingIndirectDrawMirror();
-      drawMirror.version = 13;
-      drawMirror.args[DRAW_CLUSTER_BLOCK * INDIRECT_DRAW_STRIDE + 1] = 1;
-      useBuildingRenderStateStore.getState().setDrawMirror(drawMirror);
-      useBuildingGpuCullingStore.getState().setResult({
-        version: 13,
-        tileIds: new Set(),
-        wallIds: new Set(),
-        blockIds: new Set(['b1', 'b2']),
-        objectIds: new Set(),
-        clusterCounts: new Uint32Array(11),
-      });
-      useBuildingVisibilityStore.getState().setVisible({
-        tileIds: new Set(),
-        wallIds: new Set(),
-        blockIds: new Set(['b1', 'b2']),
-        objectIds: new Set(),
-      });
-      mockStore({
-        blocks: [
-          { id: 'b1', position: { x: 0, y: 0, z: 0 }, materialId: 'stone' },
-          { id: 'b2', position: { x: 4, y: 0, z: 0 }, materialId: 'stone' },
-        ],
-      });
-
-      const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
-
-      expectSceneHasName(renderer, 'block-b1');
-      expectSceneMissingName(renderer, 'block-b2');
-
-      renderer.unmount();
-    });
+  test('the fog toggle and the ocean surface change what the world draws', async () => {
+    mockStore({ showFog: true, fogColor: '#123456', worldSurface: 'water' });
+    const renderer = await ReactThreeTestRenderer.create(<BuildingSystem />);
+    try {
+      expectSceneHasName(renderer, 'fog-#123456');
+      expectSceneHasName(renderer, 'ocean-480');
+      mockStore({ showFog: false, worldSurface: 'ground' });
+      // The component is memoized and the mocked store has no subscription: a new prop forces the re-render.
+      await renderer.update(<BuildingSystem onTileClick={jest.fn()} />);
+      expectSceneMissingName(renderer, 'fog-#123456');
+      expectSceneMissingName(renderer, 'ocean-480');
+    } finally {
+      await renderer.unmount();
+    }
   });
 });

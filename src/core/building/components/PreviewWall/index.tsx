@@ -4,6 +4,7 @@ import './styles.css';
 
 export function PreviewWall() {
   const editMode = useBuildingStore((s) => s.editMode);
+  const placing = useBuildingStore((s) => s.buildingTool !== 'paint' && s.buildingTool !== 'erase');
   const hoverPosition = useBuildingStore((s) => s.hoverPosition);
   const currentWallRotation = useBuildingStore((s) => s.currentWallRotation);
   const checkWallPosition = useBuildingStore((s) => s.checkWallPosition);
@@ -11,7 +12,7 @@ export function PreviewWall() {
   const height = TILE_CONSTANTS.WALL_SIZES.HEIGHT;
   const depth = TILE_CONSTANTS.WALL_SIZES.THICKNESS;
   
-  if (editMode !== 'wall' || !hoverPosition) {
+  if (editMode !== 'wall' || !hoverPosition || !placing) {
     return null;
   }
   
@@ -19,7 +20,7 @@ export function PreviewWall() {
   const color = isOccupied ? '#f3b95f' : '#7dd3fc';
   
   return (
-    <group position={[hoverPosition.x, hoverPosition.y + height / 2, hoverPosition.z]} rotation={[0, currentWallRotation, 0]}>
+    <group position={[hoverPosition.x, hoverPosition.y + height / 2, hoverPosition.z]} rotation={[0, currentWallRotation, 0]} userData={{ intangible: true }}>
       <mesh position={[0, 0, width / 2]}>
         <boxGeometry args={[width, height, depth]} />
         <meshStandardMaterial

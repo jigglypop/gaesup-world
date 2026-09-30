@@ -1,0 +1,476 @@
+# 렌더링
+
+월드가 어떤 렌더러로, 어떤 품질 설정으로, 어떤 빛·안개·후처리·재질로 그려지는지 다룬다. 렌더러 선택(`createRenderer`), 품질 profile, `CascadedSun`·`DynamicSky`·`DynamicFog`, `WorldPostProcessing`과 삭제 예정인 WebGL 전용 효과, 툰 재질, 첫 프레임 멈춤을 막는 `CompileGate`, 건축 비주얼 컴포넌트와 GPU 인스턴싱까지다. 월드의 모양과 비용을 조정하는 개발자를 위한 문서다. 이름과 기본값은 현재 작업 트리의 소스에서 확인했다.
+
+## 렌더러
+
+### `createRenderer`
+
+R3F `Canvas`의 `gl`에 넘기는 비동기 팩토리다(`src/core/rendering/webgpu.ts`, 루트 export).
+
+```tsx
+<Canvas shadows="percentage" gl={createRenderer}>...</Canvas>
+```
+
+1. `isWebGPUAvailable()`로 WebGPU를 확인한다. `navigator.gpu`가 있고 `requestAdapter()`가 어댑터를 돌려주면 true다. 결과 promise는 페이지 수명 동안 캐시된다.
+2. false면 `createLegacyRenderer(props)`로 classic `THREE.WebGLRenderer`를 만든다(`antialias` 기본 true, `powerPreference` 기본 `'high-performance'`).
+3. true면 `three/webgpu`를 동적 import해 `WebGPURenderer`를 만들고 `await renderer.init()`을 기다린다. R3F가 넘기는 `canvas`·`antialias`·`alpha` 등은 그대로 전달하고 `powerPreference: 'default'`는 뺀다. Windows에서는 브라우저가 `powerPreference`를 무시하고 경고하므로 늘 뺀다. `trackTimestamp: true`를 함께 넘겨 어댑터에 `timestamp-query`가 있으면 GPU 시간을 잰다. 모듈이나 생성자를 쓸 수 없으면 classic `WebGLRenderer`로 돌아간다. `init()`이 실패하면 백엔드를 정리하고 예외를 그대로 던진다(캔버스 생성이 실패한다).
+4. `WebGPURenderer`는 `init()` 중 WebGPU 장치를 얻지 못하면 스스로 WebGL2 백엔드로 바꾼다. `createRenderer`는 어댑터를 먼저 확인하므로 이 경우는 드물다.
+5. 만든 렌더러의 `dispose`를 한 번만 돌게 하고 `forceContextLoss`를 붙여, 캔버스가 내려갈 때 R3F가 렌더러를 해제하게 한다.
+6. 장치를 잃으면(드라이버 재설정, GPU 전환) 경고를 남기고 `window`에 `RENDERER_LOST_EVENT`를 보낸다. 캔버스를 올린 쪽이 `<Canvas key={useRendererRecovery()} ...>`로 두면 0.3초 뒤 새 렌더러와 장치로 캔버스가 다시 올라온다. 월드 상태는 캔버스 밖 런타임에 있어 그대로 이어지고(플레이어는 잃기 전 자리 위에서 다시 내려선다), 셰이더를 새 장치에 다시 준비하는 몇 초 뒤부터 매 프레임 그린다.
+
+월드에서 영영 내려가는 복제 모델(플레이어·NPC·건축 모델·원격 플레이어)은 `releaseObject`로 뼈 텍스처와 객체별 렌더 객체(three r186 `Object3D.dispose`)를 해제한다. 캐시된 모델과 함께 쓰는 지오메트리·재질은 캐시가 가진다.
+
+코어는 모든 GLB를 `gltfAssetCache` 하나로 불러온다(컴포넌트는 `useGLTFAsset`, 명령형 코드와 아바타는 `acquire`). 한 모델은 한 번만 받고, 쓰는 쪽이 있는 동안 유지한다. 모두 놓으면 최근에 놓인 24개(`GLTF_RETAINED`)까지 남겨 되돌아갈 때 바로 그리고, 넘치면 가장 오래전에 놓인 모델의 지오메트리·재질·텍스처를 해제한다. 다운로드는 3개씩(`GLTF_CONCURRENCY`) 돌고, 탭이 보이는 시간으로 30초 안에 오지 않으면 끊는다. 실패한 모델은 쉬는 동안 곧바로 실패를 돌려주고, 5초(`GLTF_RETRY_MS`)부터 실패할 때마다 두 배로(최대 1분) 쉰 뒤 다시 받는다. 건축 모델과 NPC 부위는 실패한 동안 대체 도형을 그리다가 다시 불러온다. Draco 압축 GLB는 drei `useGLTF`처럼 gstatic 디코더로 푼다.
+
+`shadows="percentage"`를 쓰는 이유: R3F의 `shadows`(`true`)는 `PCFSoftShadowMap`을 고르는데 three r186은 이 방식을 없애고 경고와 함께 `PCFShadowMap`으로 바꾼다. `"percentage"`는 처음부터 `PCFShadowMap`이다.
+
+브라우저별 WebGPU 기본 지원 현황은 계속 바뀌므로 여기서 다루지 않는다. 판단은 실행 중 감지(`isWebGPUAvailable`)로 한다.
+
+### 렌더러 종류
+
+엔진 내부는 렌더러를 세 종류로 나눈다(`rendererKind`, `src/core/rendering/webgpu.ts`, 공개 export 아님).
+
+| 종류 | 언제 | 그리는 방식 |
+|---|---|---|
+| `webgpu` | `WebGPURenderer` + WebGPU 백엔드 | TSL 노드 재질, 네이티브 cascade 그림자(`CascadedSun`), GPU 인스턴스 배치와 compute 컬링(`GpuBatchBridge`), TSL 후처리 |
+| `webgpu-fallback` | `WebGPURenderer` + 내장 WebGL2 백엔드 | 같은 TSL 재질과 TSL 후처리. 그림자는 단일 맵, GPU 배치 없음 |
+| `webgl` | classic `WebGLRenderer`: WebGPU가 없을 때의 `createRenderer`, `gl={createLegacyRenderer}`, `gl` 생략 | 잔디·물·불·깃발·벚꽃·눈·날씨의 GLSL 경로, three-stdlib 거울 물, WebGL 그림자 깊이 재질, `@react-three/postprocessing` 후처리, 단일 맵 그림자 |
+
+지금 WebGPU가 없는 브라우저는 `webgpu-fallback`이 아니라 `webgl`(classic) 경로로 그린다. 저장소 측정에서 `navigator.gpu`를 지우고 잰 "WebGL2 fallback" 수치도 이 classic 경로다. `WebGPURenderer`의 WebGL2 백엔드를 강제하는 옵션(`forceWebGL`)은 `createRenderer`가 노출하지 않는다. PRD GPU-1이 `createRenderer`를 `WebGPURenderer` 전용으로 바꾸고 GLSL·`WebGLRenderer` 경로를 지운다.
+
+코드에서 종류를 확인하려면 `rendererKind`와 같은 판정을 쓴다.
+
+```tsx
+import { useThree } from '@react-three/fiber';
+
+export function useRendererKind(): 'webgpu' | 'webgpu-fallback' | 'webgl' {
+  const gl = useThree((state) => state.gl) as unknown as {
+    isWebGPURenderer?: boolean;
+    backend?: { isWebGPUBackend?: boolean };
+  };
+  if (gl.isWebGPURenderer !== true) return 'webgl';
+  return gl.backend?.isWebGPUBackend === true ? 'webgpu' : 'webgpu-fallback';
+}
+```
+
+classic 경로와 비교할 때는 `<Canvas gl={createLegacyRenderer}>`로 강제한다. R3F의 `useThree((s) => s.gl)` 타입은 `WebGLRenderer`로 선언되어 있으므로 WebGPU 전용 필드는 위처럼 좁혀 읽는다.
+
+## 품질 profile
+
+`GaesupWorldContent`의 `quality`로 켠다. 출처: `src/core/perf/quality.tsx`, `detect.ts`, `types.ts`.
+
+| 값 | 동작 |
+|---|---|
+| 생략 | profile 없음. 각 컴포넌트가 자기 기본값을 쓴다(`CascadedSun` `medium`, 캔버스 `dpr`는 준 값 그대로) |
+| `'auto'` | 기기를 한 번 감지해 tier를 고른다. 결과는 페이지 전역 `usePerfStore`에 저장되어 다른 월드도 재사용한다 |
+| `'low'` \| `'medium'` \| `'high'` | 그 tier의 profile로 고정 |
+| `PerfProfile` 객체 | 직접 만든 profile(`tier`, `instanceScale`, `pixelRatio`, `shadowMapSize`, `postprocess`) |
+
+### tier와 profile
+
+| tier | 캔버스 픽셀 비율 | 그림자 맵 | 후처리 | `instanceScale`(잔디 잎 수 배율) |
+|---|---|---|---|---|
+| `high` | 2.0 → 상한 1.5 | 2048 | 켬, preset `quality` | 1.0 |
+| `medium` | 1.5 | 1024 | 켬, preset `balanced` | 0.7 |
+| `low` | 1.0 | 512 | 끔 | 0.4 |
+
+- 실제 픽셀 비율은 `min(profile.pixelRatio, MAX_QUALITY_PIXEL_RATIO(1.5), devicePixelRatio)`다. 후처리와 셰이딩 비용이 픽셀 수에 비례하기 때문이다. `Canvas`가 다시 렌더되며 자기 `dpr`(기본 `[1, 2]`)을 적용해도 profile 값으로 되돌린다. `quality="auto"`면 이 값이 상한이고 부하에 따라 그 아래로 내려간다(아래).
+
+### 자동 해상도와 CPU 부하
+
+`quality="auto"`인 월드는 브라우저 프레임(rAF 간격)을 2초 창으로 보고 캔버스를 조절한다(`src/core/perf/adaptive.ts`). 캔버스가 그린 프레임이 아니라 브라우저 프레임을 보므로, `IdleFrameRate`가 유휴 때 일부러 덜 그려도 느린 것으로 보지 않는다.
+
+- GPU 시간: `createRenderer`는 어댑터에 `timestamp-query`가 있으면 `trackTimestamp`를 켠다. 품질 profile이 있는 월드는 0.5초마다 타임스탬프를 읽어 월드 store `gpuMs`에 넣는다.
+- 창이 48fps(60의 80%) 밑이고 GPU가 프레임의 60% 이상을 쓰면(타임스탬프가 없으면 언제나) GPU 병목이다. 픽셀 비용은 비율의 제곱이므로 `비율 × √(fps / 60)`으로 한 번에 낮춘다(최소 한 단계 0.1, 최저 0.7). 바꾼 뒤 2초는 크기 변경 멈춤을 판단에서 뺀다.
+- 창이 밀리는데 GPU가 한가하면 CPU 병목이다. 해상도는 그대로 두고 월드 store `cpuBound`를 켠다. 그동안 `CascadedSun`은 그림자 맵을 가까운 것 15Hz, 먼 것 5Hz로 다시 그리고, `NPCSystem`은 가까운 주민 8명만 그린다(시뮬레이션은 모두 돈다).
+- 화면이 보여 준 최고 속도의 95%를 넘는 창이면 `cpuBound`를 끄고, 마지막 변경 뒤 8초가 지났으면 0.1 올린다. 타임스탬프가 있으면 커진 화면에서도 GPU가 프레임 예산의 80% 안에 들 때만 올려 오르내림을 막는다.
+- 페이지를 다시 보이거나 월드가 올라온 뒤 3초는 판단하지 않는다. 고정 tier(`quality="high"` 등)는 조절하지 않는다.
+
+`auto` 감지(`classifyTier`): GPU 이름은 캔버스 렌더러에서 읽는다(WebGPU 어댑터 정보, 또는 WebGL `WEBGL_debug_renderer_info`). 코어 수(`hardwareConcurrency`, 없으면 4), 메모리(`deviceMemory`, 없으면 4GB), 모바일 UA를 함께 본다.
+
+1. 소프트웨어 GPU(`swiftshader`, `llvmpipe`, `software`) → `low`
+2. 모바일: 고성능 GPU 이름(`rtx`, `radeon rx`, `apple m`, `apple a1`, `apple a2`)이면 `medium`, 아니면 `low`
+3. 저성능 GPU 이름(`intel`, `mali`, `adreno 3`, `adreno 4`, `powervr`): 8코어·8GB 이상이면 `medium`, 아니면 `low`
+4. 고성능 GPU 이름 → `high`
+5. 8코어·8GB 이상 + WebGL2(WebGPU면 참) → `high`, 4코어·4GB 이상 → `medium`, 그 밖 → `low`
+
+### profile을 쓰는 곳
+
+| 대상 | 쓰는 값 |
+|---|---|
+| 캔버스 픽셀 비율 | `pixelRatio`(상한 1.5) |
+| `CascadedSun` | `quality`를 주지 않았으면 `tier`로 그림자 preset(아래 표) |
+| `DynamicSky` | `shadowMapSize`를 주지 않았으면 `shadowMapSize` |
+| `GaesupWorldContent postProcessing` | `postprocess`가 false면 올리지 않는다. preset을 주지 않았으면 `low`→`performance`, `medium`→`balanced`, `high`→`quality`. `cinematic`은 `postProcessing`의 `quality`로만 고른다 |
+| 잔디 | `instanceScale`로 잎 수와 월드 잔디 예산을 곱한다. 노드 렌더러의 잔디는 월드 profile을, 없으면 전역 `usePerfStore`를 읽는다. classic WebGL 잔디(`Grass`)는 전역 `usePerfStore`(감지 전 기본 `medium`)만 읽으므로, `quality="low"`처럼 tier를 고정하면 `usePerfStore.getState().setTier('low')`도 함께 부른다 |
+
+### 관련 API
+
+| API | 쓰임 |
+|---|---|
+| `resolveQualityDpr(quality)` | `<Canvas dpr={resolveQualityDpr('auto')}>`로 첫 프레임부터 맞는 크기로 그린다. `auto`면 한 번 감지한다. 렌더러가 아직 없으므로 WebGL 탐색 컨텍스트로 GPU 이름을 읽고 바로 해제하며, 이 결과가 저장되어 캔버스 안에서 WebGPU 어댑터로 다시 감지하지 않는다 |
+| `useQualityProfile()` | 월드 profile, 없으면 `null`. 자기 컴포넌트가 tier를 따르게 할 때 쓴다 |
+| `usePerfStore` | 페이지 전역 profile store. `setTier(tier)`(수동 고정, `auto` 월드와 잔디가 따른다), `resetAuto()`(다시 감지), `detect(identity?)`, `profile`, `capabilities`, `manualOverride` |
+| `QualityProfileProvider` | `GaesupWorldContent` 없이 profile만 적용할 때. `quality`를 주지 않으면 아무것도 바꾸지 않는다 |
+| `profileForTier`, `classifyTier`, `detectCapabilities`, `autoDetectProfile` | 감지 단계를 직접 쓸 때 |
+
+```tsx
+import { Canvas } from '@react-three/fiber';
+import { createRenderer, GaesupWorldContent, resolveQualityDpr, useQualityProfile, type PerfProfile } from 'gaesup-world';
+
+export const calm: PerfProfile = {
+  tier: 'medium', instanceScale: 0.5, pixelRatio: 1.25, shadowMapSize: 1024, postprocess: false,
+};
+
+export function CalmWorld() {
+  return (
+    <Canvas gl={createRenderer} dpr={resolveQualityDpr(calm)}>
+      <GaesupWorldContent quality={calm}>{/* 월드 내용 */}</GaesupWorldContent>
+    </Canvas>
+  );
+}
+
+export function ShadowAware() {
+  const profile = useQualityProfile();
+  return <mesh castShadow={profile?.tier !== 'low'}><sphereGeometry /></mesh>;
+}
+```
+
+## 조명
+
+`CascadedSun`과 `DynamicSky`는 둘 다 directional light를 만든다. 한 월드에는 하나만 둔다. 두 컴포넌트는 three r186 `SunLight`(두 백엔드 CSM)와 시간대 연동 하나로 합칠 예정이다(PRD UP-1).
+
+### `CascadedSun`
+
+고정된 해와 cascade 그림자다(`src/core/rendering/sky/CascadedSun.tsx`). 환경광은 만들지 않으므로 `<ambientLight>`를 따로 둔다. 품질 profile을 따르려면 `GaesupWorldContent` 안에 둔다.
+
+| prop | 기본값 | 뜻 |
+|---|---|---|
+| `position` | `[28, 36, 18]` | 빛 위치. 방향만 의미가 있다 |
+| `color` | `'#ffffff'` | |
+| `intensity` | 1.8 | |
+| `quality` | profile tier, 없으면 `'medium'` | 그림자 preset |
+| `castShadow` | `true` | |
+| `cascades`, `maxFar`, `lightMargin`, `shadowMapSize` | preset 값 | preset을 개별로 덮는다 |
+| `mode` | `'practical'` | cascade 분할(`uniform`·`logarithmic`·`practical`) |
+| `fade` | `true` | cascade 경계를 섞는다 |
+| `shadowBias`, `shadowNormalBias`, `shadowRadius` | −0.00015, 0.04, 1 | |
+| `updateHz` | preset 값 | 그림자를 다시 그리는 초당 횟수. `{ near, far }`는 가장 가까운 cascade(WebGL 단일 맵 포함)와 나머지 cascade 각각, 숫자는 둘 다. `Infinity`는 매 프레임 |
+
+| preset | cascade 수 | 맵 크기 | `maxFar` | `lightMargin` | `updateHz` near / far |
+|---|---|---|---|---|---|
+| `low` | 2 | 512 | 80 | 60 | 20 / 5 |
+| `medium` | 3 | 1024 | 140 | 100 | 30 / 10 |
+| `high` | 4 | 2048 | 220 | 140 | 30 / 15 |
+
+- `webgpu`: three `CSMShadowNode`(`three/addons/csm/CSMShadowNode.js`를 동적 import)로 cascade 그림자를 만든다. 노드가 준비된 뒤에 그림자를 켜므로 마운트 직후 잠깐 그림자가 없다. 잔디 잎처럼 가는 물체는 가장 가까운 cascade에만 그림자를 넣는다.
+- `webgpu-fallback`·`webgl`: 한 장의 그림자 맵(한 변 140m)을 카메라 앞 지면에 맞추고, 맵이 떨리지 않도록 texel 단위로 스냅해 매 프레임 옮긴다.
+- 갱신은 `effects` 단계에서 돈다(그 프레임의 카메라를 따른다). 위 props 중 그림자 설정을 바꾸면 빛이 다시 만들어진다(`updateHz`는 빛을 다시 만들지 않는다).
+- 그림자 맵은 `updateHz`로만 다시 그린다. 먼 cascade는 한 프레임에 하나씩, 가장 오래된 것부터 돌아가며 그린다. 다시 그리지 않은 맵은 행렬도 그대로라 그림자가 미끄러지지 않고 잠깐 늦게 따라온다. 해 방향이 약 0.25° 넘게 바뀌거나, 카메라가 한 프레임에 6m 넘게 움직이거나(순간이동·컷), 투영이 바뀌면 모든 맵을 바로 다시 그린다. `WebGPURenderer`에서 draw 하나가 CPU 약 20µs라 cascade 한 장을 다시 그리는 비용이 곧 캐스터 수만큼의 draw다. minihome(high)에서 60Hz 기준 프레임당 렌더 CPU가 4.04ms에서 2.82ms로, draw가 219개에서 126개로 줄었다.
+- 작은 소품(카탈로그 GLB 모델과 폴백 상자), NPC, 잔디는 가장 가까운 cascade에만 그림자를 넣는다(`castNearShadowOnly`, `castSubtreeNearShadowOnly`). 먼 cascade의 texel보다 작은 물체라 그려도 보이지 않는다.
+- 설정은 월드 store의 `shadow`(`maps`, `mapSize`, `nearHz`, `farHz`)에 들어가고, `usePerformanceReport().shadow`가 근거리 전용 캐스터 수와 함께 돌려준다.
+
+### `DynamicSky`
+
+게임 시간·날씨·계절에 따라 해와 환경광을 바꾼다(`src/core/rendering/sky/index.tsx`). 자체 `ambientLight`와 `directionalLight`를 갖는다. 시간과 날씨는 그 월드의 `timeStore`·`weatherStore`에서 읽는다.
+
+| prop | 기본값 | 뜻 |
+|---|---|---|
+| `rigDistance` | 60 | 해를 놓는 거리 |
+| `castShadow` | `true` | |
+| `shadowMapSize` | profile `shadowMapSize`, 없으면 1024 | |
+| `shadowRange` | 90 | 그림자 상자 반너비(m) |
+| `followCamera` | `true` | 그림자 상자를 카메라 앞 지면에 둔다. false면 원점 |
+| `keyframes` | 0·5·7·10·13·16·18·20·24시 표 | `SkyKeyframe[]`(`hour`, `sunColor`, `ambientColor`, `sunIntensity`, `ambientIntensity`, `azimuth`, `elevation`) |
+| `damping` | 0.12 | 색과 세기를 목표값으로 따라가는 비율(0.01~1) |
+
+- 날씨(`sunny`·`cloudy`·`rain`·`snow`·`storm`)는 세기를 줄이고 색을 흐린 쪽으로, 계절은 색을 약하게 물들인다.
+- 해 방향은 약 0.2° 이상 바뀔 때만 옮긴다. 분 단위로 그림자 맵이 흔들리지 않게 하기 위해서다.
+- 그림자는 cascade 없이 한 장이다.
+
+### 조명 구역: `LightingZone`
+
+`<LightingZone center size profile lamp? blendSeconds? />`(루트 export, `src/core/rendering/lighting`)는 조명 볼륨이다. 플레이어(런타임 `stateManager`의 활성 캐릭터)가 상자 안에 있으면 장면의 빛을 `profile` 쪽으로 `blendSeconds`(기본 0.6초)에 걸쳐 섞고, 나가면 되돌린다. 언리얼의 post process volume처럼 값을 덮어쓰는 방식이다.
+
+- `profile: LightingProfile`: `sun`(directional 빛 세기 배율), `fill`(hemisphere·ambient 빛 세기 배율), `sky`·`ground`(그 색이 향할 색), `environment`(`scene.environmentIntensity` 배율). 첫 구역이 섞이기 시작할 때의 값을 기준으로 곱하고, 마지막 구역이 빠지면 그 값으로 되돌린다. 구역이 겹치면 가장 많이 섞인 구역이 정한다.
+- `lamp: { color?, intensity, distance?, height? }`: 구역 안의 점광원(바닥에서 `height`, 기본 2.6m). 처음부터 세기 0으로 장면에 있어 들어갈 때 빛 개수가 바뀌지 않으므로 셰이더를 다시 만들지 않는다. 그림자는 없다.
+- 예제 미니룸: 해 30%, 따뜻한 반구광 72%, 환경광 45%, 천장 등 하나.
+
+### 월드 GI: `WorldGi`
+
+`<WorldGi environment? intensity? receives? ... />`(루트 export, `src/core/gi`)는 월드에 동적 전역 조명을 붙인다. 건물 스토어(타일·벽·블록·모닥불)를 복셀로 바꿔 `GiVolume`의 프로브 래디언스 캐시로 추적하고, 장면의 불투명한 표준 재질(고전·노드 재질 모두)에 프로브 조도를 더한다. 월드 `Canvas` 안, 보통 `GaesupWorldContent` 아래에 둔다.
+
+- 해와 하늘: 장면에서 그림자를 드리우는 첫 방향광을 해로, 첫 반구광을 하늘로 1초에 두 번 읽는다. `environment`로 준 값이 우선한다. GI를 켜면 평평한 반구광·ambient가 하늘을 한 번 더 세므로 줄이거나 끄고, 하늘 색은 `environment`로 넘긴다(예제 섬: 반구광 0, `skyZenith`·`skyGround`에 반구광 색×세기).
+- 받는 면: 기본은 불투명한 `MeshStandardMaterial`·`MeshPhysicalMaterial`·노드 표준 재질이다. 재질이나 메시의 `userData.gi = false`는 빠지고, `receives(mesh, material)`로 더 거를 수 있다. 조도는 재질이 셰이딩하는 알베도(색·맵·정점 색·자체 `colorNode`, 금속도 반영)에 곱해 발광에 더한다. 끄면 재질의 발광을 원래대로 돌려준다.
+- 계산 위치: 프로브 추적은 Web Worker에서 돈다(`GiVolume`의 `worker`, 기본 켬). 워커는 패키지 JS에 인라인 번들(blob URL)로 들어 있어 따로 호스팅할 파일이 없다. 페이지가 WASM 커널을 컴파일해 워커에 넘기고, 워커는 반정밀도 아틀라스를 만들어 버퍼째 넘긴다(렌더러가 다 쓴 배열은 돌려받아 다시 쓴다). 페이지가 가려지면 워커도 쉰다. `Worker`가 없거나 CSP가 blob: 워커를 막거나 워커가 멈추면 메인 스레드에서 같은 계산을 한다.
+- 갱신 속도(`probeSchedule.ts`): 장면이나 빛이 바뀐 뒤 첫 바퀴는 워커가 4배로 몰아 돌려 빛이 1초 안팎에 들어오고, 12바퀴까지는 `probesPerFrame`(틱 16ms마다), 수렴한 뒤에는 4분의 1로 돌며 업로드도 4배 드물게 한다. 메인 스레드 경로도 수렴 뒤 4분의 1로 줄인다.
+- 비용(예제 섬 프로브 10,368개, 이 PC): 메인 스레드의 GI 비용이 초당 140~190ms(프레임당 약 1ms, 0.2초마다 2~3ms 업로드 준비)에서 초당 0.3ms로 줄었다. 워커는 코어 하나의 약 5%(프로브 32개에 0.8ms, Node 측정), 수렴 뒤 그 4분의 1을 쓴다. 켜는 순간의 셰이더 컴파일은 그대로다.
+- 텍스처: 레벨마다 여섯 면을 3D 텍스처 한 장에 이어 붙여 재질당 샘플 텍스처가 2장만 는다(WebGPU 단계당 16장 한도). 셰이더는 축마다 법선이 향하는 면만 읽어 픽셀당 3번 샘플하고(예전 12번), 촘촘한 레벨은 그 영역 안의 픽셀에서만 읽는다(`textureSampleLevel`이라 분기 안에서도 읽을 수 있다).
+- 배치 오브젝트(`objectProxies.ts`): 절차 나무·벚나무는 크기로, glTF 모델은 파일의 경계 상자(JSON의 접근자 min/max만 읽어 URL마다 한 번, `modelBounds.ts`)로 대리 박스를 만든다. 나무는 줄기와 수관, 탁자는 상판, 의자는 좌판까지, 가판대는 판매대와 지붕, 조명은 빛나는 머리(발광체)만 넣고, 꽃·고사리·버섯·연꽃과 문·창·울타리처럼 얇거나 잎인 것은 뺀다. 그래서 나무 그늘과 가구 아래가 어두워지고 밤에는 조명 빛이 주변에 튄다. 복셀화는 워커에서 하므로 프레임 비용은 그대로다.
+- 한계: WebGPU 렌더러에서만 그린다. 캐릭터 같은 움직이는 물체는 복셀에 들어가지 않아 빛을 가리지 않는다(받기만 한다). 대리 박스는 모양을 대충 따르므로 잎 사이로 드는 빛 같은 세부는 없다. 프로브 간격(2m)보다 작은 발광체의 근거리 빛은 잡지 못한다.
+
+### 접지 그림자: `ContactShadows`
+
+`<ContactShadows max? opacity? always? />`는 `useContactShadow(ref, radius)`로 등록한 캐릭터의 발밑에 부드러운 원판 그림자를 그린다. 플레이어(`PhysicsEntity`)와 NPC는 이미 등록한다. 인스턴스 하나라 draw 하나이고, 카메라에서 가까운 `max`(기본 32)개까지 그린다.
+
+- 기본은 조명 구역이 섞인 만큼만 보인다. 실내에서 해가 줄어 해 그림자가 흐려질 때 캐릭터를 바닥에 붙여 준다. 밖에서는 그리지 않는다(draw 0). 그림자 맵을 전혀 그리지 않는 장면이면 `always`를 켠다.
+- 캐릭터가 높이를 0.15초 넘게 유지해야 그 높이를 바닥으로 본다. 점프하면 바닥에 남은 원판이 높이에 따라 작아진다(2.5m에서 사라짐).
+
+## 안개: `DynamicFog`
+
+게임 시간과 날씨로 `scene.fog`(`THREE.Fog`)를 조절한다(`src/core/rendering/fog/DynamicFog.tsx`). `Canvas` 안 어디에나 한 번 둔다.
+
+| prop | 기본값 | 뜻 |
+|---|---|---|
+| `color` | `'#cfd8e3'` | 맑은 낮의 기본 색 |
+| `near`, `far` | 35, 220 | 맑은 낮의 거리 |
+| `enabled` | `true` | false면 마운트 전 안개로 돌려놓는다 |
+
+- 밤에는 색을 어둡게 하고 거리를 줄인다(near×0.45, far×0.55). 새벽·해질녘에는 색을 물들인다. 비·폭풍·눈은 색을 바꾸고 거리를 더 줄인다.
+- 내려가면 마운트 전의 `scene.fog`로 되돌린다.
+- 건축 데이터의 `showFog`를 켜면 `BuildingController`가 `fogColor`를 기본 색으로 `DynamicFog`를 올린다. 이때 따로 `DynamicFog`를 두지 않는다(둘이 `scene.fog`를 다툰다). `worldSurface: 'water'`는 월드 둘레에 카메라를 따라가는 바다(480m 판)를 깐다.
+
+```tsx
+import { DynamicFog, DynamicSky } from 'gaesup-world';
+
+export function TimeOfDayLights() {
+  return (
+    <>
+      <DynamicSky shadowRange={60} followCamera />
+      <DynamicFog color="#cfd8e3" near={35} far={220} />
+    </>
+  );
+}
+```
+
+## 날씨·기후: `Weather`
+
+런타임 `weatherStore.current`(`sunny`·`cloudy`·`rain`·`snow`·`storm`·`wind`)를 그린다(`src/core/weather/`). `BuildingSystem`이 늘 올리므로 섬 월드는 따로 둘 것이 없다.
+
+- **정하는 쪽**: 섬 데이터의 `weatherEffect`(고른 날씨)가 이기고, `'none'`이면 `climate`(`'off' | 'auto' | 계절`)가 6게임시간마다 시드로 정한 날씨를 쓴다(`auto`는 게임 달력의 계절 풀). 둘 다 꺼져 있으면 `weatherStore`를 건드리지 않는다. 앱이 직접 정하려면 `useWeatherSource({ manual, climate, seed })` 또는 `weatherStore.setWeather`를 쓴다. `DynamicFog`·`DynamicSky`·`ColorGrade`·배경음악도 같은 store를 읽는다.
+- **기후 필드**: `useWeatherClimate`가 매 프레임 비·눈·흐림·폭풍을 몇 초에 걸쳐 바꾸고, `wetness`(비 25초에 흠뻑, 90초에 걸쳐 마름)·`snowCover`(눈 45초에 덮임, 150초에 걸쳐 녹고 비에 더 빨리)·돌풍 섞인 `windStrength`·번개를 쌓는다. 불러온 월드는 첫 4초 동안 저장된 날씨의 정상 상태로 바로 간다. 값은 `weatherField`(CPU), `weatherNodes()`(TSL uniform), `weatherGlUniforms()`(classic `ShaderMaterial` uniform)로 읽는다. 날씨가 바뀌어도 uniform 값만 바뀌어 재질을 다시 만들지 않는다.
+- **그리기**: 비 줄기(바람에 기울고 거리에 따라 옅어짐)·땅 물튀김 고리·크기가 다른 눈송이·바람에 뒹구는 잎(봄 꽃잎, 가을 단풍)을 시야 앞 상자 안 인스턴스 쿼드로 그린다. 위치는 모두 셰이더가 시드·시간으로 정하고, CPU는 프레임마다 그릴 개수와 uniform 몇 개만 바꾼다. 층마다 draw 1번이다. Lambert로 빛을 받아 시간대·안개·번개를 따른다. 흐리면 해와 하늘빛을 줄이고 차갑게 물들이며 `scene.background` 색을 회색으로 옮긴다(`LightingZone`과 같은 층에서 곱한다. `DynamicSky`의 빛은 스스로 날씨를 반영하므로 제외). 번개는 폭풍에서 9~22초에 한 번 부드럽게 한 번만 번쩍이고, `lightning={false}`나 `prefers-reduced-motion`이면 끈다.
+- **표면**: 정적 모델 병합 재질(`static-models`: 지붕·나무·바위)은 젖으면 어둡고 매끈해지고, 눈이 윗면부터 쌓인다. 지면·물 재질은 `wetSurface`·`snowSurface`·`weatheredSurface`·`rainRipples`(TSL)나 `WEATHER_SURFACE_GLSL`로 같은 값을 읽는다.
+- **WebGL(classic)**: 같은 움직임의 GLSL 재질로 그리되 빛을 받지 않고 흐림·번개만 밝기에 반영한다. 착지 효과는 그리지 않는다.
+
+| prop | 기본값 | 뜻 |
+|---|---|---|
+| `density` | 품질 profile의 `instanceScale`(없으면 1) | 입자 수 배율. 최대 비 7000, 눈 6000, 물튀김 600, 잎 700 |
+| `radius`, `height` | 14, 24 | 시야 앞 상자의 반폭, 최대 높이(m). 높이는 카메라 높이에 맞춰 줄어든다 |
+| `ground` | 0 | 비·눈이 떨어지고 물튀김이 생기는 높이 |
+| `lighting` | `true` | 날씨로 빛·배경을 바꾼다 |
+| `lightning` | `true` | 폭풍 번개 |
+
+```tsx
+import { Weather, useWeatherSource } from 'gaesup-world';
+import { useBuildingStoreApi } from 'gaesup-world/building';
+
+// 섬 설정: 고른 날씨가 이기고, 자동 기후는 weatherEffect가 'none'일 때 돈다. 둘 다 섬 데이터에 저장된다.
+const building = useBuildingStoreApi().getState();
+building.setWeatherEffect('snow');
+building.setWeatherEffect('none'); building.setClimate('auto');
+
+// BuildingSystem 없이 쓰는 캔버스
+function IslandWeather({ manual }: { manual: 'rain' | null }) {
+  useWeatherSource({ manual, climate: 'off' });
+  return <Weather />;
+}
+```
+
+`WeatherEffect`는 날씨 하나의 입자만 그리는 예전 API다(`kind`를 주면 그 날씨를 최대로, 없으면 store 날씨). 효과로는 `Footprints weather`(눈이나 젖은 땅에만 발자국), `LandingBurst`(착지하면 먼지·눈·물보라, WebGPU)가 있다.
+
+## 후처리
+
+### `WorldPostProcessing`
+
+캔버스 하나의 최종 렌더를 맡는 후처리다(`src/core/rendering/postprocess/WorldPostProcessing.tsx`). `gaesup-world/postprocessing`에서 export한다.
+
+| prop | 기본값 | 뜻 |
+|---|---|---|
+| `quality` | `'balanced'` | `performance`·`balanced`·`quality`·`cinematic`. 아래 기본값을 정한다. `cinematic`은 `quality`에 화면 공간 GI·반사를 더한다 |
+| `antialias` | `performance`면 `'none'`, 아니면 `'traa'` | 시간축 안티에일리어싱(TRAA) |
+| `ambientOcclusion` | `performance`가 아니면 켬 | GTAO. GI가 도는 동안은 GI의 차폐가 대신한다 |
+| `aoRadius` | 2 | |
+| `aoSamples` | `quality`·`cinematic`이면 16, 아니면 8 | |
+| `aoResolutionScale` | `quality`·`cinematic`이면 1, 아니면 0.5 | 0.25~1 |
+| `globalIllumination` | `cinematic`이면 켬 | 화면 공간 GI(SSGI): 간접광 한 번 반사와 그 차폐 |
+| `giRadius` | 4 | 반사광과 차폐를 모으는 거리(월드 단위) |
+| `giSteps` | 8 | 방향마다 샘플 수, 1~32. 비용이 비례한다 |
+| `giIntensity` | 8 | 반사광 세기 |
+| `giResolutionScale` | 0.5 | 0.25~1 |
+| `reflections` | `cinematic`이면 켬 | 화면 공간 반사(SSR) |
+| `reflectionDistance` | 8 | 반사 광선이 가는 거리(월드 단위) |
+| `reflectionQuality` | 0.5 | 광선 진행 밀도, 0.05~1 |
+| `reflectionIntensity` | 1 | |
+| `reflectionResolutionScale` | 0.5 | 0.25~1 |
+| `reflectionMaxRoughness` | 0.5 | 이보다 거친 면은 반사하지 않고 광선도 쏘지 않는다 |
+| `bloomStrength`, `bloomRadius`, `bloomThreshold` | 0.18, 0.4, 1 | 항상 켜진 bloom |
+| `saturation` | 1.08 | |
+| `historyVersion` | 0 | 텔레포트, 월드 교체, 서버 위치 보정 뒤에 올린다. TRAA 이력을 버려 잔상을 없앤다 |
+
+- `webgpu`·`webgpu-fallback`: TSL `RenderPipeline`이다. 장면 pass(TRAA·AO를 쓰면 velocity·normal MRT, 이때 MSAA 끔) → GI·반사 → TRAA → GTAO를 색에 곱함 → bloom 더함 → 채도. `three/webgpu`, `three/tsl`, `BloomNode`·`TRAANode`·`GTAONode`·`SSGINode`·`DenoiseNode`·`SSRNode` addon을 켤 때 동적으로 불러온다.
+- GI·반사(`screenSpaceLighting.ts`, Lumen의 화면 공간 경로에 해당): 장면 pass가 `normal`(시야 법선 + 거칠기)과 `surface`(기본색 + 금속도, 8비트)를 쓴다. 재질마다 셰이더를 만들 때 정해, 표준·물리 재질만 반사하고 unlit 재질(basic·선·점·스프라이트, 조명 없는 노드 재질)은 반사광을 받지 않는다.
+  - SSGI(r186 `SSGINode`, 슬라이스 2, 월드 단위 반경)는 `giResolutionScale` 해상도로 그린 뒤 같은 해상도에서 깊이·법선을 따지는 필터(`DenoiseNode`)로 걸러 올려 샘플링한다. 색에 차폐를 곱하고 기본색 × (1 − 금속도) × 반사광을 더한다. 깊이는 네 텍셀을 보간해 평면에서 정확하게 읽고(낮은 해상도의 줄무늬 방지), 반사하는 빛은 휘도 4에서 자른다(스페큘러 하이라이트의 반딧불 방지).
+  - SSR(`SSRNode`, 거울 반사 + 거칠기로 고른 blur mip)은 금속은 기본색으로 물들여, 유전체는 Fresnel만큼 더한다. `reflectionMaxRoughness`보다 거친 픽셀은 광선을 쏘지 않는다.
+  - 둘을 한 텍스처로 합성해 TRAA가 GI 잡음을 누적하고 bloom이 그 색을 읽는다. GI가 켜지면 GTAO는 만들지 않는다.
+- GI·반사는 WebGPU 장치에서만 돈다. `webgpu-fallback`(WebGL2 백엔드)에서는 둘 다, 직교 카메라나 RG11B10 렌더 타깃(`rg11b10ufloat-renderable`)이 없는 장치에서는 GI가 조용히 꺼지고 GTAO가 남는다. 그래서 `cinematic`은 그런 곳에서 `quality`처럼 그린다.
+- 수치 prop(`giRadius`, 해상도 배율 등)은 uniform만 바꿔 파이프라인을 다시 만들지 않는다. `globalIllumination`·`reflections`·`antialias`를 바꾸면 다시 만든다.
+- 화면 공간의 한계: 화면 밖이나 가려진 물체는 빛을 튕기지도 비치지도 않는다(화면 가장자리에서 반사가 사라진다). 깊이를 쓰지 않는 투명 물체(물 등)는 뒤 불투명 표면의 깊이로 계산된다. 반사는 환경맵 반사 위에 더해진다. 월드 공간 GI는 PRD GI-1에 남아 있다.
+- 카메라가 5m 넘게 튀거나 크게 돌거나 투영이 바뀌면 TRAA 이력을 스스로 버린다.
+- 장면 파이프라인을 그릴 것마다 나눠 먼저 컴파일한 뒤 렌더를 넘겨받고, 그 전까지는 장면을 직접 그린다(MRT preset 포함, 아래 `CompileGate` 참고). 넘겨받는 프레임에 후처리 pass 자신의 셰이더(TRAA·GTAO·bloom·출력, 약 10개. `cinematic`은 GI·필터·반사·합성이 더해진다)는 동기로 만든다.
+- `useFrame` priority 1로 캔버스 렌더를 소유한다. 다른 `EffectComposer`나 렌더 소유자를 같은 캔버스에 두지 않는다.
+- `webgl`(classic): props를 무시하고 `ToonOutlines` + `ColorGrade`(`@react-three/postprocessing`) 조합을 올린다.
+
+### 켜는 방법
+
+권장은 `GaesupWorldContent`의 `postProcessing`이다.
+
+```tsx
+<GaesupWorldContent quality="auto" postProcessing={{ bloomStrength: 0.25, ambientOcclusion: false }}>
+  ...
+</GaesupWorldContent>
+```
+
+- `true` 또는 props 객체를 받는다. 켠 월드만 후처리 청크를 `React.lazy`로 내려받고, 로딩 중에도 월드는 계속 그려진다.
+- profile의 `postprocess`가 false인 tier(`low`)에서는 올리지 않는다. `quality`를 주지 않으면 tier에서 preset을 고른다.
+- tier는 `cinematic`을 고르지 않는다. 화면 공간 GI·반사는 `postProcessing={{ quality: 'cinematic' }}`로 켜고, 조정값도 같은 객체에 준다(`{ quality: 'cinematic', giIntensity: 6 }`).
+- 직접 올리려면 `import { WorldPostProcessing } from 'gaesup-world/postprocessing'` 뒤 캔버스 안에 `<WorldPostProcessing quality="balanced" historyVersion={teleports} />`를 둔다. 이때는 tier 연동과 lazy 로드가 없다.
+
+### WebGL 전용 효과(삭제 예정)
+
+아래는 `@react-three/postprocessing`의 `EffectComposer` 기반이라 classic `WebGLRenderer`에서만 동작한다. WebGPU 렌더러에서는 쓰지 않는다. PRD GPU-1에서 지우고 필요한 효과는 TSL로 옮긴다. 루트와 `gaesup-world/postprocessing` 양쪽에서 export한다.
+
+| 이름 | props(기본값) | 뜻 |
+|---|---|---|
+| `ColorGrade` | `preset?`(`neutral`·`morning`·`noon`·`sunset`·`night`·`rain`·`snow`·`storm`, 생략하면 시간·날씨로 자동), `intensity`(1), `vignette`(true) | 톤매핑·밝기·대비·색조·채도·비네트. `EffectComposer` 안이나 `ToonOutlines`의 `extraEffects`에 둔다 |
+| `LutOverlay` | `url`(`.cube`), `tetrahedralInterpolation`(true), `blendFunction?`, `onLoad?`, `onError?` | `.cube` LUT pass |
+| `ToonOutlines` | `children`, `edgeStrength`(6), `visibleEdgeColor`·`hiddenEdgeColor`(`#000000`), `pulseSpeed`(0), `xRay`(false), `blur`(false), `multisampling`(0), `extraEffects?` | 선택 기반 외곽선. 자체 `EffectComposer`를 만든다 |
+| `Outlined` | `children`, `enabled`(true) | `ToonOutlines` 안에서 외곽선을 받을 메시를 표시한다 |
+| `parseCubeLut`, `createLutTexture`, `loadCubeLut`, `loadCubeLutTexture` | | `.cube` 파일을 `Data3DTexture`로 만드는 도우미 |
+
+## 툰 재질
+
+출처: `src/core/rendering/toon.ts`. 모두 루트 export다.
+
+| 함수 | 뜻 |
+|---|---|
+| `setDefaultToonMode(enabled)` / `getDefaultToonMode()` | 페이지 전역 기본 툰 모드. 켜면 건축 타일·벽·블록, 모래·설원·잔디 지면, 벚꽃·나무, 간판, 조작 캐릭터와 NPC 모델이 `MeshToonMaterial`로, 물은 툰 전용 셰이더로 그려진다. 각 컴포넌트가 `toon` prop을 받으면 그것이 우선한다. 컴포넌트가 마운트할 때 읽으므로 월드를 올리기 전에 부른다 |
+| `createToonMaterial(options)` | `MeshToonMaterial`을 만든다. `color`, `vertexColors`, `transparent`, `opacity`, `steps`(3), `emissive`, `emissiveIntensity`, `map`, `alphaMap`, `side`, `depthWrite` |
+| `getToonGradient(steps)` | 단계 수(2~8로 자름)별 계단 그라디언트 텍스처. 캐시해서 공유한다 |
+| `applyToonToScene(root, steps?)` | `root` 아래 메시의 재질을 색·맵·투명도를 옮긴 `MeshToonMaterial`로 바꾼다(기본 4단계). 같은 root에는 한 번만 적용된다 |
+| `disposeToonGradients()` | 캐시한 그라디언트 텍스처를 해제한다 |
+
+```tsx
+import { useEffect, useMemo } from 'react';
+
+import { createToonMaterial, setDefaultToonMode } from 'gaesup-world';
+
+setDefaultToonMode(true); // 앱 시작 시, 월드를 올리기 전
+
+export function ToonBox() {
+  const material = useMemo(() => createToonMaterial({ color: '#f7bfd2', steps: 4 }), []);
+  useEffect(() => () => material.dispose(), [material]);
+  return <mesh material={material}><boxGeometry /></mesh>;
+}
+```
+
+`WebGPURenderer`는 `MeshToonMaterial`을 노드 재질로 바꿔 그리므로 두 렌더러 모두에서 동작한다.
+
+## 첫 프레임 멈춤 방지: `CompileGate`
+
+새 콘텐츠는 처음 그려지는 프레임에 셰이더와 파이프라인을 동기로 만들면서 멈춘다. `CompileGate`(`src/core/rendering/CompileGate.tsx`, 공개 export 아님)는 감싼 콘텐츠를 숨긴 채 `compileAsync`로 파이프라인을 먼저 만들고, 끝나면 보이게 한다.
+
+- `GaesupWorldContent`의 자식 전체가 문 하나 안에 있다. 첫 프레임이 모든 재질을 한 번에 만들지 않고, 월드는 컴파일이 끝난 뒤 나타난다. 건축의 벚꽃·나무, 깃발, 불, 간판 배치와 모델 오브젝트, NPC 모델은 따로 문이 있어 새로 놓거나 나타날 때도 몇 프레임 늦게 보인다.
+- 문은 그릴 것(메시·점·선·스프라이트)마다 나눠 다음 작업들에서 컴파일한다. 한 작업은 12ms까지 쓰고(`compileInSlices`), 재질·지오메트리 속성·종류·그림자 설정이 같은 것은 한 번만 컴파일한다. 다 끝나면 한 번 더 훑어, 그사이 올라온 콘텐츠와 첫 조명 재질이 만든 그림자 cascade를 컴파일하고, 새로 컴파일할 것이 없을 때 보인다.
+- 숨은 문 안의 빛(해, 방 조명)도 컴파일에는 들어간다. three가 보이는 것에서만 빛과 cascade를 모으므로 컴파일하는 동안만 숨은 문을 보이게 둔다.
+- `GpuBatchBridge`의 GPU 배치 메시는 원래 메시를 대신하기 전에 컴파일한다.
+- 예제 섬(개발 서버, 헤드리스 Chrome WebGPU)에서 첫 로드의 렌더 long task가 450~900ms 하나에서 80ms 넘는 것 없음으로 줄었다(모듈 평가 150ms 한 번은 남는다, 2026-09-27).
+- 장면을 그리는 대상(후처리 pass의 렌더 타깃)과, `WebGPURenderer`에서는 그림자 cascade마다 따로 컴파일한다. three는 렌더 컨텍스트를 중첩 깊이로도 나누는데, 후처리 pass는 그것을 읽는 pass(TRAA·bloom) 안에서, 그림자 맵은 장면을 그리는 렌더 안에서 그려져 깊이가 설정마다 다르다. 그래서 컴파일하는 pass 타깃과 그림자 맵은 어느 깊이에서나 한 컨텍스트를 쓴다(`drawAtAnyDepth`). 후처리를 켜도 그림자 파이프라인은 다시 만들지 않는다.
+- 후처리 pass가 MRT를 쓰면(TRAA나 AO가 켜진 `balanced`·`quality` preset) three가 나중 작업에서 셰이더를 만들 때 렌더러의 대상·MRT를 읽어 출력 없는 셰이더가 된다. 그 pass로 컴파일한 객체는 셰이더를 그 대상·MRT를 건 채 바로 만든다(`buildsForPasses`). 객체 하나를 한 작업에서 만들어 무거운 재질은 50~100ms 작업이 된다. 렌더러 내부가 다르면(r185·r186 밖) 예전처럼 처음 그릴 때 컴파일된다.
+- three r185·r186이고 렌더러에 `compileAsync`가 있을 때만 동작한다. 그 밖에서는 바로 보인다.
+- 컴파일 중인 문의 수는 모든 캔버스를 합쳐 센다. `useWorldLoadProgress()`(루트 export)가 그것과 three 기본 로딩 매니저(drei `useProgress`)를 묶어 로딩 화면용 값 `{ stage: 'assets' | 'shaders' | 'ready', progress, loaded, total, item }`을 준다. 파일이 진행률의 80%, 컴파일이 나머지 20%이고, 새 파일이 나타나도 진행률은 뒤로 가지 않는다. 로딩과 컴파일이 멈추고 0.4초가 지나면(아무것도 불러오지 않는 월드는 1.5초) `ready`가 되고, 그 뒤 나중에 불러오는 에셋으로는 되돌아가지 않는다. 예제는 이 값으로 섬이 조각조각 나타나는 동안 무대를 덮는다.
+
+## 건축 비주얼 컴포넌트
+
+`gaesup-world/building`(루트에도 있음)이 내보내는 비주얼이다. 보통은 직접 올리지 않는다. `BuildingController`가 건축 store의 타일(`objectType`)과 오브젝트(`type`)를 보고 배치 버전으로 그린다. 건축 데이터 없이 장식으로 쓸 때만 직접 올린다.
+
+| 컴포넌트 | props(기본값) | 비고 |
+|---|---|---|
+| `Grass` | `group` props + `width`(4), `density`(m²당 잎 수), `instances`, `maxInstances`(18000), `cells`, `cellSize`(1), `ground`(true), `lod`, `center`, `options`(`bW`·`bH`·`joints`), 색·텍스처 URL, `toon` | 캔버스에 `GrassDriver`가 하나 있어야 바람·밟힘·거리 LOD·절두체 컬링이 돈다. 잎 수에 전역 `usePerfStore`의 `instanceScale`을 곱한다. 잎 데이터는 WASM, 없으면 JS로 만든다 |
+| `GrassDriver` | 없음 | 모든 잔디를 한 `effects` 콜백으로 갱신한다. `BuildingController`는 이미 하나 올린다 |
+| `GrassManagerProvider` | `value`(`createGrassManager()`) | 런타임 없는 독립 장면에서 잔디 관리자를 따로 둘 때 |
+| `Water` | `size`(16), `width`, `depth`, `field`(기본 월드 물가 필드, `null`이면 끔), `shore`(deprecated, 필드가 없을 때만 쓰는 네 변 물가), `lod`(`far`만 쓴다), `center`, `followCamera`(false, 카메라를 따르는 열린 바다), `normalMap`, `toon`, `brightness`(1) | 물가 필드로 둑 → 젖은 모래 → 얕은 물 → 깊은 물과 거품선을 그린다. 노드 렌더러: 툰이면 unlit, 아니면 PBR 노드 재질. classic WebGL: 필드가 있거나 툰이면 GLSL, 둘 다 아니면 three-stdlib 거울 물(반사 렌더 타깃 192~384px) |
+| `Fire` | `intensity`(1.5), `width`(1), `height`(1.5), `color`(`#ffffff`) | 위치 prop이 없으므로 `group`으로 감싼다 |
+| `Sakura` / `SakuraBatch` | `size`(4), `toon` / `trees`(`SakuraTreeEntry[]`: `position`, `size`, `treeKind`, `blossomColor`, `barkColor`), `toon` | `treeKind`: `sakura`·`oak`·`pine`·`maple`·`birch`·`willow`·`cypress`·`dead` |
+| `Sand` / `SandBatch`, `Snowfield` / `SnowfieldBatch` | `size`(4), `toon`, `color`, `accentColor` / `entries`, `toon` | 일반 재질이라 두 렌더러가 같다 |
+| `Snow` | `gpu`, `followCamera`(false) | `gpu`: 노드 렌더러면 TSL, classic이면 GLSL 버텍스 셰이더. 아니면 CPU 입자(WASM 또는 JS) |
+| `Billboard` | `text`, `imageUrl`, `width`, `height`, `scale`, `color`, `elevation`, `intensity`, `toon` | 글자는 캔버스 텍스처로 그린다 |
+
+- 깃발 컴포넌트는 export되지 않는다. 깃발은 오브젝트 `type: 'flag'`(`config.flagWidth`·`flagHeight`·`flagStyle`·`flagTexture`)로 `BuildingController`가 그린다.
+- 물가 필드(`useShoreField()`, `createShoreField(source)`): 물 타일과 `worldSurface: 'water'` 월드의 열린 바다를 1m 텍셀로 래스터화해 흐린 물 덮임 값이다(땅 0, 물가 0.5, 열린 물 1). 월드마다 하나를 모든 물이 함께 쓰고, 타일이 바뀔 때만 프레임당 최대 4ms씩 나눠 다시 만든다. 격자는 타일이 놓인 위상을 따르므로 스냅 격자 밖에 손으로 놓은 타일에도 물가선이 맞는다. 셰이더는 `field.texture`를 `(world.xz - field.transform.xy) * field.transform.zw`에서 읽는다.
+- 타일 샘플러(`createTileSampler(source)`, `gaesup-world/building`): 물가 필드와 같은 원본(`{ tileGroups, worldSurface }`)에서 월드 한 점의 타일·그 타일이 그리는 재질 id·윗면 높이·물 여부를 4m 버킷으로 상수 시간에 답한다(`at`, `heightAt`, `isWater`). 타일이 겹치면 높은 쪽이다. 발소리가 이것으로 밟은 지면을 고른다. 타일 편집마다 새로 만든다(타일 1,000개에 1ms 미만).
+- 타일 윗면(노드 렌더러): 불투명 표준 재질의 박스 타일은 윗면 텍스처를 월드 좌표로 읽어 크기·회전이 다른 타일에도 무늬가 이어진다(한 번 반복이 격자 한 칸 4m). 20m쯤의 밝고 어두운 얼룩과, 잔디 잎이 받는 섬 전체의 색 흐름(`driftPatch`)을 같은 식으로 곱해 같은 타일이 늘어선 땅에 4m 반복이 드러나지 않고 새로고침해도 같다. 옆면은 원래 UV, 색·거칠기·금속도는 원래 재질을 따른다. 노드 재질이라 이 타일 배치는 GPU 배치 대신 원래 인스턴스 메시로 그리고 draw 수는 같다.
+- 흙길 덮개(`objectType: 'dirt'`, 공개 export 아님): 흙길 타일과 같은 높이 이웃 위에 0.5m 격자 한 장을 깔고 정점 알파로 가장자리를 흐린다. 경계까지 거리는 잔디 층의 불규칙한 경계와 같은 이웃 마스크(`borderDistance`)로 재고, 월드 노이즈로 흔든다. 노드 렌더러에서는 월드 좌표의 잔모래와 자갈을 셰이더로 더한다. 투명하게 섞고 그림자를 받는다.
+- 물 재질은 안개와 톤 매핑을 받는다. 물결 노멀맵은 주기적이라 이음선이 없다. 카메라에서 40m 안은 물결·거품이 움직이고 52m 밖은 단순한 면이다(히스테리시스). 물 타일 묶음은 둘레 띠 없이 메시 하나다.
+- 잔디·물·불·깃발·벚꽃·눈·날씨의 GLSL 경로는 PRD GPU-1에서 지운다.
+
+```tsx
+import { Billboard, Fire, Grass, GrassDriver, Sakura, Water } from 'gaesup-world/building';
+
+export function Scenery() {
+  return (
+    <>
+      <GrassDriver />
+      <Grass position={[0, 0, 0]} width={8} density={60} />
+      <group position={[12, 0, 0]}><Water size={8} /></group>
+      <group position={[-6, 0, 4]}><Fire intensity={1.2} /></group>
+      <group position={[6, 0, -6]}><Sakura size={4} /></group>
+      <group position={[0, 0, -10]}><Billboard text="WELCOME" width={4} height={1.5} color="#00ff88" /></group>
+    </>
+  );
+}
+```
+
+## GPU 인스턴싱: `GpuBatchBridge`
+
+건축 타일·벽·벽 조각·블록은 재질별 `InstancedMesh` 배치로 그리며, 이름이 `building-batch:`로 시작한다. `GpuBatchBridge`(`src/core/rendering/GpuBatchBridge.tsx`, `gaesup-world/building` export)는 한 루트 아래의 이 배치를 GPU로 옮긴다.
+
+- 각 인스턴스의 경계구를 카메라 절두체 6면과 compute로 비교해 보이는 것만 남기고 간접 draw로 그린다. 인스턴스 수·행렬·색 변경은 바뀐 것만 올린다.
+- 원래 `InstancedMesh`는 그대로 둔다. 선택(picking), 물리, 그림자 pass는 원본을 쓰고, 메인 pass에서만 원본을 건너뛴다.
+- 투명 재질, 노드 재질(자체 TSL 변형), 노멀·범프·변위 맵이 있는 재질은 제외하고 원래 경로로 그린다. 배치 생성이 실패해도 원본으로 그린다.
+- 켜지는 조건은 `supportsGpuInstanceBatches(gl)`: `webgpu` 백엔드, three r185·r186, 렌더러 내부 속성 저장소. `BuildingController`가 이 조건을 보고 자동으로 올린다. 조건이 맞지 않으면 CPU 쪽 `BuildingVisibilityDriver`가 카메라 거리로 그릴 그룹을 고른다.
+- 잔디, 벚꽃·나무, 깃발, 불, 간판, 모델 오브젝트는 대상이 아니다. 벚꽃·깃발·불·간판은 개수와 상관없이 종류마다 고정된 수의 draw로 그리는 자체 배치를, 잔디는 층(노드 렌더러는 4×4 타일, classic WebGL은 8×8 타일)마다 draw 하나를, 모델 오브젝트는 아래 정적 모델 병합을 쓴다.
+
+## 정적 모델 병합
+
+GLB 모델 오브젝트(`type: 'model'`, `modelUrl`)는 편집 중에도 게임 엔진의 정적 배칭처럼 그린다(`BuildingSystem`이 올리는 `StaticModels`, 공개 export 아님). `WebGPURenderer`에서 draw 하나가 CPU 18~22µs라 draw 수가 프레임 시간을 정한다.
+
+- 노드 렌더러(`webgpu`, `webgpu-fallback`)에서는 무늬 없는 모델을 32m 칸마다 합친다. 무늬 없는 모델이란 모든 재질이 불투명한 표준 재질이고 맵·정점 색·투과가 없으며, 스킨·모프가 없는 모델이다. 한 칸에서 그림자 정책(카탈로그 `shadow`)과 재질 면(앞면·양면)이 같은 모델이 메시 하나가 되고, pass마다 draw 하나다. 절두체 컬링은 칸 단위다.
+- 합친 메시는 정점마다 원래 재질의 색·발광·거칠기를 싣고 노드 재질 하나로 그린다. 금속도는 `prop` 재질 정책처럼 0이다. 거울상 변환이 있는 부분은 삼각형 순서를 뒤집어 앞면을 지킨다.
+- 텍스처·투명 재질 모델과, 복사본 정점 합이 65,536개를 넘는 모델은 GLB마다 파트별 `InstancedMesh`(`ModelBatch`)로 그린다. classic WebGL에서는 모든 모델이 이 경로다.
+- 오브젝트가 바뀌면 그 오브젝트가 든 칸만 다시 합친다. 모델을 하나씩 따로 불러오므로 새 모델을 불러오는 동안 다른 모델이 사라지지 않는다.
+- 편집 모드를 켜고 꺼도 다시 합치지 않는다. 편집기는 모델 메시가 아니라 편집 표시(지우기 도구의 와이어 상자)로 오브젝트를 고른다. 메시가 흩뿌린 장식(`MeshConfig.scatter`)은 편집 대상이 아니고, 다시 흩뿌려도 그대로인 장식은 같은 객체라 그 칸은 다시 합치지 않는다.
+- 예제 섬(2026-09-27, 1600×900, DPR 1.5): 모델 draw 62 → 12(모든 pass 합), 프레임 draw 185 → 136. 텍스처가 있는 우편함만 인스턴싱으로 남는다.
+
+## 팁
+
+- 잔디는 월드마다 profile별 예산(잔디밭 28,000잎, 긴 풀 16,000잎, `instanceScale` 1 기준) 안에서 그린다. 줄이려면 메시 `grass.density`나 타일 `objectConfig.grassDensity`, tier를 낮춘다. 수치는 [performance.md](performance.md)에 있다.
+- 그림자 비용은 다시 그리는 cascade 수 × 캐스터 수다. `updateHz`를 낮추거나 `CascadedSun quality="low"`로 줄이고, 그림자가 필요 없는 장식 메시는 `castShadow`를 끄고, 작은 물체는 `castNearShadowOnly`로 가장 가까운 cascade에만 넣는다.
+- classic WebGL의 거울 물은 반사 장면을 한 번 더 그린다. 툰 모드나 WebGPU에서는 이 반사 pass가 없다.
+- 후처리 `quality="performance"`는 TRAA와 AO를 끄고 bloom과 채도만 남긴다. AO는 `aoResolutionScale`로 해상도를 낮출 수 있다.
+- `Canvas`의 기본 `dpr`는 `[1, 2]`다. `quality`를 주지 않으면 고해상도 화면에서 픽셀 비율 2로 그린다.
+
+## 현재 제한
+
+- WebGPU가 없으면 `WebGPURenderer`의 WebGL2 백엔드가 아니라 classic `WebGLRenderer`와 GLSL 경로로 그린다(GPU-1에서 바뀐다).
+- `ColorGrade`·`LutOverlay`·`ToonOutlines`와 GLSL 재질 경로가 남아 있다(GPU-1).
+- 해가 `CascadedSun`·`DynamicSky` 두 벌이다(UP-1). `DynamicSky`에는 cascade 그림자가 없다.
+- classic WebGL 잔디(`Grass`)는 월드 `quality`를 직접 따르지 않는다(GPU-1에서 GLSL 경로와 함께 지운다).
+- 깃발 컴포넌트는 export되지 않는다.
+
+## 관련 문서
+
+- [getting-started.md](getting-started.md) · [world-runtime.md](world-runtime.md) · [performance.md](performance.md)
+- [building.md](building.md) · [character-camera-input.md](character-camera-input.md) · [api-map.md](api-map.md)
+- [../dev/architecture.md](../dev/architecture.md) · [../dev/trends-2026.md](../dev/trends-2026.md) · [../../PRD.md](../../PRD.md)

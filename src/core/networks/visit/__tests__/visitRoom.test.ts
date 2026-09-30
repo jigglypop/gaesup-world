@@ -1,15 +1,34 @@
-import type { DomainBinding } from '../../../save/types';
+import type { DomainBinding, SerializedDomainValue } from '../../../save/types';
 import { createLocalVisitChannel } from '../channel';
 import {
   applyVisitSnapshot,
+  captureVisitRestorePoint,
   serializeVisit,
   visitProviderFromSaveSystem,
 } from '../serializer';
 import type { VisitChannelEvent } from '../types';
 
-function bindingFor<T>(key: string, get: () => T, set: (v: T | null | undefined) => void): DomainBinding<T> {
+function bindingFor(
+  key: string,
+  get: () => SerializedDomainValue,
+  set: (v: SerializedDomainValue) => void,
+): DomainBinding {
   return { key, serialize: get, hydrate: (data) => set(data) };
 }
+
+/** A local world whose domains start at 'home'; `failing[key](value)` makes that hydrate throw. */
+function worldOf(keys: string[], failing: Record<string, (value: SerializedDomainValue) => boolean> = {}) {
+  const state: Record<string, SerializedDomainValue> = Object.fromEntries(keys.map((key) => [key, 'home']));
+  const hydrate = jest.fn((key: string, value: SerializedDomainValue) => {
+    if (failing[key]?.(value)) throw new Error(`${key} failed`);
+    state[key] = value;
+  });
+  const provider = () => keys.map((key) => bindingFor(key, () => state[key], (value) => hydrate(key, value)));
+  return { state, hydrate, provider };
+}
+
+const remoteOf = (keys: string[]) =>
+  serializeVisit(() => keys.map((key) => bindingFor(key, () => 'remote', () => {})), { hostId: 'remote', domains: keys });
 
 describe('visit-room serializer', () => {
   it.each([-1, 0, 1.5, 2, 999, NaN, Infinity])('skips unsupported version %s without accessing bindings', (version) => {
@@ -112,7 +131,7 @@ describe('visit-room serializer', () => {
   it('apply restores domain values via hydrate', () => {
     let captured: { tiles: number[] } | null = null;
     const provider = () => [
-      bindingFor<{ tiles: number[] }>(
+      bindingFor(
         'building',
         () => ({ tiles: [] }),
         (v) => { captured = (v as { tiles: number[] }) ?? null; },
@@ -153,6 +172,37 @@ describe('visit-room serializer', () => {
     expect(result.applied).toEqual(['building']);
     expect(buildingApplied).toBe(true);
     expect(sceneApplied).toBe(false);
+  });
+
+  it('atomic apply returns every domain to its prior state when a later one throws', () => {
+    const keys = ['building', 'npc', 'weather'];
+    const world = worldOf(keys, { npc: (value) => value === 'remote' });
+    const result = applyVisitSnapshot(world.provider, remoteOf(keys), { atomic: true });
+    expect(result).toEqual({ applied: [], skipped: keys, failed: [{ key: 'npc', error: new Error('npc failed') }] });
+    expect(world.state).toEqual({ building: 'home', npc: 'home', weather: 'home' });
+    // The failing domain may be half applied, so it is restored first, then the applied ones in reverse.
+    expect(world.hydrate.mock.calls.map(([key, value]) => `${key}=${String(value)}`))
+      .toEqual(['building=remote', 'npc=remote', 'npc=home', 'building=home']);
+  });
+
+  it('atomic apply names the domains a failed rollback left in the visited state', () => {
+    const keys = ['building', 'npc'];
+    const world = worldOf(keys, { npc: (value) => value === 'remote', building: (value) => value === 'home' });
+    const result = applyVisitSnapshot(world.provider, remoteOf(keys), { atomic: true });
+    expect(result.failed?.map(({ key }) => key)).toEqual(['npc']);
+    expect(result.unrestored).toEqual(['building']);
+    expect(world.state).toEqual({ building: 'remote', npc: 'home' });
+  });
+
+  it('a restore point restores every domain it can instead of undoing the others', () => {
+    const keys = ['building', 'npc'];
+    const failing: Record<string, (value: SerializedDomainValue) => boolean> = {};
+    const world = worldOf(keys, failing);
+    const point = captureVisitRestorePoint(world.provider, keys);
+    applyVisitSnapshot(world.provider, remoteOf(keys), { atomic: true });
+    failing['building'] = () => true;
+    expect(point.restore()).toEqual({ applied: ['npc'], skipped: ['building'], failed: [{ key: 'building', error: new Error('building failed') }] });
+    expect(world.state).toEqual({ building: 'remote', npc: 'home' });
   });
 
   it('visitProviderFromSaveSystem proxies getBindings', () => {

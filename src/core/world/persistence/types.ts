@@ -1,22 +1,22 @@
 import type { RuntimeRecord } from '../../boilerplate/types';
 
-export type SaveData = {
+export interface SaveData {
   version: string;
   timestamp: number;
   world: WorldSaveData;
   metadata?: SaveMetadata;
-};
+}
 
-export type WorldSaveData = {
+export interface WorldSaveData {
   id: string;
   name: string;
   buildings: BuildingSaveData;
   npcs: NPCSaveData[];
   environment: EnvironmentSaveData;
   camera?: CameraSaveData;
-};
+}
 
-export type BuildingSaveData = {
+export interface BuildingSaveData {
   wallGroups: Array<{
     id: string;
     name: string;
@@ -61,9 +61,9 @@ export type BuildingSaveData = {
     opacity?: number;
     transparent?: boolean;
   }>;
-};
+}
 
-export type NPCSaveData = {
+export interface NPCSaveData {
   id: string;
   name: string;
   position: { x: number; y: number; z: number };
@@ -71,9 +71,9 @@ export type NPCSaveData = {
   modelUrl?: string;
   behavior?: string;
   metadata?: RuntimeRecord;
-};
+}
 
-export type EnvironmentSaveData = {
+export interface EnvironmentSaveData {
   lighting: {
     ambientIntensity: number;
     directionalIntensity: number;
@@ -90,34 +90,33 @@ export type EnvironmentSaveData = {
     color?: string;
     textureUrl?: string;
   };
-};
+}
 
-export type CameraSaveData = {
-  position: { x: number; y: number; z: number };
-  rotation: { x: number; y: number; z: number };
+/** Older saves may also hold `position` and `rotation`; they came from camera options nothing read and are ignored. */
+export interface CameraSaveData {
   mode: string;
   settings?: RuntimeRecord;
-};
+}
 
-export type SaveMetadata = {
+export interface SaveMetadata {
   description?: string;
   tags?: string[];
   thumbnail?: string;
   author?: string;
   createdAt: number;
   updatedAt: number;
-};
+}
 
-export type SaveLoadOptions = {
+export interface SaveLoadOptions {
   includeBuildings?: boolean;
   includeNPCs?: boolean;
   includeEnvironment?: boolean;
   includeCamera?: boolean;
   compress?: boolean;
-};
+}
 
-export type SaveLoadResult = {
+export interface SaveLoadResult {
   success: boolean;
   data?: SaveData;
   error?: string;
-}; 
+} 

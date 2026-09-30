@@ -1,8 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import type { NPCBrainBlueprint, NPCInstance } from '../../../../../npc/types';
-import { NPCBrainSection } from '../sections';
 import { getNPCBlueprintNodeTitle, getNPCBlueprintNodeDescription } from '../helpers';
+import { NPCBrainSection } from '../sections';
 
 type FlowProps = Parameters<typeof import('../flow').BrainFlow>[0];
 let mockFlowProps: FlowProps | undefined;
@@ -13,7 +13,7 @@ const INSTANCE: NPCInstance = {
   position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1],
 };
 
-test('localized inspector repairs missing branches using graph data and keeps command identifiers', () => {
+test('localized inspector repairs missing branches using graph data and keeps command identifiers', async () => {
   const blueprint: NPCBrainBlueprint = {
     id: 'brain', name: 'Test brain',
     nodes: [
@@ -35,9 +35,9 @@ test('localized inspector repairs missing branches using graph data and keeps co
     updateBrainBlueprint={updateBrainBlueprint}
   />);
 
-  fireEvent.click(screen.getByRole('button', { name: '스크립트', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: '스크립트' }));
   expect(updateBrain).toHaveBeenCalledWith('npc', { mode: 'scripted' });
-  fireEvent.click(screen.getByRole('button', { name: '노드 인스펙터', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: '노드 인스펙터' }));
   expect(screen.getByText('참 분기 누락 · 거짓 분기 누락')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: '누락 분기 자동 보완' }));
   expect(updateBrainBlueprint).toHaveBeenCalledWith('brain', expect.objectContaining({
@@ -48,6 +48,8 @@ test('localized inspector repairs missing branches using graph data and keeps co
     ],
   }));
   expect(blueprint.edges).toHaveLength(1);
+  // The graph view loads on demand.
+  await waitFor(() => expect(mockFlowProps).toBeDefined());
   if (!mockFlowProps) throw new Error('Missing graph');
   mockFlowProps.onDelete(['start', 'left'], ['entry']);
   expect(updateBrainBlueprint).toHaveBeenLastCalledWith('brain', expect.objectContaining({

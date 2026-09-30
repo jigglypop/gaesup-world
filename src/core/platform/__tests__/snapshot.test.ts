@@ -1,21 +1,22 @@
+/** @jest-environment jsdom */
+import { createContentBundleFromSaveSystem } from '../../content';
+import { applyVisitSnapshot, serializeVisit } from '../../networks/visit/serializer';
+import { SaveSystem } from '../../save';
+import type { SaveAdapter } from '../../save';
+import { createSceneDocument, createSceneDocumentController, createSceneDocumentSaveBinding } from '../../scene-object';
 import {
   WORLD_SNAPSHOT_DOMAINS,
   collectSaveDomains,
   createPlayerProgressFromSaveSystem,
   createWorldSnapshotFromSaveSystem,
 } from '../snapshot';
-import { SaveSystem } from '../../save';
-import type { SaveAdapter, SaveBlob } from '../../save';
-import { createContentBundleFromSaveSystem } from '../../content';
-import { applyVisitSnapshot, serializeVisit } from '../../networks/visit/serializer';
-import { createSceneDocument, createSceneDocumentController, createSceneDocumentSaveBinding } from '../../scene-object';
 
 class MemoryAdapter implements SaveAdapter {
-  async read(_slot: string) {
+  async read() {
     return null;
   }
 
-  async write(_slot: string, _blob: SaveBlob) {
+  async write() {
     return undefined;
   }
 
@@ -23,7 +24,7 @@ class MemoryAdapter implements SaveAdapter {
     return [];
   }
 
-  async remove(_slot: string) {
+  async remove() {
     return undefined;
   }
 }
@@ -39,7 +40,7 @@ describe('platform snapshots', () => {
     save.register({ key: includedKey, serialize: included, hydrate: () => undefined });
     const snapshot = kind === 'world'
       ? createWorldSnapshotFromSaveSystem(save, 'world')
-      : createPlayerProgressFromSaveSystem(save, 'player');
+      : createPlayerProgressFromSaveSystem(save, 'player', { domains: [includedKey] });
     expect(snapshot.domains).toEqual({ [includedKey]: { value: 1 } });
     expect(included).toHaveBeenCalledTimes(1);
     expect(excluded).not.toHaveBeenCalled();
@@ -57,7 +58,7 @@ describe('platform snapshots', () => {
     }] };
     const capture = () => kind === 'world'
       ? createWorldSnapshotFromSaveSystem(provider, 'world')
-      : createPlayerProgressFromSaveSystem(provider, 'player');
+      : createPlayerProgressFromSaveSystem(provider, 'player', { domains: ['inventory'] });
     expect(capture).toThrow(failure);
     expect(capture().domains).toEqual({ [kind === 'world' ? 'building' : 'inventory']: { value: 1 } });
   });
@@ -146,10 +147,13 @@ describe('platform snapshots', () => {
       hydrate: () => undefined,
     });
 
+    // The engine keeps only its own player domains unless the game names its own.
+    expect(createPlayerProgressFromSaveSystem(save, 'player-1').domains).toEqual({});
     const snapshot = createPlayerProgressFromSaveSystem(save, 'player-1', {
       worldId: 'world-1',
       version: 3,
       savedAt: 200,
+      domains: ['inventory', 'quests'],
     });
 
     expect(snapshot).toEqual({

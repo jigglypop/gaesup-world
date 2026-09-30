@@ -1,5 +1,3 @@
-import { useQuestStore } from '../../quests/stores/questStore';
-import { useFriendshipStore } from '../../relations/stores/friendshipStore';
 import type {
   AgentBehaviorBlueprint,
   NPCAction,
@@ -15,6 +13,7 @@ import type {
   NPCObservation,
   NPCPerceptionConfig,
 } from '../types';
+import { createWanderTarget } from './wander';
 
 const MAX_BLUEPRINT_STEPS = 32;
 const blueprints = new Map<string, NPCBrainBlueprint>();
@@ -148,6 +147,11 @@ export function applyAgentBehaviorBlueprint(
   );
 }
 
+/** Perceived targets are sorted nearest first, so this is the nearest newly seen one. */
+function enteredTarget(observation: NPCObservation, actorsOnly = false) {
+  return observation.perceived.find((target) => observation.entered?.includes(target.instanceId) && (!actorsOnly || target.actor));
+}
+
 function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NPCObservation): boolean {
   switch (condition.type) {
     case 'always':
@@ -156,12 +160,8 @@ function resolveCondition(condition: NPCBrainBlueprintCondition, observation: NP
       return observation.navigationState !== 'moving';
     case 'perceivedAny':
       return observation.perceived.length > 0;
-    case 'questStatus':
-      return useQuestStore.getState().statusOf(condition.questId) === condition.status;
-    case 'friendshipAtLeast': {
-      const npcId = condition.npcId ?? observation.instanceId;
-      return useFriendshipStore.getState().scoreOf(npcId) >= condition.score;
-    }
+    case 'perceivedEntered':
+      return enteredTarget(observation, condition.actorsOnly) !== undefined;
     case 'memoryEquals':
       return observation.memory?.[condition.key] === condition.value;
   }
@@ -175,30 +175,24 @@ function resolveTarget(target: NPCBrainBlueprintTarget, observation: NPCObservat
       return observation.position;
     case 'nearestPerceived':
       return observation.perceived[0]?.position;
+    case 'entered':
+      return enteredTarget(observation, target.actorsOnly)?.position;
   }
-}
-
-function createWanderTarget(observation: NPCObservation, radius: number): [number, number, number] {
-  const seed = observation.timestamp * 1.7 + observation.instanceId.length * 13.37;
-  const angle = (Math.sin(seed) * 0.5 + 0.5) * Math.PI * 2;
-  const distance = radius * (0.35 + (Math.cos(seed * 0.73) * 0.5 + 0.5) * 0.65);
-  return [
-    observation.position[0] + Math.cos(angle) * distance,
-    observation.position[1],
-    observation.position[2] + Math.sin(angle) * distance,
-  ];
 }
 
 function compileAction(node: Extract<NPCBrainBlueprintNode, { type: 'action' }>, observation: NPCObservation): NPCAction | undefined {
   if (node.action.type === 'wander') {
-    const radius = Math.max(0.5, node.action.radius ?? 4);
     return {
       type: 'moveTo',
-      target: createWanderTarget(observation, radius),
+      target: createWanderTarget(observation, node.action.radius ?? 4),
       ...(node.action.speed !== undefined ? { speed: node.action.speed } : {}),
     };
   }
 
+  if (node.action.type === 'lookAtTarget') {
+    const target = resolveTarget(node.action.target, observation);
+    return target ? { type: 'lookAt', target } : undefined;
+  }
   if (node.action.type !== 'moveToTarget') return node.action;
   const target = resolveTarget(node.action.target, observation);
   if (!target) return undefined;

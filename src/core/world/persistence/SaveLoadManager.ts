@@ -1,18 +1,16 @@
-import { Profile, HandleError, MonitorMemory, Timeout } from '@/core/boilerplate/decorators';
 import type { RuntimeValue } from '@/core/boilerplate/types';
+import { reportError } from '@/core/utils/reportError';
+import { withTimeout } from '@/core/utils/timeout';
 
-import { 
-  SaveData, 
-  WorldSaveData, 
-  SaveLoadOptions, 
-  SaveLoadResult,
-  SaveMetadata
-} from './types';
+import { DEFAULT_MAX_SLOTS_PER_WORLD, selectExpiredWorldSlots } from './slots';
+import { SaveData, SaveLoadOptions, SaveLoadResult, SaveMetadata, WorldSaveData } from './types';
 
 const SAVE_VERSION = '1.0.0';
 const STORAGE_KEY_PREFIX = 'gaesup_world_save_';
 const BASE64_JSON_STORAGE_PREFIX = 'base64-json:';
 const COMPRESSED_SAVE_ENCODING = 'gaesup-world:gzip-json:v1';
+/** A compression or parse that outlives this fails the save/load instead of stalling it. */
+const SAVE_LOAD_TIMEOUT_MS = 5000;
 
 type CompressedSaveEnvelope = {
   encoding: typeof COMPRESSED_SAVE_ENCODING;
@@ -24,39 +22,40 @@ type CompressedSaveEnvelope = {
   payload: string;
 };
 
-export type LegacySaveStorage = {
+export interface LegacySaveStorage {
   readonly length: number;
   key(index: number): string | null;
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
-};
+}
 
 export type SaveFileWriter = (filename: string, data: SaveData) => void | Promise<void>;
 
-export type SaveLoadManagerOptions = {
+export interface SaveLoadManagerOptions {
   storage?: LegacySaveStorage;
   fileWriter?: SaveFileWriter;
   now?: () => number;
   version?: string;
-};
+  /** Saves kept per world, newest first; older ones are deleted after each save. `Infinity` keeps all. */
+  maxSlotsPerWorld?: number;
+}
 
 export class SaveLoadManager {
   private version: string;
   private readonly storage: LegacySaveStorage | undefined;
   private readonly fileWriter: SaveFileWriter | undefined;
   private readonly now: () => number;
+  private readonly maxSlotsPerWorld: number;
 
   constructor(options: SaveLoadManagerOptions = {}) {
     this.version = options.version ?? SAVE_VERSION;
     this.storage = options.storage;
     this.fileWriter = options.fileWriter;
     this.now = options.now ?? Date.now;
+    this.maxSlotsPerWorld = options.maxSlotsPerWorld ?? DEFAULT_MAX_SLOTS_PER_WORLD;
   }
 
-  @HandleError()
-  @Profile()
-  @Timeout(5000) // 5초 타임아웃
   async save(
     worldData: WorldSaveData,
     metadata?: Partial<SaveMetadata>,
@@ -64,12 +63,11 @@ export class SaveLoadManager {
   ): Promise<SaveLoadResult> {
     try {
       const saveData = this.createSaveData(worldData, metadata, options);
-
-      if (options.compress) {
-        return await this.saveCompressed(saveData);
-      } else {
-        return await this.saveUncompressed(saveData);
-      }
+      const value = options.compress
+        ? await withTimeout(this.compressData(saveData), SAVE_LOAD_TIMEOUT_MS, 'save')
+        : JSON.stringify(saveData);
+      this.writeSlot(saveData, value);
+      return { success: true, data: saveData };
     } catch (error) {
       return {
         success: false,
@@ -78,9 +76,6 @@ export class SaveLoadManager {
     }
   }
 
-  @HandleError()
-  @Profile()
-  @Timeout(5000)
   async load(saveId: string, options: SaveLoadOptions = {}): Promise<SaveLoadResult> {
     try {
       const storageKey = `${STORAGE_KEY_PREFIX}${saveId}`;
@@ -90,7 +85,7 @@ export class SaveLoadManager {
         throw new Error(`Save data not found: ${saveId}`);
       }
 
-      const saveData = await this.parseStoredSaveData(savedDataStr);
+      const saveData = await withTimeout(this.parseStoredSaveData(savedDataStr), SAVE_LOAD_TIMEOUT_MS, 'load');
 
       if (!this.validateSaveData(saveData)) {
         throw new Error('Invalid save data format');
@@ -111,8 +106,6 @@ export class SaveLoadManager {
     }
   }
 
-  @HandleError()
-  @Profile()
   async saveToFile(
     worldData: WorldSaveData,
     filename: string,
@@ -133,8 +126,6 @@ export class SaveLoadManager {
     }
   }
 
-  @HandleError()
-  @Profile()
   async loadFromFile(file: File, options: SaveLoadOptions = {}): Promise<SaveLoadResult> {
     try {
       const text = await file.text();
@@ -159,7 +150,6 @@ export class SaveLoadManager {
     }
   }
 
-  @MonitorMemory(10)
   listSaves(): Array<{ id: string; timestamp: number; metadata?: SaveMetadata }> {
     const saves: Array<{ id: string; timestamp: number; metadata?: SaveMetadata }> = [];
     let storage: LegacySaveStorage;
@@ -167,7 +157,7 @@ export class SaveLoadManager {
     try {
       storage = this.getStorage();
     } catch (error) {
-      console.error('Failed to list saves:', error);
+      reportError(error, { source: 'save:list' });
       return saves;
     }
 
@@ -186,7 +176,7 @@ export class SaveLoadManager {
             });
           }
         } catch (error) {
-          console.error(`Failed to parse save: ${key}`, error);
+          reportError(error, { source: 'save:list', label: key });
         }
       }
     }
@@ -194,19 +184,17 @@ export class SaveLoadManager {
     return saves.sort((a, b) => b.timestamp - a.timestamp);
   }
 
-  @HandleError()
   deleteSave(saveId: string): boolean {
     try {
       const storageKey = `${STORAGE_KEY_PREFIX}${saveId}`;
       this.getStorage().removeItem(storageKey);
       return true;
     } catch (error) {
-      console.error('Failed to delete save:', error);
+      reportError(error, { source: 'save:delete', label: saveId });
       return false;
     }
   }
 
-  @Profile()
   private filterWorldData(world: WorldSaveData, options: SaveLoadOptions): WorldSaveData {
     const filtered = { ...world };
 
@@ -240,7 +228,6 @@ export class SaveLoadManager {
     return filtered;
   }
 
-  @Profile()
   private createSaveData(
     worldData: WorldSaveData,
     metadata?: Partial<SaveMetadata>,
@@ -296,40 +283,30 @@ export class SaveLoadManager {
     URL.revokeObjectURL(url);
   }
 
-  @HandleError()
-  private async saveUncompressed(saveData: SaveData): Promise<SaveLoadResult> {
+  private writeSlot(saveData: SaveData, value: string): void {
     const saveId = `${saveData.world.id}_${saveData.timestamp}`;
-    const storageKey = `${STORAGE_KEY_PREFIX}${saveId}`;
+    const storage = this.getStorage();
 
     try {
-      this.getStorage().setItem(storageKey, JSON.stringify(saveData));
-      return { success: true, data: saveData };
+      storage.setItem(`${STORAGE_KEY_PREFIX}${saveId}`, value);
     } catch (error) {
       if (error instanceof Error && error.name === 'QuotaExceededError') {
         throw new Error('Storage quota exceeded. Please delete some saves.');
       }
       throw error;
     }
-  }
 
-  @HandleError()
-  private async saveCompressed(saveData: SaveData): Promise<SaveLoadResult> {
-    const compressed = await this.compressData(saveData);
-    const saveId = `${saveData.world.id}_${saveData.timestamp}`;
-    const storageKey = `${STORAGE_KEY_PREFIX}${saveId}`;
-
-    try {
-      this.getStorage().setItem(storageKey, compressed);
-      return { success: true, data: saveData };
-    } catch (error) {
-      if (error instanceof Error && error.name === 'QuotaExceededError') {
-        throw new Error('Storage quota exceeded. Please delete some saves.');
-      }
-      throw error;
+    // Timestamped slots would otherwise fill the storage quota; prune only after the new save landed.
+    const saveIds: string[] = [];
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
+      if (key?.startsWith(STORAGE_KEY_PREFIX)) saveIds.push(key.slice(STORAGE_KEY_PREFIX.length));
+    }
+    for (const expired of selectExpiredWorldSlots(saveIds, saveData.world.id, saveId, this.maxSlotsPerWorld)) {
+      storage.removeItem(`${STORAGE_KEY_PREFIX}${expired}`);
     }
   }
 
-  @Profile()
   private async compressData(data: SaveData): Promise<string> {
     const jsonStr = JSON.stringify(data);
     if (!canUseCompressionStream()) {
@@ -349,7 +326,6 @@ export class SaveLoadManager {
     return JSON.stringify(envelope);
   }
 
-  @Profile()
   private async decompressData(compressed: string): Promise<SaveData> {
     const bytes = base64ToBytes(compressed);
     const decompressed = await this.gunzipBytes(bytes);

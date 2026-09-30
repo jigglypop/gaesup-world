@@ -14,19 +14,14 @@ export class ManagedMotionEntity {
   private rigidBody: RapierRigidBody | null = null;
   private targetPosition: THREE.Vector3 | null = null;
   private isAutomated = false;
-  private isHandlingAutomation = false;
+  private isSteering = false;
   private unsubscribe: (() => void) | null = null;
   private latestSnapshot: MotionSnapshot | null = null;
   private tempDirection = new THREE.Vector3();
 
   constructor(id: string, motionType: MotionType, bridge?: MotionBridge | null) {
     this.id = id;
-    this.bridge =
-      bridge ??
-      (BridgeFactory.getOrCreate('motion') as MotionBridge | null) ??
-      (() => {
-        throw new Error(`[ManagedMotionEntity] MotionBridge not available for id: ${id}`);
-      })();
+    this.bridge = bridge ?? BridgeFactory.getOrCreateFor(MotionBridge);
     this.motionType = motionType;
   }
 
@@ -37,13 +32,13 @@ export class ManagedMotionEntity {
       if (snapshot) {
         this.latestSnapshot = snapshot;
       }
-      if (this.isAutomated && this.targetPosition && !this.isHandlingAutomation) {
-        this.isHandlingAutomation = true;
-        try {
-          this.handleAutomatedMovement(snapshot);
-        } finally {
-          this.isHandlingAutomation = false;
-        }
+      // Steering commands notify this listener again; only external updates may steer.
+      if (!this.isAutomated || !this.targetPosition || this.isSteering) return;
+      this.isSteering = true;
+      try {
+        this.handleAutomatedMovement(snapshot);
+      } finally {
+        this.isSteering = false;
       }
     });
   }

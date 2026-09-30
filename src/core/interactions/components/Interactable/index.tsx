@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useMemo, useRef } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 
 import * as THREE from 'three';
 
@@ -18,12 +18,16 @@ export type InteractableProps = {
   children?: React.ReactNode;
 };
 
+/** Defaults shared by every interaction target, so an NPC reacts at the same distance and key as a placed object. */
+export const DEFAULT_INTERACTION_RANGE = 2.2;
+export const DEFAULT_INTERACTION_KEY = 'e';
+
 export function Interactable({
   id,
   kind = 'misc',
   label,
-  range = 2.2,
-  activationKey = 'e',
+  range = DEFAULT_INTERACTION_RANGE,
+  activationKey = DEFAULT_INTERACTION_KEY,
   data,
   onActivate,
   position,
@@ -32,29 +36,31 @@ export function Interactable({
   const auto = useId();
   const realId = id ?? auto;
   const register = useInteractablesStore((s) => s.register);
-  const unregister = useInteractablesStore((s) => s.unregister);
   const updatePosition = useInteractablesStore((s) => s.updatePosition);
 
   const groupRef = useRef<THREE.Group>(null);
-  const posVec = useMemo(() => new THREE.Vector3(...position), [position]);
+  const positionRef = useRef(new THREE.Vector3());
+  const worldPositionRef = useRef(new THREE.Vector3());
+  const [x, y, z] = position;
+  positionRef.current.set(x, y, z);
 
   useEffect(() => {
-    register({
+    return register({
       id: realId,
       kind,
       label,
-      position: posVec.clone(),
+      position: positionRef.current.clone(),
+      getPosition: () => groupRef.current?.getWorldPosition(worldPositionRef.current) ?? positionRef.current,
       range,
       key: activationKey,
       ...(data ? { data } : {}),
       onActivate,
     });
-    return () => unregister(realId);
-  }, [realId, kind, label, range, activationKey, data, onActivate, register, unregister, posVec]);
+  }, [realId, kind, label, range, activationKey, data, onActivate, register]);
 
   useEffect(() => {
-    updatePosition(realId, posVec);
-  }, [realId, posVec, updatePosition]);
+    updatePosition(realId, positionRef.current);
+  }, [realId, x, y, z, updatePosition]);
 
   return (
     <group ref={groupRef} position={position}>

@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 import type { NavigationSystem } from '../../../navigation';
-import { applyRegisteredNavigationObstacles } from '../../../navigation';
+import { useNavigationObstacleRegistry } from '../../../navigation';
+import { useGaesupRuntime, useGaesupRuntimeRevision } from '../../../runtime/runtimeContext';
 import {
   applyBuildingNavigationObstacles,
   type BuildingNavigationObstacleOptions,
@@ -28,9 +29,13 @@ export function BuildingNavigationObstacleDriver({
   const tileGroups = useBuildingStore((state) => state.tileGroups);
   const blocks = useBuildingStore((state) => state.blocks);
   const objects = useBuildingStore((state) => state.objects);
+  const obstacles = useNavigationObstacleRegistry();
+  const obstacleRevision = useSyncExternalStore(obstacles.subscribe, obstacles.getRevision, obstacles.getRevision);
+  const runtime = useGaesupRuntime();
+  const runtimeRevision = useGaesupRuntimeRevision();
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || (runtime && !runtime.isActive())) return;
     applyBuildingNavigationObstacles(
       navigation,
       {
@@ -49,7 +54,7 @@ export function BuildingNavigationObstacleDriver({
         ...(wallPadding !== undefined ? { wallPadding } : {}),
       },
     );
-    applyRegisteredNavigationObstacles(navigation);
+    obstacles.applyRegisteredNavigationObstacles(navigation);
   }, [
     blocks,
     enabled,
@@ -64,6 +69,7 @@ export function BuildingNavigationObstacleDriver({
     tileGroups,
     wallGroups,
     wallPadding,
+    obstacles, obstacleRevision, runtime, runtimeRevision,
   ]);
 
   return null;

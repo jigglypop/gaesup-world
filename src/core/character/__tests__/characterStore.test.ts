@@ -28,8 +28,8 @@ describe('characterStore', () => {
     apply();
     const current = useCharacterStore.getState();
     expect(current.activeCharacterId).toBe('custom');
-    expect(current.appearance).toBe(current.characters.custom?.appearance);
-    expect(current.outfits).toBe(current.characters.custom?.outfits);
+    expect(current.appearance).toBe(current.characters['custom']?.appearance);
+    expect(current.outfits).toBe(current.characters['custom']?.outfits);
     expect(current.appearance.colors.body).toBe(DEFAULT_APPEARANCE.colors.body);
     expect(current.outfits.hat).toBe('custom-hat');
     current.hydrate({ version: 3, activeCharacterId: 'custom', characters: {} });

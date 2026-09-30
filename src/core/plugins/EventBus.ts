@@ -1,7 +1,20 @@
 import type { EventBus, EventHandler, EventUnsubscribe } from './types';
+import { reportError, type ErrorReporter } from '../utils/reportError';
+
+/** An `InMemoryEventBus` whose event names and payloads come from one event map. */
+export type TypedEventBus<Events extends Record<string, unknown>> = {
+  on<K extends keyof Events & string>(eventName: K, handler: EventHandler<Events[K]>): EventUnsubscribe;
+  once<K extends keyof Events & string>(eventName: K, handler: EventHandler<Events[K]>): EventUnsubscribe;
+  off<K extends keyof Events & string>(eventName: K, handler: EventHandler<Events[K]>): void;
+  emit<K extends keyof Events & string>(eventName: K, payload: Events[K]): void;
+  clear(eventName?: keyof Events & string): void;
+};
 
 export class InMemoryEventBus implements EventBus {
   private readonly handlers = new Map<string, Set<EventHandler>>();
+
+  /** `report` receives what a handler throws; a runtime's bus reports to that runtime. */
+  constructor(private readonly report: ErrorReporter = reportError) {}
 
   on<TPayload = unknown>(eventName: string, handler: EventHandler<TPayload>): EventUnsubscribe {
     const handlers = this.handlers.get(eventName) ?? new Set<EventHandler>();
@@ -27,12 +40,17 @@ export class InMemoryEventBus implements EventBus {
     }
   }
 
+  /** Each handler runs isolated: one that throws is reported and the rest still receive the event. */
   emit<TPayload = unknown>(eventName: string, payload: TPayload): void {
     const handlers = this.handlers.get(eventName);
     if (!handlers) return;
 
     for (const handler of Array.from(handlers)) {
-      (handler as EventHandler<TPayload>)(payload);
+      try {
+        (handler as EventHandler<TPayload>)(payload);
+      } catch (error) {
+        this.report(error, { source: 'event-bus', label: eventName });
+      }
     }
   }
 

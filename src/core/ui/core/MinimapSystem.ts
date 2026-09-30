@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-import { RegisterSystem, ManageRuntime } from '@/core/boilerplate/decorators';
 import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
 import { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
 import { BaseState, BaseMetrics } from '@/core/boilerplate/types';
@@ -47,8 +46,6 @@ type TileGroupLike = {
   tiles?: TileLike[];
 };
 
-@RegisterSystem('minimap')
-@ManageRuntime({ autoStart: false })
 export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSystemMetrics> {
   private static instance: MinimapSystem | null = null;
   private lastScale: number | null = null;
@@ -316,6 +313,10 @@ export class MinimapSystem extends AbstractSystem<MinimapSystemState, MinimapSys
             ctx.fillStyle = 'rgba(210, 180, 120, 0.45)';
           } else if (tile.objectType === 'snowfield') {
             ctx.fillStyle = 'rgba(225, 240, 255, 0.5)';
+          } else if (tile.objectType === 'dirt') {
+            ctx.fillStyle = 'rgba(205, 170, 120, 0.45)';
+          } else if (tile.objectType === 'farm') {
+            ctx.fillStyle = 'rgba(125, 90, 55, 0.55)';
           } else {
             ctx.fillStyle = 'rgba(150, 150, 150, 0.3)';
           }

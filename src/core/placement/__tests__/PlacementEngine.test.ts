@@ -1,4 +1,5 @@
 import { SquareGridAdapter } from '../../grid';
+import type { CellCoord } from '../../grid';
 import {
   createNoOverlapRule,
   createPlacementEngine,
@@ -6,7 +7,7 @@ import {
   PlacementRejectedError,
   placementRejected,
 } from '../index';
-import type { CellCoord, PlacementRule, PlacementSubject } from '../index';
+import type { PlacementRule, PlacementSubject } from '../index';
 
 const subject = (id: string, type = 'furniture'): PlacementSubject => ({ id, type });
 const coord = (x: number, z: number, level = 0): CellCoord => ({ x, z, level });

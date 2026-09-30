@@ -1,20 +1,18 @@
 import type { AssetRecord } from '../../../../assets';
-import { createBuildingScopeId } from '../../../../building/id';
 import type { MeshConfig } from '../../../../building/types';
 import type {
   NPCBrainBlueprint,
   NPCBrainBlueprintNode,
   NPCBehaviorConfig,
 } from '../../../../npc/types';
+import { createUniqueId } from '../../../../utils/id';
 
 const NPC_BRAIN_LABELS: Readonly<Record<string, string>> = {
   none: '사용 안 함', scripted: '스크립트', llm: '언어 모델', reinforcement: '강화 학습',
   idle: '대기', moveTo: '지점 이동', patrol: '순찰', wander: '배회', playAnimation: '애니메이션 재생',
   moving: '이동 중', arrived: '도착', walk: '걷기', run: '달리기', jump: '점프', greet: '인사',
   lookAt: '바라보기', speak: '말하기', interact: '상호작용', remember: '기억 저장', moveToTarget: '대상 이동',
-  always: '항상', navigationIdle: '이동 대기 중', perceivedAny: '대상 감지', questStatus: '퀘스트 상태',
-  friendshipAtLeast: '최소 친밀도', memoryEquals: '기억 값 일치',
-  locked: '잠김', available: '시작 가능', active: '진행 중', completed: '완료', failed: '실패',
+  always: '항상', navigationIdle: '이동 대기 중', perceivedAny: '대상 감지', perceivedEntered: '새 대상 감지', memoryEquals: '기억 값 일치',
   point: '지점', self: '자신', nearestPerceived: '가장 가까운 감지 대상',
   next: '다음', true: '참', false: '거짓',
 };
@@ -26,7 +24,16 @@ export function getNPCBrainLabel(value: string): string {
 export const isBuildingMaterialAsset = (asset: AssetRecord) =>
   asset.kind === 'material' || asset.kind === 'wall' || asset.kind === 'tile';
 
-export const createPlacementAssetScopeId = createBuildingScopeId;
+/**
+ * An id derived from the mesh's content: picking the same look again names the same mesh, so it adds no mesh,
+ * material or batch, while a different look never rewrites a mesh that placed tiles already use.
+ */
+export function lookMeshId(scope: string, look: MeshConfig): string {
+  const text = JSON.stringify({ ...look, id: '' });
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index++) hash = Math.imul(hash ^ text.charCodeAt(index), 0x01000193);
+  return `${scope}-${(hash >>> 0).toString(36)}`;
+}
 
 export function createScopedColorMeshConfig(id: string, color: string, base?: MeshConfig): MeshConfig {
   const { mapTextureUrl: _mapTextureUrl, textureUrl: _textureUrl, materialParams, ...baseWithoutTexture } = base ?? {};
@@ -44,29 +51,9 @@ export function createScopedColorMeshConfig(id: string, color: string, base?: Me
   };
 }
 
-export function createNPCBlueprintNodeId(type: string): string {
-  return `${type}-${Date.now()}`;
-}
-
-export function createNPCConditionNode(kind: 'navigationIdle' | 'questStatus' | 'friendshipAtLeast'): NPCBrainBlueprintNode {
-  if (kind === 'questStatus') {
-    return {
-      id: createNPCBlueprintNodeId('condition-quest'),
-      type: 'condition',
-      label: '퀘스트 진행 중',
-      condition: { type: 'questStatus', questId: 'welcome', status: 'active' },
-    };
-  }
-  if (kind === 'friendshipAtLeast') {
-    return {
-      id: createNPCBlueprintNodeId('condition-friendship'),
-      type: 'condition',
-      label: '친밀도 조건',
-      condition: { type: 'friendshipAtLeast', score: 150 },
-    };
-  }
+export function createNPCConditionNode(): NPCBrainBlueprintNode {
   return {
-    id: createNPCBlueprintNodeId('condition-idle'),
+    id: createUniqueId('condition-idle'),
     type: 'condition',
     label: '이동 대기',
     condition: { type: 'navigationIdle' },
@@ -79,14 +66,14 @@ export function createNPCActionNode(
 ): NPCBrainBlueprintNode {
   if (kind === 'speak') {
     return {
-      id: createNPCBlueprintNodeId('speak'),
+      id: createUniqueId('speak'),
       type: 'action',
       label: '말하기',
       action: { type: 'speak', text: '안녕?', duration: 2 },
     };
   }
   return {
-    id: createNPCBlueprintNodeId('wander'),
+    id: createUniqueId('wander'),
     type: 'action',
     label: '배회',
     action: {
@@ -106,15 +93,7 @@ export function getNPCBlueprintNodeTitle(node: NPCBrainBlueprintNode): string {
 
 export function getNPCBlueprintNodeDescription(node: NPCBrainBlueprintNode): string {
   if (node.type === 'start') return '블루프린트 실행 시작점';
-  if (node.type === 'condition') {
-    if (node.condition.type === 'questStatus') {
-      return `퀘스트 ${node.condition.questId}: ${getNPCBrainLabel(node.condition.status)}`;
-    }
-    if (node.condition.type === 'friendshipAtLeast') {
-      return `친밀도 ${node.condition.score} 이상`;
-    }
-    return getNPCBrainLabel(node.condition.type);
-  }
+  if (node.type === 'condition') return getNPCBrainLabel(node.condition.type);
   if (node.action.type === 'moveToTarget') return `${getNPCBrainLabel(node.action.target.type)} 이동`;
   if (node.action.type === 'speak') return node.action.text;
   if (node.action.type === 'playAnimation') return node.action.animationId;
@@ -213,7 +192,7 @@ export function cloneNPCBlueprintForInstance(
 ): NPCBrainBlueprint {
   return {
     ...blueprint,
-    id: `npc-custom-${instanceId}-${Date.now()}`,
+    id: createUniqueId(`npc-custom-${instanceId}`),
     name: `${blueprint.name} 사본`,
     description: blueprint.description ? `${blueprint.description} ${instanceId} 전용 사본.` : `${instanceId} 전용 사본.`,
     nodes: blueprint.nodes.map((node) => ({ ...node })),

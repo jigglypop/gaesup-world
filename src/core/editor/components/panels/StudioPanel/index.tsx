@@ -12,12 +12,13 @@ import {
   createAgentBehaviorBlueprintFromNPCBehaviorBlueprint,
   createNPCBehaviorBlueprintFromInstance,
   useNPCStore,
+  useNPCStoreApi,
   type AgentBehaviorBlueprint,
   type NPCBehaviorBlueprint,
 } from '../../../../npc';
 import { useGaesupRuntime } from '../../../../runtime';
-import { getSaveSystem, isAutoSaveSuspended } from '../../../../save';
-import { logger } from '../../../../utils/logger';
+import { getSaveSystem } from '../../../../save';
+import { reportError } from '../../../../utils/reportError';
 import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
 
@@ -89,22 +90,8 @@ export function StudioPanel({
     () => assetIds.map((id) => assetRecords[id]).filter((asset): asset is NonNullable<typeof asset> => Boolean(asset)),
     [assetIds, assetRecords],
   );
-  const npcInstances = useNPCStore((state) => state.instances);
-  const npcBehaviorBlueprints = useMemo(
-    () => Array.from(npcInstances.values()).map((instance) =>
-      createNPCBehaviorBlueprintFromInstance(instance, { id: `npc-behavior-${instance.id}` }),
-    ),
-    [npcInstances],
-  );
-  const agentBehaviorBlueprints = useMemo(
-    () => npcBehaviorBlueprints.map((blueprint) =>
-      createAgentBehaviorBlueprintFromNPCBehaviorBlueprint(blueprint, {
-        id: `agent-behavior-${blueprint.id}`,
-        ownerType: 'npc',
-      }),
-    ),
-    [npcBehaviorBlueprints],
-  );
+  const npcStore = useNPCStoreApi();
+  const npcCount = useNPCStore((state) => state.instances.size);
 
   const [slot, setSlot] = useState(defaultSlot);
   const [bundleId, setBundleId] = useState(defaultBundleId);
@@ -124,7 +111,7 @@ export function StudioPanel({
     try {
       await task();
     } catch (error: unknown) {
-      logger.error('Studio operation failed', error instanceof Error ? error : String(error));
+      reportError(error, { source: 'editor:studio', label });
       setStatus({ kind: 'error', message: `${label}에 실패했습니다. 다시 시도해 주세요.` });
     } finally {
       pending.current = false;
@@ -133,6 +120,14 @@ export function StudioPanel({
   };
 
   const buildBundle = useCallback((): ContentBundle => {
+    // Converted on demand: NPC decision ticks must not rebuild every blueprint while the panel is open.
+    const npcBehaviorBlueprints = Array.from(npcStore.getState().instances.values(), (instance) =>
+      createNPCBehaviorBlueprintFromInstance(instance, { id: `npc-behavior-${instance.id}` }));
+    const agentBehaviorBlueprints = npcBehaviorBlueprints.map((blueprint) =>
+      createAgentBehaviorBlueprintFromNPCBehaviorBlueprint(blueprint, {
+        id: `agent-behavior-${blueprint.id}`,
+        ownerType: 'npc',
+      }));
     const context: StudioPanelBundleContext = {
       assets,
       bundleId,
@@ -152,13 +147,12 @@ export function StudioPanel({
       agentBehaviorBlueprints,
     });
   }, [
-    agentBehaviorBlueprints,
     assets,
     buildBundleProp,
     bundleId,
     bundleName,
     gameplayEvents,
-    npcBehaviorBlueprints,
+    npcStore,
     saveSystem,
     version,
   ]);
@@ -170,10 +164,6 @@ export function StudioPanel({
   }, [saveSystem]);
 
   const saveWorld = useCallback(async () => {
-    if (isAutoSaveSuspended()) {
-      setStatus({ kind: 'error', message: '다른 월드를 방문하는 동안에는 저장할 수 없습니다.' });
-      return;
-    }
     if (onSaveWorld) {
       await onSaveWorld(slot);
     } else {
@@ -183,7 +173,7 @@ export function StudioPanel({
     try {
       setSlots(await saveSystem.list());
     } catch (error: unknown) {
-      logger.error('Saved world but could not refresh slots', error instanceof Error ? error : String(error));
+      reportError(error, { source: 'editor:studio', label: 'refresh slots' });
       setStatus({ kind: 'error', message: `슬롯 "${slot}"에 저장했지만 목록을 갱신하지 못했습니다.` });
     }
   }, [onSaveWorld, saveSystem, slot]);
@@ -276,7 +266,7 @@ export function StudioPanel({
           </div>
         )}
         <div className="studio-panel__meta">
-          에셋 {assets.length}개 · 이벤트 {gameplayEvents.length}개 · NPC 행동 {npcBehaviorBlueprints.length}개 · 에이전트 행동 {agentBehaviorBlueprints.length}개 · 저장 도메인 {Array.from(saveSystem.getBindings()).length}개
+          에셋 {assets.length}개 · 이벤트 {gameplayEvents.length}개 · NPC 행동 {npcCount}개 · 에이전트 행동 {npcCount}개 · 저장 도메인 {Array.from(saveSystem.getBindings()).length}개
         </div>
         <div className="studio-panel__actions">
           <button type="button" disabled={busy} onClick={() => { void runTask('번들 검증', validateWorld); }}>번들 검증</button>

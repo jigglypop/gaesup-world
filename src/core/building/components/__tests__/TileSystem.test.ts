@@ -1,5 +1,5 @@
-import { buildWaterPatches } from '../TileSystem/waterPatches';
 import type { TileConfig } from '../../types';
+import { buildWaterPatches } from '../TileSystem/waterPatches';
 
 describe('TileSystem water patches', () => {
   test('인접한 물 타일을 하나의 패치로 병합하고 외곽 해안만 표시한다', () => {

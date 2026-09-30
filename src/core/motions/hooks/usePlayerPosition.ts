@@ -1,20 +1,74 @@
 import { useRef, useState, useEffect } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { BridgeFactory } from '@core/boilerplate';
+import { AFTER_MOTION_FRAME_ORDER, useCanvasFrameScheduler, useEngineFrame, type FrameScheduler } from '@core/runtime/frame';
 
 import { useStateSystem } from './useStateSystem';
+import { useWorldMotionBridge } from './useWorldMotionBridge';
 import { MotionBridge } from '../bridge/MotionBridge';
 
-export type UsePlayerPositionOptions = {
+const POSITION_CHANGE_EPSILON_SQ = 0.000001;
+const ROTATION_CHANGE_EPSILON = 0.0001;
+
+type MotionSnapshotRead = ReturnType<MotionBridge['snapshot']>;
+type SharedSnapshotRead = { scheduler: FrameScheduler; frame: number; entityId: string; snapshot: MotionSnapshotRead };
+
+// Every consumer polls in the same frame phase; one bridge read per frame also avoids repeated body syncs.
+const sharedReads = new WeakMap<MotionBridge, SharedSnapshotRead>();
+
+function readFrameSnapshot(bridge: MotionBridge, entityId: string, scheduler: FrameScheduler): MotionSnapshotRead {
+  const frame = scheduler.getFrame();
+  const shared = sharedReads.get(bridge);
+  if (shared && shared.scheduler === scheduler && shared.frame === frame && shared.entityId === entityId) return shared.snapshot;
+  const snapshot = bridge.snapshot(entityId);
+  if (!shared) {
+    sharedReads.set(bridge, { scheduler, frame, entityId, snapshot });
+    return snapshot;
+  }
+  shared.scheduler = scheduler;
+  shared.frame = frame;
+  shared.entityId = entityId;
+  shared.snapshot = snapshot;
+  return snapshot;
+}
+
+type ObservedPlayerState = { x: number; y: number; z: number; rx: number; ry: number; rz: number; moving: boolean; grounded: boolean };
+
+const createObservedPlayerState = (): ObservedPlayerState => ({ x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0, moving: false, grounded: false });
+
+/** Reactive consumers re-render only when position, facing, or movement flags actually change. */
+function consumeObservableChange(last: ObservedPlayerState, next: UsePlayerPositionResult): boolean {
+  const { position, rotation } = next;
+  const dx = position.x - last.x;
+  const dy = position.y - last.y;
+  const dz = position.z - last.z;
+  if (
+    dx * dx + dy * dy + dz * dz <= POSITION_CHANGE_EPSILON_SQ
+    && Math.abs(rotation.x - last.rx) <= ROTATION_CHANGE_EPSILON
+    && Math.abs(rotation.y - last.ry) <= ROTATION_CHANGE_EPSILON
+    && Math.abs(rotation.z - last.rz) <= ROTATION_CHANGE_EPSILON
+    && next.isMoving === last.moving
+    && next.isGrounded === last.grounded
+  ) return false;
+  last.x = position.x;
+  last.y = position.y;
+  last.z = position.z;
+  last.rx = rotation.x;
+  last.ry = rotation.y;
+  last.rz = rotation.z;
+  last.moving = next.isMoving;
+  last.grounded = next.isGrounded;
+  return true;
+}
+
+export interface UsePlayerPositionOptions {
   updateInterval?: number; // milliseconds, 0 means every frame
   entityId?: string; // Entity ID to track
   reactive?: boolean; // false: update vectors in place without triggering React re-renders
-};
+}
 
-export type UsePlayerPositionResult = {
+export interface UsePlayerPositionResult {
   position: THREE.Vector3;
   velocity: THREE.Vector3;
   rotation: THREE.Euler;
@@ -22,7 +76,7 @@ export type UsePlayerPositionResult = {
   isGrounded: boolean;
   speed: number;
   height: number; // Character height from bounding box
-};
+}
 
 const createDefaultResult = (): UsePlayerPositionResult => ({
   position: new THREE.Vector3(0, 0, 0),
@@ -38,6 +92,7 @@ export function usePlayerPosition(
   options: UsePlayerPositionOptions = {},
 ): UsePlayerPositionResult {
   const { updateInterval = 0, entityId, reactive = true } = options;
+  const worldMotionBridge = useWorldMotionBridge();
 
   // Keep stable references for consumers; update vectors in-place.
   const resultRef = useRef<UsePlayerPositionResult | null>(null);
@@ -48,17 +103,23 @@ export function usePlayerPosition(
   const [, forceUpdate] = useState(0);
   const lastUpdateRef = useRef<number>(0);
   const lastBridgeEventRef = useRef<number>(0);
-  const lastPositionSnapshot = useRef({ x: 0, y: 0, z: 0 });
+  const lastObserved = useRef<ObservedPlayerState>(createObservedPlayerState());
   const bridgeRef = useRef<MotionBridge | null>(null);
+  const scheduler = useCanvasFrameScheduler();
   const { activeState, gameStates } = useStateSystem();
 
   const getTargetEntityId = (bridge: MotionBridge): string | undefined => {
     if (entityId) return entityId;
     return bridge.getPlayerEntityId() ?? undefined;
   };
+  // The player's body keeps its rotation locked; the facing the controls turn lives in the active state.
+  const copyRotation = (bridge: MotionBridge, targetEntityId: string, rotation: THREE.Euler): void => {
+    const facing = targetEntityId === bridge.getPlayerEntityId() ? activeState?.euler : undefined;
+    resultRef.current!.rotation.copy(facing ?? rotation);
+  };
 
   useEffect(() => {
-    bridgeRef.current = BridgeFactory.getOrCreate('motion') as MotionBridge | null;
+    bridgeRef.current = worldMotionBridge;
     const bridge = bridgeRef.current;
     if (!bridge) return undefined;
 
@@ -75,56 +136,45 @@ export function usePlayerPosition(
       const result = resultRef.current!;
       result.position.copy(snapshot.position);
       result.velocity.copy(snapshot.velocity);
-      result.rotation.copy(snapshot.rotation);
+      copyRotation(bridge, targetEntityId, snapshot.rotation);
       result.isMoving = snapshot.isMoving;
       result.isGrounded = snapshot.isGrounded;
       result.speed = snapshot.speed;
       result.height = 2.0;
 
-      if (reactive) forceUpdate((v) => v + 1);
+      if (reactive && consumeObservableChange(lastObserved.current, result)) forceUpdate((v) => v + 1);
     });
 
     return () => {
       unsubscribe();
     };
-  }, [entityId, updateInterval, reactive]);
+  }, [entityId, updateInterval, reactive, worldMotionBridge]);
 
   // Fallback polling path (keeps position updating even when no bridge events are emitted).
-  useFrame(() => {
+  useEngineFrame('postPhysics', () => {
     const now = performance.now();
     if (updateInterval > 0 && now - lastUpdateRef.current < updateInterval) return;
 
     const result = resultRef.current!;
     const bridge = bridgeRef.current;
 
-    // Only trigger React re-render when position actually changed (threshold: 0.001).
-    const posChanged = (p: THREE.Vector3) => {
-      const s = lastPositionSnapshot.current;
-      const dx = p.x - s.x, dy = p.y - s.y, dz = p.z - s.z;
-      if (dx * dx + dy * dy + dz * dz > 0.000001) {
-        s.x = p.x; s.y = p.y; s.z = p.z;
-        return true;
-      }
-      return false;
-    };
-
     if (bridge) {
       const targetEntityId = getTargetEntityId(bridge);
 
       const recentBridgeEvent = now - lastBridgeEventRef.current < 16;
       if (!recentBridgeEvent && targetEntityId) {
-        const snapshot = bridge.snapshot(targetEntityId);
+        const snapshot = readFrameSnapshot(bridge, targetEntityId, scheduler);
         if (snapshot) {
           result.position.copy(snapshot.position);
           result.velocity.copy(snapshot.velocity);
-          result.rotation.copy(snapshot.rotation);
+          copyRotation(bridge, targetEntityId, snapshot.rotation);
           result.isMoving = snapshot.isMoving;
           result.isGrounded = snapshot.isGrounded;
           result.speed = snapshot.speed;
           result.height = 2.0;
 
           lastUpdateRef.current = now;
-          if (reactive && posChanged(result.position)) forceUpdate((v) => v + 1);
+          if (reactive && consumeObservableChange(lastObserved.current, result)) forceUpdate((v) => v + 1);
           return;
         }
       }
@@ -148,9 +198,9 @@ export function usePlayerPosition(
       result.height = 2.0;
 
       lastUpdateRef.current = now;
-      if (reactive && posChanged(result.position)) forceUpdate((v) => v + 1);
+      if (reactive && consumeObservableChange(lastObserved.current, result)) forceUpdate((v) => v + 1);
     }
-  });
+  }, { order: AFTER_MOTION_FRAME_ORDER, label: 'motions:player-position' });
 
   return resultRef.current;
 }

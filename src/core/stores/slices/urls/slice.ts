@@ -6,7 +6,6 @@ const initialUrlsState: UrlsState = {
   characterUrl: '',
   vehicleUrl: '',
   airplaneUrl: '',
-  wheelUrl: '',
   ridingUrl: '',
 };
 

@@ -1,0 +1,37 @@
+name: Deploy minihome demo
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: minihome-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --global corepack
+      - run: corepack pnpm install --frozen-lockfile --ignore-scripts
+      - run: corepack pnpm run typecheck
+      - run: corepack pnpm run build:demo
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: demo-dist
+      - id: pages
+        uses: actions/deploy-pages@v4

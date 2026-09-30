@@ -1,0 +1,78 @@
+/* Loaded by the entry, before the example chunk: the font, the page wash and the loading screen. */
+@font-face {
+  font-family: 'Gaesup Sans';
+  src: url('/fonts/GaesupSansVariable.woff2') format('woff2');
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --mh-font: 'Gaesup Sans', 'Pretendard', -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  --mh-bg: #f3f0fa;
+  --mh-text: #2a2440;
+  --mh-muted: #7c7494;
+  font-family: var(--mh-font);
+  color: var(--mh-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+html, body, #root { height: 100%; margin: 0; }
+html { background: var(--mh-bg); }
+body { background: transparent; font-size: 14px; line-height: 1.45; letter-spacing: -0.01em; }
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(70vmax 45vmax at 6% -8%, rgba(200, 186, 255, 0.55), transparent 62%),
+    radial-gradient(60vmax 40vmax at 100% 4%, rgba(255, 200, 228, 0.42), transparent 58%),
+    radial-gradient(70vmax 50vmax at 60% 112%, rgba(247, 219, 176, 0.5), transparent 62%),
+    var(--mh-bg);
+}
+button, input, textarea, select { font: inherit; color: inherit; letter-spacing: inherit; }
+
+.gw-loading {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+.gw-loading-card {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 36px 44px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 18px 48px rgba(35, 26, 54, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(20px) saturate(1.45);
+}
+.gw-loading-island { font-size: 44px; animation: gw-bob 2.4s ease-in-out infinite; }
+.gw-loading-card b { font-size: 18px; font-weight: 750; }
+.gw-loading-card small { color: var(--mh-muted); font-size: 13px; }
+.gw-loading-bar {
+  width: 180px;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(118, 104, 170, 0.14);
+}
+.gw-loading-bar::after {
+  content: '';
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff9a76, #b18cff);
+  animation: gw-slide 1.3s ease-in-out infinite;
+}
+@keyframes gw-bob { 50% { transform: translateY(-6px) rotate(-4deg); } }
+@keyframes gw-slide { 0% { transform: translateX(-110%); } 100% { transform: translateX(260%); } }
+@media (prefers-reduced-motion: reduce) {
+  .gw-loading-island, .gw-loading-bar::after { animation: none; }
+}

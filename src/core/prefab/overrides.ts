@@ -1,3 +1,4 @@
+import { collectPrefabSubtreeIds } from './core';
 import { instantiatePrefabObjects } from './instantiate';
 import type {
   ComputePrefabOverridesOptions,
@@ -17,10 +18,9 @@ import type {
   SceneObjectId,
   SceneVector3,
 } from '../scene-object/types';
+import { createUniqueId } from '../utils/id';
 
 type IdMapper = (sourceId: string) => string;
-
-let prefabLinkCounter = 0;
 
 const TRANSFORM_PATHS: Array<{ path: PrefabPropertyPath; key: 'position' | 'rotation' | 'scale' }> = [
   { path: 'transform.position', key: 'position' },
@@ -64,7 +64,7 @@ export function createPrefabInstance(
   prefab: PrefabDocument,
   options: InstantiatePrefabOptions = {},
 ): PrefabInstanceResult {
-  const idPrefix = options.idPrefix ?? `${prefab.id}-instance-${++prefabLinkCounter}`;
+  const idPrefix = options.idPrefix ?? createUniqueId(`${prefab.id}-instance`);
   const link: PrefabInstanceLink = { prefabId: prefab.id, idPrefix };
   const mapId = prefixMapper(idPrefix);
   const rootIds = new Set(prefab.rootObjectIds.map(mapId));
@@ -210,17 +210,7 @@ function applyOverridesToObjects(
         if (!result.some((object) => object.id === override.object.id)) result = [...result, cloneJson(override.object)];
         break;
       case 'removedObject': {
-        const removed = new Set([mapId(override.objectId)]);
-        let changed = true;
-        while (changed) {
-          changed = false;
-          for (const object of result) {
-            if (object.parentId !== undefined && removed.has(object.parentId) && !removed.has(object.id)) {
-              removed.add(object.id);
-              changed = true;
-            }
-          }
-        }
+        const removed = collectPrefabSubtreeIds(result, [mapId(override.objectId)]);
         result = result.filter((object) => !removed.has(object.id));
         break;
       }

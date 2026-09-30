@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { useGaesupStore } from '../stores/gaesupStore';
+import { useGaesupStore, type GaesupStore } from '../stores/gaesupStore';
 import type { CameraOptionType } from './core/types';
 
 export type CameraCloseUpTarget =
@@ -16,20 +16,16 @@ export type CameraCloseUpOptions = {
   rememberPrevious?: boolean;
 };
 
-let previousCameraOption: CameraOptionType | null = null;
+const previousCameraOptions = new WeakMap<GaesupStore, CameraOptionType>();
 
-function cloneCameraOption(option: CameraOptionType): CameraOptionType {
+export function cloneCameraOption(option: CameraOptionType): CameraOptionType {
   return {
     ...option,
     ...(option.offset ? { offset: option.offset.clone() } : {}),
-    ...(option.target ? { target: option.target.clone() } : {}),
-    ...(option.position ? { position: option.position.clone() } : {}),
     ...(option.focusTarget ? { focusTarget: option.focusTarget.clone() } : {}),
     ...(option.fixedPosition ? { fixedPosition: option.fixedPosition.clone() } : {}),
-    ...(option.rotation ? { rotation: option.rotation.clone() } : {}),
     ...(option.smoothing ? { smoothing: { ...option.smoothing } } : {}),
     ...(option.bounds ? { bounds: { ...option.bounds } } : {}),
-    ...(option.modeSettings ? { modeSettings: { ...option.modeSettings } } : {}),
   };
 }
 
@@ -57,24 +53,26 @@ export function createCameraCloseUpPreset(
 export function requestCameraCloseUp(
   target: CameraCloseUpTarget,
   options: CameraCloseUpOptions = {},
+  storeApi: GaesupStore = useGaesupStore,
 ): () => void {
-  const store = useGaesupStore.getState();
-  if (options.rememberPrevious !== false && !previousCameraOption) {
-    previousCameraOption = cloneCameraOption(store.cameraOption);
+  const store = storeApi.getState();
+  if (options.rememberPrevious !== false && !previousCameraOptions.has(storeApi)) {
+    previousCameraOptions.set(storeApi, cloneCameraOption(store.cameraOption));
   }
 
   store.setCameraOption(createCameraCloseUpPreset(target, options));
-  return restoreCameraCloseUp;
+  return () => restoreCameraCloseUp(storeApi);
 }
 
-export function restoreCameraCloseUp(): void {
-  const store = useGaesupStore.getState();
+export function restoreCameraCloseUp(storeApi: GaesupStore = useGaesupStore): void {
+  const store = storeApi.getState();
+  const previousCameraOption = previousCameraOptions.get(storeApi);
   if (previousCameraOption) {
     store.replaceCameraOption({
       ...cloneCameraOption(previousCameraOption),
       focus: false,
     });
-    previousCameraOption = null;
+    previousCameraOptions.delete(storeApi);
     return;
   }
 

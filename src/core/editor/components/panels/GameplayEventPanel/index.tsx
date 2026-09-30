@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   GAMEPLAY_EVENT_ACTION_TYPES,
@@ -10,7 +10,7 @@ import {
   createGameplayEventConditionTemplate,
   createGameplayEventTriggerTemplate,
   createManualToastEventBlueprint,
-  createNpcTalkStartsQuestEventBlueprint,
+  createNpcTalkEventBlueprint,
   type GameplayEventActionType,
   type GameplayEventBlueprint,
   type GameplayEventConditionType,
@@ -19,6 +19,7 @@ import {
   type GameplayEventCondition,
   type GameplayTriggerEvent,
 } from '../../../../gameplay';
+import { useGaesupRuntime } from '../../../../runtime/runtimeContext';
 import { logger } from '../../../../utils/logger';
 import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
@@ -40,21 +41,14 @@ const TRIGGER_LABEL: Record<GameplayEventTriggerType, string> = {
   manual: '수동',
   interaction: '상호작용',
   enterArea: '영역 진입',
-  itemCollected: '아이템 획득',
   timeChanged: '시간 변경',
-  calendarEventStarted: '캘린더 이벤트',
-  questChanged: '퀘스트 변경',
   custom: '커스텀',
 };
 
 const TOAST_KIND_LABELS: Record<NonNullable<Extract<GameplayEventAction, { type: 'toast' }>['kind']>, string> = {
   info: '안내', success: '성공', warn: '주의', error: '오류', reward: '보상', mail: '우편',
 };
-const QUEST_STATUS_LABELS: Record<Extract<GameplayEventCondition, { type: 'questStatus' }>['status'], string> = {
-  locked: '잠김', available: '시작 가능', active: '진행 중', completed: '완료', failed: '실패',
-};
 const FIELD_LABELS: Record<string, string> = {
-  count: '수량',
   dialogTreeId: '대화 ID',
   npcId: 'NPC ID',
   kind: '알림 종류',
@@ -71,11 +65,7 @@ const FIELD_LABELS: Record<string, string> = {
   targetId: '대상 ID',
   action: '액션',
   areaId: '영역 ID',
-  itemId: '아이템 ID',
   hour: '시간',
-  eventId: '이벤트 ID',
-  questId: '퀘스트 ID',
-  status: '상태',
   operator: '연산자',
   value: '값',
   message: '메시지',
@@ -84,18 +74,15 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const CONDITION_LABEL: Record<GameplayEventConditionType, string> = {
-  always: '항상', hasItem: '아이템 보유', questStatus: '퀘스트 상태',
-  eventActive: '이벤트 진행 중', flagEquals: '상태 값 일치', custom: '사용자 정의',
+  always: '항상', flagEquals: '상태 값 일치', custom: '사용자 정의',
 };
 const ACTION_LABEL: Record<GameplayEventActionType, string> = {
-  giveItem: '아이템 지급', removeItem: '아이템 회수', startQuest: '퀘스트 시작',
-  completeQuest: '퀘스트 완료', showDialog: '대화 표시', toast: '알림 표시',
-  setFlag: '상태 값 설정', notifyQuestFlag: '퀘스트에 상태 알림',
-  emit: '이벤트 발생', custom: '사용자 정의',
+  showDialog: '대화 표시', toast: '알림 표시', setFlag: '상태 값 설정', emit: '이벤트 발생', custom: '사용자 정의',
 };
 const TYPE_LABELS: Record<string, string> = { ...TRIGGER_LABEL, ...CONDITION_LABEL, ...ACTION_LABEL };
 
-const RESERVED_SHORTCUT_KEYS = new Set(['i', 'j', 'm', 'k', 'o', 'c', 'f', 'e', 't']);
+// Keys the world binds itself: E interacts, F mounts a rideable.
+const RESERVED_SHORTCUT_KEYS = new Set(['e', 'f']);
 
 const isReservedShortcutKey = (value: string): boolean => {
   const normalized = value.trim().toLowerCase();
@@ -115,18 +102,8 @@ const triggerToEvent = (blueprint: GameplayEventBlueprint): GameplayTriggerEvent
       };
     case 'enterArea':
       return { type: 'enterArea', areaId: trigger.areaId };
-    case 'itemCollected':
-      return { type: 'itemCollected', itemId: trigger.itemId };
     case 'timeChanged':
       return { type: 'timeChanged', ...(trigger.hour !== undefined ? { hour: trigger.hour } : {}) };
-    case 'calendarEventStarted':
-      return { type: 'calendarEventStarted', eventId: trigger.eventId };
-    case 'questChanged':
-      return {
-        type: 'questChanged',
-        questId: trigger.questId,
-        ...(trigger.status ? { status: trigger.status } : {}),
-      };
     case 'custom':
       return { type: 'custom', key: trigger.key };
     default: {
@@ -155,7 +132,9 @@ export function GameplayEventPanel({
   style,
   children,
 }: GameplayEventPanelProps) {
-  const [fallbackEngine] = useState(() => new GameplayEventEngine());
+  const runtime = useGaesupRuntime();
+  // Test runs only preview against this engine, so a world's live events, state and rewards stay untouched.
+  const eventEngine = useMemo(() => runtime?.gameplayEvents ?? new GameplayEventEngine(), [runtime]);
   const [id, setId] = useState('manual-event');
   const [name, setName] = useState('수동 이벤트');
   const [triggerKey, setTriggerKey] = useState('manual.event');
@@ -172,7 +151,7 @@ export function GameplayEventPanel({
 
   const createBlueprint = () => {
     if (isReservedShortcutKey(triggerKey)) {
-      setStatus({ kind: 'error', message: `트리거 키 "${triggerKey}" 는 HUD 단축키로 예약되어 있습니다.` });
+      setStatus({ kind: 'error', message: `트리거 키 "${triggerKey}" 는 월드 단축키로 예약되어 있습니다.` });
       return;
     }
     const next = createManualToastEventBlueprint({ id, name, triggerKey, message });
@@ -182,17 +161,17 @@ export function GameplayEventPanel({
     setStatus({ kind: 'success', message: `이벤트를 생성했습니다: ${next.id}` });
   };
 
-  const createNpcQuestPreset = () => {
+  const createNpcTalkPreset = () => {
     const trimmedId = id.trim();
     const trimmedName = name.trim();
-    const next = createNpcTalkStartsQuestEventBlueprint({
-      ...(trimmedId ? { id: `${trimmedId}-npc-quest` } : {}),
-      ...(trimmedName ? { name: `${trimmedName} NPC 퀘스트` } : {}),
+    const next = createNpcTalkEventBlueprint({
+      ...(trimmedId ? { id: `${trimmedId}-npc-talk` } : {}),
+      ...(trimmedName ? { name: `${trimmedName} NPC 대화` } : {}),
     });
     onCreate?.(next);
     setSelectedId(next.id);
     setShowInspector(true);
-    setStatus({ kind: 'success', message: `NPC 퀘스트 프리셋을 추가했습니다: ${next.id}` });
+    setStatus({ kind: 'success', message: `NPC 대화 프리셋을 추가했습니다: ${next.id}` });
   };
 
   const updateSelected = useCallback((patch: Partial<GameplayEventBlueprint>) => {
@@ -222,18 +201,18 @@ export function GameplayEventPanel({
       if (onRun) {
         await onRun(trigger);
       } else {
-        fallbackEngine.setBlueprints(blueprints);
-        const results = await fallbackEngine.dispatch(trigger);
-        const result = results.find(item => item.blueprintId === blueprint.id);
-        if (!result || result.skipped || result.actionCount === 0) {
-          const reason = result?.skipped === 'already-executed' ? '이미 실행한 일회성 이벤트입니다.'
-            : result?.skipped === 'cooldown' ? '다시 실행하려면 대기 시간이 필요합니다.'
-              : result?.skipped === 'requires-server' ? '서버에서 실행해야 하는 이벤트입니다.'
-                : result?.skipped?.startsWith('condition:') ? '실행 조건을 충족하지 못했습니다.'
+        const result = await eventEngine.preview(blueprint, trigger);
+        if (result.skipped || result.actionCount === 0) {
+          const reason = result.skipped === 'already-executed' ? '이미 실행한 일회성 이벤트입니다.'
+            : result.skipped === 'cooldown' ? '다시 실행하려면 대기 시간이 필요합니다.'
+              : result.skipped === 'requires-server' ? '서버에서 실행해야 하는 이벤트입니다.'
+                : result.skipped?.startsWith('condition:') ? '실행 조건을 충족하지 못했습니다.'
                   : '실행된 동작이 없습니다. 이벤트 활성화와 동작 설정을 확인하세요.';
           setStatus({ kind: 'idle', message: reason });
           return;
         }
+        setStatus({ kind: 'success', message: `이벤트를 시험했습니다: ${blueprint.name} (동작 ${result.actionCount}개, 실제 보상 없음)` });
+        return;
       }
       setStatus({ kind: 'success', message: `이벤트를 실행했습니다: ${blueprint.name}` });
     } catch (error: unknown) {
@@ -286,7 +265,7 @@ export function GameplayEventPanel({
       if (trigger.type === 'manual' && field === 'key') {
         const nextKey = String(value);
         if (isReservedShortcutKey(nextKey)) {
-          setStatus({ kind: 'error', message: `트리거 키 "${nextKey}" 는 HUD 단축키로 예약되어 있습니다.` });
+          setStatus({ kind: 'error', message: `트리거 키 "${nextKey}" 는 월드 단축키로 예약되어 있습니다.` });
           return;
         }
         updateSelected({ trigger: { type: 'manual', key: nextKey } });
@@ -295,16 +274,11 @@ export function GameplayEventPanel({
         updateSelected({ trigger: { ...trigger, [field]: String(value) } });
       }
       if (trigger.type === 'enterArea' && field === 'areaId') updateSelected({ trigger: { type: 'enterArea', areaId: String(value) } });
-      if (trigger.type === 'itemCollected' && field === 'itemId') updateSelected({ trigger: { type: 'itemCollected', itemId: String(value) } });
       if (trigger.type === 'timeChanged' && field === 'hour') updateSelected({ trigger: { type: 'timeChanged', hour: Number(value) } });
-      if (trigger.type === 'calendarEventStarted' && field === 'eventId') updateSelected({ trigger: { type: 'calendarEventStarted', eventId: String(value) } });
-      if (trigger.type === 'questChanged' && (field === 'questId' || field === 'status')) {
-        updateSelected({ trigger: { ...trigger, [field]: String(value) } });
-      }
       if (trigger.type === 'custom' && field === 'key') {
         const nextKey = String(value);
         if (isReservedShortcutKey(nextKey)) {
-          setStatus({ kind: 'error', message: `트리거 키 "${nextKey}" 는 HUD 단축키로 예약되어 있습니다.` });
+          setStatus({ kind: 'error', message: `트리거 키 "${nextKey}" 는 월드 단축키로 예약되어 있습니다.` });
           return;
         }
         updateSelected({ trigger: { type: 'custom', key: nextKey } });
@@ -359,10 +333,9 @@ export function GameplayEventPanel({
               <option value="false">필요 없음</option>
               <option value="true">서버에서만 실행</option>
             </select>
-          ) : (field === 'kind' && fields['type'] === 'toast') ||
-            (field === 'status' && (fields['type'] === 'questStatus' || fields['type'] === 'questChanged')) ? (
+          ) : field === 'kind' && fields['type'] === 'toast' ? (
             <select value={String(value)} onChange={event => updateInspectorField(nodeId, field, event.target.value)}>
-              {Object.entries(field === 'kind' ? TOAST_KIND_LABELS : QUEST_STATUS_LABELS).map(([option, label]) => (
+              {Object.entries(TOAST_KIND_LABELS).map(([option, label]) => (
                 <option key={option} value={option}>{label}</option>
               ))}
             </select>
@@ -396,7 +369,7 @@ export function GameplayEventPanel({
           <span>트리거 키</span>
           <input value={triggerKey} onChange={(event) => setTriggerKey(event.target.value)} />
         </label>
-        <div className="gameplay-event-panel__hint">단일 문자 키(`i`, `j`, `m`, `k`, `o`, `c`, `f`, `e`, `t`)는 HUD 단축키로 예약됩니다.</div>
+        <div className="gameplay-event-panel__hint">`e`(상호작용)와 `f`(탑승)는 월드 단축키로 예약됩니다.</div>
         <label className="gameplay-event-panel__field">
           <span>토스트 메시지</span>
           <input value={message} onChange={(event) => setMessage(event.target.value)} />
@@ -404,8 +377,8 @@ export function GameplayEventPanel({
         <button type="button" className="gameplay-event-panel__primary" onClick={createBlueprint}>
           수동 이벤트 생성
         </button>
-        <button type="button" className="gameplay-event-panel__primary" onClick={createNpcQuestPreset}>
-          NPC 퀘스트 프리셋 추가
+        <button type="button" className="gameplay-event-panel__primary" onClick={createNpcTalkPreset}>
+          NPC 대화 프리셋 추가
         </button>
       </section>
 
@@ -565,5 +538,28 @@ export function GameplayEventPanel({
       </section>
       {children}
     </div>
+  );
+}
+
+/**
+ * The panel bound to the nearest world's rule engine: created, edited and deleted events change its live blueprints.
+ * Test runs stay previews. Without a runtime the list lives only in this panel.
+ */
+export function WorldGameplayEventPanel(props: EditorPanelBaseProps) {
+  const engine = useGaesupRuntime()?.gameplayEvents;
+  const [blueprints, setBlueprints] = useState<GameplayEventBlueprint[]>(() => engine?.getBlueprints() ?? []);
+  useEffect(() => setBlueprints(engine?.getBlueprints() ?? []), [engine]);
+  const commit = (next: GameplayEventBlueprint[]) => {
+    engine?.setBlueprints(next);
+    setBlueprints(next);
+  };
+  return (
+    <GameplayEventPanel
+      {...props}
+      blueprints={blueprints}
+      onCreate={(blueprint) => commit([...blueprints.filter((entry) => entry.id !== blueprint.id), blueprint])}
+      onUpdate={(blueprint) => commit(blueprints.map((entry) => (entry.id === blueprint.id ? blueprint : entry)))}
+      onDelete={(id) => commit(blueprints.filter((entry) => entry.id !== id))}
+    />
   );
 }

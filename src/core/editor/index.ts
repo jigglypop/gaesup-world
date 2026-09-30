@@ -115,6 +115,7 @@ export type {
   CameraSettingsTabProps,
   HierarchyPanelProps,
   InspectorPanelProps,
+  InspectorPrefabActions,
   ProjectAssetItem,
   ProjectAssetKindFilter,
   ProjectAssetPanelTab,

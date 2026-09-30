@@ -1,10 +1,9 @@
-import React from 'react';
 import { act, render } from '@testing-library/react';
 
 import { createGaesupRuntime, GaesupRuntimeProvider } from '../../../../runtime';
 import { SaveSystem, type SaveAdapter, type SaveBlob } from '../../../../save';
-import { RuntimeSaveDiagnosticsToaster } from '../index';
 import { useToastStore } from '../../Toast';
+import { RuntimeSaveDiagnosticsToaster } from '../index';
 
 class MemoryAdapter implements SaveAdapter {
   private readonly saves = new Map<string, SaveBlob>();

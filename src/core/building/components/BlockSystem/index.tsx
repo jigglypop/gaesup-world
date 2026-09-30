@@ -1,12 +1,15 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { CuboidCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
+import { createBlockColliders, getBlockTransform } from './layout';
 import type { BlockSystemProps } from './types';
 import { MaterialManager } from '../../core/MaterialManager';
 import type { BuildingBlockConfig, MeshConfig } from '../../types';
-import { TILE_CONSTANTS } from '../../types/constants';
+import { BuildingColliderBody } from '../BuildingColliders';
+import type { BuildingColliderBox } from '../BuildingColliders/types';
+import { EditOverlay } from '../EditOverlay';
+import { blockEditItem, type EditOverlayItem } from '../EditOverlay/items';
 
 type BlockBatch = {
   key: string;
@@ -14,10 +17,8 @@ type BlockBatch = {
   material: THREE.Material;
 };
 
-type BlockTransform = {
-  position: [number, number, number];
-  scale: [number, number, number];
-};
+const EMPTY_COLLIDER_BOXES: readonly BuildingColliderBox[] = [];
+const NO_EDIT_ITEMS: EditOverlayItem[] = [];
 
 const DEFAULT_BLOCK_MESH: MeshConfig = {
   id: 'default-block',
@@ -26,61 +27,22 @@ const DEFAULT_BLOCK_MESH: MeshConfig = {
   roughness: 0.92,
 };
 
-function getBlockDimensions(block: BuildingBlockConfig): { width: number; height: number; depth: number } {
-  return {
-    width: Math.max(1, Math.round(block.size?.x ?? 1)) * TILE_CONSTANTS.GRID_CELL_SIZE,
-    height: Math.max(1, Math.round(block.size?.y ?? 1)) * TILE_CONSTANTS.HEIGHT_STEP,
-    depth: Math.max(1, Math.round(block.size?.z ?? 1)) * TILE_CONSTANTS.GRID_CELL_SIZE,
-  };
-}
-
-function getBlockTransform(block: BuildingBlockConfig): BlockTransform {
-  const { width, height, depth } = getBlockDimensions(block);
-  return {
-    position: [
-      block.position.x - TILE_CONSTANTS.GRID_CELL_SIZE * 0.5 + width * 0.5,
-      block.position.y + height * 0.5,
-      block.position.z - TILE_CONSTANTS.GRID_CELL_SIZE * 0.5 + depth * 0.5,
-    ],
-    scale: [width, height, depth],
-  };
-}
-
 export function BlockSystem({
   blocks,
   meshes,
   isEditMode = false,
   selectedBlockId = null,
   onBlockClick,
+  colliders = true,
 }: BlockSystemProps) {
-  const materialManagerRef = useRef<MaterialManager>(new MaterialManager());
+  const [materialManager] = useState(() => new MaterialManager());
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const geometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), []);
-  const editMaterial = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: '#60a5fa',
-        transparent: true,
-        opacity: 0.16,
-        emissive: new THREE.Color('#2563eb'),
-        emissiveIntensity: 0.08,
-        wireframe: true,
-        depthWrite: false,
-      }),
-    [],
-  );
-  const selectedEditMaterial = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: '#bae6fd',
-        transparent: true,
-        opacity: 0.28,
-        emissive: new THREE.Color('#60a5fa'),
-        emissiveIntensity: 0.2,
-        wireframe: true,
-        depthWrite: false,
-      }),
-    [],
+  const editItems = useMemo(() => (isEditMode ? blocks.map(blockEditItem) : NO_EDIT_ITEMS), [blocks, isEditMode]);
+
+  const colliderBoxes = useMemo(
+    () => (colliders && !isEditMode ? createBlockColliders(blocks) : EMPTY_COLLIDER_BOXES),
+    [blocks, colliders, isEditMode],
   );
 
   const batches = useMemo<BlockBatch[]>(() => {
@@ -92,43 +54,23 @@ export function BlockSystem({
       byMaterial.set(key, list);
     }
 
-    const manager = materialManagerRef.current;
     return Array.from(byMaterial.entries()).map(([key, batchBlocks]) => ({
       key,
       blocks: batchBlocks,
-      material: manager.getMaterial(meshes.get(key) ?? { ...DEFAULT_BLOCK_MESH, id: key }),
+      material: materialManager.getMaterial(meshes.get(key) ?? { ...DEFAULT_BLOCK_MESH, id: key }),
     }));
-  }, [blocks, meshes]);
+  }, [blocks, materialManager, meshes]);
 
   useEffect(() => {
     return () => {
-      materialManagerRef.current.dispose();
+      materialManager.dispose();
       geometry.dispose();
-      editMaterial.dispose();
-      selectedEditMaterial.dispose();
     };
-  }, [editMaterial, geometry, selectedEditMaterial]);
+  }, [geometry, materialManager]);
 
   return (
     <>
-      {!isEditMode && blocks.length > 0 && (
-        <RigidBody type="fixed" colliders={false}>
-          {blocks.map((block) => {
-            const transform = getBlockTransform(block);
-            return (
-              <CuboidCollider
-                key={block.id}
-                position={transform.position}
-                args={[
-                  transform.scale[0] * 0.5,
-                  transform.scale[1] * 0.5,
-                  transform.scale[2] * 0.5,
-                ]}
-              />
-            );
-          })}
-        </RigidBody>
-      )}
+      <BuildingColliderBody boxes={colliderBoxes} />
 
       {batches.map((batch) => (
         <BlockBatchMesh
@@ -139,25 +81,7 @@ export function BlockSystem({
         />
       ))}
 
-      {isEditMode && blocks.map((block) => {
-        const transform = getBlockTransform(block);
-        const selected = block.id === selectedBlockId;
-        return (
-          <mesh
-            key={`${block.id}-edit`}
-            name={`block-edit-${block.id}`}
-            position={transform.position}
-            scale={[
-              transform.scale[0] * 0.82,
-              transform.scale[1] * 0.82,
-              transform.scale[2] * 0.82,
-            ]}
-            geometry={geometry}
-            material={selected ? selectedEditMaterial : editMaterial}
-            onClick={() => onBlockClick?.(block.id)}
-          />
-        );
-      })}
+      {isEditMode && <EditOverlay kind="wire" items={editItems} selectedId={selectedBlockId} onSelect={onBlockClick} />}
     </>
   );
 }
@@ -199,7 +123,7 @@ function BlockBatchMesh({
   return (
     <instancedMesh
       ref={ref}
-      name={`block-system-${batch.key}`}
+      name={`building-batch:block:${batch.key}`}
       args={[geometry, batch.material, Math.max(1, batch.blocks.length)]}
       castShadow
       receiveShadow

@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 
-import type { WeatherEntry, WeatherKind, WeatherSerialized } from '../types';
+import { runtimeStoreServiceKey } from '../../plugins/serviceKey';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { lazyScopedStore } from '../../stores/scopedStore';
+import { WEATHER_KINDS, type WeatherEntry, type WeatherKind, type WeatherSerialized } from '../types';
 
 type State = {
   current: WeatherEntry | null;
@@ -37,14 +40,15 @@ function poolBySeason(season?: string): WeatherKind[] {
 
 function prepareWeatherEntry(entry: WeatherEntry): WeatherEntry {
   if (!entry || typeof entry !== 'object' || !Number.isSafeInteger(entry.day) || entry.day < 0 ||
-    !['sunny', 'cloudy', 'rain', 'snow', 'storm'].includes(entry.kind) ||
+    !WEATHER_KINDS.includes(entry.kind) ||
     typeof entry.intensity !== 'number' || !Number.isFinite(entry.intensity) || entry.intensity < 0 || entry.intensity > 1) {
     throw new TypeError('Invalid weather entry');
   }
   return { day: entry.day, kind: entry.kind, intensity: entry.intensity };
 }
 
-export const useWeatherStore = create<State>((set, get) => ({
+export function createWeatherStore() {
+  return create<State>((set, get) => ({
   current: null,
   history: [],
 
@@ -104,3 +108,11 @@ export const useWeatherStore = create<State>((set, get) => ({
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+
+}
+
+export type WeatherStore = ReturnType<typeof createWeatherStore>;
+export const WEATHER_STORE_SERVICE = runtimeStoreServiceKey<WeatherStore>('weather');
+export const { useStore: useWeatherStore, useStoreApi: useWeatherStoreApi } = lazyScopedStore(
+  'useWeatherStore', createWeatherStore, () => useGaesupRuntime()?.weatherStore,
+);

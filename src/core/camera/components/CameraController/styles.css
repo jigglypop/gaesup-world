@@ -42,6 +42,12 @@
   flex-direction: column;
   gap: var(--editor-spacing-xs);
 }
+.camera-controller-panel-list--collision {
+  flex-direction: row;
+  margin-top: var(--editor-spacing-sm);
+  padding-top: var(--editor-spacing-sm);
+  border-top: 1px solid var(--editor-border-color);
+}
 .camera-controller-panel-mode {
   width: 100%;
   display: inline-flex;

@@ -1,3 +1,4 @@
+import { createPrefabDocument, createPrefabInstance } from '../../prefab';
 import { createSceneDocument, createSceneDocumentController } from '../../scene-object';
 import type { SceneDocument, SceneDocumentCommand } from '../../scene-object';
 import {
@@ -38,8 +39,8 @@ describe('editor command stack', () => {
       id: 'batch',
       label: 'Batch',
       commands: [
-        { id: 'a', label: 'A', run: () => events.push('run-a'), undo: () => events.push('undo-a') },
-        { id: 'b', label: 'B', run: () => events.push('run-b'), undo: () => events.push('undo-b') },
+        { id: 'a', label: 'A', run: () => { events.push('run-a'); }, undo: () => { events.push('undo-a'); } },
+        { id: 'b', label: 'B', run: () => { events.push('run-b'); }, undo: () => { events.push('undo-b'); } },
       ],
     });
 
@@ -139,6 +140,55 @@ describe('scene object editor commands', () => {
 
     await stack.undo();
     expect(document.objects[0]?.components[0]?.id).toBe('health');
+  });
+
+  test('구성 요소 데이터를 갱신하고 되돌리기로 이전 데이터를 복원한다', async () => {
+    const controller = createSceneDocumentController(document);
+    const stack = createEditorCommandStack();
+    const commands = createSceneObjectEditorCommands(controller);
+    await stack.execute(
+      commands.addComponent('root', { id: 'health', type: 'game.health', data: { hp: 10 } }),
+    );
+    const beforeUpdate = controller.getSnapshot();
+    const command = commands.updateComponent('root', 'health', { hp: 25 });
+
+    expect(command).toMatchObject({
+      id: 'scene-object.component.update.root.health',
+      label: 'Update health',
+    });
+    await stack.execute(command);
+    expect(controller.getSnapshot().objects[0]?.components[0]?.data).toEqual({ hp: 25 });
+
+    await stack.undo();
+    expect(controller.getSnapshot()).toEqual(beforeUpdate);
+    await stack.redo();
+    expect(controller.getSnapshot().objects[0]?.components[0]?.data).toEqual({ hp: 25 });
+  });
+
+  test('prefab 인스턴스 되돌리기와 전파를 커맨드로 실행하고 되돌리기로 이전 문서를 복원한다', async () => {
+    const createLamp = (name: string) =>
+      createPrefabDocument({ id: 'lamp', name: 'Lamp', objects: [{ id: 'root', name }] });
+    const previous = createLamp('Lamp');
+    const instance = createPrefabInstance(previous, { idPrefix: 'lamp-1' });
+    const controller = createSceneDocumentController(
+      createSceneDocument({ id: 'scene', objects: [...instance.objects, { id: 'tree', name: 'Tree' }] }),
+    );
+    const stack = createEditorCommandStack();
+    const commands = createSceneObjectEditorCommands(controller);
+    await stack.execute(commands.updateObject('lamp-1:root', { name: 'Custom' }));
+    const edited = controller.getSnapshot();
+
+    await stack.execute(commands.revertPrefabInstance('lamp-1:root', previous));
+    expect(controller.getSnapshot().objects[0]?.name).toBe('Lamp');
+    await stack.undo();
+    expect(controller.getSnapshot()).toEqual(edited);
+
+    await stack.undo();
+    await stack.execute(commands.propagatePrefab(previous, createLamp('Street Lamp')));
+    expect(controller.getSnapshot().objects.map((object) => object.name)).toEqual(['Street Lamp', 'Tree']);
+    await expect(stack.execute(commands.revertPrefabInstance('tree', previous))).rejects.toThrow(
+      'prefab 인스턴스 루트가 아닙니다 tree',
+    );
   });
 
   test('preserves every public scene command ID and label', () => {

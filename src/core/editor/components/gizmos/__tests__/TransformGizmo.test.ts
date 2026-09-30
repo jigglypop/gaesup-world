@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 
+import { createSceneDocument, createSceneDocumentController } from '../../../../scene-object';
+import { createSceneObjectEditorCommands } from '../../../shell';
 import {
   applySceneTransform,
   object3DToSceneTransform,
@@ -44,9 +46,23 @@ describe('TransformGizmo helpers', () => {
       rotationSnap: 0.25,
       scaleSnap: 0.25,
     })).toEqual({
-      position: [1, 1.5, -0],
+      position: [1, 1.5, 0],
       rotation: [0.25, 0.5, 0.75],
       scale: [1, 1.25, 1.75],
     });
+  });
+
+  test.each([undefined, Math.PI / 8])('a gizmo rotation (snap %s) passes updateObject', async (rotationSnap) => {
+    const controller = createSceneDocumentController(createSceneDocument({ id: 'scene', objects: [{ id: 'crate', name: 'Crate' }] }));
+    const object = new THREE.Object3D();
+    // TransformControls rotates the quaternion; three reads a yaw back as [-0, yaw, -0].
+    object.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 4);
+    const transform = snapSceneTransform(object3DToSceneTransform(object), rotationSnap === undefined ? {} : { rotationSnap });
+
+    await createSceneObjectEditorCommands(controller).updateObject('crate', { transform }).run();
+
+    const [x, y, z] = controller.getSnapshot().objects[0]!.transform.rotation;
+    expect([x, z]).toEqual([0, 0]);
+    expect(y).toBeCloseTo(Math.PI / 4);
   });
 });

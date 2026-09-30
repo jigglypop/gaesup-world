@@ -1,7 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
+
 import { useShallow } from 'zustand/react/shallow';
 
-import { useTimeStore } from '../stores/timeStore';
+import { getTimeClock } from '../core/timeClock';
+import { useTimeStore, useTimeStoreApi } from '../stores/timeStore';
 import type { GameTime } from '../types';
 
 export function useGameTime(): GameTime {
@@ -13,26 +15,11 @@ export function useTimeOfDay(): { hour: number; minute: number } {
 }
 
 export function useGameClock(enabled: boolean = true): void {
-  const tick = useTimeStore((s) => s.tick);
-  const lastRef = useRef<number>(0);
+  const store = useTimeStoreApi();
   useEffect(() => {
     if (!enabled) return;
-    let raf = 0;
-    let mounted = true;
-    const loop = (t: number) => {
-      if (!mounted) return;
-      const last = lastRef.current || t;
-      const delta = t - last;
-      lastRef.current = t;
-      tick(delta);
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => {
-      mounted = false;
-      cancelAnimationFrame(raf);
-    };
-  }, [enabled, tick]);
+    return getTimeClock(store).acquire();
+  }, [enabled, store]);
 }
 
 export function useDayChange(handler: (g: GameTime) => void): void {

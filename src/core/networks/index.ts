@@ -2,12 +2,7 @@
 export * from './adapter';
 export * from './core';
 
-// Hooks (이름 충돌 방지를 위해 개별 export)
-export { useNetworkBridge } from './hooks/useNetworkBridge';
-export { useNPCConnection } from './hooks/useNPCConnection';
-export { useNetworkMessage } from './hooks/useNetworkMessage';
-export { useNetworkGroup } from './hooks/useNetworkGroup';
-export { useNetworkStats } from './hooks/useNetworkStats';
+// Hooks
 export { usePlayerNetwork } from './hooks/usePlayerNetwork';
 export { useMultiplayer } from './hooks/useMultiplayer';
 
@@ -20,11 +15,6 @@ export * from './config';
 // Types
 export * from './types';
 
-// Stores
-export * from './stores';
-
-// Bridge
-export * from './bridge';
 
 // Visit-room snapshot sync
 export * from './visit';

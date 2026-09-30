@@ -1,4 +1,7 @@
-import { Emitter } from 'mitt';
+import type * as THREE from 'three';
+
+import type { TypedEventBus } from '../../plugins/EventBus';
+import type { CameraBounds, CameraCollisionMode, CameraCollisionTargets } from '../core/types';
 
 export type CameraEventValue = object | string | number | boolean | null | undefined;
 
@@ -22,12 +25,18 @@ export type CameraSystemConfig = {
   zoom: number;
   enableCollision: boolean;
   collisionMargin?: number;
+  collisionTargets?: CameraCollisionTargets;
+  collisionMode?: CameraCollisionMode;
+  collisionFadeOpacity?: number;
   orbitYaw?: number;
   orbitPitch?: number;
   minDistance?: number;
-  maxDistance?: number;
-  offset?: { x: number; y: number; z: number };
-  lookAt?: { x: number; y: number; z: number };
+  /** `undefined` clears a previously configured offset. */
+  offset?: { x: number; y: number; z: number } | undefined;
+  /** World-space box the camera target stays in; `undefined` removes the limit. */
+  bounds?: CameraBounds | undefined;
+  /** Where the fixed camera stands; `undefined` falls back to its default. */
+  fixedPosition?: THREE.Vector3 | undefined;
   damping?: number;
   enableDamping?: boolean;
 };
@@ -50,4 +59,4 @@ export type ICameraSystemMonitor = {
   };
 };
 
-export type CameraSystemEmitter = Emitter<CameraSystemEvents>;
+export type CameraSystemEmitter = TypedEventBus<CameraSystemEvents>;

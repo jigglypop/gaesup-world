@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
-
-import { useBuildingStore } from '../../../building/stores/buildingStore';
-import { TILE_CONSTANTS } from '../../../building/types/constants';
+import { useBuildingStoreApi, type BuildingStoreApi } from '../../../building/stores/buildingStore';
+import { readTilePlot } from '../../../building/terrain/farm/config';
+import { createTileSampler, type TileSampler } from '../../../building/terrain/sampler';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
-import { useAudioStore } from '../../stores/audioStore';
+import { useEngineFrame } from '../../../runtime/frame';
+import { useAudioStoreApi } from '../../stores/audioStore';
 import type { SfxDef } from '../../types';
 
 export type SurfaceTag = 'grass' | 'sand' | 'snow' | 'wood' | 'stone' | 'water';
@@ -32,41 +32,42 @@ const SURFACE_PROFILES: Record<SurfaceTag, Partial<SfxDef>> = {
   water: { freq: 180, duration: 0.13, type: 'sine',     volume: 0.24 },
 };
 
-function defaultResolveSurface(x: number, z: number): SurfaceTag {
-  const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
-  const groups = useBuildingStore.getState().tileGroups;
+/** One sampler per tile layout: the store replaces its tile map on every edit. */
+const samplers = new WeakMap<object, TileSampler>();
 
-  for (const group of groups.values()) {
-    for (const tile of group.tiles) {
-      const half = ((tile.size || 1) * cellSize) / 2;
-      if (Math.abs(tile.position.x - x) > half) continue;
-      if (Math.abs(tile.position.z - z) > half) continue;
-
-      switch (tile.objectType) {
-        case 'water':     return 'water';
-        case 'sand':      return 'sand';
-        case 'snowfield': return 'snow';
-        case 'grass':     return 'grass';
-        default: break;
-      }
-
-      // Tile categories without a special object type fall through to floor
-      // material guessing. The shape gives a coarse hint.
-      if (tile.shape === 'stairs' || tile.shape === 'ramp') return 'wood';
-      return 'stone';
-    }
+function defaultResolveSurface(x: number, z: number, store: BuildingStoreApi): SurfaceTag {
+  const { tileGroups, meshes } = store.getState();
+  let sampler = samplers.get(tileGroups);
+  if (!sampler) samplers.set(tileGroups, sampler = createTileSampler({ tileGroups: tileGroups.values() }));
+  const sample = sampler.at(x, z);
+  if (!sample) return 'grass';
+  const { tile } = sample;
+  switch (tile.objectType) {
+    case 'water':     return 'water';
+    case 'sand':      return 'sand';
+    case 'snowfield': return 'snow';
+    case 'grass':     return 'grass';
+    case 'dirt':      return 'sand';
+    case 'farm':      return readTilePlot(tile).soil === 'paddy' ? 'water' : 'sand';
+    default: break;
   }
-  return 'grass';
+  if (meshes.get(sample.materialId)?.grass) return 'grass';
+  // Tile categories without a special object type fall through to floor material guessing. The shape gives a coarse hint.
+  if (tile.shape === 'stairs' || tile.shape === 'ramp') return 'wood';
+  return 'stone';
 }
 
 export function Footsteps({
   strideMeters = 0.65,
   maxStepsPerSecond = 6,
   volume = 1,
-  resolveSurface = defaultResolveSurface,
+  resolveSurface,
   enabled = true,
 }: FootstepsProps = {}) {
-  const { position, isGrounded, isMoving, speed } = usePlayerPosition({ updateInterval: 32 });
+  const audioStore = useAudioStoreApi();
+  const buildingStore = useBuildingStoreApi();
+  const player = usePlayerPosition({ updateInterval: 32, reactive: false });
+  const { position } = player;
   const lastPosRef = useRef({ x: position.x, z: position.z });
   const accumRef = useRef(0);
   const lastPlayRef = useRef(0);
@@ -76,16 +77,14 @@ export function Footsteps({
     lastPosRef.current.z = position.z;
   }, []);
 
-  useFrame(() => {
-    if (!enabled) return;
-
+  useEngineFrame('lateUpdate', () => {
     const now = performance.now();
     const dxRaw = position.x - lastPosRef.current.x;
     const dzRaw = position.z - lastPosRef.current.z;
     lastPosRef.current.x = position.x;
     lastPosRef.current.z = position.z;
 
-    if (!isGrounded || !isMoving) {
+    if (!player.isGrounded || !player.isMoving) {
       // Reset stride accumulator while airborne so the player doesn't get a
       // burst of steps the instant they land.
       accumRef.current = 0;
@@ -102,18 +101,18 @@ export function Footsteps({
     accumRef.current = 0;
     lastPlayRef.current = now;
 
-    const surface = resolveSurface(position.x, position.z);
+    const surface = resolveSurface ? resolveSurface(position.x, position.z) : defaultResolveSurface(position.x, position.z, buildingStore);
     const profile = SURFACE_PROFILES[surface];
-    const speedScale = Math.min(1.4, 0.7 + speed * 0.06);
+    const speedScale = Math.min(1.4, 0.7 + player.speed * 0.06);
 
-    useAudioStore.getState().playSfx({
+    audioStore.getState().playSfx({
       id: `footstep-${surface}`,
       type: profile.type ?? 'sine',
       freq: profile.freq ?? 320,
       duration: profile.duration ?? 0.08,
       volume: (profile.volume ?? 0.2) * volume * speedScale,
     });
-  });
+  }, { label: 'audio:footsteps', active: enabled });
 
   return null;
 }

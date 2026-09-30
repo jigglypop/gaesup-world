@@ -1,8 +1,8 @@
+import { NavigationSystem } from '../NavigationSystem';
 import {
   applyNPCNavigationRoute,
   createNPCNavigationRoute,
 } from '../NPCNavigationAdapter';
-import { NavigationSystem } from '../NavigationSystem';
 
 jest.mock('../../wasm/loader', () => ({
   loadCoreWasm: jest.fn(async () => null),

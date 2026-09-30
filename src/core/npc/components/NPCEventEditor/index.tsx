@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { NPCEventEditorProps } from './types';
+import { createUniqueId } from '../../../utils/id';
 import { useNPCStore } from '../../stores/npcStore';
 import type { NPCEvent, NPCEventPayload } from '../../types';
 import './styles.css';
@@ -47,7 +48,7 @@ export function NPCEventEditor({ instanceId, onClose }: NPCEventEditorProps) {
     }
 
     const newEvent: NPCEvent = {
-      id: `event-${Date.now()}`,
+      id: createUniqueId('event'),
       type: eventType,
       action: actionType,
       ...(payload ? { payload } : {}),

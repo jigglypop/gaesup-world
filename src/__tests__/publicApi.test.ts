@@ -1,6 +1,219 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import type {
+  NPCAction,
+  NPCBrainConfig,
+  NPCBrainBlueprint,
+  NPCObservation,
+  NPCBrainDecision,
+  NPCInstanceData,
+  BuildingWorldSurface,
+  CameraPanelProps,
+  CameraPanelRenderContext,
+  CameraPanelRenderers,
+  CameraPanelStyles,
+  CameraControllerProps,
+  CameraControllerRenderContext,
+  CameraControllerRenderers,
+  CameraControllerStyles,
+  CameraDebugPanelClassNameSlot,
+  CameraDebugPanelClassNames,
+  CameraDebugPanelLabels,
+  CameraDebugPanelPosition,
+  CameraDebugPanelProps,
+  CameraDebugPanelRenderContext,
+  CameraDebugPanelRenderers,
+  CameraDebugPanelResolvedField,
+  CameraDebugPanelStyles,
+  CameraDebugPanelTheme,
+  CameraMetrics,
+  CameraModeConfig,
+  CameraPreset,
+  CameraPresetsProps,
+  CameraPresetsRenderContext,
+  CameraPresetsRenderers,
+  CameraPresetsStyles,
+  CameraSettingsField,
+  CameraSettingsRenderContext,
+  CameraSettingsRenderers,
+  CameraSettingsTabProps,
+  AnimationPanelProps,
+  AnimationPanelRenderContext,
+  AnimationPanelRenderers,
+  AnimationPanelStyles,
+  MotionPanelProps,
+  MotionPanelRenderContext,
+  MotionPanelRenderers,
+  MotionPanelStyles,
+  ProjectAssetsPanelProps,
+  ProjectAssetsPanelRenderContext,
+  ProjectAssetsPanelRenderers,
+  ProjectAssetsPanelStyles,
+  EditorSidebarPreset,
+  EditorSidebarPresetId,
+  EditorSidebarPresetInput,
+  ActionEquipmentPanelActions,
+  ActionEquipmentPanelClassNameSlot,
+  ActionEquipmentPanelClassNames,
+  ActionEquipmentPanelFeatures,
+  ActionEquipmentPanelLabelMaps,
+  ActionEquipmentPanelLabels,
+  ActionEquipmentPanelProps,
+  ActionEquipmentPanelRenderContext,
+  ActionEquipmentPanelRenderers,
+  ActionEquipmentPanelStyles,
+  CharacterEquipmentPreset,
+  CharacterCreatorProps,
+  CharacterMenuPreset,
+  CharacterMenuProps,
+  CharacterMenuClassNameSlot,
+  CharacterMenuCloseUpController,
+  CharacterMenuLabelMaps,
+  CharacterMenuOption,
+  CharacterMenuRenderContext,
+  CharacterMenuRenderers,
+  CharacterMenuSection,
+  PluginDiagnostic,
+  SystemExtensionMap,
+  InputExtensionMap,
+  SaveExtensionMap,
+  ServiceExtensionMap,
+  ComponentExtensionMap,
+  BuildingUIProps,
+  BuildingUINPCPanelRenderer,
+  BuildingPanelNPCPanelRenderer,
+  EditorPanelComponentExtension,
+  EditorShellPluginPanel,
+  GameCommand,
+  ServerEvent,
+  StateDelta,
+  SnapshotAck,
+  RuntimePluginTarget,
+  PluginRuntimeTarget,
+  PlatformServerPluginHost,
+  CommandAuthorityRouter,
+  CommandAuthorityResult,
+  GaesupPluginTemplate,
+  PluginValidationResult,
+  AssetCatalogStatus,
+  ContentBundleManifest,
+  ContentSchemaVersion,
+  SaveDiagnostic,
+  SaveDiagnosticListener,
+  RuntimeSaveDiagnostic,
+  RuntimeSaveDiagnosticsService,
+  RuntimeSaveDiagnosticsToasterProps,
+} from 'gaesup-world';
+
+/** Type exports of the root entry; the compiler checks that each still exists. */
+export type RootTypeExports = [
+  NPCAction,
+  NPCBrainConfig,
+  NPCBrainBlueprint,
+  NPCObservation,
+  NPCBrainDecision,
+  NPCInstanceData,
+  BuildingWorldSurface,
+  CameraPanelProps,
+  CameraPanelRenderContext,
+  CameraPanelRenderers,
+  CameraPanelStyles,
+  CameraControllerProps,
+  CameraControllerRenderContext,
+  CameraControllerRenderers,
+  CameraControllerStyles,
+  CameraDebugPanelClassNameSlot,
+  CameraDebugPanelClassNames,
+  CameraDebugPanelLabels,
+  CameraDebugPanelPosition,
+  CameraDebugPanelProps,
+  CameraDebugPanelRenderContext,
+  CameraDebugPanelRenderers,
+  CameraDebugPanelResolvedField,
+  CameraDebugPanelStyles,
+  CameraDebugPanelTheme,
+  CameraMetrics,
+  CameraModeConfig,
+  CameraPreset,
+  CameraPresetsProps,
+  CameraPresetsRenderContext,
+  CameraPresetsRenderers,
+  CameraPresetsStyles,
+  CameraSettingsField,
+  CameraSettingsRenderContext,
+  CameraSettingsRenderers,
+  CameraSettingsTabProps,
+  AnimationPanelProps,
+  AnimationPanelRenderContext,
+  AnimationPanelRenderers,
+  AnimationPanelStyles,
+  MotionPanelProps,
+  MotionPanelRenderContext,
+  MotionPanelRenderers,
+  MotionPanelStyles,
+  ProjectAssetsPanelProps,
+  ProjectAssetsPanelRenderContext,
+  ProjectAssetsPanelRenderers,
+  ProjectAssetsPanelStyles,
+  EditorSidebarPreset,
+  EditorSidebarPresetId,
+  EditorSidebarPresetInput,
+  ActionEquipmentPanelActions,
+  ActionEquipmentPanelClassNameSlot,
+  ActionEquipmentPanelClassNames,
+  ActionEquipmentPanelFeatures,
+  ActionEquipmentPanelLabelMaps,
+  ActionEquipmentPanelLabels,
+  ActionEquipmentPanelProps,
+  ActionEquipmentPanelRenderContext,
+  ActionEquipmentPanelRenderers,
+  ActionEquipmentPanelStyles,
+  CharacterEquipmentPreset,
+  CharacterCreatorProps,
+  CharacterMenuPreset,
+  CharacterMenuProps,
+  CharacterMenuClassNameSlot,
+  CharacterMenuCloseUpController,
+  CharacterMenuLabelMaps,
+  CharacterMenuOption<string>,
+  CharacterMenuRenderContext,
+  CharacterMenuRenderers,
+  CharacterMenuSection,
+  PluginDiagnostic,
+  SystemExtensionMap,
+  InputExtensionMap,
+  SaveExtensionMap,
+  ServiceExtensionMap,
+  ComponentExtensionMap,
+  BuildingUIProps,
+  BuildingUINPCPanelRenderer,
+  BuildingPanelNPCPanelRenderer,
+  EditorPanelComponentExtension,
+  EditorShellPluginPanel,
+  GameCommand,
+  ServerEvent,
+  StateDelta,
+  SnapshotAck,
+  RuntimePluginTarget,
+  PluginRuntimeTarget,
+  PlatformServerPluginHost,
+  CommandAuthorityRouter,
+  CommandAuthorityResult,
+  GaesupPluginTemplate,
+  PluginValidationResult,
+  AssetCatalogStatus,
+  ContentBundleManifest,
+  ContentSchemaVersion,
+  SaveDiagnostic,
+  SaveDiagnosticListener,
+  RuntimeSaveDiagnostic,
+  RuntimeSaveDiagnosticsService,
+  RuntimeSaveDiagnosticsToasterProps,
+];
+
+const root = jest.requireActual('gaesup-world') as Record<string, unknown>;
+
 const ROOT_ENTRY = path.resolve(__dirname, '../index.ts');
 const CORE_ENTRY = path.resolve(__dirname, '../core/index.ts');
 const SCENE_OBJECT_ENTRY = path.resolve(__dirname, '../core/scene-object/index.ts');
@@ -17,6 +230,13 @@ function expectNamedExport(source: string, name: string): void {
 }
 
 describe('public package API', () => {
+  test('exposes Unity scene interchange and exact hierarchical matrices', () => {
+    const api = jest.requireActual('gaesup-world') as typeof import('gaesup-world');
+    const source = api.createSceneDocument({ id: 'unity-api', objects: [{ id: 'object' }] });
+    const restored = api.importUnityScene(api.exportUnityScene(source));
+    expect(restored).toEqual(source);
+    expect(api.loadSceneRuntime(restored).runtime?.getWorldMatrix('object')).toHaveLength(16);
+  });
   test('exposes the legacy grid through the shared renderer compatibility boundary', () => {
     const coreSource = fs.readFileSync(CORE_ENTRY, 'utf8');
     expect(coreSource).toContain("export { Grid as LegacyGrid } from './rendering/legacyDrei'");
@@ -65,14 +285,11 @@ describe('public package API', () => {
   test('exports world config and editor shell APIs from the root entry', () => {
     const source = readRootEntry();
 
-    expectNamedExport(source, 'WorldConfigProvider');
-    expectNamedExport(source, 'WorldContainer');
+    expect(root).toHaveProperty('WorldConfigProvider');
     expect(source).toContain("export * from './core/editor'");
   });
 
   test('exports NPC brain runtime APIs from the root entry', () => {
-    const source = readRootEntry();
-
     [
       'NPCSystem',
       'NPCInstance',
@@ -81,30 +298,14 @@ describe('public package API', () => {
       'registerNPCBrainAdapter',
       'registerNPCBrainBlueprint',
       'compileNPCBrainBlueprint',
-    ].forEach((name) => expectNamedExport(source, name));
-  });
-
-  test('exports NPC brain public types from the root entry', () => {
-    const source = readRootEntry();
-
-    [
-      'NPCAction',
-      'NPCBrainConfig',
-      'NPCBrainBlueprint',
-      'NPCObservation',
-      'NPCBrainDecision',
-      'NPCInstanceData',
-    ].forEach((name) => expectNamedExport(source, name));
+    ].forEach((name) => expect(root).toHaveProperty(name));
   });
 
   test('exports built-in runtime plugin factories from the root entry', () => {
-    const source = readRootEntry();
-
     [
       'createBuildingPlugin',
       'DEFAULT_BUILDING_STORE_SERVICE_ID',
       'BUILDING_WORLD_SURFACE_OPTIONS',
-      'BuildingWorldSurface',
       'createCameraPlugin',
       'DEFAULT_CAMERA_SYSTEM_EXTENSION_ID',
       'createMotionsPlugin',
@@ -131,9 +332,6 @@ describe('public package API', () => {
       'defineGaesupPlugin',
       'validateGaesupPlugin',
       'assertValidGaesupPlugin',
-      'createCozyLifeSamplePlugin',
-      'createHighGraphicsSamplePlugin',
-      'createShooterKitSamplePlugin',
       'CONTENT_SCHEMA_VERSION',
       'createContentBundleFromSaveSystem',
       'validateContentBundle',
@@ -146,16 +344,12 @@ describe('public package API', () => {
       'createTimePlugin',
       'createWeatherPlugin',
       'createAudioPlugin',
-      'createInventoryPlugin',
-      'createEconomyPlugin',
       'createScenePlugin',
       'createCharacterPlugin',
-    ].forEach((name) => expectNamedExport(source, name));
+    ].forEach((name) => expect(root).toHaveProperty(name));
   });
 
   test('exports camera UI customization APIs from the root entry', () => {
-    const source = readRootEntry();
-
     [
       'CameraController',
       'CameraDebugPanel',
@@ -180,77 +374,29 @@ describe('public package API', () => {
       'CAMERA_SETTINGS_DEFAULT_CLASSES',
       'CAMERA_SETTINGS_DEFAULT_LABELS',
       'CAMERA_SETTINGS_DEFAULT_SECTIONS',
-      'CameraPanelProps',
-      'CameraPanelRenderContext',
-      'CameraPanelRenderers',
-      'CameraPanelStyles',
-      'CameraControllerProps',
-      'CameraControllerRenderContext',
-      'CameraControllerRenderers',
-      'CameraControllerStyles',
-      'CameraDebugPanelClassNameSlot',
-      'CameraDebugPanelClassNames',
-      'CameraDebugPanelLabels',
-      'CameraDebugPanelPosition',
-      'CameraDebugPanelProps',
-      'CameraDebugPanelRenderContext',
-      'CameraDebugPanelRenderers',
-      'CameraDebugPanelResolvedField',
-      'CameraDebugPanelStyles',
-      'CameraDebugPanelTheme',
-      'CameraMetrics',
       'createInitialCameraMetrics',
-      'CameraModeConfig',
-      'CameraPreset',
-      'CameraPresetsProps',
-      'CameraPresetsRenderContext',
-      'CameraPresetsRenderers',
-      'CameraPresetsStyles',
-      'CameraSettingsField',
-      'CameraSettingsRenderContext',
-      'CameraSettingsRenderers',
-      'CameraSettingsTabProps',
-    ].forEach((name) => expectNamedExport(source, name));
+    ].forEach((name) => expect(root).toHaveProperty(name));
   });
 
   test('exports editor panel customization APIs from the root entry', () => {
-    const source = readRootEntry();
-
     [
       'AnimationPanel',
       'ANIMATION_PANEL_DEFAULT_CLASSES',
       'ANIMATION_PANEL_DEFAULT_LABELS',
       'ANIMATION_PANEL_DEFAULT_TABS',
-      'AnimationPanelProps',
-      'AnimationPanelRenderContext',
-      'AnimationPanelRenderers',
-      'AnimationPanelStyles',
       'MotionPanel',
       'MOTION_PANEL_DEFAULT_CLASSES',
       'MOTION_PANEL_DEFAULT_LABELS',
       'MOTION_PANEL_DEFAULT_TABS',
-      'MotionPanelProps',
-      'MotionPanelRenderContext',
-      'MotionPanelRenderers',
-      'MotionPanelStyles',
       'ProjectAssetsPanel',
       'PROJECT_ASSETS_PANEL_DEFAULT_CLASSES',
       'PROJECT_ASSETS_PANEL_DEFAULT_KIND_OPTIONS',
       'PROJECT_ASSETS_PANEL_DEFAULT_LABELS',
       'PROJECT_ASSETS_PANEL_DEFAULT_TABS',
-      'ProjectAssetsPanelProps',
-      'ProjectAssetsPanelRenderContext',
-      'ProjectAssetsPanelRenderers',
-      'ProjectAssetsPanelStyles',
-      'EditorSidebarPreset',
-      'EditorSidebarPresetId',
-      'EditorSidebarPresetInput',
-    ].forEach((name) => expectNamedExport(source, name));
+    ].forEach((name) => expect(root).toHaveProperty(name));
   });
 
   test('exports character menu customization APIs from the root entry', () => {
-    const source = readRootEntry();
-
     [
       'ActionEquipmentPanel',
       'ACTION_EQUIPMENT_PANEL_DEFAULT_CLASSES',
@@ -259,78 +405,27 @@ describe('public package API', () => {
       'ACTION_EQUIPMENT_PANEL_DEFAULT_FEATURES',
       'ACTION_EQUIPMENT_PANEL_DEFAULT_LABELS',
       'ACTION_EQUIPMENT_PANEL_DEFAULT_SLOT_COUNT',
-      'ActionEquipmentPanelActions',
-      'ActionEquipmentPanelClassNameSlot',
-      'ActionEquipmentPanelClassNames',
-      'ActionEquipmentPanelFeatures',
-      'ActionEquipmentPanelLabelMaps',
-      'ActionEquipmentPanelLabels',
-      'ActionEquipmentPanelProps',
-      'ActionEquipmentPanelRenderContext',
-      'ActionEquipmentPanelRenderers',
-      'ActionEquipmentPanelStyles',
-      'CharacterEquipmentPreset',
       'CharacterMenu',
       'CharacterCreator',
-      'CharacterCreatorProps',
       'useCharacterMenuController',
       'MENU_PRESETS',
       'CHARACTER_MENU_DEFAULT_FEATURES',
       'CHARACTER_MENU_DEFAULT_SECTIONS',
       'CHARACTER_MENU_DEFAULT_SLOTS',
-      'CharacterMenuPreset',
-      'CharacterMenuProps',
-      'CharacterMenuClassNameSlot',
-      'CharacterMenuCloseUpController',
-      'CharacterMenuLabelMaps',
-      'CharacterMenuOption',
-      'CharacterMenuRenderContext',
-      'CharacterMenuRenderers',
-      'CharacterMenuSection',
-    ].forEach((name) => expectNamedExport(source, name));
+    ].forEach((name) => expect(root).toHaveProperty(name));
   });
 
   test('exports plugin registry diagnostics APIs from the root entry', () => {
-    const source = readRootEntry();
-
     [
       'createPluginRegistry',
       'PluginVersionMismatchError',
       'PluginManifestValidationError',
-      'PluginDiagnostic',
-      'SystemExtensionMap',
-      'InputExtensionMap',
-      'SaveExtensionMap',
-      'ServiceExtensionMap',
-      'ComponentExtensionMap',
-      'BuildingUIProps',
-      'BuildingUINPCPanelRenderer',
-      'BuildingPanelNPCPanelRenderer',
-      'EditorPanelComponentExtension',
-      'EditorShellPluginPanel',
-      'GameCommand',
-      'ServerEvent',
-      'StateDelta',
-      'SnapshotAck',
-      'RuntimePluginTarget',
-      'PluginRuntimeTarget',
-      'PlatformServerPluginHost',
-      'CommandAuthorityRouter',
-      'CommandAuthorityResult',
-      'GaesupPluginTemplate',
-      'PluginValidationResult',
-      'AssetCatalogStatus',
-      'ContentBundleManifest',
-      'ContentSchemaVersion',
-      'SaveDiagnostic',
-      'SaveDiagnosticListener',
-      'RuntimeSaveDiagnostic',
-      'RuntimeSaveDiagnosticsService',
-      'RuntimeSaveDiagnosticsToasterProps',
-    ].forEach((name) => expectNamedExport(source, name));
+    ].forEach((name) => expect(root).toHaveProperty(name));
   });
   test('루트 엔트리로 GI 볼륨과 건축 복셀 변환을 노출한다', () => {
-    const source = readRootEntry();
+    // The root re-exports core, where the GI names are listed.
+    expect(readRootEntry()).toContain("export * from './core'");
+    const source = fs.readFileSync(CORE_ENTRY, 'utf8');
     [
       'GiVolume',
       'ProbeCascade',

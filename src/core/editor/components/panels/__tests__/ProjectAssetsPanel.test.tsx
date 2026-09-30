@@ -1,4 +1,3 @@
-import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 
 import type { AssetRecord } from '../../../../assets';
@@ -146,7 +145,7 @@ describe('ProjectAssetsPanel', () => {
     expect(screen.getByText('Test tile')).toBeTruthy();
     expect(screen.queryByText('Test tree')).toBeNull();
 
-    for (const [group, name] of [['장면', 'Test scene'], ['재질', 'Test material'], ['프리팹', 'Test prefab']]) {
+    for (const [group, name] of [['장면', 'Test scene'], ['재질', 'Test material'], ['프리팹', 'Test prefab']] as const) {
       fireEvent.click(screen.getByRole('button', { name: group }));
       expect(screen.getByRole('button', { name: group, pressed: true })).toBeTruthy();
       expect(screen.getByText(name)).toBeTruthy();

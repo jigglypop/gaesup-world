@@ -1,5 +1,8 @@
 import type { GaesupPlugin, PluginContext } from '../plugins';
-import { useNPCStore } from './stores/npcStore';
+import { createIdentityRevision } from '../save/core/revision';
+import { clonePlainData } from '../utils/clone';
+import { findNPCSimulation } from './core/NPCSimulation';
+import { useNPCStore, type NPCStoreApi, NPC_STORE_SERVICE } from './stores/npcStore';
 import type {
   ClothingCategory,
   ClothingSet,
@@ -20,7 +23,6 @@ export type NPCSerializedState = {
   clothingCategories: ClothingCategory[];
   animations: NPCAnimation[];
   brainBlueprints: NPCBrainBlueprint[];
-  editMode: boolean;
 };
 
 export type NPCPluginOptions = {
@@ -33,26 +35,18 @@ const DEFAULT_PLUGIN_ID = 'gaesup.npc';
 const DEFAULT_SAVE_EXTENSION_ID = 'npc';
 const DEFAULT_STORE_SERVICE_ID = 'npc.store';
 
-function cloneNPCValue<T>(value: T): T {
-  if (typeof structuredClone === 'function') {
-    return structuredClone(value);
-  }
-  return JSON.parse(JSON.stringify(value)) as T;
-}
-
-export function serializeNPCState(): NPCSerializedState {
-  const state = useNPCStore.getState();
+export function serializeNPCState(store: NPCStoreApi = useNPCStore): NPCSerializedState {
+  const state = store.getState();
 
   return {
     version: 1,
-    templates: Array.from(state.templates.values(), cloneNPCValue),
-    instances: Array.from(state.instances.values(), cloneNPCValue),
-    categories: Array.from(state.categories.values(), cloneNPCValue),
-    clothingSets: Array.from(state.clothingSets.values(), cloneNPCValue),
-    clothingCategories: Array.from(state.clothingCategories.values(), cloneNPCValue),
-    animations: Array.from(state.animations.values(), cloneNPCValue),
-    brainBlueprints: Array.from(state.brainBlueprints.values(), cloneNPCValue),
-    editMode: state.editMode,
+    templates: Array.from(state.templates.values(), clonePlainData),
+    instances: Array.from((findNPCSimulation(store)?.snapshotInstances() ?? state.instances).values(), clonePlainData),
+    categories: Array.from(state.categories.values(), clonePlainData),
+    clothingSets: Array.from(state.clothingSets.values(), clonePlainData),
+    clothingCategories: Array.from(state.clothingCategories.values(), clonePlainData),
+    animations: Array.from(state.animations.values(), clonePlainData),
+    brainBlueprints: Array.from(state.brainBlueprints.values(), clonePlainData),
   };
 }
 
@@ -63,16 +57,16 @@ function prepareCollection<T extends { id: string }>(entries: T[]): Map<string, 
     if (!entry || typeof entry !== 'object' || typeof entry.id !== 'string' || !entry.id.trim() || result.has(entry.id)) {
       throw new TypeError('Invalid NPC collection ID');
     }
-    result.set(entry.id, cloneNPCValue(entry));
+    result.set(entry.id, clonePlainData(entry));
   }
   return result;
 }
 
-function prepareNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined): () => void {
+function prepareNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined, store: NPCStoreApi = useNPCStore): () => void {
   if (data === null || data === undefined) return () => {};
   const snapshot = Array.isArray(data) ? { instances: data } : data;
-  if (typeof snapshot !== 'object' || (snapshot.version !== undefined && snapshot.version !== 1)
-    || (snapshot.editMode !== undefined && typeof snapshot.editMode !== 'boolean')) {
+  // Older saves carry an `editMode` flag; the building edit mode is the one source now, so it is not read.
+  if (typeof snapshot !== 'object' || (snapshot.version !== undefined && snapshot.version !== 1)) {
     throw new TypeError('Invalid NPC snapshot');
   }
   const prepared: Partial<NPCSystemState> = {
@@ -83,7 +77,6 @@ function prepareNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | nul
     ...(snapshot.animations === undefined ? {} : { animations: prepareCollection(snapshot.animations) }),
     ...(snapshot.brainBlueprints === undefined ? {} : { brainBlueprints: prepareCollection(snapshot.brainBlueprints) }),
     ...(snapshot.instances === undefined ? {} : { instances: prepareCollection(snapshot.instances) }),
-    ...(snapshot.editMode === undefined ? {} : { editMode: snapshot.editMode }),
   };
   for (const instance of prepared.instances?.values() ?? []) {
     if (typeof instance.templateId !== 'string' || !instance.templateId.trim() || typeof instance.name !== 'string'
@@ -92,11 +85,11 @@ function prepareNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | nul
       throw new TypeError('Invalid NPC instance transform');
     }
   }
-  return () => useNPCStore.setState(prepared);
+  return () => store.setState(prepared);
 }
 
-export function hydrateNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined): void {
-  prepareNPCState(data)();
+export function hydrateNPCState(data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined, store: NPCStoreApi = useNPCStore): void {
+  prepareNPCState(data, store)();
 }
 
 export function createNPCPlugin(options: NPCPluginOptions = {}): GaesupPlugin {
@@ -111,16 +104,30 @@ export function createNPCPlugin(options: NPCPluginOptions = {}): GaesupPlugin {
     runtime: 'client',
     capabilities: ['npc'],
     setup(ctx: PluginContext) {
+      const store = ctx.services.get(NPC_STORE_SERVICE) ?? useNPCStore;
       ctx.save.register(saveExtensionId, {
         key: saveExtensionId,
-        serialize: serializeNPCState,
-        hydrate: hydrateNPCState,
-        prepareHydrate: prepareNPCState,
+        serialize: () => serializeNPCState(store),
+        hydrate: (data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined) => hydrateNPCState(data, store),
+        prepareHydrate: (data: Partial<NPCSerializedState> | NPCInstance[] | null | undefined) => prepareNPCState(data, store),
+        // serializeNPCState clones every entry.
+        owned: true,
+        // Saved positions come from the simulation's poses, so their revision counts too.
+        revision: createIdentityRevision(() => {
+          const state = store.getState();
+          return [state.templates, state.instances, state.categories, state.clothingSets, state.clothingCategories,
+            state.animations, state.brainBlueprints, findNPCSimulation(store)?.poseRevision ?? 0];
+        }),
+        // The saved fields as constructed; the simulation drops poses of instances that leave the store.
+        reset: () => {
+          const { templates, instances, categories, clothingSets, clothingCategories, animations, brainBlueprints } = store.getInitialState();
+          store.setState({ templates, instances, categories, clothingSets, clothingCategories, animations, brainBlueprints, initialized: false });
+        },
       }, pluginId);
       ctx.services.register(storeServiceId, {
-        useStore: useNPCStore,
-        getState: useNPCStore.getState,
-        setState: useNPCStore.setState,
+        useStore: store,
+        getState: store.getState,
+        setState: store.setState,
       }, pluginId);
       ctx.events.emit('npc:ready', {
         pluginId,

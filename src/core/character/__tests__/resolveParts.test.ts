@@ -14,6 +14,44 @@ const emptyOutfits = (): Record<OutfitSlot, string | null> => ({
 });
 
 describe('resolveCharacterParts', () => {
+  it('passes a rigid tool bone and authored grip transform to the renderer', () => {
+    const tool: AssetRecord = {
+      id: 'axe', name: 'Axe', kind: 'weapon', slot: 'weapon', url: 'axe.glb',
+      metadata: { deformation: 'rigid', attachment: {
+        socket: 'rightHand', bone: 'hand.R', position: [0, 0.1, 0], rotation: [0, 0, 1], scale: [0.5, 0.5, 0.5],
+      } },
+    };
+    const parts = resolveCharacterParts({ outfits: { ...emptyOutfits(), weapon: 'axe' }, assets: { axe: tool } });
+    expect(parts[0]?.attachment).toEqual({
+      bone: 'hand.R', position: [0, 0.1, 0], rotation: [0, 0, 1], scale: [0.5, 0.5, 0.5],
+    });
+    parts[0]!.attachment!.position[0] = 99;
+    expect(tool.metadata?.['attachment']).toMatchObject({ position: [0, 0.1, 0] });
+  });
+
+  it.each([
+    { socket: 'rightHand', position: [0, 0, 0] },
+    { bone: ' ' },
+    { bone: 'hand.R', scale: [1, Number.NaN, 1] },
+    { bone: 'hand.R', position: [0, 1] },
+  ])('ignores an invalid rigid attachment instead of drawing it at the body origin: %j', (attachment) => {
+    const parts = resolveCharacterParts({
+      baseParts: [{ url: 'default.glb', slot: 'weapon' }],
+      outfits: { ...emptyOutfits(), weapon: 'axe' },
+      assets: { axe: { id: 'axe', name: 'Axe', kind: 'weapon', url: 'axe.glb', metadata: { deformation: 'rigid', attachment } } },
+    });
+    expect(parts).toEqual([{ url: 'default.glb', slot: 'weapon' }]);
+  });
+
+  it('does not apply old overlay sockets to skinned garments', () => {
+    const parts = resolveCharacterParts({
+      outfits: { ...emptyOutfits(), weapon: 'sword' },
+      assets: { sword: { id: 'sword', name: 'Sword', kind: 'weapon', url: 'sword.glb',
+        metadata: { deformation: 'skinned', attachment: { bone: 'upper_arm.R', position: [1, 2, 3] } } } },
+    });
+    expect(parts[0]).not.toHaveProperty('attachment');
+  });
+
   it('returns base parts when nothing is equipped', () => {
     const parts = resolveCharacterParts({
       baseParts: [{ url: 'base.glb', slot: 'top' }],

@@ -12,9 +12,9 @@ jest.mock('three', () => {
   };
 });
 
-test('toon water skips procedural normals; reflective water creates and shares them on demand', () => {
+test('toon and reflective water share one procedural normal texture', () => {
   const view = render(<Ocean toon />);
-  expect(THREE.DataTexture).not.toHaveBeenCalled();
+  expect(THREE.DataTexture).toHaveBeenCalledTimes(1);
   view.rerender(<Ocean toon={false} />);
   expect(THREE.DataTexture).toHaveBeenCalledTimes(1);
   const texture = jest.mocked(THREE.DataTexture).mock.results[0]!.value as THREE.DataTexture;

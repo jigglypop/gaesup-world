@@ -3,6 +3,7 @@ import {
   type CommandAuthorityResult,
   type CommandAuthorityRouter,
   type CommandAuthorityRouterOptions,
+  type CommandSession,
   type GameCommand,
 } from '../networks/adapter';
 import {
@@ -23,6 +24,7 @@ import {
   type PlayerProgress,
   type WorldSnapshot,
 } from './snapshot';
+import type { ServiceKey } from '../plugins/serviceKey';
 
 export const DEFAULT_SERVER_COMMAND_AUTHORITY_SERVICE_ID = 'server.commandAuthority';
 
@@ -43,9 +45,10 @@ export type PlatformServerPluginHost = {
   saveSystem?: SaveSystem;
   setup: () => Promise<void>;
   dispose: () => Promise<void>;
-  handleCommand: (command: GameCommand) => Promise<CommandAuthorityResult>;
-  getService: <TService = unknown>(id: string) => TService | undefined;
-  requireService: <TService = unknown>(id: string) => TService;
+  /** Pass the sender's session for commands from the network; see `CommandAuthorityRouter.handle`. */
+  handleCommand: (command: GameCommand, session?: CommandSession) => Promise<CommandAuthorityResult>;
+  getService: <TService = unknown>(id: string | ServiceKey<TService>) => TService | undefined;
+  requireService: <TService = unknown>(id: string | ServiceKey<TService>) => TService;
   getSaveBindings: () => Iterable<DomainBinding>;
   createWorldSnapshot: (worldId: string, options?: CreateWorldSnapshotOptions) => WorldSnapshot;
   createPlayerProgress: (playerId: string, options?: CreatePlayerProgressOptions) => PlayerProgress;
@@ -125,7 +128,7 @@ export function createServerPluginHost(
       commandAuthority.clear();
       plugins.context.services.remove(DEFAULT_SERVER_COMMAND_AUTHORITY_SERVICE_ID);
     },
-    handleCommand: (command) => commandAuthority.handle(command),
+    handleCommand: (command, session) => commandAuthority.handle(command, session),
     getService: (id) => plugins.context.services.get(id),
     requireService: (id) => plugins.context.services.require(id),
     getSaveBindings: () => options.saveSystem?.getBindings() ?? [],

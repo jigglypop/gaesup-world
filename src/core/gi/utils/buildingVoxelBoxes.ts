@@ -3,7 +3,8 @@ import type { BuildingWallKind, WallConfig, WallGroupConfig } from '../../buildi
 import { TILE_CONSTANTS } from '../../building/types/constants';
 import type { Vec3 } from '../../grid';
 import { hexToLinearRgb } from '../core/color';
-import type { Rgb, VoxelSourceBox } from '../types';
+import type { Aabb, Rgb, VoxelSourceBox } from '../types';
+import { objectProxyBoxes } from './objectProxies';
 import type { BuildingVoxelSource, WallPiece } from './types';
 
 const { GRID_CELL_SIZE, HEIGHT_STEP, WALL_SIZES } = TILE_CONSTANTS;
@@ -95,8 +96,13 @@ function wallKind(wall: WallConfig, group: WallGroupConfig): BuildingWallKind {
 /**
  * 건축 스토어의 타일, 블록, 벽, 불 오브젝트를 GI용 복셀 박스로 변환한다.
  * 문·창 벽은 개구부를 남기고 유리와 난간은 빛이 통과하도록 생략한다.
+ * `modelBounds`(모델 URL별 경계 상자)를 주면 나무·가구·바위 같은 배치 오브젝트도 대리 박스로 넣어 빛을 가리게 하고,
+ * 조명의 머리는 발광체로 넣는다(objectProxies.ts).
  */
-export function buildingToVoxelBoxes(source: BuildingVoxelSource): VoxelSourceBox[] {
+export function buildingToVoxelBoxes(
+  source: BuildingVoxelSource,
+  modelBounds?: ReadonlyMap<string, Aabb | null>,
+): VoxelSourceBox[] {
   const boxes: VoxelSourceBox[] = [];
   for (const group of source.tileGroups.values()) {
     for (const tile of group.tiles) {
@@ -130,18 +136,18 @@ export function buildingToVoxelBoxes(source: BuildingVoxelSource): VoxelSourceBo
       const meshId = wall.materialId ?? group.frontMeshId ?? group.backMeshId ?? group.sideMeshId;
       const albedo = albedoOf(source, meshId);
       if (!albedo) continue;
-      const pieces = wallPieces(
-        wallKind(wall, group),
-        wall.width ?? WALL_SIZES.WIDTH,
-        wall.height ?? WALL_SIZES.HEIGHT,
-        wall.depth ?? WALL_SIZES.THICKNESS,
-      );
+      // Walls are one size, set by the grid edge they stand on.
+      const pieces = wallPieces(wallKind(wall, group), WALL_SIZES.WIDTH, WALL_SIZES.HEIGHT, WALL_SIZES.THICKNESS);
       for (const piece of pieces) {
         boxes.push(pieceBox(piece, wall.position, wall.rotation.y, albedo));
       }
     }
   }
   for (const object of source.objects) {
+    if (modelBounds && object.type !== 'fire') {
+      boxes.push(...objectProxyBoxes(object, modelBounds));
+      continue;
+    }
     if (object.type !== 'fire') continue;
     const config = object.config;
     const width = config?.fireWidth ?? FIRE_DEFAULT_WIDTH;

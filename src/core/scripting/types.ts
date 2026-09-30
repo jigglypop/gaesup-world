@@ -1,3 +1,4 @@
+import type { SceneObjectPhysicsEventKind } from '../scene-object/react/SceneObjectBody/types';
 import type {
   SceneDocumentCommand,
   SceneDocumentCommandResult,
@@ -135,4 +136,4 @@ export type ScriptRuntimeError = {
   message: string;
 };
 
-export type ScriptPhysicsEventKind = 'triggerEnter' | 'triggerExit' | 'collisionEnter' | 'collisionExit';
+export type ScriptPhysicsEventKind = SceneObjectPhysicsEventKind;

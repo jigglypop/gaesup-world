@@ -2,7 +2,7 @@ import { createWebSocketVisitChannel } from '../channel';
 import { serializeVisit } from '../serializer';
 
 function createHarness() {
-  let receive = (_raw: string): void => {};
+  let receive: (raw: string) => void = () => {};
   const send = jest.fn();
   const unsubscribe = jest.fn();
   const channel = createWebSocketVisitChannel({
@@ -77,6 +77,31 @@ describe('visit WebSocket boundary', () => {
     const { channel, receive, listener } = createHarness();
     receive(raw);
     expect(listener).not.toHaveBeenCalled();
+    channel.close();
+  });
+});
+
+describe('visit sender binding', () => {
+  const snapshot = serializeVisit(() => [], { hostId: 'alice', savedAt: 0, version: 1 });
+
+  it('accepts a snapshot or leave only from the host the relay authenticated as its sender', () => {
+    let receive: (raw: string, senderId?: string) => void = () => {};
+    const channel = createWebSocketVisitChannel({
+      send: jest.fn(),
+      onMessage: (listener) => { receive = listener; return () => {}; },
+    });
+    const listener = jest.fn();
+    channel.subscribe(listener);
+    const wireSnapshot = JSON.stringify({ type: 'VisitSnapshot', v: 1, snapshot });
+    const wireLeave = JSON.stringify({ type: 'VisitLeave', v: 1, hostId: 'alice' });
+
+    receive(wireSnapshot, 'mallory');
+    receive(wireLeave, 'mallory');
+    expect(listener).not.toHaveBeenCalled();
+
+    receive(wireSnapshot, 'alice');
+    receive(wireLeave, 'alice');
+    expect(listener.mock.calls.map(([event]) => (event as { type: string }).type)).toEqual(['snapshot', 'leave']);
     channel.close();
   });
 });

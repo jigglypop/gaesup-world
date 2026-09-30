@@ -1,5 +1,5 @@
-import { getWallMaterialKey } from '../WallSystem';
 import type { WallConfig } from '../../types';
+import { getWallMaterialKey } from '../WallSystem';
 
 describe('WallSystem material grouping', () => {
   const baseWall: WallConfig = {

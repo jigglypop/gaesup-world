@@ -4,6 +4,7 @@ import {
   applyVisitSnapshot,
   captureVisitRestorePoint,
   serializeVisit,
+  type VisitApplyResult,
   type VisitRestorePoint,
 } from './serializer';
 import {
@@ -12,7 +13,9 @@ import {
   type VisitChannel,
   type VisitSnapshot,
 } from './types';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
 import { suspendAutoSave } from '../../save/core/autoSaveSuspension';
+import { reportError } from '../../utils/reportError';
 
 type VisitIsolation = {
   hostId: string;
@@ -56,7 +59,7 @@ export type VisitRoomController = {
   lastPublished: VisitSnapshot | null;
   /** Capture and broadcast local state. Capture or send failures throw without updating lastPublished. */
   publishNow: () => VisitSnapshot;
-  /** Apply the most recently received snapshot to local stores. */
+  /** Apply the most recently received snapshot to local stores; all or nothing, false when nothing changed. */
   acceptRemote: () => boolean;
   /** Drop the buffered remote snapshot without applying it. */
   dismissRemote: () => void;
@@ -106,18 +109,27 @@ export function useVisitRoom(options: UseVisitRoomOptions): VisitRoomController 
   const isolateRef = useRef(isolateLocalWorld);
   isolateRef.current = isolateLocalWorld;
   const isolationRef = useRef<VisitIsolation | null>(null);
+  const runtime = useGaesupRuntime();
+  const reportRef = useRef(reportError);
+  reportRef.current = runtime?.reportError ?? reportError;
+  const reportFailures = useCallback((result: VisitApplyResult, source: string) => {
+    for (const { key, error } of result.failed ?? []) reportRef.current(error, { source, label: key });
+    for (const key of result.unrestored ?? []) {
+      reportRef.current(new Error('The rollback left this domain in the visited state'), { source: 'visit:rollback', label: key });
+    }
+  }, []);
 
   const endIsolation = useCallback((): boolean => {
     const isolation = isolationRef.current;
     if (!isolation) return false;
     isolationRef.current = null;
     try {
-      isolation.restorePoint.restore();
+      reportFailures(isolation.restorePoint.restore(), 'visit:restore');
     } finally {
       isolation.releaseAutoSave();
     }
     return true;
-  }, []);
+  }, [reportFailures]);
 
   const applyRemote = useCallback((snapshot: VisitSnapshot): boolean => {
     const allowed = allowedRef.current;
@@ -134,15 +146,22 @@ export function useVisitRoom(options: UseVisitRoomOptions): VisitRoomController 
       ...(allowed ? { allowedDomains: allowed } : {}),
       atomic: true,
     });
-    if (result.applied.length === 0 && startedIsolation) {
-      const isolation = isolationRef.current;
-      isolationRef.current = null;
-      isolation?.releaseAutoSave();
-    } else if (isolationRef.current) {
+    reportFailures(result, 'visit:apply');
+    // Atomic: a failure rolls back, so anything applied means the whole snapshot is.
+    const accepted = result.applied.length > 0;
+    if (!accepted && startedIsolation) {
+      // Nothing of this visit remains, so autosave resumes; domains the rollback missed go home through the restore point.
+      if (result.unrestored) endIsolation();
+      else {
+        const isolation = isolationRef.current;
+        isolationRef.current = null;
+        isolation?.releaseAutoSave();
+      }
+    } else if (accepted && isolationRef.current) {
       isolationRef.current.hostId = snapshot.hostId;
     }
-    return result.applied.length > 0;
-  }, []);
+    return accepted;
+  }, [endIsolation, reportFailures]);
 
   useEffect(() => {
     activeSession.current = session;

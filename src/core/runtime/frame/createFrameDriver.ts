@@ -9,6 +9,7 @@ export function createFrameDriver<T>(
 ): FrameDriver<T> {
   const items: T[] = [];
   let unsubscribe: (() => void) | null = null;
+  let generation = scheduler.getGeneration();
 
   const run = (delta: number, elapsedMs: number) => {
     for (let i = 0; i < items.length; i++) update(items[i]!, delta, elapsedMs);
@@ -23,6 +24,10 @@ export function createFrameDriver<T>(
   return {
     add: (item) => {
       items.push(item);
+      if (generation !== scheduler.getGeneration()) {
+        unsubscribe = null;
+        generation = scheduler.getGeneration();
+      }
       unsubscribe ??= scheduler.add(phase, run, { label: `driver:${phase}`, ...options });
       let removed = false;
       return () => {

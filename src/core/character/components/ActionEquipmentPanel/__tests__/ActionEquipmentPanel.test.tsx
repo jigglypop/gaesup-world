@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { DEFAULT_CHARACTER_EQUIPMENT_PRESETS } from '../../../actionEquipment';
@@ -29,7 +27,7 @@ describe('ActionEquipmentPanel 커스텀 UI', () => {
     });
     const root = renderer as ReactTestRenderer;
     const customRoot = root.root.findByProps({ 'data-testid': 'equipment-root' });
-    expect(customRoot.findAllByType('span')[0].children).toEqual(['Quick Kit']);
+    expect(customRoot.findAllByType('span')[0]?.children).toEqual(['Quick Kit']);
     expect(() => root.root.findByProps({ className: 'action-equipment-panel' })).toThrow();
     act(() => {
       root.unmount();
@@ -66,7 +64,7 @@ describe('ActionEquipmentPanel 커스텀 UI', () => {
     const faceButton = root.root.findByProps({ 'data-testid': 'face-button' });
     expect(faceButton.children).toEqual(['표정: 기본']);
     act(() => {
-      const handleClick = faceButton.props.onClick as () => void;
+      const handleClick = faceButton.props['onClick'] as () => void;
       handleClick();
     });
     expect(useCharacterStore.getState().appearance.face).toBe('wink');
@@ -74,8 +72,9 @@ describe('ActionEquipmentPanel 커스텀 UI', () => {
       '표정: Custom Wink',
     ]);
     act(() => {
-      const handleClick = root.root.findByProps({ 'data-testid': 'preset-button' }).props
-        .onClick as () => void;
+      const handleClick = root.root.findByProps({ 'data-testid': 'preset-button' }).props[
+        'onClick'
+      ] as () => void;
       handleClick();
     });
     expect(useCharacterStore.getState().outfits.weapon).toBe('starter-weapon-layer');

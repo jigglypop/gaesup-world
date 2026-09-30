@@ -1,0 +1,2675 @@
+[
+  {
+    "slot": "body",
+    "id": "body-sd-neutral-v1",
+    "name": "뉴트럴 바디",
+    "kind": "avatar-body",
+    "url": "/gltf/avatars/manual-v1/body-sd-neutral-v1.glb",
+    "colors": {
+      "primary": "#f1c3a1"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "body-sd-neutral-v1",
+        "version": 1,
+        "kind": "avatar-body",
+        "slot": "body",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/body-sd-neutral-v1.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          },
+          {
+            "node": 25,
+            "primitive": 0
+          },
+          {
+            "node": 26,
+            "primitive": 0
+          },
+          {
+            "node": 27,
+            "primitive": 0
+          },
+          {
+            "node": 28,
+            "primitive": 0
+          },
+          {
+            "node": 29,
+            "primitive": 0
+          },
+          {
+            "node": 30,
+            "primitive": 0
+          },
+          {
+            "node": 31,
+            "primitive": 0
+          },
+          {
+            "node": 32,
+            "primitive": 0
+          },
+          {
+            "node": 33,
+            "primitive": 0
+          },
+          {
+            "node": 34,
+            "primitive": 0
+          },
+          {
+            "node": 35,
+            "primitive": 0
+          },
+          {
+            "node": 36,
+            "primitive": 0
+          },
+          {
+            "node": 37,
+            "primitive": 0
+          },
+          {
+            "node": 38,
+            "primitive": 0
+          },
+          {
+            "node": 39,
+            "primitive": 0
+          },
+          {
+            "node": 40,
+            "primitive": 0
+          },
+          {
+            "node": 41,
+            "primitive": 0
+          },
+          {
+            "node": 42,
+            "primitive": 0
+          },
+          {
+            "node": 43,
+            "primitive": 0
+          },
+          {
+            "node": 44,
+            "primitive": 0
+          },
+          {
+            "node": 45,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "bodyRegions": {
+          "torsoUpper": [
+            {
+              "node": 23,
+              "primitive": 0
+            }
+          ],
+          "torsoLower": [
+            {
+              "node": 24,
+              "primitive": 0
+            }
+          ],
+          "armUpperL": [
+            {
+              "node": 25,
+              "primitive": 0
+            }
+          ],
+          "armLowerL": [
+            {
+              "node": 26,
+              "primitive": 0
+            }
+          ],
+          "armUpperR": [
+            {
+              "node": 27,
+              "primitive": 0
+            }
+          ],
+          "armLowerR": [
+            {
+              "node": 28,
+              "primitive": 0
+            }
+          ],
+          "legUpperL": [
+            {
+              "node": 29,
+              "primitive": 0
+            }
+          ],
+          "legLowerL": [
+            {
+              "node": 30,
+              "primitive": 0
+            }
+          ],
+          "legUpperR": [
+            {
+              "node": 31,
+              "primitive": 0
+            }
+          ],
+          "legLowerR": [
+            {
+              "node": 32,
+              "primitive": 0
+            }
+          ],
+          "head": [
+            {
+              "node": 33,
+              "primitive": 0
+            },
+            {
+              "node": 35,
+              "primitive": 0
+            },
+            {
+              "node": 36,
+              "primitive": 0
+            },
+            {
+              "node": 37,
+              "primitive": 0
+            },
+            {
+              "node": 39,
+              "primitive": 0
+            },
+            {
+              "node": 40,
+              "primitive": 0
+            },
+            {
+              "node": 41,
+              "primitive": 0
+            },
+            {
+              "node": 43,
+              "primitive": 0
+            }
+          ],
+          "neck": [
+            {
+              "node": 34,
+              "primitive": 0
+            }
+          ],
+          "handR": [
+            {
+              "node": 38,
+              "primitive": 0
+            }
+          ],
+          "handL": [
+            {
+              "node": 42,
+              "primitive": 0
+            }
+          ],
+          "footL": [
+            {
+              "node": 44,
+              "primitive": 0
+            }
+          ],
+          "footR": [
+            {
+              "node": 45,
+              "primitive": 0
+            }
+          ]
+        },
+        "attachment": {
+          "mode": "skinned"
+        },
+        "hideBodyRegions": [],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/body-sd-neutral-v1-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              },
+              {
+                "node": 25,
+                "primitive": 0
+              },
+              {
+                "node": 26,
+                "primitive": 0
+              },
+              {
+                "node": 27,
+                "primitive": 0
+              },
+              {
+                "node": 28,
+                "primitive": 0
+              },
+              {
+                "node": 29,
+                "primitive": 0
+              },
+              {
+                "node": 30,
+                "primitive": 0
+              },
+              {
+                "node": 31,
+                "primitive": 0
+              },
+              {
+                "node": 32,
+                "primitive": 0
+              },
+              {
+                "node": 33,
+                "primitive": 0
+              },
+              {
+                "node": 34,
+                "primitive": 0
+              },
+              {
+                "node": 35,
+                "primitive": 0
+              },
+              {
+                "node": 36,
+                "primitive": 0
+              },
+              {
+                "node": 37,
+                "primitive": 0
+              },
+              {
+                "node": 38,
+                "primitive": 0
+              },
+              {
+                "node": 39,
+                "primitive": 0
+              },
+              {
+                "node": 40,
+                "primitive": 0
+              },
+              {
+                "node": 41,
+                "primitive": 0
+              },
+              {
+                "node": 42,
+                "primitive": 0
+              },
+              {
+                "node": 43,
+                "primitive": 0
+              },
+              {
+                "node": 44,
+                "primitive": 0
+              },
+              {
+                "node": 45,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            },
+            "bodyRegions": {
+              "torsoUpper": [
+                {
+                  "node": 23,
+                  "primitive": 0
+                }
+              ],
+              "torsoLower": [
+                {
+                  "node": 24,
+                  "primitive": 0
+                }
+              ],
+              "armUpperL": [
+                {
+                  "node": 25,
+                  "primitive": 0
+                }
+              ],
+              "armLowerL": [
+                {
+                  "node": 26,
+                  "primitive": 0
+                }
+              ],
+              "armUpperR": [
+                {
+                  "node": 27,
+                  "primitive": 0
+                }
+              ],
+              "armLowerR": [
+                {
+                  "node": 28,
+                  "primitive": 0
+                }
+              ],
+              "legUpperL": [
+                {
+                  "node": 29,
+                  "primitive": 0
+                }
+              ],
+              "legLowerL": [
+                {
+                  "node": 30,
+                  "primitive": 0
+                }
+              ],
+              "legUpperR": [
+                {
+                  "node": 31,
+                  "primitive": 0
+                }
+              ],
+              "legLowerR": [
+                {
+                  "node": 32,
+                  "primitive": 0
+                }
+              ],
+              "head": [
+                {
+                  "node": 33,
+                  "primitive": 0
+                },
+                {
+                  "node": 35,
+                  "primitive": 0
+                },
+                {
+                  "node": 36,
+                  "primitive": 0
+                },
+                {
+                  "node": 37,
+                  "primitive": 0
+                },
+                {
+                  "node": 39,
+                  "primitive": 0
+                },
+                {
+                  "node": 40,
+                  "primitive": 0
+                },
+                {
+                  "node": 41,
+                  "primitive": 0
+                },
+                {
+                  "node": 43,
+                  "primitive": 0
+                }
+              ],
+              "neck": [
+                {
+                  "node": 34,
+                  "primitive": 0
+                }
+              ],
+              "handR": [
+                {
+                  "node": 38,
+                  "primitive": 0
+                }
+              ],
+              "handL": [
+                {
+                  "node": 42,
+                  "primitive": 0
+                }
+              ],
+              "footL": [
+                {
+                  "node": 44,
+                  "primitive": 0
+                }
+              ],
+              "footR": [
+                {
+                  "node": 45,
+                  "primitive": 0
+                }
+              ]
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "hair",
+    "id": "hair-001",
+    "name": "밤색 보브",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/hair-001.glb",
+    "colors": {
+      "primary": "#473346"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "hair-001",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "hair",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/hair-001.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          },
+          {
+            "node": 25,
+            "primitive": 0
+          },
+          {
+            "node": 26,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "bone",
+          "bone": "head"
+        },
+        "hideBodyRegions": [],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/hair-001-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              },
+              {
+                "node": 25,
+                "primitive": 0
+              },
+              {
+                "node": 26,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "hair",
+    "id": "hair-002",
+    "name": "캐러멜 헤어",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/hair-002.glb",
+    "colors": {
+      "primary": "#bc754b"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "hair-002",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "hair",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/hair-002.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          },
+          {
+            "node": 25,
+            "primitive": 0
+          },
+          {
+            "node": 26,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "bone",
+          "bone": "head"
+        },
+        "hideBodyRegions": [],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/hair-002-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              },
+              {
+                "node": 25,
+                "primitive": 0
+              },
+              {
+                "node": 26,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "hair",
+    "id": "hair-003",
+    "name": "네이비 헤어",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/hair-003.glb",
+    "colors": {
+      "primary": "#263c61"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "hair-003",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "hair",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/hair-003.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          },
+          {
+            "node": 25,
+            "primitive": 0
+          },
+          {
+            "node": 26,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "bone",
+          "bone": "head"
+        },
+        "hideBodyRegions": [],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/hair-003-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              },
+              {
+                "node": 25,
+                "primitive": 0
+              },
+              {
+                "node": 26,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "top",
+    "id": "top-001",
+    "name": "코랄 니트",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/top-001.glb",
+    "colors": {
+      "primary": "#e58266"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "top-001",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "top",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/top-001.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          },
+          {
+            "node": 25,
+            "primitive": 0
+          },
+          {
+            "node": 26,
+            "primitive": 0
+          },
+          {
+            "node": 27,
+            "primitive": 0
+          },
+          {
+            "node": 28,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "skinned"
+        },
+        "hideBodyRegions": [
+          "torsoUpper",
+          "torsoLower",
+          "armUpperL",
+          "armLowerL",
+          "armUpperR",
+          "armLowerR"
+        ],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/top-001-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              },
+              {
+                "node": 25,
+                "primitive": 0
+              },
+              {
+                "node": 26,
+                "primitive": 0
+              },
+              {
+                "node": 27,
+                "primitive": 0
+              },
+              {
+                "node": 28,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "top",
+    "id": "top-002",
+    "name": "블루 재킷",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/top-002.glb",
+    "colors": {
+      "primary": "#6babc0"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "top-002",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "top",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/top-002.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          },
+          {
+            "node": 25,
+            "primitive": 0
+          },
+          {
+            "node": 26,
+            "primitive": 0
+          },
+          {
+            "node": 27,
+            "primitive": 0
+          },
+          {
+            "node": 28,
+            "primitive": 0
+          },
+          {
+            "node": 29,
+            "primitive": 0
+          },
+          {
+            "node": 30,
+            "primitive": 0
+          },
+          {
+            "node": 31,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "skinned"
+        },
+        "hideBodyRegions": [
+          "torsoUpper",
+          "torsoLower",
+          "armUpperL",
+          "armLowerL",
+          "armUpperR",
+          "armLowerR"
+        ],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/top-002-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              },
+              {
+                "node": 25,
+                "primitive": 0
+              },
+              {
+                "node": 26,
+                "primitive": 0
+              },
+              {
+                "node": 27,
+                "primitive": 0
+              },
+              {
+                "node": 28,
+                "primitive": 0
+              },
+              {
+                "node": 29,
+                "primitive": 0
+              },
+              {
+                "node": 30,
+                "primitive": 0
+              },
+              {
+                "node": 31,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "top",
+    "id": "top-003",
+    "name": "머스터드 니트",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/top-003.glb",
+    "colors": {
+      "primary": "#d1b563"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "top-003",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "top",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/top-003.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          },
+          {
+            "node": 25,
+            "primitive": 0
+          },
+          {
+            "node": 26,
+            "primitive": 0
+          },
+          {
+            "node": 27,
+            "primitive": 0
+          },
+          {
+            "node": 28,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "skinned"
+        },
+        "hideBodyRegions": [
+          "torsoUpper",
+          "torsoLower",
+          "armUpperL",
+          "armLowerL",
+          "armUpperR",
+          "armLowerR"
+        ],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/top-003-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              },
+              {
+                "node": 25,
+                "primitive": 0
+              },
+              {
+                "node": 26,
+                "primitive": 0
+              },
+              {
+                "node": 27,
+                "primitive": 0
+              },
+              {
+                "node": 28,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "bottom",
+    "id": "bottom-001",
+    "name": "네이비 팬츠",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/bottom-001.glb",
+    "colors": {
+      "primary": "#32465d"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "bottom-001",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "bottom",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/bottom-001.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          },
+          {
+            "node": 25,
+            "primitive": 0
+          },
+          {
+            "node": 26,
+            "primitive": 0
+          },
+          {
+            "node": 27,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "skinned"
+        },
+        "hideBodyRegions": [
+          "legUpperL",
+          "legUpperR",
+          "legLowerL",
+          "legLowerR"
+        ],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/bottom-001-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              },
+              {
+                "node": 25,
+                "primitive": 0
+              },
+              {
+                "node": 26,
+                "primitive": 0
+              },
+              {
+                "node": 27,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "bottom",
+    "id": "bottom-002",
+    "name": "세이지 팬츠",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/bottom-002.glb",
+    "colors": {
+      "primary": "#688177"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "bottom-002",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "bottom",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/bottom-002.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          },
+          {
+            "node": 25,
+            "primitive": 0
+          },
+          {
+            "node": 26,
+            "primitive": 0
+          },
+          {
+            "node": 27,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "skinned"
+        },
+        "hideBodyRegions": [
+          "legUpperL",
+          "legUpperR",
+          "legLowerL",
+          "legLowerR"
+        ],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/bottom-002-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              },
+              {
+                "node": 25,
+                "primitive": 0
+              },
+              {
+                "node": 26,
+                "primitive": 0
+              },
+              {
+                "node": 27,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "bottom",
+    "id": "bottom-003",
+    "name": "라일락 팬츠",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/bottom-003.glb",
+    "colors": {
+      "primary": "#857097"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "bottom-003",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "bottom",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/bottom-003.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          },
+          {
+            "node": 25,
+            "primitive": 0
+          },
+          {
+            "node": 26,
+            "primitive": 0
+          },
+          {
+            "node": 27,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "skinned"
+        },
+        "hideBodyRegions": [
+          "legUpperL",
+          "legUpperR",
+          "legLowerL",
+          "legLowerR"
+        ],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/bottom-003-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              },
+              {
+                "node": 25,
+                "primitive": 0
+              },
+              {
+                "node": 26,
+                "primitive": 0
+              },
+              {
+                "node": 27,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "shoes",
+    "id": "shoes-001",
+    "name": "크림 스니커즈",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/shoes-001.glb",
+    "colors": {
+      "primary": "#f4e4c9"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "shoes-001",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "shoes",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/shoes-001.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "skinned"
+        },
+        "hideBodyRegions": [
+          "footL",
+          "footR"
+        ],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/shoes-001-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "shoes",
+    "id": "shoes-002",
+    "name": "슬레이트 슈즈",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/shoes-002.glb",
+    "colors": {
+      "primary": "#50566f"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "shoes-002",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "shoes",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/shoes-002.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "skinned"
+        },
+        "hideBodyRegions": [
+          "footL",
+          "footR"
+        ],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/shoes-002-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "hat",
+    "id": "hat-001",
+    "name": "샌드 버킷햇",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/hat-001.glb",
+    "colors": {
+      "primary": "#c1a276"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "hat-001",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "hat",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/hat-001.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "bone",
+          "bone": "head"
+        },
+        "hideBodyRegions": [],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/hat-001-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "hat",
+    "id": "hat-002",
+    "name": "로즈 베레모",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/hat-002.glb",
+    "colors": {
+      "primary": "#986776"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "hat-002",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "hat",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/hat-002.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "bone",
+          "bone": "head"
+        },
+        "hideBodyRegions": [],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/hat-002-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "bag",
+    "id": "bag-001",
+    "name": "미니 백팩",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/bag-001.glb",
+    "colors": {
+      "primary": "#a88658"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "bag-001",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "bag",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/bag-001.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "socket",
+          "socket": "back"
+        },
+        "hideBodyRegions": [],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/bag-001-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "hand",
+    "id": "hand-001",
+    "name": "작은 지팡이",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/hand-001.glb",
+    "colors": {
+      "primary": "#71503b"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "hand-001",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "hand",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/hand-001.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "socket",
+          "socket": "handR"
+        },
+        "hideBodyRegions": [],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/hand-001-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  },
+  {
+    "slot": "onepiece",
+    "id": "onepiece-001",
+    "name": "민트 원피스",
+    "kind": "avatar-part",
+    "url": "/gltf/avatars/manual-v1/onepiece-001.glb",
+    "colors": {
+      "primary": "#88b7a1"
+    },
+    "metadata": {
+      "avatar": {
+        "schemaVersion": 1,
+        "assetId": "onepiece-001",
+        "version": 1,
+        "kind": "avatar-part",
+        "slot": "onepiece",
+        "rig": "gaesup-humanoid-v1",
+        "bodyArchetypes": [
+          "SD_NEUTRAL_V1"
+        ],
+        "source": {
+          "uri": "/gltf/avatars/manual-v1/onepiece-001.glb"
+        },
+        "meshes": [
+          {
+            "node": 23,
+            "primitive": 0
+          },
+          {
+            "node": 24,
+            "primitive": 0
+          },
+          {
+            "node": 25,
+            "primitive": 0
+          },
+          {
+            "node": 26,
+            "primitive": 0
+          },
+          {
+            "node": 27,
+            "primitive": 0
+          },
+          {
+            "node": 28,
+            "primitive": 0
+          },
+          {
+            "node": 29,
+            "primitive": 0
+          }
+        ],
+        "bones": {
+          "root": 0,
+          "hips": 1,
+          "spine": 2,
+          "chest": 3,
+          "upperChest": 4,
+          "neck": 5,
+          "head": 6,
+          "shoulderL": 7,
+          "upperArmL": 8,
+          "lowerArmL": 9,
+          "handL": 10,
+          "shoulderR": 11,
+          "upperArmR": 12,
+          "lowerArmR": 13,
+          "handR": 14,
+          "upperLegL": 15,
+          "lowerLegL": 16,
+          "footL": 17,
+          "toeL": 18,
+          "upperLegR": 19,
+          "lowerLegR": 20,
+          "footR": 21,
+          "toeR": 22
+        },
+        "attachment": {
+          "mode": "skinned"
+        },
+        "hideBodyRegions": [
+          "torsoUpper",
+          "torsoLower",
+          "armUpperL",
+          "armLowerL",
+          "armUpperR",
+          "armLowerR",
+          "legUpperL",
+          "legUpperR",
+          "legLowerL",
+          "legLowerR"
+        ],
+        "lods": [
+          {
+            "level": 1,
+            "source": {
+              "uri": "/gltf/avatars/manual-v1/onepiece-001-lod1.glb"
+            },
+            "meshes": [
+              {
+                "node": 23,
+                "primitive": 0
+              },
+              {
+                "node": 24,
+                "primitive": 0
+              },
+              {
+                "node": 25,
+                "primitive": 0
+              },
+              {
+                "node": 26,
+                "primitive": 0
+              },
+              {
+                "node": 27,
+                "primitive": 0
+              },
+              {
+                "node": 28,
+                "primitive": 0
+              },
+              {
+                "node": 29,
+                "primitive": 0
+              }
+            ],
+            "bones": {
+              "root": 0,
+              "hips": 1,
+              "spine": 2,
+              "chest": 3,
+              "upperChest": 4,
+              "neck": 5,
+              "head": 6,
+              "shoulderL": 7,
+              "upperArmL": 8,
+              "lowerArmL": 9,
+              "handL": 10,
+              "shoulderR": 11,
+              "upperArmR": 12,
+              "lowerArmR": 13,
+              "handR": 14,
+              "upperLegL": 15,
+              "lowerLegL": 16,
+              "footL": 17,
+              "toeL": 18,
+              "upperLegR": 19,
+              "lowerLegR": 20,
+              "footR": 21,
+              "toeR": 22
+            }
+          }
+        ],
+        "tags": [
+          "manual-fixture",
+          "MIT",
+          "SD"
+        ]
+      }
+    }
+  }
+]

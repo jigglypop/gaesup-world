@@ -22,6 +22,7 @@ function createInitialPhysicsState(
     activeState: activeStateRef,
     gameStates: gameStatesRef,
     keyboard: { ...input.keyboard },
+    gamepad: input.gamepad,
     mouse: {
       target: mouseTarget.copy(input.mouse.target),
       angle: input.mouse.angle,

@@ -5,7 +5,6 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "types": ["node", "jest"],
     "allowJs": true,
-    "experimentalDecorators": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -36,8 +35,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "gaesup-world": ["./src/index.ts"],
-      "gaesup-world/admin": ["./src/admin-entry.ts"],
       "gaesup-world/assets": ["./src/assets.ts"],
+      "gaesup-world/avatar": ["./src/avatar.ts"],
       "gaesup-world/blueprints": ["./src/blueprints/index.ts"],
       "gaesup-world/blueprints/editor": ["./src/blueprints/editor.ts"],
       "gaesup-world/building": ["./src/building.ts"],
@@ -45,24 +44,19 @@
       "gaesup-world/gameplay": ["./src/gameplay.ts"],
       "gaesup-world/navigation": ["./src/navigation.ts"],
       "gaesup-world/network": ["./src/network.ts"],
-      "gaesup-world/next": ["./src/next.ts"],
       "gaesup-world/postprocessing": ["./src/postprocessing.ts"],
       "gaesup-world/plugins": ["./src/plugins.ts"],
       "gaesup-world/runtime": ["./src/runtime.ts"],
       "gaesup-world/server-contracts": ["./src/server-contracts.ts"],
+      "gaesup-world/style.css": ["./src/core/editor/styles/theme.css"],
       "@core/*": ["./src/core/*"],
       "@hooks/*": ["./src/core/hooks/*"],
       "@stores/*": ["./src/core/stores/*"],
-      "@components/*": ["./src/core/components/*"],
-      "@constants/*": ["./src/core/constants/*"],
       "@utils/*": ["./src/core/utils/*"],
-      "@types/*": ["./src/core/types/*"],
-      "@motions/*": ["./src/core/motions/*"],
-      "@debug/*": ["./src/core/debug/*"]
-    },
-    "emitDecoratorMetadata": false
+      "@motions/*": ["./src/core/motions/*"]
+    }
   },
-  "include": ["src", "examples", "vite.config.ts", "jest.config.js", "jest.memory.config.js", "index.ts"],
+  "include": ["src", "examples", "vite.config.ts", "jest.config.js", "jest.memory.config.js"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"],
   "ts-node": {
     "esm": true

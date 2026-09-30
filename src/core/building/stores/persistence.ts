@@ -1,40 +1,48 @@
 import {
-  createTileFootprint,
-  indexAabb,
-  tileHalfSize,
+  createBlockFootprint,
   tilePositionToCell,
-  wallTransformToEdge,
 } from '../model';
-import type { TileMeta, WallMeta } from '../model';
+import { createDefaultTileCategories, createDefaultWallCategories } from './defaultCategories';
+import { BuildingSpatialIndex } from './spatialIndex';
+import { clonePlainData } from '../../utils/clone';
+import { CLIMATE_MODES } from '../../weather/core/climate';
+import { wallEdge } from '../model/footprint';
+import { placeTileOnGrid } from '../model/placement';
 import type {
   BuildingBlockConfig,
+  BuildingClimate,
   BuildingSerializedState,
   MeshConfig,
   PlacedObject,
   TileCategory,
-  TileConfig,
   TileGroupConfig,
   WallCategory,
   WallConfig,
   WallGroupConfig,
 } from '../types';
-import { TILE_CONSTANTS } from '../types/constants';
 
-export type BuildingSerializableState = Pick<
-  BuildingHydrationTarget,
-  | 'meshes'
-  | 'wallGroups'
-  | 'tileGroups'
-  | 'blocks'
-  | 'objects'
-  | 'wallCategories'
-  | 'tileCategories'
-  | 'showSnow'
-  | 'showFog'
-  | 'fogColor'
-  | 'weatherEffect'
-  | 'worldSurface'
->;
+const SERIALIZED_KEYS = [
+  'meshes',
+  'wallGroups',
+  'tileGroups',
+  'blocks',
+  'objects',
+  'showSnow',
+  'showFog',
+  'fogColor',
+  'weatherEffect',
+  'climate',
+  'worldSurface',
+  'wallCategories',
+  'tileCategories',
+] as const;
+
+export type BuildingSerializableState = Pick<BuildingHydrationTarget, typeof SERIALIZED_KEYS[number]>;
+
+/** Every serialized field; immer replaces a field whenever its content changes, so identity marks edits. */
+export function readBuildingSaveFields(state: BuildingSerializableState): unknown[] {
+  return SERIALIZED_KEYS.map((key) => state[key]);
+}
 
 export type BuildingHydrationTarget = {
   meshes: Map<string, MeshConfig>;
@@ -44,45 +52,35 @@ export type BuildingHydrationTarget = {
   selectedTileGroupId?: string;
   blocks: BuildingBlockConfig[];
   objects: PlacedObject[];
-  wallCategories: Map<string, WallCategory>;
-  tileCategories: Map<string, TileCategory>;
-  tileIndex: Map<number, Set<string>>;
-  tileCells: Map<string, number[]>;
-  tileMeta: Map<string, TileMeta>;
-  wallIndex: Map<number, Set<string>>;
-  wallCells: Map<string, number[]>;
-  wallMeta: Map<string, WallMeta>;
+  spatialIndex: BuildingSpatialIndex;
   initialized: boolean;
   showSnow: boolean;
   showFog: boolean;
   fogColor: string;
   weatherEffect: BuildingSerializedState['weatherEffect'];
+  climate: BuildingClimate;
   worldSurface: BuildingSerializedState['worldSurface'];
+  wallCategories: Map<string, WallCategory>;
+  tileCategories: Map<string, TileCategory>;
 };
 
 export function serializeBuildingState(state: BuildingSerializableState): BuildingSerializedState {
   return {
     version: 1,
-    meshes: Array.from(state.meshes.values(), cloneBuildingValue),
-    wallGroups: Array.from(state.wallGroups.values(), cloneBuildingValue),
-    tileGroups: Array.from(state.tileGroups.values(), cloneBuildingValue),
-    blocks: state.blocks.map(cloneBuildingValue),
-    objects: state.objects.map(cloneBuildingValue),
-    wallCategories: Array.from(state.wallCategories.values(), cloneBuildingValue),
-    tileCategories: Array.from(state.tileCategories.values(), cloneBuildingValue),
+    meshes: Array.from(state.meshes.values(), clonePlainData),
+    wallGroups: Array.from(state.wallGroups.values(), clonePlainData),
+    tileGroups: Array.from(state.tileGroups.values(), clonePlainData),
+    blocks: state.blocks.map(clonePlainData),
+    objects: state.objects.map(clonePlainData),
     showSnow: state.showSnow,
     showFog: state.showFog,
     fogColor: state.fogColor,
     weatherEffect: state.weatherEffect,
+    climate: state.climate,
     worldSurface: state.worldSurface,
+    wallCategories: Array.from(state.wallCategories.values(), clonePlainData),
+    tileCategories: Array.from(state.tileCategories.values(), clonePlainData),
   };
-}
-
-function cloneBuildingValue<T>(value: T): T {
-  if (typeof structuredClone === 'function') {
-    return structuredClone(value);
-  }
-  return JSON.parse(JSON.stringify(value)) as T;
 }
 
 function validateVector(value: unknown): void {
@@ -92,6 +90,17 @@ function validateVector(value: unknown): void {
     !('z' in value) || !Number.isFinite(value.z)) {
     throw new RangeError('Invalid building transform');
   }
+}
+
+function isCategoryList(value: unknown, groupKey: 'wallGroupIds' | 'tileGroupIds'): boolean {
+  return Array.isArray(value) && value.every((category: unknown) => {
+    if (!category || typeof category !== 'object') return false;
+    const record = category as Record<string, unknown>;
+    const groupIds = record[groupKey];
+    return typeof record['id'] === 'string' && typeof record['name'] === 'string'
+      && (record['description'] === undefined || typeof record['description'] === 'string')
+      && Array.isArray(groupIds) && groupIds.every((id) => typeof id === 'string');
+  });
 }
 
 function validateSize(value: unknown): void {
@@ -111,16 +120,8 @@ export function hydrateBuildingState(
   if (data.version !== undefined && data.version !== 1) {
     throw new Error('Unsupported building snapshot version');
   }
-  const collections = [
-    'meshes',
-    'wallGroups',
-    'tileGroups',
-    'blocks',
-    'objects',
-    'wallCategories',
-    'tileCategories',
-  ] as const;
-  const settings = ['showSnow', 'showFog', 'fogColor', 'weatherEffect', 'worldSurface'] as const;
+  const collections = ['meshes', 'wallGroups', 'tileGroups', 'blocks', 'objects', 'wallCategories', 'tileCategories'] as const;
+  const settings = ['showSnow', 'showFog', 'fogColor', 'weatherEffect', 'climate', 'worldSurface'] as const;
   if (![...collections, ...settings].some((key) => Object.prototype.hasOwnProperty.call(data, key))) {
     throw new Error('Empty building snapshot');
   }
@@ -134,8 +135,13 @@ export function hydrateBuildingState(
     (data.showFog !== undefined && typeof data.showFog !== 'boolean') ||
     (data.fogColor !== undefined && typeof data.fogColor !== 'string') ||
     (data.weatherEffect !== undefined && !['none', 'snow', 'rain', 'storm', 'wind'].includes(data.weatherEffect)) ||
+    (data.climate !== undefined && !CLIMATE_MODES.includes(data.climate)) ||
     (data.worldSurface !== undefined && !['ground', 'water'].includes(data.worldSurface))
   ) throw new Error('Invalid building snapshot settings');
+  if (
+    (data.wallCategories !== undefined && !isCategoryList(data.wallCategories, 'wallGroupIds')) ||
+    (data.tileCategories !== undefined && !isCategoryList(data.tileCategories, 'tileGroupIds'))
+  ) throw new Error('Invalid building snapshot categories');
 
   for (const group of data.tileGroups ?? []) {
     for (const tile of group.tiles) {
@@ -159,23 +165,14 @@ export function hydrateBuildingState(
     }
   }
   for (const object of data.objects ?? []) validateVector(object.position);
-  for (const category of [...(data.wallCategories ?? []), ...(data.tileCategories ?? [])]) {
-    if (!category || typeof category.id !== 'string') {
-      throw new Error('Invalid building snapshot category');
-    }
-  }
 
-  data = cloneBuildingValue(data);
+  data = clonePlainData(data);
 
   state.meshes.clear();
   state.wallGroups.clear();
   state.tileGroups.clear();
-  state.tileIndex.clear();
-  state.tileCells.clear();
-  state.tileMeta.clear();
-  state.wallIndex.clear();
-  state.wallCells.clear();
-  state.wallMeta.clear();
+  // A fresh index keeps prepareHydrate side-effect free until the prepared state is applied.
+  state.spatialIndex = new BuildingSpatialIndex();
 
   for (const mesh of data.meshes ?? []) {
     state.meshes.set(mesh.id, { ...mesh });
@@ -184,18 +181,23 @@ export function hydrateBuildingState(
   hydrateTileGroups(state, data.tileGroups ?? []);
   hydrateWallGroups(state, data.wallGroups ?? []);
 
-  state.blocks = (data.blocks ?? []).map((block) => ({
-    ...block,
-    cell: block.cell ?? tilePositionToCell(block.position),
-  }));
+  state.blocks = (data.blocks ?? []).map((block) => {
+    const cell = block.cell ?? tilePositionToCell(block.position);
+    state.spatialIndex.occupy(block.id, createBlockFootprint(cell, block.size));
+    return { ...block, cell };
+  });
   state.objects = (data.objects ?? []).map((object) => ({ ...object }));
-  if (data.wallCategories) replaceCategories(state.wallCategories, data.wallCategories);
-  if (data.tileCategories) replaceCategories(state.tileCategories, data.tileCategories);
   state.showSnow = data.showSnow ?? false;
   state.showFog = data.showFog ?? false;
   state.fogColor = data.fogColor ?? '#cfd8e3';
   state.weatherEffect = data.weatherEffect ?? (state.showSnow ? 'snow' : 'none');
+  state.climate = data.climate ?? 'off';
   state.worldSurface = data.worldSurface ?? 'ground';
+  // Snapshots without categories keep the current ones; an empty store falls back to the defaults.
+  if (data.wallCategories) state.wallCategories = new Map(data.wallCategories.map((category) => [category.id, category]));
+  else if (state.wallCategories.size === 0) state.wallCategories = createDefaultWallCategories();
+  if (data.tileCategories) state.tileCategories = new Map(data.tileCategories.map((category) => [category.id, category]));
+  else if (state.tileCategories.size === 0) state.tileCategories = createDefaultTileCategories();
   applySelectedGroupId(state, 'selectedTileGroupId', state.tileGroups);
   applySelectedGroupId(state, 'selectedWallGroupId', state.wallGroups);
   state.initialized = true;
@@ -205,22 +207,13 @@ export function applyBuildingHydration(state: BuildingHydrationTarget, prepared:
   Object.assign(state, {
     meshes: prepared.meshes, wallGroups: prepared.wallGroups, tileGroups: prepared.tileGroups,
     blocks: prepared.blocks, objects: prepared.objects,
-    wallCategories: prepared.wallCategories, tileCategories: prepared.tileCategories,
-    tileIndex: prepared.tileIndex, tileCells: prepared.tileCells, tileMeta: prepared.tileMeta,
-    wallIndex: prepared.wallIndex, wallCells: prepared.wallCells, wallMeta: prepared.wallMeta,
+    spatialIndex: prepared.spatialIndex,
     initialized: prepared.initialized, showSnow: prepared.showSnow, showFog: prepared.showFog,
-    fogColor: prepared.fogColor, weatherEffect: prepared.weatherEffect, worldSurface: prepared.worldSurface,
+    fogColor: prepared.fogColor, weatherEffect: prepared.weatherEffect, climate: prepared.climate, worldSurface: prepared.worldSurface,
+    wallCategories: prepared.wallCategories, tileCategories: prepared.tileCategories,
   });
   applySelectedGroupId(state, 'selectedTileGroupId', state.tileGroups);
   applySelectedGroupId(state, 'selectedWallGroupId', state.wallGroups);
-}
-
-function replaceCategories<T extends { id: string }>(
-  target: Map<string, T>,
-  categories: T[],
-): void {
-  target.clear();
-  for (const category of categories) target.set(category.id, category);
 }
 
 function applySelectedGroupId(
@@ -239,33 +232,12 @@ function applySelectedGroupId(
 }
 
 function hydrateTileGroups(state: BuildingHydrationTarget, groups: TileGroupConfig[]): void {
-  const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
   for (const group of groups) {
     const tiles = group.tiles.map((tile) => {
-      const cell = tile.cell ?? tilePositionToCell(tile.position);
-      const tileWithCell: TileConfig = {
-        ...tile,
-        cell,
-        footprint: tile.footprint ?? createTileFootprint(cell, tile.size || 1),
-      };
-      const halfSize = tileHalfSize(tileWithCell.size || 1);
-      state.tileMeta.set(tileWithCell.id, {
-        x: tileWithCell.position.x,
-        z: tileWithCell.position.z,
-        y: tileWithCell.position.y,
-        halfSize,
-      });
-      indexAabb(
-        state.tileIndex,
-        state.tileCells,
-        tileWithCell.id,
-        tileWithCell.position.x - halfSize,
-        tileWithCell.position.x + halfSize,
-        tileWithCell.position.z - halfSize,
-        tileWithCell.position.z + halfSize,
-        cellSize,
-      );
-      return tileWithCell;
+      // An even tile saved on a cell center moves to the grid corner of the cells it already occupied.
+      const placed = placeTileOnGrid(tile);
+      state.spatialIndex.indexTile(placed);
+      return placed;
     });
     state.tileGroups.set(group.id, { ...group, tiles });
   }
@@ -276,24 +248,10 @@ function hydrateWallGroups(state: BuildingHydrationTarget, groups: WallGroupConf
     const walls = group.walls.map((wall) => {
       const wallWithEdge: WallConfig = {
         ...wall,
-        edge: wall.edge ?? wallTransformToEdge(wall.position, wall.rotation.y),
+        // Derived, so a snapshot written with the old edge naming reads back on the edge the wall stands on.
+        edge: wallEdge(wall),
       };
-      const tol = 0.5;
-      state.wallMeta.set(wallWithEdge.id, {
-        x: wallWithEdge.position.x,
-        z: wallWithEdge.position.z,
-        rotY: wallWithEdge.rotation.y,
-      });
-      indexAabb(
-        state.wallIndex,
-        state.wallCells,
-        wallWithEdge.id,
-        wallWithEdge.position.x - tol,
-        wallWithEdge.position.x + tol,
-        wallWithEdge.position.z - tol,
-        wallWithEdge.position.z + tol,
-        1,
-      );
+      state.spatialIndex.indexWall(wallWithEdge);
       return wallWithEdge;
     });
     state.wallGroups.set(group.id, { ...group, walls });

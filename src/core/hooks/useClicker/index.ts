@@ -3,17 +3,12 @@ import * as THREE from 'three';
 
 import { V3 } from '@utils/vector';
 
+import { groundAlongRay, nearestWalkable } from './ground';
 import { ClickerMoveOptions, ClickerResult } from './types';
-import type { InputAdapter } from '../../interactions/core';
+import type { InputAdapter } from '../../input/core';
 import { useInputBackend } from '../../interactions/hooks';
 import { useStateSystem } from '../../motions/hooks/useStateSystem';
-import {
-  clearClickNavigationRoute,
-  isLatestClickNavigationRequest,
-  nextClickNavigationRequest,
-  setClickNavigationRoute,
-} from '../../navigation/ClickNavigationRoute';
-import { NavigationSystem } from '../../navigation/NavigationSystem';
+import { useNavigationSystem, useClickNavigationRoute } from '../../navigation/hooks/useNavigation';
 
 function updateMouseTarget(
   inputBackend: InputAdapter,
@@ -35,6 +30,8 @@ function updateMouseTarget(
 }
 
 export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
+  const navigation = useNavigationSystem();
+  const { clearClickNavigationRoute, isLatestClickNavigationRequest, nextClickNavigationRequest, setClickNavigationRoute } = useClickNavigationRoute();
   const {
     minHeight = 0.5,
     offsetY = 0.5,
@@ -68,6 +65,8 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
       const finalTarget = V3(targetPoint.x, adjustedY, targetPoint.z);
       const startPosition = currentPosition.clone();
       const requestId = nextClickNavigationRequest();
+      // The clicker catches the pointer on a flat plane; the ray finds the ground under it once heights are known.
+      const ray = (event.ray as THREE.Ray | undefined)?.clone();
 
       if (!useNavigation) {
         clearClickNavigationRoute();
@@ -75,17 +74,26 @@ export function useClicker(options: ClickerMoveOptions = {}): ClickerResult {
         return true;
       }
 
-      void NavigationSystem.getInstance().init().then(() => {
+      void navigation.init().then(() => {
         if (!isLatestClickNavigationRequest(requestId)) return;
 
-        const navigation = NavigationSystem.getInstance();
+
         const agentSize = {
           agentRadius,
           ...(agentWidth !== undefined ? { agentWidth } : {}),
           ...(agentDepth !== undefined ? { agentDepth } : {}),
           ...(clearance !== undefined ? { clearance } : {}),
         };
-        finalTarget.y = Math.max(navigation.sampleHeight(finalTarget.x, finalTarget.z) + offsetY, minHeight);
+        const heightAt = (x: number, z: number) => navigation.sampleHeight(x, z);
+        const ground = ray && groundAlongRay(ray, heightAt);
+        if (ground) finalTarget.set(ground.x, 0, ground.z);
+        // A click on something the agent cannot stand on (a rock, a pond) walks to the nearest spot beside it.
+        const { cellSize } = navigation.getGridDimensions();
+        const reachable = nearestWalkable(
+          (x, z) => navigation.isWalkable(x, z, agentSize), finalTarget.x, finalTarget.z, cellSize / 2, cellSize * 2, startPosition,
+        );
+        if (reachable) finalTarget.set(reachable[0], 0, reachable[1]);
+        finalTarget.y = Math.max(heightAt(finalTarget.x, finalTarget.z) + offsetY, minHeight);
         if (navigation.hasLineOfSight(startPosition.x, startPosition.z, finalTarget.x, finalTarget.z, agentSize)) {
           setClickNavigationRoute([finalTarget], waypointThreshold, isRun);
           updateMouseTarget(inputBackend, finalTarget, startPosition, isRun);

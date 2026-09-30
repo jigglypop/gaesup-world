@@ -269,7 +269,7 @@ describe('toon scene ownership', () => {
     root.add(failingObject, secondMesh);
     applyToonToScene(root);
     const failingGenerated = failingMaterial as THREE.MeshToonMaterial;
-    const secondGenerated = secondMesh.material as THREE.MeshToonMaterial;
+    const secondGenerated = getMaterial(secondMesh) as THREE.MeshToonMaterial;
     const failingDispose = jest.spyOn(failingGenerated, 'dispose').mockImplementation(() => {
       throw disposeError;
     });

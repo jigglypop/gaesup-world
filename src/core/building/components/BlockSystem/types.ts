@@ -6,4 +6,5 @@ export type BlockSystemProps = {
   isEditMode?: boolean;
   selectedBlockId?: string | null;
   onBlockClick?: (blockId: string) => void;
+  colliders?: boolean;
 };

@@ -1,8 +1,12 @@
 import { migrateSceneDocument } from './migration';
 import type { SceneMigration } from './migration';
+import { deepFreezeOwned } from './ownership';
 import { cloneSceneDocument } from './serialization';
+import { isTrustedSceneSnapshot, trustSceneSnapshot } from './trustedSnapshots';
 import type { SceneDocumentController } from './types';
+import { createIdentityRevision } from '../save/core/revision';
 import type { DomainBinding } from '../save/types';
+import { clonePlainData } from '../utils/clone';
 
 export const SCENE_DOCUMENT_SAVE_KEY = 'scene-document';
 
@@ -19,7 +23,8 @@ export function createSceneDocumentSaveBinding(
       throw new TypeError(formatSceneDocumentIssues(migrated.issues));
     }
 
-    const document = migrated.document;
+    // The fresh parse is validated and owned here, so the replace command does not validate it again.
+    const document = trustSceneSnapshot(deepFreezeOwned(migrated.document));
     return () => {
       const result = controller.dispatch({
         type: 'scene-document.replace',
@@ -33,7 +38,17 @@ export function createSceneDocumentSaveBinding(
 
   return {
     key: SCENE_DOCUMENT_SAVE_KEY,
-    serialize: () => cloneSceneDocument(controller.getSnapshot()),
+    serialize: () => {
+      const snapshot = controller.getSnapshot();
+      // Trusted snapshots are validated and deep-frozen: one plain copy is the whole cost.
+      return isTrustedSceneSnapshot(snapshot) ? clonePlainData(snapshot) : cloneSceneDocument(snapshot);
+    },
+    owned: true,
+    // Untrusted snapshots may change in place, so they always read as changed.
+    revision: createIdentityRevision(() => {
+      const snapshot = controller.getSnapshot();
+      return [isTrustedSceneSnapshot(snapshot) ? snapshot : {}];
+    }),
     prepareHydrate,
     hydrate: (data) => prepareHydrate(data)(),
   };

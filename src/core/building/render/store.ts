@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+
 import { createEmptyRenderSnapshot, type BuildingRenderSnapshot } from './core';
 import { createEmptyBuildingIndirectDrawMirror, type BuildingIndirectDrawMirror } from './draw';
 import { createEmptyGpuMirror, type BuildingGpuBufferMirror } from './gpu';
@@ -8,6 +9,8 @@ import {
   destroyBuildingGpuUploadResources,
   type BuildingGpuUploadResources,
 } from './upload';
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { lazyScopedStore } from '../../stores/scopedStore';
 
 type BuildingGpuUploadResourcesUpdate =
   | BuildingGpuUploadResources
@@ -26,11 +29,12 @@ type BuildingRenderState = {
   reset: () => void;
 };
 
-const EMPTY = createEmptyRenderSnapshot();
-const EMPTY_GPU = createEmptyGpuMirror();
-const EMPTY_DRAW = createEmptyBuildingIndirectDrawMirror();
 
-export const useBuildingRenderStateStore = create<BuildingRenderState>((set) => {
+export function createBuildingRenderStore() {
+  const EMPTY = createEmptyRenderSnapshot();
+  const EMPTY_GPU = createEmptyGpuMirror();
+  const EMPTY_DRAW = createEmptyBuildingIndirectDrawMirror();
+  return create<BuildingRenderState>((set) => {
   let isApplyingUploadResourcesUpdate = false;
 
   const assertUploadResourcesUpdateIsNotReentrant = () => {
@@ -90,3 +94,11 @@ export const useBuildingRenderStateStore = create<BuildingRenderState>((set) => 
     },
   };
 });
+
+}
+
+export type BuildingRenderStore = ReturnType<typeof createBuildingRenderStore>;
+/** React uses the nearest runtime; static methods retain the legacy default. */
+export const { useStore: useBuildingRenderStateStore, useStoreApi: useBuildingRenderStateStoreApi } = lazyScopedStore(
+  'useBuildingRenderStateStore', createBuildingRenderStore, () => useGaesupRuntime()?.buildingRenderStore,
+);

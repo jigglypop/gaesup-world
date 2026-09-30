@@ -20,3 +20,19 @@ test('preserves valid custom metadata and optional fields', async () => {
   const fetcher = jest.fn(async () => ({ ok: true, status: 200, json: async () => [VALID, { id: 'prop', name: '소품', kind: 'object3d' }] } as Response));
   expect(await new HttpAssetSource('/api', fetcher).listAssets()).toEqual([VALID, { id: 'prop', name: '소품', kind: 'object3d' }]);
 });
+
+test('HttpAssetSource calls the global fetch unbound by default, as browsers require', async () => {
+  const original = globalThis.fetch;
+  const requested: unknown[] = [];
+  globalThis.fetch = function (this: unknown, input: RequestInfo | URL) {
+    if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');
+    requested.push(input);
+    return Promise.resolve({ ok: true, status: 200, json: async () => [{ id: 'hat', name: 'Hat', kind: 'characterPart' }] } as Response);
+  } as typeof fetch;
+  try {
+    await expect(new HttpAssetSource('/api/').listAssets()).resolves.toEqual([{ id: 'hat', name: 'Hat', kind: 'characterPart' }]);
+    expect(requested).toEqual(['/api/assets']);
+  } finally {
+    globalThis.fetch = original;
+  }
+});

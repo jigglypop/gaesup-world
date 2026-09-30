@@ -21,12 +21,14 @@ import {
   normalizeEnvironment,
   skyRadianceInto,
 } from './giEnvironment';
+import { packProbeAtlas } from './probeAtlas';
 import {
   BACKFACE_FLOOR,
   FEED_BACKFACE_FLOOR,
   sampleProbeField,
   type ProbeFieldSource,
 } from './probeField';
+import { probeRange, validateConfig } from './probeGrid';
 import { fibonacciSphereDirection, r2Sample, rotationFromSample } from './sampling';
 import { createVoxelHitScratch, traceVoxelRayInto } from './traceVoxels';
 import { isVoxelOccupied, voxelMaterialId } from './voxelGrid';
@@ -35,7 +37,6 @@ type Channel = 0 | 1 | 2;
 
 const CHANNELS: readonly Channel[] = [0, 1, 2];
 const TEXEL_STRIDE = 4;
-const MAX_PROBE_COUNT = 1 << 22;
 const IRRADIANCE_ESTIMATOR_SCALE = 4;
 const INVERSE_PI = 1 / Math.PI;
 const GOLDEN_FRACTION = 0.6180339887498949;
@@ -48,42 +49,6 @@ const RELOCATION_REACH = 0.35;
 const RELOCATION_STEPS = 3;
 const AXIS_SIGNS = [1, -1] as const;
 const MISSING_MATERIAL: VoxelMaterial = { albedo: [0, 0, 0], emissive: [0, 0, 0] };
-
-function validateConfig(config: ProbeVolumeConfig): void {
-  const { origin, spacing, counts, raysPerProbe, blend, normalBias, maxRayDistance } = config;
-  if (![origin.x, origin.y, origin.z, spacing, normalBias, maxRayDistance].every(Number.isFinite)) {
-    throw new RangeError('[ProbeVolume Error]: config values must be finite');
-  }
-  if (spacing <= 0 || normalBias < 0 || maxRayDistance <= 0) {
-    throw new RangeError('[ProbeVolume Error]: spacing and maxRayDistance must be positive');
-  }
-  if (!counts.every((count) => Number.isInteger(count) && count > 0)) {
-    throw new RangeError('[ProbeVolume Error]: counts must be positive integers');
-  }
-  if (counts[0] * counts[1] * counts[2] > MAX_PROBE_COUNT) {
-    throw new RangeError('[ProbeVolume Error]: probe count exceeds the limit');
-  }
-  if (!Number.isInteger(raysPerProbe) || raysPerProbe < 1) {
-    throw new RangeError('[ProbeVolume Error]: raysPerProbe must be a positive integer');
-  }
-  if (!(blend > 0 && blend <= 1)) {
-    throw new RangeError('[ProbeVolume Error]: blend must be within (0, 1]');
-  }
-}
-
-function probeRange(
-  min: number,
-  max: number,
-  origin: number,
-  spacing: number,
-  margin: number,
-  count: number,
-): readonly [number, number] | null {
-  const lo = Math.floor((min - margin - origin) / spacing);
-  const hi = Math.ceil((max + margin - origin) / spacing);
-  if (hi < 0 || lo > count - 1) return null;
-  return [Math.max(lo, 0), Math.min(hi, count - 1)];
-}
 
 /**
  * 복셀 장면을 추적해 프로브 격자에 간접광(6방향 조도 큐브)을 누적하는 래디언스 캐시.
@@ -191,9 +156,9 @@ export class ProbeVolume {
     const rangeY = probeRange(box.min.y, box.max.y, origin.y, spacing, margin, counts[1]);
     const rangeZ = probeRange(box.min.z, box.max.z, origin.z, spacing, margin, counts[2]);
     if (!rangeX || !rangeY || !rangeZ) return;
-    for (let iz = rangeZ[0]; iz <= rangeZ[1]; iz++) {
-      for (let iy = rangeY[0]; iy <= rangeY[1]; iy++) {
-        for (let ix = rangeX[0]; ix <= rangeX[1]; ix++) {
+    for (let iz: number = rangeZ[0]; iz <= rangeZ[1]; iz++) {
+      for (let iy: number = rangeY[0]; iy <= rangeY[1]; iy++) {
+        for (let ix: number = rangeX[0]; ix <= rangeX[1]; ix++) {
           const index = ix + counts[0] * (iy + counts[1] * iz);
           this.age[index] = 0;
           if (this.queued[index] === 1) continue;
@@ -272,19 +237,30 @@ export class ProbeVolume {
       new Float32Array(size),
     ];
     for (let index = 0; index < this.probeCount; index++) {
-      if (this.valid[index] === 1) this.loadProbe(index);
-      else this.loadDilated(index);
+      const cube = this.probeCube(index);
       for (let face = 0; face < CUBE_FACE_COUNT; face++) {
         const buffer = faces[face];
         if (!buffer) continue;
         const texel = index * TEXEL_STRIDE;
         for (const c of CHANNELS) {
-          buffer[texel + c] = this.accumulator[face * CUBE_CHANNELS + c] ?? 0;
+          buffer[texel + c] = cube[face * CUBE_CHANNELS + c] ?? 0;
         }
         buffer[texel + CUBE_CHANNELS] = 1;
       }
     }
     return faces;
+  }
+
+  /** exportFaceData와 같은 값을 반정밀도 아틀라스(probeAtlas.ts)에 면별 float 버퍼 없이 바로 쓴다. */
+  packAtlas(target: Uint16Array): void {
+    packProbeAtlas(target, this.config.counts, (index) => this.probeCube(index));
+  }
+
+  /** 프로브의 조도 큐브(복셀 안에 묻힌 프로브는 이웃 평균). 다음 호출이 덮어쓰는 내부 버퍼다. */
+  private probeCube(index: number): Float64Array {
+    if (this.valid[index] === 1) this.loadProbe(index);
+    else this.loadDilated(index);
+    return this.accumulator;
   }
 
   private loadProbe(index: number): void {

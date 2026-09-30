@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 
 import type { GaesupPlugin, PluginContext } from '../plugins';
-import { useGaesupStore } from '../stores/gaesupStore';
+import { createIdentityRevision } from '../save/core/revision';
+import { useGaesupStore, RUNTIME_GAESUP_STORE_SERVICE_ID, type GaesupStore } from '../stores/gaesupStore';
 import type { CameraSystemConfig } from './bridge/types';
 import { CameraSystem } from './core/CameraSystem';
-import type { CameraOptionType } from './core/types';
+import type { CameraCollisionMode, CameraCollisionTargets, CameraOptionType } from './core/types';
 import type { ModeState } from '../stores/slices/mode';
 
 type SerializedVector3 = {
@@ -63,12 +64,16 @@ const DEFAULT_PLUGIN_ID = 'gaesup.camera';
 export const DEFAULT_CAMERA_SYSTEM_EXTENSION_ID = 'camera.system';
 export const DEFAULT_CAMERA_SAVE_EXTENSION_ID = 'camera';
 export const DEFAULT_CAMERA_STORE_SERVICE_ID = 'camera.store';
-const VECTOR_OPTION_KEYS = new Set([
-  'offset',
-  'target',
-  'position',
-  'focusTarget',
-  'fixedPosition',
+const COLLISION_TARGETS: ReadonlySet<unknown> = new Set<CameraCollisionTargets>(['scene', 'colliders']);
+const COLLISION_MODES: ReadonlySet<unknown> = new Set<CameraCollisionMode>(['push', 'fade']);
+const VECTOR_OPTION_KEYS = new Set(['focusTarget', 'fixedPosition']);
+/**
+ * Never saved or restored: the transient shake `offset` (older saves hold a meaningless (-10, -10, -10) default that
+ * would now move the camera) and the options removed because nothing read them.
+ */
+const UNSAVED_OPTION_KEYS = new Set([
+  'offset', 'maxDistance', 'distance', 'target', 'position', 'focusDuration',
+  'minFov', 'maxFov', 'mode', 'rotation', 'isoAngle', 'modeSettings',
 ]);
 
 declare module '../plugins' {
@@ -127,27 +132,16 @@ function isSerializedVector3(value: unknown): value is SerializedVector3 {
   );
 }
 
-function isSerializedEuler(value: unknown): value is SerializedEuler {
-  if (!isSerializedVector3(value)) return false;
-  return ['XYZ', 'YZX', 'ZXY', 'XZY', 'YXZ', 'ZYX'].includes((value as Partial<SerializedEuler>).order ?? '');
-}
-
 function deserializeCameraOption(
   option: CameraSerializedState['cameraOption'],
 ): Partial<CameraOptionType> {
   const next: Partial<CameraOptionType> = {};
 
   for (const [key, value] of Object.entries(option)) {
-    if (value === undefined) continue;
+    if (value === undefined || UNSAVED_OPTION_KEYS.has(key)) continue;
     if (VECTOR_OPTION_KEYS.has(key) && !isSerializedVector3(value)) throw new TypeError('Invalid camera vector');
-    if (key === 'rotation' && !isSerializedEuler(value)) throw new TypeError('Invalid camera rotation');
     if (VECTOR_OPTION_KEYS.has(key) && isSerializedVector3(value)) {
       Object.assign(next, { [key]: new THREE.Vector3(value.x, value.y, value.z) });
-      continue;
-    }
-
-    if (key === 'rotation' && isSerializedEuler(value)) {
-      Object.assign(next, { rotation: new THREE.Euler(value.x, value.y, value.z, value.order) });
       continue;
     }
 
@@ -157,11 +151,13 @@ function deserializeCameraOption(
   return next;
 }
 
-function getCameraSerializedState(): CameraSerializedState {
-  const state = useGaesupStore.getState();
+function getCameraSerializedState(store: GaesupStore = useGaesupStore): CameraSerializedState {
+  const state = store.getState();
   return {
     mode: { ...state.mode },
-    cameraOption: serializeValue(state.cameraOption) as CameraSerializedState['cameraOption'],
+    cameraOption: serializeValue(
+      Object.fromEntries(Object.entries(state.cameraOption).filter(([key]) => !UNSAVED_OPTION_KEYS.has(key))),
+    ) as CameraSerializedState['cameraOption'],
   };
 }
 
@@ -174,7 +170,7 @@ function validateNumericOptions(value: CameraSerializedOptionValue): void {
   }
 }
 
-function prepareCameraState(data: CameraSerializedState | null | undefined): () => void {
+function prepareCameraState(data: CameraSerializedState | null | undefined, store: GaesupStore = useGaesupStore): () => void {
   if (data === null || data === undefined) return () => {};
   if (typeof data !== 'object' || Array.isArray(data)
     || (data.mode !== undefined && (!data.mode || typeof data.mode !== 'object' || Array.isArray(data.mode)))
@@ -190,7 +186,8 @@ function prepareCameraState(data: CameraSerializedState | null | undefined): () 
   const raw = data.cameraOption;
   if (raw) {
     for (const key of ['maxDistance', 'distance', 'xDistance', 'yDistance', 'zDistance', 'zoom', 'zoomSpeed', 'minZoom', 'maxZoom',
-      'focusDuration', 'focusDistance', 'focusLerpSpeed', 'collisionMargin', 'fov', 'minFov', 'maxFov', 'isoAngle']) {
+      'focusDuration', 'focusDistance', 'focusLerpSpeed', 'collisionMargin', 'collisionFadeOpacity', 'fov', 'minFov', 'maxFov',
+      'isoAngle']) {
       if (raw[key] !== undefined && (typeof raw[key] !== 'number' || !Number.isFinite(raw[key]))) throw new TypeError('Invalid camera number');
     }
     for (const key of ['enableZoom', 'focus', 'enableFocus', 'enableCollision']) {
@@ -200,17 +197,31 @@ function prepareCameraState(data: CameraSerializedState | null | undefined): () 
       if (raw[key] !== undefined) validateNumericOptions(raw[key]);
     }
     if (raw['mode'] !== undefined && typeof raw['mode'] !== 'string') throw new TypeError('Invalid camera option mode');
+    if (raw['collisionTargets'] !== undefined && !COLLISION_TARGETS.has(raw['collisionTargets'])) {
+      throw new TypeError('Invalid camera collision targets');
+    }
+    if (raw['collisionMode'] !== undefined && !COLLISION_MODES.has(raw['collisionMode'])) {
+      throw new TypeError('Invalid camera collision mode');
+    }
   }
   const option = raw ? deserializeCameraOption(raw) : undefined;
   return () => {
-    const state = useGaesupStore.getState();
+    const state = store.getState();
     if (mode) state.setMode(mode);
     if (option) state.setCameraOption(option);
   };
 }
 
-function hydrateCameraState(data: CameraSerializedState | null | undefined): void {
-  prepareCameraState(data)();
+/** Only the camera fields go back to construction; the rest of the runtime store belongs to other domains. */
+function resetCameraState(store: GaesupStore): void {
+  const { mode, cameraOption } = store.getInitialState();
+  // The hydrate round trip gives the reset its own vectors; a full option comes back full.
+  const option = deserializeCameraOption(serializeValue(cameraOption) as CameraSerializedState['cameraOption']) as CameraOptionType;
+  store.setState({ mode: { ...mode }, cameraOption: option });
+}
+
+function hydrateCameraState(data: CameraSerializedState | null | undefined, store: GaesupStore = useGaesupStore): void {
+  prepareCameraState(data, store)();
 }
 
 export function createCameraPlugin(options: CameraPluginOptions = {}): GaesupPlugin {
@@ -226,21 +237,24 @@ export function createCameraPlugin(options: CameraPluginOptions = {}): GaesupPlu
     runtime: 'client',
     capabilities: ['camera'],
     setup(ctx: PluginContext) {
+      const store = ctx.services.get<GaesupStore>(RUNTIME_GAESUP_STORE_SERVICE_ID) ?? useGaesupStore;
       ctx.systems.register(systemExtensionId, {
         System: CameraSystem,
         create: (config: CameraSystemConfig) => new CameraSystem(config),
       }, pluginId);
       ctx.save.register(saveExtensionId, {
         key: saveExtensionId,
-        serialize: getCameraSerializedState,
-        hydrate: hydrateCameraState,
-        prepareHydrate: prepareCameraState,
+        serialize: () => getCameraSerializedState(store),
+        hydrate: (data: CameraSerializedState | null | undefined) => hydrateCameraState(data, store),
+        prepareHydrate: (data: CameraSerializedState | null | undefined) => prepareCameraState(data, store),
+        revision: createIdentityRevision(() => [store.getState().mode, store.getState().cameraOption]),
+        reset: () => resetCameraState(store),
       }, pluginId);
       ctx.services.register(storeServiceId, {
-        useStore: useGaesupStore,
-        getState: getCameraSerializedState,
-        setMode: (update: Partial<ModeState>) => useGaesupStore.getState().setMode(update),
-        setCameraOption: (update: Partial<CameraOptionType>) => useGaesupStore.getState().setCameraOption(update),
+        useStore: store,
+        getState: () => getCameraSerializedState(store),
+        setMode: (update: Partial<ModeState>) => store.getState().setMode(update),
+        setCameraOption: (update: Partial<CameraOptionType>) => store.getState().setCameraOption(update),
       }, pluginId);
       ctx.events.emit('camera:ready', {
         pluginId,

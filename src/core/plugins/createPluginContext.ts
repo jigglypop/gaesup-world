@@ -24,17 +24,15 @@ export function createPluginContext(
 ): PluginContext {
   return {
     plugins,
-    events: new InMemoryEventBus(),
+    events: new InMemoryEventBus(options.report),
     logger: createPluginLogger(options.logger),
     grid: new InMemoryExtensionRegistry('grid'),
     placement: new InMemoryExtensionRegistry('placement'),
-    catalog: new InMemoryExtensionRegistry('catalog'),
     assets: new InMemoryExtensionRegistry('assets'),
     rendering: new InMemoryExtensionRegistry('rendering'),
     input: new InMemoryExtensionRegistry('input'),
     interactions: new InMemoryExtensionRegistry('interactions'),
     npc: new InMemoryExtensionRegistry('npc'),
-    quests: new InMemoryExtensionRegistry('quests'),
     blueprints: new InMemoryExtensionRegistry('blueprints'),
     editor: new InMemoryExtensionRegistry('editor'),
     save: new InMemoryExtensionRegistry('save'),

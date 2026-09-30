@@ -1,5 +1,9 @@
+export { createGameplayAreas } from './areas';
+export type { GameplayAreaConfig, GameplayAreas } from './areas';
 export { GameplayEventEngine } from './engine';
 export type { GameplayEventEngineOptions } from './engine';
+export { commitGameplayEffect } from './execution';
+export type { GameplayEventDependencies } from './clientServices';
 export {
   GameplayEventRegistry,
   createDefaultGameplayEventRegistry,
@@ -15,7 +19,7 @@ export {
   createGameplayEventConditionTemplate,
   createGameplayEventTriggerTemplate,
   createManualToastEventBlueprint,
-  createNpcTalkStartsQuestEventBlueprint,
+  createNpcTalkEventBlueprint,
 } from './templates';
 export type {
   GameplayActionHandler,
@@ -30,6 +34,7 @@ export type {
   GameplayEventRuntimeState,
   GameplayEventServices,
   GameplayToastKind,
+  GameplayEventSerialized,
   GameplayEventTrigger,
   GameplayTriggerEvent,
 } from './types';

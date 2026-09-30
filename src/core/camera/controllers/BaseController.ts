@@ -1,9 +1,12 @@
 import * as THREE from 'three';
 
-import { Profile, HandleError } from '@/core/boilerplate/decorators';
 
+import { disposeCameraOcclusion, peekCameraOcclusion } from '../core/CameraOcclusion';
 import { ICameraController, CameraCalcProps, CameraSystemState, CameraSystemConfig } from '../core/types';
-import { activeStateUtils, cameraUtils } from '../utils/camera';
+import { activeStateUtils, cameraUtils, resolveCollisionPosition } from '../utils/camera';
+
+/** Probe start above the target's feet: about a body's center, which physics keeps clear of level geometry. */
+const COLLISION_PIVOT_HEIGHT = 1;
 
 export abstract class BaseController implements ICameraController {
   abstract name: string;
@@ -15,11 +18,16 @@ export abstract class BaseController implements ICameraController {
   private focusDirection = new THREE.Vector3();
   private focusBasePosition = new THREE.Vector3();
   private focusTargetPosition = new THREE.Vector3();
+  private readonly nextPosition = new THREE.Vector3();
+  private readonly collisionPivot = new THREE.Vector3();
+  private readonly shift = new THREE.Vector3();
   private orbitRight = new THREE.Vector3();
   private orbitYawQuaternion = new THREE.Quaternion();
   private orbitPitchQuaternion = new THREE.Quaternion();
   private readonly xAxis = new THREE.Vector3(1, 0, 0);
   private readonly yAxis = new THREE.Vector3(0, 1, 0);
+  /** Scene of the last update, whose faded occluders `dispose` restores. */
+  private scene: THREE.Scene | null = null;
 
   private applyDefaults(state: CameraSystemState): void {
     const defaults = this.defaultConfig;
@@ -53,15 +61,22 @@ export abstract class BaseController implements ICameraController {
     }
   }
   
-  @Profile()
   calculateLookAt(props: CameraCalcProps, state: CameraSystemState): THREE.Vector3 {
     void state;
     return activeStateUtils.getPosition(props.activeState);
   }
 
+  protected getOrbitYaw(state: CameraSystemState): number {
+    return state.runtime?.orbitYaw ?? state.config.orbitYaw ?? 0;
+  }
+
+  protected getOrbitPitch(state: CameraSystemState): number {
+    return state.runtime?.orbitPitch ?? state.config.orbitPitch ?? 0;
+  }
+
   protected applyOrbitOffset(offset: THREE.Vector3, state: CameraSystemState): THREE.Vector3 {
-    const orbitYaw = state.config.orbitYaw ?? 0;
-    const orbitPitch = state.config.orbitPitch ?? 0;
+    const orbitYaw = this.getOrbitYaw(state);
+    const orbitPitch = this.getOrbitPitch(state);
     if (orbitYaw === 0 && orbitPitch === 0) {
       return offset;
     }
@@ -85,11 +100,13 @@ export abstract class BaseController implements ICameraController {
     return offset;
   }
   
-  @HandleError()
-  @Profile()
   update(props: CameraCalcProps, state: CameraSystemState): void {
     const { camera, deltaTime, activeState } = props;
-    if (!activeState) return;
+    this.scene = props.scene;
+    if (!activeState) {
+      peekCameraOcclusion(props.scene)?.update(deltaTime, state.config.collisionFadeOpacity, state.config.collisionMode === 'fade');
+      return;
+    }
     this.applyDefaults(state);
     const cameraOption = state.config;
     let targetPosition: THREE.Vector3;
@@ -119,16 +136,8 @@ export abstract class BaseController implements ICameraController {
       targetPosition = this.calculateTargetPosition(props, state);
       lookAtTarget = this.calculateLookAt(props, state);
     }
-    if (cameraOption.enableCollision) {
-      const collision = cameraUtils.improvedCollisionCheck(
-        lookAtTarget,
-        targetPosition,
-        props.scene,
-        cameraOption.collisionMargin ?? 0.5,
-        props.excludeObjects,
-      );
-      targetPosition = collision.position;
-    }
+    if (cameraOption.offset) targetPosition.add(this.shift.set(cameraOption.offset.x, cameraOption.offset.y, cameraOption.offset.z));
+    if (cameraOption.bounds) cameraUtils.clampPosition(targetPosition, cameraOption.bounds);
     const focusLerpSpeed = cameraOption.focusLerpSpeed || 10.0;
     const positionSmoothing = cameraOption.focus
       ? focusLerpSpeed
@@ -136,18 +145,36 @@ export abstract class BaseController implements ICameraController {
     const rotationSmoothing = cameraOption.focus
       ? focusLerpSpeed * 0.8
       : cameraUtils.smoothingToSpeed(cameraOption.smoothing?.rotation, positionSmoothing * 0.8);
-    cameraUtils.preventCameraJitter(
-      camera, 
-      targetPosition, 
-      lookAtTarget, 
-      positionSmoothing, 
-      deltaTime,
-      rotationSmoothing
+    // Sweep the actual frame position. A clear desired endpoint does not imply
+    // that the interpolated position is clear (e.g. orbiting around a corner).
+    cameraUtils.frameRateIndependentLerpVector3(
+      this.nextPosition.copy(camera.position), targetPosition, positionSmoothing, deltaTime,
     );
+    if (cameraOption.enableCollision) {
+      const margin = cameraOption.collisionMargin ?? 0.5;
+      // The target is the character's feet, where ground meshes rise a little above the physics floor and terrace
+      // steps stand beside it; a probe from there blocks at once and collapses the camera into the character.
+      this.collisionPivot.copy(lookAtTarget).y += Math.max(COLLISION_PIVOT_HEIGHT, margin);
+      resolveCollisionPosition(
+        this.collisionPivot, this.nextPosition, props.scene, margin, props.excludeObjects,
+        this.nextPosition, cameraOption.collisionTargets, cameraOption.collisionMode ?? 'push',
+      );
+    }
+    // What the sweep collected fades toward the fade opacity and the rest fades back, also while collision is off
+    // (close-ups turn it off); leaving fade mode frees the kept copies.
+    peekCameraOcclusion(props.scene)?.update(deltaTime, cameraOption.collisionFadeOpacity, cameraOption.collisionMode === 'fade');
+    camera.position.copy(this.nextPosition);
+    cameraUtils.smoothLookAt(camera, lookAtTarget, rotationSmoothing, deltaTime);
     
     // FOV 업데이트
     if (state.config.fov && camera instanceof THREE.PerspectiveCamera) {
       cameraUtils.updateFOV(camera, state.config.fov, state.config.smoothing?.fov, deltaTime);
     }
   }
-} 
+
+  /** Restores the occluders this camera faded, at once, and frees their faded copies. */
+  dispose(): void {
+    if (this.scene) disposeCameraOcclusion(this.scene);
+    this.scene = null;
+  }
+}

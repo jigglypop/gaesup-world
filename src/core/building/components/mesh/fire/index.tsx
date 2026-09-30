@@ -1,13 +1,20 @@
-import React, { FC, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { FC, lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
-import { extend, useFrame } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { extendOnce } from '@/core/rendering/extendOnce';
 import { shaderMaterial } from '@/core/rendering/legacyDrei';
 
 import fragmentShader from './frag.glsl';
 import vertexShader from './vert.glsl';
-import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
+import { CompileGate } from '../../../../rendering/CompileGate';
+import { rendererKind } from '../../../../rendering/webgpu';
+import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
+import { useInstanceCapacity } from '../../BuildingBatches/capacity';
+
+const NodeFireEffects = lazy(() => import('./NodeFireEffects'));
+const NodeFireBatchEffects = lazy(() => import('./NodeFireEffects').then((module) => ({ default: module.NodeFireBatchEffects })));
 
 const FireMaterial = shaderMaterial(
   { time: 0, intensity: 1.5, seed: 0, lean: 0, flare: 1, tint: new THREE.Color(1, 1, 1) },
@@ -15,7 +22,10 @@ const FireMaterial = shaderMaterial(
   fragmentShader,
 );
 
-extend({ FireMaterial });
+const extendFireMaterial = extendOnce({ FireMaterial });
+
+const FIRE_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:fire' };
+const FIRE_BATCH_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:fire-batch' };
 
 type FireUniforms = {
   time: number;
@@ -125,6 +135,8 @@ type FireProps = {
 };
 
 const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color = '#ffffff' }) => {
+  extendFireMaterial();
+  const nodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
   const tintColor = useMemo(() => new THREE.Color(color), [color]);
 
   const geo = getSharedGeo();
@@ -171,9 +183,7 @@ const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color
     return g;
   }, [width, height]);
 
-  useFrame((state) => {
-    const t = getFrameElapsedSeconds(state);
-
+  useSharedFrame(FIRE_FRAME, (_, t) => {
     for (let i = 0; i < billboardLayers.length; i++) {
       const m = materialRefs[i]?.current;
       if (!m) continue;
@@ -245,7 +255,8 @@ const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color
         scale={baseScale}
       />
 
-      {billboardLayers.map((l, i) => (
+      {nodes && <Suspense fallback={null}><CompileGate><NodeFireEffects intensity={intensity} width={width} height={height} color={color} /></CompileGate></Suspense>}
+      {!nodes && billboardLayers.map((l, i) => (
         (() => {
           const geometry = billboardGeos[i];
           const materialRef = materialRefs[i];
@@ -264,7 +275,7 @@ const Fire: FC<FireProps> = ({ intensity = 1.5, width = 1.0, height = 1.5, color
         })()
       ))}
 
-      <points geometry={emberGeo} material={mat.ember} />
+      {!nodes && <points geometry={emberGeo} material={mat.ember} />}
     </group>
   );
 };
@@ -525,6 +536,7 @@ export function createFireBatchSignature(fires: FireBatchEntry[]): string {
 }
 
 export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireBatchEntry[] }) {
+  const nodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
   const billboardRef = useRef<THREE.InstancedMesh>(null!);
   const logRef = useRef<THREE.InstancedMesh>(null!);
   const charRef = useRef<THREE.InstancedMesh>(null!);
@@ -534,11 +546,15 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
   const N = fires.length;
   const billboardCount = N * FIRE_LAYERS.length;
   const logCount = N * 2;
+  const billboardCapacity = useInstanceCapacity(billboardCount);
+  const logCapacity = useInstanceCapacity(logCount);
+  const fireCapacity = useInstanceCapacity(N);
   const geo = getSharedGeo();
   const mat = getSharedMat();
-  const bbMat = getBatchBillboardMat();
+  // WebGPU draws flames through NodeFireBatchEffects; the GLSL billboard/ember path stays unbuilt.
+  const bbMat = nodes ? null : getBatchBillboardMat();
   const glowMat = getBatchGlowMat();
-  const bEmberMat = getBatchEmberMat();
+  const bEmberMat = nodes ? null : getBatchEmberMat();
   const fireSignature = useMemo(() => createFireBatchSignature(fires), [fires]);
   const stableFiresRef = useRef({ signature: fireSignature, fires });
   if (stableFiresRef.current.signature !== fireSignature) {
@@ -547,7 +563,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
   const stableFires = stableFiresRef.current.fires;
 
   const billboardGeo = useMemo(() => {
-    if (N === 0) return null;
+    if (N === 0 || nodes) return null;
     const g = new THREE.PlaneGeometry(1, 1);
     const seeds = new Float32Array(billboardCount);
     const leans = new Float32Array(billboardCount);
@@ -588,10 +604,10 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     g.setAttribute('aHeight', new THREE.InstancedBufferAttribute(heights, 1));
     g.setAttribute('aTint', new THREE.InstancedBufferAttribute(tints, 3));
     return g;
-  }, [fireSignature, stableFires, N, billboardCount]);
+  }, [fireSignature, stableFires, N, billboardCount, nodes]);
 
   const emberGeo = useMemo(() => {
-    if (N === 0) return null;
+    if (N === 0 || nodes) return null;
     const EMBER_PER_FIRE = 18;
     const total = N * EMBER_PER_FIRE;
     const pos = new Float32Array(total * 3);
@@ -625,7 +641,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     g.setAttribute('aFirePos', new THREE.BufferAttribute(firePos, 3));
     g.computeBoundingSphere();
     return g;
-  }, [fireSignature, stableFires, N]);
+  }, [fireSignature, stableFires, N, nodes]);
 
   useLayoutEffect(() => {
     if (N === 0) return;
@@ -682,6 +698,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     }
     mesh.count = logCount;
     mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
   }, [fires, N, logCount]);
 
   useLayoutEffect(() => {
@@ -699,6 +716,7 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     }
     mesh.count = N;
     mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
   }, [fires, N]);
 
   useLayoutEffect(() => {
@@ -722,12 +740,12 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
     mesh.count = N;
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.computeBoundingSphere();
   }, [fires, N]);
 
-  useFrame((state) => {
-    const t = getFrameElapsedSeconds(state);
-    bbMat.uniforms['uTime']!.value = t;
-    bEmberMat.uniforms['uTime']!.value = t;
+  useSharedFrame(FIRE_BATCH_FRAME, (_, t) => {
+    if (bbMat) bbMat.uniforms['uTime']!.value = t;
+    if (bEmberMat) bEmberMat.uniforms['uTime']!.value = t;
     glowMat.opacity = 0.16 + Math.sin(t * 2.5) * 0.06;
   });
 
@@ -740,17 +758,19 @@ export const FireBatch = React.memo(function FireBatch({ fires }: { fires: FireB
 
   return (
     <>
-      {billboardGeo && (
+      {/* Lazy and so mounting after an outer gate compiled: its own gate compiles it before it shows. */}
+      {nodes && <Suspense fallback={null}><CompileGate><NodeFireBatchEffects fires={stableFires} /></CompileGate></Suspense>}
+      {billboardGeo && bbMat && (
         <instancedMesh
           ref={billboardRef}
-          args={[billboardGeo, bbMat, billboardCount]}
+          args={[billboardGeo, bbMat, billboardCapacity]}
           frustumCulled={false}
         />
       )}
-      <instancedMesh ref={logRef} args={[geo.log, mat.log, logCount]} />
-      <instancedMesh ref={charRef} args={[geo.charcoal, mat.charcoal, N]} />
-      <instancedMesh ref={glowRef} args={[geo.glow, glowMat, N]} />
-      {emberGeo && (
+      <instancedMesh ref={logRef} args={[geo.log, mat.log, logCapacity]} />
+      <instancedMesh ref={charRef} args={[geo.charcoal, mat.charcoal, fireCapacity]} />
+      <instancedMesh ref={glowRef} args={[geo.glow, glowMat, fireCapacity]} />
+      {emberGeo && bEmberMat && (
         <points ref={emberRef} geometry={emberGeo} material={bEmberMat} frustumCulled={false} />
       )}
     </>

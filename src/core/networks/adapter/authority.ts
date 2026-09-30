@@ -4,11 +4,16 @@ import {
   type ServerEvent,
   type StateDelta,
 } from './contracts';
+import { isCount, isId, isRecord } from '../../utils/guards';
+import { logger } from '../../utils/logger';
 
 export type CommandAuthorityContext = {
   now: () => number;
   createId: (prefix: string, command: GameCommand) => string;
 };
+
+/** The connection a command arrived on, as the actor that connection authenticated. */
+export type CommandSession = { actorId: string };
 
 export type CommandAuthorityResult = {
   accepted: boolean;
@@ -34,7 +39,8 @@ export type CommandAuthorityRouter = {
     route: CommandAuthorityRoute,
     handler: CommandAuthorityHandler<TPayload>,
   ) => () => void;
-  handle: (command: GameCommand) => Promise<CommandAuthorityResult>;
+  /** A command with a session may act only as that session's actor unless `verifyActor` allows it; without one it is local. */
+  handle: (command: GameCommand, session?: CommandSession) => Promise<CommandAuthorityResult>;
   has: (route: CommandAuthorityRoute) => boolean;
   clear: () => void;
 };
@@ -42,6 +48,14 @@ export type CommandAuthorityRouter = {
 export type CommandAuthorityRouterOptions = {
   now?: () => number;
   createId?: (prefix: string, command: GameCommand) => string;
+  /** Whether the session may act as the command's actor; by default a session acts only as itself. */
+  verifyActor?: (command: GameCommand, session: CommandSession | undefined) => boolean;
+  getRevision?: (command: GameCommand) => number | undefined;
+  replayWindowMs?: number;
+  /** Oldest replay records are evicted past this count so command-id floods cannot grow memory without bound. */
+  maxReplayEntries?: number;
+  /** Receives thrown handler errors; clients only see a generic rejection reason. */
+  onHandlerError?: (error: unknown, command: GameCommand) => void;
 };
 
 export type CreateCommandAcceptedResultOptions = {
@@ -59,6 +73,37 @@ export type CreateCommandRejectedResultOptions = {
 type CommandAuthorityRegistration = {
   handler: CommandAuthorityHandler;
 };
+
+type ReplayEntry = {
+  result: Promise<CommandAuthorityResult>;
+  expiresAt: number;
+};
+
+const DEFAULT_REPLAY_WINDOW_MS = 60_000;
+const DEFAULT_MAX_REPLAY_ENTRIES = 10_000;
+export const COMMAND_HANDLER_FAILURE_REASON = 'Authority handler failed.';
+export const INVALID_COMMAND_REASON = 'Invalid command.';
+/** Ids and routes become replay and route keys, so they stay short. */
+const MAX_COMMAND_KEY_LENGTH = 256;
+
+const isKey = (value: unknown): value is string => isId(value) && value.length <= MAX_COMMAND_KEY_LENGTH;
+const isOptionalString = (value: unknown): boolean => value === undefined || typeof value === 'string';
+
+/** Commands come from clients, and replay keys, routing and revision checks all read these fields. */
+function isGameCommand(value: unknown): value is GameCommand {
+  return isRecord<GameCommand>(value) && isCount(value.version)
+    && isKey(value.commandId) && isKey(value.domain) && isKey(value.action) && isKey(value.actorId)
+    && typeof value.submittedAt === 'number' && Number.isFinite(value.submittedAt)
+    && isOptionalString(value.targetId) && isOptionalString(value.traceId)
+    && (value.clientSequence === undefined || isCount(value.clientSequence))
+    && (value.expectedRevision === undefined || isCount(value.expectedRevision));
+}
+
+function logHandlerError(error: unknown, command: GameCommand): void {
+  logger.error(`[CommandAuthority] ${command.domain}:${command.action} handler failed`, error instanceof Error ? error : String(error));
+}
+
+function ignoreSettlement(): void {}
 
 function routeKey(route: CommandAuthorityRoute): string {
   return `${route.domain}:${route.action ?? '*'}`;
@@ -115,9 +160,72 @@ export function createCommandAuthorityRouter(
   options: CommandAuthorityRouterOptions = {},
 ): CommandAuthorityRouter {
   const registrations = new Map<string, CommandAuthorityRegistration>();
+  const replays = new Map<string, ReplayEntry>();
+  const domainQueues = new Map<string, Promise<void>>();
   const now = options.now ?? Date.now;
   const createId = options.createId ?? defaultCreateAuthorityId;
+  const replayWindowMs = options.replayWindowMs ?? DEFAULT_REPLAY_WINDOW_MS;
+  const maxReplayEntries = options.maxReplayEntries ?? DEFAULT_MAX_REPLAY_ENTRIES;
+  if (!Number.isSafeInteger(maxReplayEntries) || maxReplayEntries < 1) throw new RangeError('maxReplayEntries must be a positive integer');
+  const onHandlerError = options.onHandlerError ?? logHandlerError;
   const context: CommandAuthorityContext = { now, createId };
+
+  const reject = (command: GameCommand, reason: string, serverRevision?: number): CommandAuthorityResult =>
+    createCommandRejectedResult(command, reason, {
+      eventId: createId('rejected', command),
+      occurredAt: now(),
+      ...(serverRevision !== undefined ? { serverRevision } : {}),
+    });
+
+  const pruneReplays = (time: number): void => {
+    for (const [key, entry] of replays) {
+      if (entry.expiresAt > time) return;
+      replays.delete(key);
+    }
+  };
+
+  const evictOverflowingReplays = (): void => {
+    for (const key of replays.keys()) {
+      if (replays.size <= maxReplayEntries) return;
+      replays.delete(key);
+    }
+  };
+
+  const execute = async (command: GameCommand): Promise<CommandAuthorityResult> => {
+    const registration =
+      registrations.get(routeKey({ domain: command.domain, action: command.action })) ??
+      registrations.get(routeKey({ domain: command.domain, action: '*' }));
+
+    if (!registration) {
+      return reject(command, `No authority handler registered for ${command.domain}:${command.action}.`);
+    }
+    if (command.expectedRevision !== undefined && options.getRevision) {
+      const revision = options.getRevision(command);
+      if (revision !== undefined && revision !== command.expectedRevision) {
+        return reject(command, `Revision conflict: expected ${command.expectedRevision}, current ${revision}.`, revision);
+      }
+    }
+
+    const handler = registration.handler;
+    try {
+      return await handler(command, context);
+    } catch (error) {
+      onHandlerError(error, command);
+      return reject(command, COMMAND_HANDLER_FAILURE_REASON);
+    }
+  };
+
+  // Revision checks and handlers of one domain run in order, so concurrent commands cannot validate against the same revision.
+  const executeInDomainOrder = (command: GameCommand): Promise<CommandAuthorityResult> => {
+    const previous = domainQueues.get(command.domain);
+    const result = previous ? previous.then(() => execute(command)) : execute(command);
+    const tail = result.then(ignoreSettlement, ignoreSettlement);
+    domainQueues.set(command.domain, tail);
+    void tail.then(() => {
+      if (domainQueues.get(command.domain) === tail) domainQueues.delete(command.domain);
+    });
+    return result;
+  };
 
   return {
     register: (route, handler) => {
@@ -132,28 +240,37 @@ export function createCommandAuthorityRouter(
         }
       };
     },
-    handle: async (command) => {
-      const registration =
-        registrations.get(routeKey({ domain: command.domain, action: command.action })) ??
-        registrations.get(routeKey({ domain: command.domain, action: '*' }));
-
-      if (!registration) {
-        return createCommandRejectedResult(
-          command,
-          `No authority handler registered for ${command.domain}:${command.action}.`,
-          {
-            eventId: createId('rejected', command),
-            occurredAt: now(),
-          },
-        );
-      }
-
-      const handler = registration.handler;
-      return handler(command, context);
+    handle: async (command, session) => {
+      // A malformed command has no route, replay key or id to address a rejection event to.
+      if (!isGameCommand(command)) return { accepted: false, command, reason: INVALID_COMMAND_REASON, events: [], deltas: [] };
+      const actorAllowed = options.verifyActor
+        ? options.verifyActor(command, session)
+        : session === undefined || session.actorId === command.actorId;
+      if (!actorAllowed) return reject(command, `Actor "${command.actorId}" is not bound to this session.`);
+      if (replayWindowMs <= 0) return executeInDomainOrder(command);
+      const time = now();
+      pruneReplays(time);
+      const key = `${command.actorId}:${command.commandId}`;
+      const replay = replays.get(key);
+      if (replay) return replay.result;
+      const result = executeInDomainOrder(command);
+      const entry: ReplayEntry = { result, expiresAt: time + replayWindowMs };
+      replays.set(key, entry);
+      evictOverflowingReplays();
+      // Only accepted outcomes are idempotent; a rejected command may be retried with the same id.
+      const forgetRejection = (): void => {
+        if (replays.get(key) === entry) replays.delete(key);
+      };
+      void result.then((settled) => {
+        if (!settled.accepted) forgetRejection();
+      }, forgetRejection);
+      return result;
     },
     has: (route) => registrations.has(routeKey(route)),
     clear: () => {
       registrations.clear();
+      replays.clear();
+      domainQueues.clear();
     },
   };
 }

@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 
-import { playCameraCinematic } from '../cinematic';
-import { restoreCameraCloseUp } from '../closeUp';
-import { useGaesupStore } from '../../stores/gaesupStore';
-import { useSceneStore } from '../../scene/stores/sceneStore';
 import { useCharacterStore } from '../../character/stores/characterStore';
 import { getDialogRegistry } from '../../dialog/registry/DialogRegistry';
 import { useDialogStore } from '../../dialog/stores/dialogStore';
+import { useSceneStore } from '../../scene/stores/sceneStore';
+import { useGaesupStore } from '../../stores/gaesupStore';
+import { playCameraCinematic } from '../cinematic';
+import { restoreCameraCloseUp } from '../closeUp';
 import type { CameraOptionType } from '../core/types';
 
 const baseCameraOption: CameraOptionType = {

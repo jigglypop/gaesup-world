@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { lazyStore } from '../../../stores/lazyStore';
+
 export type ToastKind = 'info' | 'success' | 'warn' | 'error' | 'reward' | 'mail';
 
 export type Toast = {
@@ -20,7 +22,7 @@ type State = {
 
 let _seq = 0;
 
-export const useToastStore = create<State>((set, get) => ({
+export const useToastStore = lazyStore(() => create<State>((set, get) => ({
   toasts: [],
   push: (t) => {
     const id = ++_seq;
@@ -37,7 +39,7 @@ export const useToastStore = create<State>((set, get) => ({
   },
   dismiss: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) }),
   clear: () => set({ toasts: [] }),
-}));
+})));
 
 export function notify(kind: ToastKind, text: string, opts?: { icon?: string; durationMs?: number }): number {
   return useToastStore.getState().push({

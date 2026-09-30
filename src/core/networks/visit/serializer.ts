@@ -28,14 +28,29 @@ export type ApplyVisitOptions = {
    * `false` to skip applying that domain.
    */
   filter?: (key: string, value: SerializedDomainValue) => boolean;
-  /** Validate every domain before mutating any of them. Defaults to `false`. */
+  /**
+   * All or nothing: every domain and its rollback are prepared before any changes, and a failing hydrate returns
+   * the domains already applied to their prior state. Defaults to `false`.
+   */
   atomic?: boolean;
+};
+
+export type VisitApplyResult = {
+  applied: string[];
+  skipped: string[];
+  /** Domains whose preparation or hydrate threw. An atomic apply then rolls back and leaves `applied` empty. */
+  failed?: { key: string; error: unknown }[];
+  /** Atomic only: domains the rollback could not return to their prior state, so local state is mixed. */
+  unrestored?: string[];
 };
 
 export type VisitRestorePoint = {
   domains: Record<string, SerializedDomainValue>;
-  restore: () => { applied: string[]; skipped: string[] };
+  /** Restores every domain it can; a failing one is reported without undoing the others. */
+  restore: () => VisitApplyResult;
 };
+
+type SelectedDomain = { key: string; value: SerializedDomainValue; binding: DomainBinding };
 
 function collectBindings(provider: VisitBindingProvider): Map<string, DomainBinding> {
   const map = new Map<string, DomainBinding>();
@@ -78,78 +93,95 @@ export function applyVisitSnapshot(
   provider: VisitBindingProvider,
   snapshot: VisitSnapshot,
   options: ApplyVisitOptions = {},
-): { applied: string[]; skipped: string[] } {
+): VisitApplyResult {
+  const domains = snapshot.domains ?? {};
   if (snapshot.version !== VISIT_SNAPSHOT_VERSION) {
-    return { applied: [], skipped: Object.keys(snapshot.domains ?? {}) };
+    return { applied: [], skipped: Object.keys(domains) };
   }
-  const bindings = collectBindings(provider);
-  const allowed = new Set(options.allowedDomains ?? DEFAULT_VISIT_DOMAINS);
-
-  const applied: string[] = [];
   const skipped: string[] = [];
-
-  if (options.atomic) {
-    return applyDomainsAtomically(bindings, allowed, snapshot.domains ?? {}, options.filter);
-  }
-
-  for (const [key, value] of Object.entries(snapshot.domains ?? {})) {
-    if (!allowed.has(key)) {
-      skipped.push(key);
-      continue;
-    }
-    if (options.filter && !options.filter(key, value)) {
-      skipped.push(key);
-      continue;
-    }
-    const binding = bindings.get(key);
-    if (!binding) {
-      skipped.push(key);
-      continue;
-    }
-    try {
-      binding.hydrate(value);
-      applied.push(key);
-    } catch {
-      skipped.push(key);
-    }
-  }
-
-  return { applied, skipped };
+  const selected = selectDomains(
+    collectBindings(provider),
+    new Set(options.allowedDomains ?? DEFAULT_VISIT_DOMAINS),
+    domains,
+    options.filter,
+    skipped,
+  );
+  return options.atomic ? hydrateAtomically(selected, skipped, Object.keys(domains)) : hydrateEach(selected, skipped);
 }
 
-function applyDomainsAtomically(
+function selectDomains(
   bindings: Map<string, DomainBinding>,
   allowed: ReadonlySet<string>,
   domains: Record<string, SerializedDomainValue>,
   filter: ApplyVisitOptions['filter'],
-): { applied: string[]; skipped: string[] } {
-  const skipped: string[] = [];
-  const pending: Array<{ key: string; apply: () => void }> = [];
+  skipped: string[],
+): SelectedDomain[] {
+  const selected: SelectedDomain[] = [];
   for (const [key, value] of Object.entries(domains)) {
     const binding = bindings.get(key);
-    if (!allowed.has(key) || (filter && !filter(key, value)) || !binding) {
-      skipped.push(key);
-      continue;
-    }
-    try {
-      const apply = binding.prepareHydrate
-        ? binding.prepareHydrate(value)
-        : () => binding.hydrate(value);
-      pending.push({ key, apply });
-    } catch {
-      return { applied: [], skipped: Object.keys(domains) };
-    }
+    if (!allowed.has(key) || (filter && !filter(key, value)) || !binding) skipped.push(key);
+    else selected.push({ key, value, binding });
   }
+  return selected;
+}
+
+const withFailures = (
+  result: VisitApplyResult,
+  failed: NonNullable<VisitApplyResult['failed']>,
+  unrestored: string[] = [],
+): VisitApplyResult => ({
+  ...result,
+  ...(failed.length ? { failed } : {}),
+  ...(unrestored.length ? { unrestored } : {}),
+});
+
+/** Each domain on its own: one that throws is reported and the rest still apply. */
+function hydrateEach(selected: SelectedDomain[], skipped: string[]): VisitApplyResult {
   const applied: string[] = [];
-  for (const entry of pending) {
+  const failed: NonNullable<VisitApplyResult['failed']> = [];
+  for (const { key, value, binding } of selected) {
     try {
-      entry.apply();
-      applied.push(entry.key);
-    } catch {
-      skipped.push(entry.key);
+      binding.hydrate(value);
+      applied.push(key);
+    } catch (error) {
+      skipped.push(key);
+      failed.push({ key, error });
     }
   }
-  return { applied, skipped };
+  return withFailures({ applied, skipped }, failed);
+}
+
+const prepare = (binding: DomainBinding, value: SerializedDomainValue): (() => void) =>
+  binding.prepareHydrate ? binding.prepareHydrate(value) : () => binding.hydrate(value);
+
+function hydrateAtomically(selected: SelectedDomain[], skipped: string[], allKeys: string[]): VisitApplyResult {
+  const steps: { key: string; apply: () => void; restore: () => void }[] = [];
+  for (const { key, value, binding } of selected) {
+    try {
+      // The rollback is prepared from the current state before anything changes, like the apply itself.
+      steps.push({ key, apply: prepare(binding, value), restore: prepare(binding, binding.serialize()) });
+    } catch (error) {
+      return withFailures({ applied: [], skipped: allKeys }, [{ key, error }]);
+    }
+  }
+  for (let index = 0; index < steps.length; index++) {
+    try {
+      steps[index]!.apply();
+    } catch (error) {
+      // The failing domain may be half applied, so it is restored too, then the applied ones in reverse order.
+      const unrestored: string[] = [];
+      for (let back = index; back >= 0; back--) {
+        const step = steps[back]!;
+        try {
+          step.restore();
+        } catch {
+          unrestored.push(step.key);
+        }
+      }
+      return withFailures({ applied: [], skipped: allKeys }, [{ key: steps[index]!.key, error }], unrestored);
+    }
+  }
+  return { applied: steps.map((step) => step.key), skipped };
 }
 
 /**
@@ -168,8 +200,11 @@ export function captureVisitRestorePoint(
   }
   return {
     domains,
-    restore: () =>
-      applyDomainsAtomically(collectBindings(provider), new Set(Object.keys(domains)), domains, undefined),
+    // Going home is best effort: rolling every domain back to the visited world because one failed would strand the player there.
+    restore: () => {
+      const skipped: string[] = [];
+      return hydrateEach(selectDomains(collectBindings(provider), new Set(Object.keys(domains)), domains, undefined, skipped), skipped);
+    },
   };
 }
 

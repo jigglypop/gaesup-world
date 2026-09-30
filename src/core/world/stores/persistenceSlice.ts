@@ -1,6 +1,8 @@
 import { StateCreator } from 'zustand';
 
 import type { SaveBlob, SaveSystem } from '../../save';
+import { isRecord } from '../../utils/guards';
+import { reportError } from '../../utils/reportError';
 import { SaveLoadManager } from '../persistence/SaveLoadManager';
 import {
   DEFAULT_WORLD_SAVE_ENVIRONMENT,
@@ -9,6 +11,7 @@ import {
   normalizeSaveMetadata,
   parseWorldSaveTimestamp,
 } from '../persistence/saveSystem';
+import { selectExpiredWorldSlots } from '../persistence/slots';
 import { CameraSaveData, NPCSaveData, SaveData, SaveLoadOptions, SaveMetadata, WorldSaveData } from '../persistence/types';
 
 export type StoreApi<TState> = {
@@ -28,25 +31,28 @@ export type NPCStoreState = {
 };
 
 export type CameraStoreState = {
-  position: CameraSaveData['position'];
-  rotation: CameraSaveData['rotation'];
   mode: CameraSaveData['mode'];
   settings: CameraSaveData['settings'];
 };
 
+/** Stores exposing `setState` are replaced immutably; getState-only adapters are mutated in place. */
+type HydratableStoreApi<TState> = StoreApi<TState> & { setState?: (state: Partial<TState>) => void };
+
 export type GaesupStores = {
-  buildingStore?: StoreApi<BuildingStoreState>;
-  npcStore?: StoreApi<NPCStoreState>;
+  buildingStore?: HydratableStoreApi<BuildingStoreState>;
+  npcStore?: HydratableStoreApi<NPCStoreState>;
   cameraStore?: StoreApi<CameraStoreState> & { setState: (state: Partial<CameraStoreState>) => void };
 };
 
 export type PersistenceStoresResolver = () => GaesupStores;
 
-export type PersistenceSliceOptions = {
+export interface PersistenceSliceOptions {
   getStores?: PersistenceStoresResolver;
   saveLoadManager?: SaveLoadManager;
   saveSystem?: SaveSystem;
-};
+  /** Saves kept per world, newest first; older ones are deleted after each save. Default 10, `Infinity` keeps all. */
+  maxSlotsPerWorld?: number;
+}
 
 const EMPTY_STORES_RESOLVER: PersistenceStoresResolver = () => ({});
 
@@ -73,8 +79,6 @@ function createWorldData(
   const buildingState = buildingStore.getState();
   const cameraState = cameraStore?.getState();
   const camera = cameraState ? {
-    position: cameraState.position,
-    rotation: cameraState.rotation,
     mode: cameraState.mode,
     ...(cameraState.settings ? { settings: cameraState.settings } : {}),
   } : undefined;
@@ -97,7 +101,7 @@ function createWorldData(
 }
 
 function hydrateBuildingStore(
-  buildingStore: StoreApi<BuildingStoreState> | undefined,
+  buildingStore: GaesupStores['buildingStore'],
   buildings: WorldSaveData['buildings'] | undefined,
 ): void {
   if (!buildingStore || !buildings) return;
@@ -105,6 +109,15 @@ function hydrateBuildingStore(
   const state = buildingStore.getState();
   if (typeof state.hydrate === 'function') {
     state.hydrate(buildings);
+    return;
+  }
+  if (buildingStore.setState) {
+    buildingStore.setState({
+      wallGroups: new Map(buildings.wallGroups.map((group) => [group.id, group])),
+      tileGroups: new Map(buildings.tileGroups.map((group) => [group.id, group])),
+      meshes: new Map(buildings.meshes.map((mesh) => [mesh.id, mesh])),
+      blocks: [...(buildings.blocks ?? [])],
+    });
     return;
   }
 
@@ -129,10 +142,14 @@ function hydrateBuildingStore(
 }
 
 function hydrateNpcStore(
-  npcStore: StoreApi<NPCStoreState> | undefined,
+  npcStore: GaesupStores['npcStore'],
   npcs: NPCSaveData[] | undefined,
 ): void {
   if (!npcStore || !npcs) return;
+  if (npcStore.setState) {
+    npcStore.setState({ instances: new Map(npcs.map((npc) => [npc.id, npc])) });
+    return;
+  }
 
   const state = npcStore.getState();
   state.instances.clear();
@@ -149,8 +166,6 @@ function hydrateCameraStore(
   if (!cameraStore || !camera) return;
 
   cameraStore.setState({
-    position: camera.position,
-    rotation: camera.rotation,
     mode: camera.mode,
     settings: camera.settings || {},
   });
@@ -160,10 +175,6 @@ function hydrateStores(stores: GaesupStores, world: WorldSaveData): void {
   hydrateBuildingStore(stores.buildingStore, world.buildings);
   hydrateNpcStore(stores.npcStore, world.npcs);
   hydrateCameraStore(stores.cameraStore, world.camera);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function stripJsonExtension(filename: string): string {
@@ -196,6 +207,16 @@ async function listSaveSystemSaves(saveSystem: SaveSystem): Promise<Array<{ id: 
     .sort((a, b) => b.timestamp - a.timestamp);
 }
 
+async function pruneSaveSystemSlots(
+  saveSystem: SaveSystem,
+  worldId: string,
+  current: string,
+  maxSlots: number | undefined,
+): Promise<void> {
+  const expired = selectExpiredWorldSlots(await saveSystem.list(), worldId, current, maxSlots);
+  await Promise.all(expired.map((slot) => saveSystem.remove(slot)));
+}
+
 function downloadJsonFile(filename: string, data: unknown): void {
   if (typeof document === 'undefined' || typeof URL === 'undefined' || typeof Blob === 'undefined') {
     throw new Error('File download is not available in this environment');
@@ -219,7 +240,7 @@ async function readSaveSystemFileData(file: File): Promise<SaveSystemFileData | 
   throw new Error('Invalid SaveSystem file format');
 }
 
-export type PersistenceState = {
+export interface PersistenceState {
   saveLoadManager: SaveLoadManager;
   currentSaveId: string | null;
   saves: Array<{ id: string; timestamp: number; metadata?: SaveMetadata }>;
@@ -234,16 +255,18 @@ export type PersistenceState = {
   refreshSaveList: () => void;
   deleteSave: (saveId: string) => void;
   clearError: () => void;
-};
+}
 
 export function createPersistenceSliceWithOptions(
   options: PersistenceSliceOptions = {},
 ): StateCreator<PersistenceState> {
   const resolveStores = options.getStores ?? EMPTY_STORES_RESOLVER;
   const saveSystem = options.saveSystem;
+  const { maxSlotsPerWorld } = options;
 
   return (set, get) => ({
-  saveLoadManager: options.saveLoadManager ?? new SaveLoadManager(),
+  saveLoadManager: options.saveLoadManager
+    ?? new SaveLoadManager(maxSlotsPerWorld === undefined ? {} : { maxSlotsPerWorld }),
   currentSaveId: null,
   saves: [],
   isSaving: false,
@@ -258,6 +281,7 @@ export function createPersistenceSliceWithOptions(
         const timestamp = Date.now();
         const saveId = `${worldId}_${timestamp}`;
         await saveSystem.save(saveId);
+        await pruneSaveSystemSlots(saveSystem, worldId, saveId, maxSlotsPerWorld);
         set({
           currentSaveId: saveId,
           saves: await listSaveSystemSaves(saveSystem),
@@ -399,6 +423,7 @@ export function createPersistenceSliceWithOptions(
       void listSaveSystemSaves(saveSystem)
         .then((saves) => set({ saves }))
         .catch((error: unknown) => {
+          reportError(error, { source: 'save:list' });
           set({ lastError: error instanceof Error ? error.message : 'Failed to list saves' });
         });
       return;
@@ -419,6 +444,7 @@ export function createPersistenceSliceWithOptions(
             ...(get().currentSaveId === saveId ? { currentSaveId: null } : {}),
           });
         } catch (error) {
+          reportError(error, { source: 'save:delete', label: saveId });
           set({ lastError: error instanceof Error ? error.message : 'Failed to delete save' });
         }
       })();

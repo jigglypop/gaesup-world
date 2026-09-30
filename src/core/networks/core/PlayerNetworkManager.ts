@@ -1,25 +1,54 @@
+import {
+  clampRemoteString,
+  MAX_REMOTE_CHAT_TEXT_LENGTH,
+  MAX_REMOTE_CHATS_PER_SECOND,
+  MAX_REMOTE_COORDINATE,
+  MAX_REMOTE_WIRE_MESSAGE_LENGTH,
+  parseRemoteModelUrl,
+  PeerRateLimiter,
+} from './remoteInputLimits';
+import { isRecord } from '../../utils/guards';
+import { createUniqueId } from '../../utils/id';
 import { NetworkPayload, PlayerState } from '../types';
-import { MAX_REMOTE_CHAT_TEXT_LENGTH, isRemoteStringWithinLimit } from './remoteInputLimits';
 
 type PlayerNetworkLogLevel = 'none' | 'error' | 'warn' | 'info' | 'debug';
 
-export type PlayerNetworkManagerOptions = {
+/** `reconnecting` disconnects keep remote players until the next Welcome reconciles them. */
+export type PlayerDisconnectInfo = { reconnecting: boolean };
+
+export interface PlayerNetworkManagerOptions {
   url: string;
   roomId: string;
   playerName: string;
   playerColor: string;
+  /** Sent with Join so peers can load the avatar before its first Update. */
+  modelUrl?: string;
   reconnectAttempts?: number;
   reconnectDelay?: number;
+  /**
+   * Once the server has answered a ping, a ping still unanswered when the next one is due
+   * marks the socket half-open: it is dropped and reconnected without waiting for TCP.
+   */
   pingInterval?: number;
   sendRateLimit?: number;
+  /**
+   * Per remote peer: PlayerUpdate and Chat messages beyond this rate are dropped (token bucket).
+   * 0 or unset accepts every message. Chat also has its own, lower per-peer budget.
+   */
+  maxMessagesPerSecond?: number;
   offlineQueueSize?: number;
   enableAck?: boolean;
   reliableTimeout?: number;
   reliableRetryCount?: number;
   logLevel?: PlayerNetworkLogLevel;
   logToConsole?: boolean;
+  /**
+   * Remote peers choose their own `modelUrl`, which every client then fetches.
+   * By default only http(s) and relative URLs are accepted; supply an allowlist to restrict origins.
+   */
+  acceptModelUrl?: (url: string) => boolean;
   onConnect?: () => void;
-  onDisconnect?: () => void;
+  onDisconnect?: (info?: PlayerDisconnectInfo) => void;
   onWelcome?: (localPlayerId: string, roomState?: Record<string, PlayerState>) => void;
   onPlayerJoin?: (playerId: string, state: PlayerState) => void;
   onPlayerUpdate?: (playerId: string, state: PlayerState) => void;
@@ -28,7 +57,7 @@ export type PlayerNetworkManagerOptions = {
   onPing?: (rttMs: number) => void;
   onReliableFailed?: (info: { ackId: string; messageType: string }) => void;
   onError?: (error: string) => void;
-};
+}
 
 type TextReadablePayload = {
   text: () => Promise<string>;
@@ -41,18 +70,33 @@ const isTextReadablePayload = (value: WebSocketMessageData): value is TextReadab
   return 'text' in value && typeof value.text === 'function';
 };
 
+type StickyField = 'name' | 'color' | 'modelUrl' | 'animation';
+/** Receivers merge updates, so these ride along only when they differ from what the connection already sent. */
+const STICKY_FIELDS: readonly StickyField[] = ['name', 'color', 'modelUrl', 'animation'];
+/** Remote players survive a reconnect for this long before they are dropped. */
+const DISCONNECT_GRACE_MS = 10_000;
+const MAX_RECONNECT_DELAY_MS = 30_000;
+/** Application close code for a socket abandoned after a missed pong. */
+const PONG_TIMEOUT_CLOSE_CODE = 4000;
+
+/** Bytes a socket may still hold before position updates wait for it to drain, and how long they wait then. */
+const MAX_BUFFERED_UPDATE_BYTES = 64 * 1024;
+const BACKLOG_RETRY_MS = 50;
+
 export class PlayerNetworkManager {
   private ws: WebSocket | null = null;
   private url: string;
   private roomId: string;
   private playerName: string;
   private playerColor: string;
+  private modelUrl: string | undefined;
   private players: Map<string, PlayerState> = new Map();
   private localPlayerId: string | null = null;
   private isConnected: boolean = false;
   private isConnecting: boolean = false;
   private logLevel: PlayerNetworkLogLevel;
   private logToConsole: boolean;
+  private acceptModelUrl: ((url: string) => boolean) | undefined;
   private reconnectAttemptsMax: number;
   private reconnectDelayMs: number;
   private reconnectAttemptsUsed: number = 0;
@@ -61,11 +105,18 @@ export class PlayerNetworkManager {
   private pingIntervalMs: number;
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private lastPingSentAt: number = 0;
+  /** 0 until the server answers a ping on the current connection; half-open detection starts then. */
+  private lastPongAt: number = 0;
+  private retainedIds: Set<string> = new Set();
+  private retainTimer: ReturnType<typeof setTimeout> | null = null;
+  private peerLimiter: PeerRateLimiter | null;
+  private chatLimiter = new PeerRateLimiter(MAX_REMOTE_CHATS_PER_SECOND);
 
   private updateRateLimitMs: number;
   private lastUpdateSentAt: number = 0;
   private pendingUpdate: Partial<PlayerState> | null = null;
   private updateFlushTimer: ReturnType<typeof setTimeout> | null = null;
+  private sentFields: Partial<Pick<PlayerState, StickyField>> = {};
 
   private offlineQueueSize: number;
   private pendingChats: Array<{ text: string; range?: number }> = [];
@@ -74,7 +125,6 @@ export class PlayerNetworkManager {
   private enableAck: boolean;
   private reliableTimeoutMs: number;
   private reliableRetryCount: number;
-  private ackIdCounter: number = 1;
   private pendingAcks: Map<
     string,
     { raw: string; messageType: string; retriesLeft: number; timer: ReturnType<typeof setTimeout> | null }
@@ -82,7 +132,7 @@ export class PlayerNetworkManager {
   
   // 콜백 함수들
   private onConnect?: () => void;
-  private onDisconnect?: () => void;
+  private onDisconnect?: (info?: PlayerDisconnectInfo) => void;
   private onWelcome?: (localPlayerId: string, roomState?: Record<string, PlayerState>) => void;
   private onPlayerJoin?: (playerId: string, state: PlayerState) => void;
   private onPlayerUpdate?: (playerId: string, state: PlayerState) => void;
@@ -97,16 +147,20 @@ export class PlayerNetworkManager {
     this.roomId = options.roomId;
     this.playerName = options.playerName;
     this.playerColor = options.playerColor;
+    this.modelUrl = options.modelUrl;
     this.reconnectAttemptsMax = Math.max(0, Math.floor(options.reconnectAttempts ?? 0));
     this.reconnectDelayMs = Math.max(0, Math.floor(options.reconnectDelay ?? 1000));
     this.pingIntervalMs = Math.max(0, Math.floor(options.pingInterval ?? 0));
     this.updateRateLimitMs = Math.max(0, Math.floor(options.sendRateLimit ?? 0));
+    const maxMessagesPerSecond = options.maxMessagesPerSecond ?? 0;
+    this.peerLimiter = maxMessagesPerSecond > 0 ? new PeerRateLimiter(maxMessagesPerSecond) : null;
     this.offlineQueueSize = Math.max(0, Math.floor(options.offlineQueueSize ?? 50));
     this.enableAck = !!options.enableAck;
     this.reliableTimeoutMs = Math.max(0, Math.floor(options.reliableTimeout ?? 5000));
     this.reliableRetryCount = Math.max(0, Math.floor(options.reliableRetryCount ?? 0));
     this.logLevel = options.logLevel ?? 'none';
     this.logToConsole = options.logToConsole ?? false;
+    this.acceptModelUrl = options.acceptModelUrl;
     if (options.onConnect) this.onConnect = options.onConnect;
     if (options.onDisconnect) this.onDisconnect = options.onDisconnect;
     if (options.onWelcome) this.onWelcome = options.onWelcome;
@@ -192,13 +246,16 @@ export class PlayerNetworkManager {
       this.isConnecting = false;
       this.reconnectAttemptsUsed = 0;
       this.startPingLoop();
-      
+      // A new connection may reach a server that never saw this player, so its first Update is complete.
+      this.sentFields = {};
+
       // Join 메시지 전송
       ws.send(JSON.stringify({
         type: 'Join',
         room_id: this.roomId,
         name: this.playerName,
-        color: this.playerColor
+        color: this.playerColor,
+        ...(this.modelUrl ? { modelUrl: this.modelUrl } : {}),
       }));
 
       // Resend in-flight reliable messages, when present, after reconnect.
@@ -216,6 +273,10 @@ export class PlayerNetworkManager {
       // Avoid throwing inside the handler (would silently break updates).
       const handleText = (text: string) => {
         if (this.ws !== ws || ws.readyState !== WebSocket.OPEN) return;
+        if (text.length > MAX_REMOTE_WIRE_MESSAGE_LENGTH) {
+          this.onError?.('서버 메시지가 너무 큽니다');
+          return;
+        }
         try {
           const message: unknown = JSON.parse(text);
           if (!isServerMessage(message)) {
@@ -235,6 +296,10 @@ export class PlayerNetworkManager {
       }
 
       if (isTextReadablePayload(data)) {
+        if ('size' in data && typeof data.size === 'number' && data.size > MAX_REMOTE_WIRE_MESSAGE_LENGTH) {
+          this.onError?.('서버 메시지가 너무 큽니다');
+          return;
+        }
         data
           .text()
           .then((t: string) => handleText(t))
@@ -247,6 +312,10 @@ export class PlayerNetworkManager {
       }
 
       if (data instanceof ArrayBuffer) {
+        if (data.byteLength > MAX_REMOTE_WIRE_MESSAGE_LENGTH) {
+          this.onError?.('서버 메시지가 너무 큽니다');
+          return;
+        }
         try {
           const text = new TextDecoder().decode(new Uint8Array(data));
           handleText(text);
@@ -269,25 +338,30 @@ export class PlayerNetworkManager {
     ws.onclose = (event) => {
       if (this.ws !== ws) return;
       this.info('[PlayerNetworkManager] WebSocket closed', { code: event.code, reason: event.reason });
-      this.isConnected = false;
-      this.isConnecting = false;
-      this.stopPingLoop();
-      this.pausePendingAcks();
-      this.players.clear();
-      this.localPlayerId = null;
-      if (this.onDisconnect) {
-        this.onDisconnect();
-      }
-
-      // Do not reconnect on normal closures.
-      if (event.code === 1000 || event.code === 1001) {
-        this.shouldReconnect = false;
-      }
-
-      // If the socket was closed (network drop), retry automatically when configured.
-      // disconnect() disables shouldReconnect so it won't loop.
-      this.tryReconnect();
+      this.handleClosed(event.code);
     };
+  }
+
+  /** Shared by real closes and abandoned half-open sockets. */
+  private handleClosed(code: number): void {
+    this.isConnected = false;
+    this.isConnecting = false;
+    this.stopPingLoop();
+    this.pausePendingAcks();
+    this.localPlayerId = null;
+
+    // Do not reconnect on normal closures.
+    if (code === 1000 || code === 1001) {
+      this.shouldReconnect = false;
+    }
+
+    // If the socket was closed (network drop), retry automatically when configured.
+    // disconnect() disables shouldReconnect so it won't loop.
+    const reconnecting = this.tryReconnect();
+    // A short drop keeps remote avatars mounted; the next Welcome reconciles them.
+    if (reconnecting) this.retainPlayers();
+    else this.clearPlayers();
+    this.onDisconnect?.({ reconnecting });
   }
 
   disconnect(): void {
@@ -300,20 +374,17 @@ export class PlayerNetworkManager {
     this.pendingChats = [];
 
     if (!this.ws) {
-      this.players.clear();
+      this.clearPlayers();
       this.isConnected = false;
       this.isConnecting = false;
       this.localPlayerId = null;
-      this.onDisconnect?.();
+      this.onDisconnect?.({ reconnecting: false });
       return;
     }
 
     const ws = this.ws;
     // Detach handlers first to avoid late events calling callbacks after disconnect().
-    ws.onopen = null;
-    ws.onmessage = null;
-    ws.onerror = null;
-    ws.onclose = null;
+    detachHandlers(ws);
 
     if (ws.readyState === WebSocket.OPEN) {
         try {
@@ -329,11 +400,11 @@ export class PlayerNetworkManager {
     }
 
     this.ws = null;
-    this.players.clear();
+    this.clearPlayers();
     this.isConnected = false;
     this.isConnecting = false;
     this.localPlayerId = null;
-    this.onDisconnect?.();
+    this.onDisconnect?.({ reconnecting: false });
   }
 
   updateLocalPlayer(state: Partial<PlayerState>): void {
@@ -343,19 +414,24 @@ export class PlayerNetworkManager {
     const ws = this.ws;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
+    // The only send-rate limit on the Update path; excess updates coalesce instead of being dropped. A socket still
+    // holding a backlog waits too: updates supersede each other, so a slow link sends only the latest once it drains.
     const now = Date.now();
-    if (this.updateRateLimitMs <= 0 || now - this.lastUpdateSentAt >= this.updateRateLimitMs) {
+    const backedUp = ws.bufferedAmount > MAX_BUFFERED_UPDATE_BYTES;
+    if (!backedUp && (this.updateRateLimitMs <= 0 || now - this.lastUpdateSentAt >= this.updateRateLimitMs)) {
       this.lastUpdateSentAt = now;
       const payload = this.pendingUpdate;
       this.pendingUpdate = null;
       if (!payload) return;
-      ws.send(JSON.stringify({ type: 'Update', state: payload }));
+      this.sendUpdate(ws, payload);
       return;
     }
 
     // Schedule a flush at the next permitted time.
     if (this.updateFlushTimer) return;
-    const delay = Math.max(0, this.updateRateLimitMs - (now - this.lastUpdateSentAt));
+    const delay = backedUp
+      ? Math.max(this.updateRateLimitMs, BACKLOG_RETRY_MS)
+      : Math.max(0, this.updateRateLimitMs - (now - this.lastUpdateSentAt));
     this.updateFlushTimer = setTimeout(() => {
       this.updateFlushTimer = null;
       const p = this.pendingUpdate;
@@ -365,8 +441,22 @@ export class PlayerNetworkManager {
     }, delay);
   }
 
+  /** `state` is owned by the manager; unchanged sticky fields are removed before it goes on the wire. */
+  private sendUpdate(ws: WebSocket, state: Partial<PlayerState>): void {
+    const sent = this.sentFields;
+    for (const key of STICKY_FIELDS) {
+      if (state[key] === sent[key]) delete state[key];
+    }
+    if (Object.keys(state).length === 0) return;
+    ws.send(JSON.stringify({ type: 'Update', state }));
+    for (const key of STICKY_FIELDS) {
+      const value = state[key];
+      if (value !== undefined) sent[key] = value;
+    }
+  }
+
   sendChat(text: string, options?: { range?: number }): void {
-    const safeText = String(text ?? '').trim().slice(0, 200);
+    const safeText = String(text ?? '').trim().slice(0, MAX_REMOTE_CHAT_TEXT_LENGTH);
     if (!safeText) return;
 
     const ws = this.ws;
@@ -406,6 +496,7 @@ export class PlayerNetworkManager {
         break;
       }
       case 'Pong': {
+        this.lastPongAt = Date.now();
         if (typeof message.ts === 'number' && message.ts > 0) {
           const rtt = Math.max(0, Date.now() - message.ts);
           this.onPing?.(rtt);
@@ -415,28 +506,38 @@ export class PlayerNetworkManager {
         }
         break;
       }
-      case 'Welcome':
+      case 'Welcome': {
         this.localPlayerId = message.client_id;
-        this.onWelcome?.(this.localPlayerId, message.room_state);
-        
+        let roomState: Record<string, PlayerState> | undefined;
         if (message.room_state) {
+          roomState = {};
           for (const [id, state] of Object.entries(message.room_state)) {
-            if (id !== this.localPlayerId) {
-              this.players.set(id, state);
-              if (this.onPlayerJoin) {
-                this.onPlayerJoin(id, state);
-              }
-            }
+            roomState[id] = this.completePlayerState(state);
+          }
+        }
+        this.onWelcome?.(this.localPlayerId, roomState);
+        this.releaseRetained(roomState);
+
+        if (roomState) {
+          for (const [id, state] of Object.entries(roomState)) {
+            if (id === this.localPlayerId) continue;
+            // Players kept through a reconnect are updated in place instead of joining again.
+            const known = this.players.has(id);
+            this.players.set(id, state);
+            if (known) this.onPlayerUpdate?.(id, state);
+            else this.onPlayerJoin?.(id, state);
           }
         }
         break;
+      }
 
       case 'PlayerJoined':
         this.debug('[PlayerNetworkManager] PlayerJoined', message.client_id);
         if (message.client_id !== this.localPlayerId) {
-          this.players.set(message.client_id, message.state);
+          const state = this.completePlayerState(message.state);
+          this.players.set(message.client_id, state);
           if (this.onPlayerJoin) {
-            this.onPlayerJoin(message.client_id, message.state);
+            this.onPlayerJoin(message.client_id, state);
           }
         }
         break;
@@ -444,6 +545,8 @@ export class PlayerNetworkManager {
       case 'PlayerLeft':
         this.debug('[PlayerNetworkManager] PlayerLeft', message.client_id);
         this.players.delete(message.client_id);
+        this.peerLimiter?.forget(message.client_id);
+        this.chatLimiter.forget(message.client_id);
         if (this.onPlayerLeave) {
           this.onPlayerLeave(message.client_id);
         }
@@ -451,26 +554,21 @@ export class PlayerNetworkManager {
 
       case 'PlayerUpdate':
         this.debug('[PlayerNetworkManager] PlayerUpdate', message.client_id);
-        if (message.client_id === this.localPlayerId) break;
+        // A server that echoes our own update back must not turn us into a remote player.
+        if (message.client_id === this.localPlayerId || !this.allowPeerMessage(message.client_id)) break;
         {
+          const update = this.copyPlayerState(message.state);
           const existingPlayer = this.players.get(message.client_id);
           if (existingPlayer) {
             // Avoid mutating shared references; create a new state object.
-            const next: PlayerState = { ...existingPlayer, ...message.state };
+            const next: PlayerState = { ...existingPlayer, ...update };
             this.players.set(message.client_id, next);
             this.onPlayerUpdate?.(message.client_id, next);
             break;
           }
 
           // Be robust to out-of-order delivery: accept updates even if we missed Welcome/Joined.
-          const state = message.state as Partial<PlayerState> | undefined;
-          const created: PlayerState = {
-            name: state?.name ?? 'Player',
-            color: state?.color ?? '#ffffff',
-            position: state?.position ?? [0, 0, 0],
-            rotation: state?.rotation ?? [1, 0, 0, 0],
-            ...(state ?? {}),
-          };
+          const created = this.completePlayerState(update);
           this.players.set(message.client_id, created);
           // Treat as join+update so UI renders immediately.
           this.onPlayerJoin?.(message.client_id, created);
@@ -479,7 +577,9 @@ export class PlayerNetworkManager {
         break;
 
       case 'Chat':
-        this.onChat?.(message.client_id, message.text, message.timestamp);
+        // A flooding peer must not turn into unbounded UI state updates.
+        if (!this.allowPeerMessage(message.client_id) || !this.chatLimiter.allow(message.client_id, Date.now())) break;
+        this.onChat?.(message.client_id, message.text.slice(0, MAX_REMOTE_CHAT_TEXT_LENGTH), message.timestamp);
         break;
 
       default:
@@ -488,9 +588,43 @@ export class PlayerNetworkManager {
     }
   }
 
+  private allowPeerMessage(peerId: string): boolean {
+    return this.peerLimiter?.allow(peerId, Date.now()) ?? true;
+  }
+
+  /** Copies only known, bounded fields so peers cannot inject extra keys or oversized values. */
+  private copyPlayerState(state: Partial<PlayerState>): Partial<PlayerState> {
+    const out: Partial<PlayerState> = {};
+    if (typeof state.name === 'string') out.name = clampRemoteString('name', state.name);
+    if (typeof state.color === 'string') out.color = clampRemoteString('color', state.color);
+    if (typeof state.animation === 'string') out.animation = clampRemoteString('animation', state.animation);
+    if (typeof state.modelUrl === 'string' && parseRemoteModelUrl(state.modelUrl)
+      && (this.acceptModelUrl?.(state.modelUrl) ?? true)) {
+      out.modelUrl = state.modelUrl;
+    }
+    if (state.position) out.position = [state.position[0], state.position[1], state.position[2]];
+    if (state.rotation) {
+      const [w, x, y, z] = state.rotation;
+      const length = Math.hypot(w, x, y, z);
+      out.rotation = [w / length, x / length, y / length, z / length];
+    }
+    if (state.velocity) out.velocity = [state.velocity[0], state.velocity[1], state.velocity[2]];
+    return out;
+  }
+
+  private completePlayerState(state: Partial<PlayerState>): PlayerState {
+    return {
+      name: 'Player',
+      color: '#ffffff',
+      position: [0, 0, 0],
+      rotation: [1, 0, 0, 0],
+      ...this.copyPlayerState(state),
+    };
+  }
+
   setCallbacks(callbacks: {
     onConnect?: () => void;
-    onDisconnect?: () => void;
+    onDisconnect?: (info?: PlayerDisconnectInfo) => void;
     onWelcome?: (localPlayerId: string, roomState?: Record<string, PlayerState>) => void;
     onPlayerJoin?: (playerId: string, state: PlayerState) => void;
     onPlayerUpdate?: (playerId: string, state: PlayerState) => void;
@@ -523,12 +657,19 @@ export class PlayerNetworkManager {
   }
 
   private startPingLoop(): void {
+    this.lastPingSentAt = 0;
+    this.lastPongAt = 0;
     if (this.pingIntervalMs <= 0) return;
     this.stopPingLoop();
 
     this.pingTimer = setInterval(() => {
       const ws = this.ws;
       if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      // A server that answers pings but let the last one go a whole interval unanswered is half-open.
+      if (this.lastPongAt > 0 && this.lastPongAt < this.lastPingSentAt) {
+        this.abandonSocket(ws);
+        return;
+      }
       const ts = Date.now();
       this.lastPingSentAt = ts;
       try {
@@ -543,6 +684,51 @@ export class PlayerNetworkManager {
     if (!this.pingTimer) return;
     clearInterval(this.pingTimer);
     this.pingTimer = null;
+  }
+
+  /** Closing a half-open socket can take minutes, so it is detached and treated as closed now. */
+  private abandonSocket(ws: WebSocket): void {
+    this.warn('[PlayerNetworkManager] Pong timeout; reconnecting');
+    detachHandlers(ws);
+    try {
+      ws.close(PONG_TIMEOUT_CLOSE_CODE, 'pong timeout');
+    } catch {
+      // ignore
+    }
+    this.handleClosed(PONG_TIMEOUT_CLOSE_CODE);
+  }
+
+  private retainPlayers(): void {
+    for (const id of this.players.keys()) this.retainedIds.add(id);
+    if (this.retainTimer || this.retainedIds.size === 0) return;
+    this.retainTimer = setTimeout(() => {
+      this.retainTimer = null;
+      this.releaseRetained();
+    }, DISCONNECT_GRACE_MS);
+  }
+
+  /** Players kept through a reconnect leave unless the new room state still lists them. */
+  private releaseRetained(room?: Record<string, PlayerState>): void {
+    this.clearRetainTimer();
+    for (const id of this.retainedIds) {
+      if (room && Object.hasOwn(room, id) && id !== this.localPlayerId) continue;
+      if (this.players.delete(id)) this.onPlayerLeave?.(id);
+    }
+    this.retainedIds.clear();
+  }
+
+  private clearRetainTimer(): void {
+    if (!this.retainTimer) return;
+    clearTimeout(this.retainTimer);
+    this.retainTimer = null;
+  }
+
+  private clearPlayers(): void {
+    this.clearRetainTimer();
+    this.retainedIds.clear();
+    this.players.clear();
+    this.peerLimiter?.clear();
+    this.chatLimiter.clear();
   }
 
   private clearUpdateFlushTimer(): void {
@@ -588,16 +774,19 @@ export class PlayerNetworkManager {
     }
   }
 
-  private tryReconnect(): void {
-    if (!this.shouldReconnect) return;
-    if (this.reconnectAttemptsMax <= 0) return;
-    if (this.reconnectAttemptsUsed >= this.reconnectAttemptsMax) return;
-    if (this.isConnecting) return;
+  /** Schedules the next attempt; returns false when this disconnect is final. */
+  private tryReconnect(): boolean {
+    if (!this.shouldReconnect) return false;
+    if (this.reconnectAttemptsMax <= 0) return false;
+    if (this.reconnectAttemptsUsed >= this.reconnectAttemptsMax) return false;
+    if (this.isConnecting) return false;
 
     const attempt = this.reconnectAttemptsUsed + 1;
-    // Exponential backoff, capped to keep UI responsive.
+    // Exponential backoff, capped to keep UI responsive. Jitter in [0.5, 1) spreads clients
+    // that lost the same server so they do not all return at once.
     const base = this.reconnectDelayMs || 0;
-    const delay = Math.min(30000, Math.floor(base * Math.pow(2, this.reconnectAttemptsUsed)));
+    const backoff = Math.min(MAX_RECONNECT_DELAY_MS, base * Math.pow(2, this.reconnectAttemptsUsed));
+    const delay = Math.floor(backoff * (0.5 + Math.random() * 0.5));
     this.reconnectAttemptsUsed = attempt;
 
     this.warn('[PlayerNetworkManager] Reconnecting...', { attempt, delay });
@@ -606,18 +795,14 @@ export class PlayerNetworkManager {
       if (!this.shouldReconnect) return;
       this.connect();
     }, delay);
-  }
-
-  private nextAckId(): string {
-    const n = this.ackIdCounter++;
-    return `ack_${Date.now()}_${n}`;
+    return true;
   }
 
   private sendReliable(payload: { type: string; [k: string]: NetworkPayload }): void {
     const ws = this.ws;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
-    const ackId = this.nextAckId();
+    const ackId = createUniqueId('ack');
     const messageType = String(payload.type ?? 'Unknown');
     const raw = JSON.stringify({ ...payload, ackId });
 
@@ -773,13 +958,22 @@ type AckMessage = {
 
 type ServerMessage = WelcomeMessage | PlayerJoinedMessage | PlayerLeftMessage | PlayerUpdateMessage | ChatMessage | PongMessage | AckMessage;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
+/** Late events from a socket we gave up on must not reach callbacks. */
+function detachHandlers(ws: WebSocket): void {
+  ws.onopen = null;
+  ws.onmessage = null;
+  ws.onerror = null;
+  ws.onclose = null;
 }
 
-function isFiniteTuple(value: unknown, length: number): boolean {
+function isBoundedTuple(value: unknown, length: number): value is number[] {
   return Array.isArray(value) && value.length === length
-    && value.every((component: unknown) => typeof component === 'number' && Number.isFinite(component));
+    && value.every((component: unknown) => typeof component === 'number' && Math.abs(component) <= MAX_REMOTE_COORDINATE);
+}
+
+/** Any nonzero quaternion is normalized on copy; a zero one has no rotation to recover. */
+function isRotation(value: unknown): boolean {
+  return isBoundedTuple(value, 4) && Math.hypot(...value) > Number.EPSILON;
 }
 
 function isPlayerState(value: unknown, partial: boolean): boolean {
@@ -787,11 +981,11 @@ function isPlayerState(value: unknown, partial: boolean): boolean {
   for (const key of ['name', 'color', 'animation', 'modelUrl']) {
     if (!(key in value)) continue;
     const field = value[key];
-    if (typeof field !== 'string' || !isRemoteStringWithinLimit(key, field)) return false;
+    if (typeof field !== 'string') return false;
   }
-  if ('position' in value && !isFiniteTuple(value['position'], 3)) return false;
-  if ('rotation' in value && !isFiniteTuple(value['rotation'], 4)) return false;
-  if ('velocity' in value && !isFiniteTuple(value['velocity'], 3)) return false;
+  if ('position' in value && !isBoundedTuple(value['position'], 3)) return false;
+  if ('rotation' in value && !isRotation(value['rotation'])) return false;
+  if ('velocity' in value && !isBoundedTuple(value['velocity'], 3)) return false;
   return partial || ['name', 'color', 'position', 'rotation'].every((key) => key in value);
 }
 
@@ -814,7 +1008,6 @@ function isServerMessage(value: unknown): value is ServerMessage {
       return true;
     case 'Chat':
       return typeof value['text'] === 'string'
-        && value['text'].length <= MAX_REMOTE_CHAT_TEXT_LENGTH
         && typeof value['timestamp'] === 'number' && Number.isFinite(value['timestamp']);
     default:
       return false;

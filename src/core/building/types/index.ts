@@ -1,18 +1,59 @@
+import type { FarmPlotConfig } from './farm';
 import type { CellCoord, EdgeCoord } from '../../grid';
+import type { ClimateMode } from '../../weather/core/climate';
 
-export type Position3D = {
+export * from './farm';
+
+export interface Position3D {
   x: number;
   y: number;
   z: number;
-};
+}
 
-export type Rotation3D = {
+export interface Rotation3D {
   x: number;
   y: number;
   z: number;
+}
+
+/** How blades look: `lawn` is short, soft and pastel; `tall` is broad, stiff and deeper green with a light crown. */
+export type GrassProfile = 'lawn' | 'tall';
+
+/** Grass a mesh grows on the box tiles that use it. Node renderers only; the classic WebGL path skips it. */
+export type MeshGrassConfig = {
+  /** Candidate blades per m² before the quality tier scales them; the ragged border thins them. Lawn 16, tall 52. */
+  density?: number;
+  /** Average blade height in meters. Lawn 0.25, tall 0.55. */
+  height?: number;
+  /** Defaults to `lawn`. */
+  profile?: GrassProfile;
+  /** Ground tint the blades take at their roots. Defaults to the mesh color, or a lawn green for textured meshes. */
+  color?: string;
 };
 
-export type MeshConfig = {
+/**
+ * Decoration a mesh scatters over its plain box tiles (no terrain cover), drawn as static models: the same on every
+ * client and rebuilt only when tiles or meshes change.
+ */
+export type MeshScatterConfig = {
+  /** Catalog model ids; each placement takes one of them. */
+  models: string[];
+  /** Candidate placements per m² (a jittered grid); the band, patches and placed objects thin them. */
+  density: number;
+  /** Only beside tiles with this terrain cover, such as `'dirt'` for roadside flowers. */
+  near?: TileObjectType;
+  /** Meters from those tiles' edge the band spans. Defaults 0.3 to 1.6. */
+  margin?: number;
+  within?: number;
+  /** 0 spreads evenly; toward 1 placements gather in patches. */
+  clump?: number;
+  /** Scale range on top of the catalog scale. Defaults to [0.8, 1.2]. */
+  scale?: [number, number];
+  /** Another layout with the same rule. */
+  seed?: number;
+};
+
+export interface MeshConfig {
   id: string;
   assetId?: string;
   color?: string;
@@ -33,7 +74,14 @@ export type MeshConfig = {
   metalness?: number;
   opacity?: number;
   transparent?: boolean;
-};
+  /**
+   * Grows a grass layer on every box tile that uses this mesh. Tall-grass tiles (`objectType: 'grass'`) on such a mesh
+   * keep its surface instead of the painted meadow ground.
+   */
+  grass?: MeshGrassConfig;
+  /** Decoration scattered over the plain box tiles that use this mesh. */
+  scatter?: MeshScatterConfig[];
+}
 
 export type BuildingWallKind = 'solid' | 'window' | 'door' | 'arch' | 'half' | 'railing' | 'glass';
 
@@ -51,21 +99,19 @@ export type BuildingWallPreset = {
   metalness?: number;
 };
 
-export type WallConfig = {
+export interface WallConfig {
   id: string;
   position: Position3D;
   rotation: Rotation3D;
   wallGroupId: string;
   materialId?: string;
+  /** The grid edge the wall stands on, named north or west; derived from position and rotation when stored. */
   edge?: EdgeCoord;
-  width?: number;
-  height?: number;
-  depth?: number;
   wallKind?: BuildingWallKind;
   flipSides?: boolean;
-};
+}
 
-export type WallGroupConfig = {
+export interface WallGroupConfig {
   id: string;
   name: string;
   frontMeshId?: string;
@@ -73,9 +119,9 @@ export type WallGroupConfig = {
   sideMeshId?: string;
   defaultWallKind?: BuildingWallKind;
   walls: WallConfig[];
-};
+}
 
-export type TileObjectType = 'water' | 'grass' | 'sand' | 'snowfield' | 'none';
+export type TileObjectType = 'water' | 'grass' | 'sand' | 'snowfield' | 'dirt' | 'farm' | 'none';
 export type BuildingTreeKind =
   | 'sakura'
   | 'oak'
@@ -86,6 +132,8 @@ export type BuildingTreeKind =
   | 'cypress'
   | 'dead';
 export type PlacedObjectType = 'tree' | 'sakura' | 'flag' | 'fire' | 'billboard' | 'model';
+/** What a click does in building edit mode: place a new piece, paint the tile or wall clicked, or erase the piece clicked. */
+export type BuildingTool = 'place' | 'paint' | 'erase';
 export type TileShapeType = 'box' | 'stairs' | 'round' | 'ramp';
 export type BuildingModelFallbackKind =
   | 'door'
@@ -101,7 +149,7 @@ export type BuildingModelFallbackKind =
   | 'shop'
   | 'generic';
 
-export type ObjectConfig = {
+export interface ObjectConfig {
   size?: number;
   primaryColor?: string;
   secondaryColor?: string;
@@ -129,17 +177,17 @@ export type ObjectConfig = {
   modelScale?: number;
   modelColor?: string;
   modelFallbackKind?: BuildingModelFallbackKind;
-};
+}
 
-export type PlacedObject = {
+export interface PlacedObject {
   id: string;
   type: PlacedObjectType;
   position: Position3D;
   rotation?: number;
   config?: ObjectConfig;
-};
+}
 
-export type BillboardConfig = {
+export interface BillboardConfig {
   id: string;
   position: Position3D;
   width: number;
@@ -148,16 +196,16 @@ export type BillboardConfig = {
   text?: string;
   imageUrl?: string;
   color?: string;
-};
+}
 
-export type BloomConfig = {
+export interface BloomConfig {
   id: string;
   position: Position3D;
   intensity?: number;
   color?: string;
-};
+}
 
-export type TileConfig = {
+export interface TileConfig {
   id: string;
   position: Position3D;
   tileGroupId: string;
@@ -171,13 +219,14 @@ export type TileConfig = {
   objectConfig?: {
     /** Blades per square meter. The mesh layer multiplies this by tile area. */
     grassDensity?: number;
-    waterScale?: number;
     terrainColor?: string;
     terrainAccentColor?: string;
+    /** A `farm` tile's soil, crop, stage, rows and edge. */
+    farm?: FarmPlotConfig;
   };
-};
+}
 
-export type BuildingBlockConfig = {
+export interface BuildingBlockConfig {
   id: string;
   position: Position3D;
   cell?: CellCoord;
@@ -188,25 +237,30 @@ export type BuildingBlockConfig = {
   };
   materialId?: string;
   tags?: string[];
-};
+}
 
-export type BuildingSerializedState = {
+export interface BuildingSerializedState {
   version: 1;
   meshes: MeshConfig[];
   wallGroups: WallGroupConfig[];
   tileGroups: TileGroupConfig[];
   blocks: BuildingBlockConfig[];
   objects: PlacedObject[];
-  wallCategories?: WallCategory[];
-  tileCategories?: TileCategory[];
   showSnow: boolean;
   showFog: boolean;
   fogColor: string;
   weatherEffect: BuildingWeatherEffect;
+  /** Automatic weather while `weatherEffect` is `'none'`; absent in snapshots written before climates, read as `'off'`. */
+  climate?: BuildingClimate;
   worldSurface: BuildingWorldSurface;
-};
+  /** Absent in snapshots written before categories were persisted. */
+  wallCategories?: WallCategory[];
+  tileCategories?: TileCategory[];
+}
 
 export type BuildingWeatherEffect = 'none' | 'snow' | 'rain' | 'storm' | 'wind';
+/** `off`: only the picked weather. `auto`: a seeded schedule from the game season. A season fixes the schedule's pool. */
+export type BuildingClimate = ClimateMode;
 export type BuildingWorldSurface = 'ground' | 'water';
 
 export const BUILDING_WEATHER_EFFECT_OPTIONS: BuildingOptionMeta<BuildingWeatherEffect>[] = [
@@ -215,6 +269,15 @@ export const BUILDING_WEATHER_EFFECT_OPTIONS: BuildingOptionMeta<BuildingWeather
   { type: 'rain', labelEn: 'Rain', labelKo: '비' },
   { type: 'storm', labelEn: 'Storm', labelKo: '폭풍' },
   { type: 'wind', labelEn: 'Wind', labelKo: '바람' },
+];
+
+export const BUILDING_CLIMATE_OPTIONS: BuildingOptionMeta<BuildingClimate>[] = [
+  { type: 'off', labelEn: 'Off', labelKo: '끔' },
+  { type: 'auto', labelEn: 'Auto', labelKo: '자동' },
+  { type: 'spring', labelEn: 'Spring', labelKo: '봄' },
+  { type: 'summer', labelEn: 'Summer', labelKo: '여름' },
+  { type: 'autumn', labelEn: 'Autumn', labelKo: '가을' },
+  { type: 'winter', labelEn: 'Winter', labelKo: '겨울' },
 ];
 
 export const BUILDING_WORLD_SURFACE_OPTIONS: BuildingOptionMeta<BuildingWorldSurface>[] = [
@@ -661,6 +724,8 @@ export const BUILDING_TILE_OBJECT_OPTIONS: BuildingOptionMeta<TileObjectType>[] 
   { type: 'grass', labelEn: 'Grass', labelKo: '잔디' },
   { type: 'sand', labelEn: 'Sand', labelKo: '모래' },
   { type: 'snowfield', labelEn: 'Snowfield', labelKo: '눈밭' },
+  { type: 'dirt', labelEn: 'Dirt path', labelKo: '흙길' },
+  { type: 'farm', labelEn: 'Farm field', labelKo: '밭' },
 ];
 
 export const BUILDING_TILE_SHAPE_OPTIONS: BuildingOptionMeta<TileShapeType>[] = [
@@ -693,28 +758,28 @@ export const BUILDING_FLAG_STYLE_OPTIONS: {
   meta: FLAG_STYLE_META[style],
 }));
 
-export type TileGroupConfig = {
+export interface TileGroupConfig {
   id: string;
   name: string;
   floorMeshId: string;
   tiles: TileConfig[];
-};
+}
 
-export type WallCategory = {
+export interface WallCategory {
   id: string;
   name: string;
   description?: string;
   wallGroupIds: string[];
-};
+}
 
-export type TileCategory = {
+export interface TileCategory {
   id: string;
   name: string;
   description?: string;
   tileGroupIds: string[];
-};
+}
 
-export type BuildingSystemState = {
+export interface BuildingSystemState {
   meshes: Map<string, MeshConfig>;
   wallGroups: Map<string, WallGroupConfig>;
   tileGroups: Map<string, TileGroupConfig>;
@@ -734,5 +799,6 @@ export type BuildingSystemState = {
   showFog: boolean;
   fogColor: string;
   weatherEffect: BuildingWeatherEffect;
+  climate: BuildingClimate;
   worldSurface: BuildingWorldSurface;
-};
+}

@@ -1,12 +1,12 @@
-import 'reflect-metadata';
 import * as THREE from 'three';
 
+import type { ActiveStateType } from '../../../motions/core/types';
+import type { CameraCalcProps, CameraSystemConfig, CameraSystemState } from '../../core/types';
 import { BaseController } from '../BaseController';
 import { FirstPersonController } from '../FirstPersonController';
 import { SideScrollController } from '../SideScrollController';
+import { ThirdPersonController } from '../ThirdPersonController';
 import { TopDownController } from '../TopDownController';
-import type { CameraCalcProps, CameraSystemConfig, CameraSystemState } from '../../core/types';
-import type { ActiveStateType } from '../../../motions/core/types';
 
 class TestController extends BaseController {
   name = 'test';
@@ -105,6 +105,21 @@ const runControllerFrames = (
 };
 
 describe('BaseController', () => {
+  it('offset shifts the placed camera, which is what the cinematic shake beat writes', () => {
+    const shifted = runControllerFrames(new TestController(), 400, 0.05, createConfig({ offset: { x: 0, y: 3, z: 0 } }));
+    const plain = runControllerFrames(new TestController(), 400, 0.05, createConfig());
+    expect(shifted.camera.position.y - plain.camera.position.y).toBeCloseTo(3, 1);
+  });
+
+  it('bounds keep the camera target inside the box, and nothing limits it without them', () => {
+    const bounded = runControllerFrames(new TestController(), 400, 0.05, createConfig({ bounds: { minX: -2, minY: 2, maxY: 5, minZ: -4 } }));
+    expect(bounded.camera.position.x).toBeCloseTo(-2, 1);
+    expect(bounded.camera.position.y).toBeCloseTo(5, 1);
+    expect(bounded.camera.position.z).toBeCloseTo(-4, 1);
+    const free = runControllerFrames(new TestController(), 400, 0.05, createConfig());
+    expect(free.camera.position.toArray().map((value) => Math.round(value))).toEqual([-15, 9, -15]);
+  });
+
   it('smoothing.position 값이 클수록 목표 위치에 더 빨리 접근해야 합니다', () => {
     const controller = new TestController();
     const slowProps = createProps();
@@ -127,22 +142,59 @@ describe('BaseController', () => {
     addBlockingMesh(blockedProps.scene);
     addBlockingMesh(clearProps.scene);
 
-    controller.update(blockedProps, createState(createConfig({
-      enableCollision: true,
-      collisionMargin: 0.5,
-    })));
-    controller.update(clearProps, createState(createConfig({
-      enableCollision: false,
-    })));
+    for (let i = 0; i < 30; i++) {
+      controller.update(blockedProps, createState(createConfig({
+        enableCollision: true,
+        collisionMargin: 0.5,
+      })));
+      controller.update(clearProps, createState(createConfig({ enableCollision: false })));
+    }
 
     expect(blockedProps.camera.position.length()).toBeLessThan(clearProps.camera.position.length());
+  });
+
+  // Ground meshes rise a few centimeters above the physics floor (grass noise, sand relief), and a terrace step can
+  // stand right behind the feet; neither blocks the view from the body.
+  it.each([
+    ['평평한 바닥', 0],
+    ['발 뒤 0.5m의 0.25m 단차', 0.25],
+  ])('바닥에 서 있는 타깃(발 위치)에서도 카메라가 발밑으로 무너지지 않아야 합니다: %s', (_label, stepHeight) => {
+    const controller = new TestController();
+    const groundedProps = createProps();
+    const clearProps = createProps();
+    groundedProps.activeState.position.set(0, 0, 0);
+    clearProps.activeState.position.set(0, 0, 0);
+    const meshes = [new THREE.Mesh(new THREE.BoxGeometry(40, 0.04, 40), new THREE.MeshBasicMaterial())];
+    meshes[0]!.position.y = -0.02;
+    if (stepHeight > 0) {
+      const step = new THREE.Mesh(new THREE.BoxGeometry(4, stepHeight, 4), new THREE.MeshBasicMaterial());
+      // The camera sits at (-15, 8, -15) from the target; the step starts 0.5m along that direction.
+      step.position.set(-(0.5 / Math.SQRT2) - 2 / Math.SQRT2, stepHeight / 2, -(0.5 / Math.SQRT2) - 2 / Math.SQRT2);
+      step.rotation.y = Math.PI / 4;
+      meshes.push(step);
+    }
+    for (const mesh of meshes) groundedProps.scene.add(mesh);
+    groundedProps.scene.updateMatrixWorld(true);
+
+    for (let i = 0; i < 30; i++) {
+      controller.update(groundedProps, createState(createConfig({ enableCollision: true, collisionMargin: 0.1 })));
+      controller.update(clearProps, createState(createConfig({ enableCollision: false })));
+    }
+
+    expect(groundedProps.camera.position.distanceTo(clearProps.camera.position)).toBeLessThan(1e-6);
+    for (const mesh of meshes) {
+      mesh.geometry.dispose();
+      (mesh.material as THREE.Material).dispose();
+    }
   });
 
   it('카메라 충돌은 타깃 바로 근처의 자기 모델을 장애물로 보지 않아야 합니다', () => {
     const controller = new TestController();
     const selfProps = createProps();
     const clearProps = createProps();
-    addSelfMesh(selfProps.scene);
+    // The followed model is explicitly excluded, as runtime avatar groups are.
+    // Inferring identity from proximity would also exclude nearby walls.
+    selfProps.excludeObjects = [addSelfMesh(selfProps.scene)];
 
     controller.update(selfProps, createState(createConfig({
       enableCollision: true,
@@ -160,6 +212,8 @@ describe('BaseController', () => {
     const clearProps = createProps();
     const blockedProps = createProps();
     blockedProps.scene = clearProps.scene;
+    clearProps.camera.position.set(-15, 9, -15);
+    blockedProps.camera.position.copy(clearProps.camera.position);
 
     controller.update(clearProps, createState(createConfig({
       enableCollision: true,
@@ -173,6 +227,25 @@ describe('BaseController', () => {
     })));
 
     expect(blockedProps.camera.position.length()).toBeLessThan(clearProps.camera.position.length());
+  });
+
+  it.each([false, true])('실제 보간 위치의 반경 충돌을 보정한다 (focus=%s)', focus => {
+    const props = createProps(); props.activeState.position.set(0, 0, 0);
+    props.camera.position.set(4, 0, 8); props.deltaTime = 1 / 60;
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(1, 4, 3), new THREE.MeshBasicMaterial());
+    wall.position.set(0, 0, 8); props.scene.add(wall); props.scene.updateMatrixWorld(true);
+    const controller = new ThirdPersonController();
+    const config = createConfig({ distance: { x: 4, y: 0, z: -8 }, enableCollision: true, collisionMargin: 0.25,
+      smoothing: { position: 0.5, rotation: 0.5, fov: 0.1 }, focus, focusTarget: { x: 0, y: 0, z: 0 },
+      focusDistance: Math.sqrt(80), focusLerpSpeed: -Math.log(0.5) * 60 });
+    try {
+      controller.update(props, createState(config));
+      // Both endpoints lie to either side of the wall. Unconstrained smoothing
+      // lands at (0,0,8), inside it; the spring arm must stop before its near face.
+      expect(props.camera.position.x).toBeCloseTo(0, 6);
+      expect(props.camera.position.z).toBeLessThanOrEqual(6.25 + 1e-6);
+      expect(new THREE.Box3().setFromObject(wall).distanceToPoint(props.camera.position)).toBeGreaterThanOrEqual(0.25 - 1e-6);
+    } finally { wall.geometry.dispose(); wall.material.dispose(); }
   });
 
   it('focus 진입 시 기본 컨트롤러 방향을 현재 카메라 위치보다 우선해야 합니다', () => {

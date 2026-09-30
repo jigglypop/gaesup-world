@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 
-import { RegisterSystem } from '@/core/boilerplate/decorators';
 import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
 import type { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
 import type { BaseState, BaseMetrics, SystemUpdateArgs } from '@/core/boilerplate/types';
@@ -168,7 +167,6 @@ type InteractionEventPayload =
 interface InteractionSystemState extends BaseState, InteractionState {}
 interface InteractionSystemMetrics extends BaseMetrics, InteractionMetrics {}
 
-@RegisterSystem('interaction')
 export class InteractionSystem extends AbstractSystem<InteractionSystemState, InteractionSystemMetrics> {
   private static instance: InteractionSystem | null = null;
   private config: InteractionConfig;

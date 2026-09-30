@@ -1,3 +1,7 @@
+import { useCallback, useSyncExternalStore } from 'react';
+
+import { useBuildingStore } from '../../../../building/stores/buildingStore';
+import { useNPCSimulation } from '../../../../npc/hooks/useNPCSimulation';
 import type {
   NPCAnimation,
   NPCBehaviorConfig,
@@ -44,15 +48,8 @@ export function NPCTemplateSection({
   );
 }
 
-type HoverPosition = {
-  x: number;
-  y: number;
-  z: number;
-} | null;
-
 export type NPCMovementSectionProps = {
   instance: NPCInstanceData;
-  hoverPosition: HoverPosition;
   updateBehavior: (id: string, updates: Partial<NPCBehaviorConfig>) => void;
   setNavigation: (id: string, waypoints: [number, number, number][], speed?: number) => void;
   clearNavigation: (id: string) => void;
@@ -62,11 +59,12 @@ const NPC_BEHAVIOR_MODES: NPCBehaviorMode[] = ['idle', 'patrol', 'wander'];
 
 export function NPCMovementSection({
   instance,
-  hoverPosition,
   updateBehavior,
   setNavigation,
   clearNavigation,
 }: NPCMovementSectionProps) {
+  // The only building panel leaf that shows the hover cell, so hover sweeps re-render nothing else.
+  const hoverPosition = useBuildingStore((state) => state.hoverPosition);
   const speed = instance.behavior?.speed ?? 2.2;
   const wanderRadius = instance.behavior?.wanderRadius ?? 4;
   const waypoints = instance.behavior?.waypoints ?? [];
@@ -338,8 +336,7 @@ export function NPCPerceptionSection({
         <div className="building-panel__info-item">
           <span className="building-panel__info-label">관측</span>
           <span className="building-panel__info-value">
-            감지 {instance.lastObservation?.perceived.length ?? 0} · 결정{' '}
-            {instance.lastDecision?.source ?? '없음'}
+            <NPCDecisionSummary id={instance.id} />
           </span>
         </div>
       </div>
@@ -347,3 +344,11 @@ export function NPCPerceptionSection({
   );
 }
 
+
+/** The simulation's last observation and decision for one NPC; it re-renders only when that NPC decides. */
+function NPCDecisionSummary({ id }: { id: string }) {
+  const simulation = useNPCSimulation();
+  const subscribe = useCallback((listener: () => void) => simulation.subscribeRecords(listener), [simulation]);
+  const record = useSyncExternalStore(subscribe, () => simulation.getRecord(id));
+  return <>감지 {record?.observation.perceived.length ?? 0} · 결정 {record?.decision?.source ?? '없음'}</>;
+}

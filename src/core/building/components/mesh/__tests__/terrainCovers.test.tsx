@@ -1,4 +1,3 @@
-import React from 'react';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 
 import { SandBatch } from '../sand';
@@ -14,7 +13,7 @@ describe('terrain cover batches', () => {
     const skirt = renderer.scene.findByProps({ name: 'sand-skirt' });
     expect(skirt).toBeDefined();
     expect(skirt.instance.raycast).toBeDefined();
-    expect(skirt.instance.userData.nonInteractive).toBe(true);
+    expect(skirt.instance.userData['nonInteractive']).toBe(true);
 
     renderer.unmount();
   });
@@ -28,7 +27,7 @@ describe('terrain cover batches', () => {
     const skirt = renderer.scene.findByProps({ name: 'snowfield-skirt' });
     expect(skirt).toBeDefined();
     expect(skirt.instance.raycast).toBeDefined();
-    expect(skirt.instance.userData.nonInteractive).toBe(true);
+    expect(skirt.instance.userData['nonInteractive']).toBe(true);
 
     renderer.unmount();
   });

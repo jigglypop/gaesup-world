@@ -1,10 +1,9 @@
-import 'reflect-metadata'
-
+import { isProductionEnv } from '../../utils/env'
 import { logger, type LogValue } from '../../utils/logger'
 import { IDisposable } from '../types'
 import { AbstractBridge } from './AbstractBridge'
 
-const isProduction = process.env.NODE_ENV === 'production'
+const isProduction = isProductionEnv()
 const enableLogs = !isProduction && process.env.VITE_ENABLE_BRIDGE_LOGS !== 'false'
 
 function toBridgeLogValue<ValueType>(value: ValueType | undefined): LogValue {
@@ -26,43 +25,38 @@ function toBridgeLogValue<ValueType>(value: ValueType | undefined): LogValue {
   return String(value)
 }
 
+/** Development logging a bridge opts into; `VITE_ENABLE_BRIDGE_LOGS=false` and production builds turn it off. */
+export type CoreBridgeOptions = {
+  /** Logs every bridge event. */
+  metrics?: boolean
+  /** Logs register, execute and unregister. */
+  eventLog?: boolean
+}
+
 export abstract class CoreBridge<
   EngineType extends IDisposable,
   SnapshotType,
   CommandType,
 > extends AbstractBridge<EngineType, SnapshotType, CommandType> {
-  constructor() {
+  constructor(options: CoreBridgeOptions = {}) {
     super()
-    this.processMetrics()
-    this.processEventLog()
-  }
-  private processMetrics(): void {
-    const prototype = Object.getPrototypeOf(this)
-    const enableMetrics = Reflect.getMetadata('enableMetrics', prototype)
-    if (enableMetrics && enableLogs) {
+    if (!enableLogs) return
+    if (options.metrics) {
       this.use((event, next) => {
         logger.log(`[Metrics] ${event.type} - ${event.id} at ${new Date(event.timestamp).toISOString()}`)
         next()
       })
     }
-  }
-  private processEventLog(): void {
-    const prototype = Object.getPrototypeOf(this)
-    const enableEventLog = Reflect.getMetadata('enableEventLog', prototype)
-    if (enableEventLog && enableLogs) {
+    if (options.eventLog) {
       this.on('register', (event) => {
         logger.log(`[Event] Registered entity: ${event.id}`)
       })
       this.on('execute', (event) => {
-        const command = event.data?.command
-        logger.log(
-          `[Event] Executed command on ${event.id}:`,
-          toBridgeLogValue(command),
-        )
+        logger.log(`[Event] Executed command on ${event.id}:`, toBridgeLogValue(event.data?.command))
       })
       this.on('unregister', (event) => {
         logger.log(`[Event] Unregistered entity: ${event.id}`)
       })
     }
   }
-} 
+}

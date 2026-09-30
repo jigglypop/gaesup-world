@@ -3,9 +3,12 @@ import { useCallback, useState } from 'react';
 import * as THREE from 'three';
 
 import { BridgeFactory } from '../../core/boilerplate';
+import { useGaesupRuntime } from '../../core/runtime/runtimeContext';
 import { useGaesupStore } from '../../core/stores/gaesupStore';
+import { createUniqueId } from '../../core/utils/id';
 import { logger } from '../../core/utils/logger';
 import { WorldBridge } from '../../core/world/bridge/WorldBridge';
+import type { WorldView } from '../../core/world/core/WorldViews';
 import { getBlueprintModelUrl } from '../model';
 import { blueprintRegistry } from '../registry';
 import { AnyBlueprint, BlueprintRecord } from '../types';
@@ -30,7 +33,8 @@ export type SpawnedEntity = {
 
 const DEFAULT_WORLD_ID = 'default';
 
-export function useSpawnFromBlueprint() {
+export function useSpawnFromBlueprint(view?: WorldView) {
+  const runtime = useGaesupRuntime();
   const [isSpawning, setIsSpawning] = useState(false);
   const [lastSpawnedEntity, setLastSpawnedEntity] = useState<SpawnedEntity | null>(null);
   const setMode = useGaesupStore((state) => state.setMode);
@@ -49,20 +53,22 @@ export function useSpawnFromBlueprint() {
         return null;
       }
 
-      const worldBridge = BridgeFactory.getOrCreate<WorldBridge>('world');
-      if (!worldBridge?.getEngine(DEFAULT_WORLD_ID)) {
+      const worldBridge = runtime?.worldBridge ?? BridgeFactory.getOrCreateFor(WorldBridge);
+      const worldId = runtime?.worldId ?? DEFAULT_WORLD_ID;
+      if ((runtime && !runtime.isActive()) || !worldBridge?.getEngine(worldId)) {
         logger.error('Cannot spawn blueprint: the target world is not initialized');
         return null;
       }
 
-      const entityId = `${blueprint.type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const entityId = createUniqueId(blueprint.type);
       const position = options.position || [0, 0, 0];
       const rotation = options.rotation || [0, 0, 0];
       const scale = options.scale || [1, 1, 1];
 
       const worldObject = createWorldObject(entityId, blueprint, position, rotation, scale, options.metadata);
       
-      worldBridge.addObject(DEFAULT_WORLD_ID, worldObject);
+      const createdId = worldBridge.addObject(worldId, worldObject);
+      if (!createdId) return null;
       const modelUrl = getBlueprintModelUrl(blueprint);
       
       if (blueprint.type === 'character') {
@@ -94,19 +100,22 @@ export function useSpawnFromBlueprint() {
     } finally {
       setIsSpawning(false);
     }
-  }, [setMode, setUrls]);
+  }, [runtime, setMode, setUrls]);
 
   const spawnAtCursor = useCallback(async (blueprintId: string): Promise<SpawnedEntity | null> => {
-    const camera = window.__camera;
+    const ownedView = view ?? runtime?.worldViews.current();
+    const camera = ownedView?.camera ?? (runtime ? undefined : window.__camera);
     if (!camera) {
       return spawnEntity(blueprintId);
     }
 
     const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2(0, 0);
+    const mouse = new THREE.Vector2(ownedView?.pointer?.x ?? 0, ownedView?.pointer?.y ?? 0);
     
+    camera.updateWorldMatrix(true, false);
     raycaster.setFromCamera(mouse, camera);
-    const scene = window.__scene;
+    const scene = ownedView?.scene ?? (runtime ? undefined : window.__scene);
+    scene?.updateWorldMatrix(true, true);
     const intersects = scene ? raycaster.intersectObjects(scene.children, true) : [];
     
     let position: [number, number, number] = [0, 0, 0];
@@ -117,7 +126,7 @@ export function useSpawnFromBlueprint() {
     }
     
     return spawnEntity(blueprintId, { position });
-  }, [spawnEntity]);
+  }, [spawnEntity, runtime, view]);
 
   const spawnMultiple = useCallback(async (
     blueprintId: string,

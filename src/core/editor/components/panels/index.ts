@@ -29,6 +29,7 @@ export { HierarchyPanel, buildHierarchyRows } from './HierarchyPanel';
 export type { HierarchyPanelProps } from './HierarchyPanel';
 export { InspectorPanel } from './InspectorPanel';
 export type { InspectorPanelProps, SceneObjectPatch } from './InspectorPanel';
+export type { InspectorPrefabActions } from './PrefabInstanceView/types';
 export {
   PROJECT_ASSETS_PANEL_DEFAULT_CLASSES,
   PROJECT_ASSETS_PANEL_DEFAULT_KIND_OPTIONS,
@@ -70,7 +71,7 @@ export { BlockPanel } from './BlockPanel';
 export { ObjectPanel } from './ObjectPanel';
 export { NPCPanel } from './NPCPanel';
 export { CharacterAssetPanel } from './CharacterAssetPanel';
-export { GameplayEventPanel } from './GameplayEventPanel';
+export { GameplayEventPanel, WorldGameplayEventPanel } from './GameplayEventPanel';
 export { CinematicPanel } from './CinematicPanel';
 export type { CinematicPanelProps } from './CinematicPanel';
 export { StudioPanel } from './StudioPanel';

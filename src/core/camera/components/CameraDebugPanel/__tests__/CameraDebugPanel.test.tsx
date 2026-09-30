@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { cleanup, render, screen } from '@testing-library/react';
 
 import { useStateSystem } from '../../../../motions/hooks/useStateSystem';
@@ -80,7 +78,8 @@ describe('CameraDebugPanel', () => {
     expect(screen.getByText('조작 대상 위치')).toBeInTheDocument();
     expect(screen.getByText('거리 설정')).toBeInTheDocument();
     expect(screen.getByText('시야각 설정')).toBeInTheDocument();
-    expect(screen.getByText('컨트롤러')).toBeInTheDocument();
+    // The mode row already names the controller, so there is no separate controller row.
+    expect(screen.queryByText('컨트롤러')).toBeNull();
     expect(screen.getByText('추적')).toBeInTheDocument();
   });
   test('store selector를 사용해야 함', () => {

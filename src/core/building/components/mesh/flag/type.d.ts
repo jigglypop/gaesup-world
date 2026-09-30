@@ -30,7 +30,6 @@ export type FlagBatchProps = {
 type FlagMaterialJSX = {
   ref: React.RefObject<THREE.Material>;
   map?: THREE.Texture | null;
-  transmission?: number;
   windStrength?: number;
   envMapIntensity?: number;
   side?: THREE.Side;

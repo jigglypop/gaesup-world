@@ -1,18 +1,35 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { createPlacementAssetScopeId, createScopedColorMeshConfig } from '../index';
+import { createBuildingStore } from '../../../../../building/stores/buildingStore';
+import type { NPCBrainBlueprint } from '../../../../../npc/types';
+import {
+  appendNPCBlueprintNode,
+  appendNPCConditionNodeWithBranchTemplate,
+  createNPCActionNode,
+  createNPCConditionNode,
+} from '../helpers';
+import { createScopedColorMeshConfig } from '../index';
+import { applyColorToTile } from '../state';
 
 const BUILDING_PANEL_ENTRY = path.resolve(__dirname, '../index.tsx');
 
 describe('BuildingPanel asset material scoping', () => {
-  test('creates a fresh placement scope for each wall asset application', () => {
-    const first = createPlacementAssetScopeId('placement-wall');
-    const second = createPlacementAssetScopeId('placement-wall');
-
-    expect(first).toMatch(/^placement-wall-/);
-    expect(second).toMatch(/^placement-wall-/);
-    expect(first).not.toBe(second);
+  test('picking a placement color again reuses its mesh; only a new look adds one', () => {
+    const store = createBuildingStore();
+    store.getState().addMesh({ id: 'floor', color: '#777777' });
+    store.setState({ tileGroups: new Map([['g', { id: 'g', name: 'g', floorMeshId: 'floor', tiles: [] }]]), selectedTileGroupId: 'g', selectedTileId: null });
+    const count = () => store.getState().meshes.size;
+    const before = count();
+    applyColorToTile(store, '#ff0000');
+    const red = store.getState().currentTileMaterialId;
+    applyColorToTile(store, '#ff0000');
+    expect(count()).toBe(before + 1);
+    applyColorToTile(store, '#0000ff');
+    applyColorToTile(store, '#ff0000');
+    expect(count()).toBe(before + 2);
+    expect(store.getState().currentTileMaterialId).toBe(red);
+    expect(store.getState().meshes.get('floor')).toEqual({ id: 'floor', color: '#777777' });
   });
 
   test('creates a scoped color mesh without mutating shared texture fields', () => {
@@ -28,6 +45,22 @@ describe('BuildingPanel asset material scoping', () => {
       material: 'STANDARD',
       materialParams: { roughness: 0.5, color: '#ffcc88' },
     });
+  });
+});
+
+describe('NPC brain presets', () => {
+  test('a condition branch followed by a dialogue node adds its nodes with distinct ids in one step', () => {
+    jest.spyOn(Date, 'now').mockReturnValue(1);
+    const blueprint: NPCBrainBlueprint = { id: 'brain', name: 'brain', nodes: [{ id: 'start', type: 'start' }], edges: [] };
+    const preset = appendNPCBlueprintNode(
+      appendNPCConditionNodeWithBranchTemplate(blueprint, createNPCConditionNode()),
+      createNPCActionNode('speak', undefined),
+    );
+    jest.restoreAllMocks();
+
+    const ids = preset.nodes.map((node) => node.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(preset.edges.filter((edge) => edge.source === edge.target)).toEqual([]);
   });
 });
 

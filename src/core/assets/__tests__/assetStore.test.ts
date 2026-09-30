@@ -1,9 +1,12 @@
+/** @jest-environment jsdom */
 import * as fs from 'fs';
 import * as path from 'path';
 
-import type { AssetSource } from '../types';
+import { act, renderHook } from '@testing-library/react';
+
 import { SEED_ASSETS } from '../data/seedAssets';
-import { useAssetStore } from '../stores/assetStore';
+import { createAssetStore, selectAssetsByKind, selectAssetsBySlot, useAssetStore } from '../stores/assetStore';
+import type { AssetSource } from '../types';
 
 const ROOT = path.resolve(__dirname, '../../../..');
 
@@ -75,7 +78,7 @@ describe('assetStore', () => {
 
     await useAssetStore.getState().loadAssets(source);
 
-    expect(useAssetStore.getState().listAssets({ slot: 'top' }).length).toBeGreaterThan(0);
+    expect(useAssetStore.getState().listAssets({ slot: 'accessory' }).length).toBeGreaterThan(0);
     expect(useAssetStore.getState().error).toBe('offline');
     expect(useAssetStore.getState().catalogStatus.state).toBe('fallback');
     expect(useAssetStore.getState().catalogStatus.fallbackReason).toBe('offline');
@@ -102,17 +105,52 @@ describe('assetStore', () => {
     expect(store.listAssets({ slot: 'hat' }).every((asset) => asset.slot === 'hat')).toBe(true);
   });
 
-  it('registers local generated cloth GLB color variants', () => {
-    const variants = ['warrior-cloth-blue', 'warrior-cloth-green', 'warrior-cloth-red'];
+  it('public selectors return the same array per query until the catalog changes', () => {
+    const weapons = selectAssetsByKind('weapon')(useAssetStore.getState());
+    expect(selectAssetsByKind('weapon')(useAssetStore.getState())).toBe(weapons);
+    expect(selectAssetsBySlot('hat')(useAssetStore.getState())).toBe(selectAssetsBySlot('hat')(useAssetStore.getState()));
+    useAssetStore.getState().selectAsset('unrelated');
+    expect(selectAssetsByKind('weapon')(useAssetStore.getState())).toBe(weapons);
 
-    for (const id of variants) {
-      const asset = SEED_ASSETS.find((item) => item.id === id);
-      expect(asset).toEqual(expect.objectContaining({
-        kind: 'characterPart',
-        slot: 'top',
-      }));
-      expect(asset?.url).toMatch(/^gltf\/ally_cloth_(blue|green|red)\.glb$/);
-      expect(fs.existsSync(path.join(ROOT, 'public', asset?.url ?? 'missing'))).toBe(true);
+    useAssetStore.getState().registerAssets([{ id: 'memo-sword', name: 'Memo Sword', kind: 'weapon' }]);
+    const next = selectAssetsByKind('weapon')(useAssetStore.getState());
+    expect(next).not.toBe(weapons);
+    expect(next.map((asset) => asset.id)).toContain('memo-sword');
+  });
+
+  it('a component can subscribe through a public selector without re-rendering on its own', () => {
+    let renders = 0;
+    const { result, unmount } = renderHook(() => {
+      renders++;
+      return useAssetStore(selectAssetsByKind('tile'));
+    });
+    try {
+      expect(result.current.every((asset) => asset.kind === 'tile')).toBe(true);
+      act(() => useAssetStore.getState().setFilter({ kind: 'tile' }));
+      expect(renders).toBe(1);
+    } finally {
+      unmount();
     }
+  });
+
+  it('keeps each world catalog, load generation and selector cache separate', async () => {
+    const a = createAssetStore();
+    const b = createAssetStore();
+    let resolveA!: (assets: Awaited<ReturnType<AssetSource['listAssets']>>) => void;
+    const slowA = a.getState().loadAssets({ ...mockSource([]), listAssets: () => new Promise((accept) => { resolveA = accept; }) });
+    await b.getState().loadAssets(mockSource([{ id: 'shared', name: 'B', kind: 'weapon' }]));
+    resolveA([{ id: 'shared', name: 'A', kind: 'weapon' }]);
+    await slowA;
+    expect(a.getState().getAsset('shared')?.name).toBe('A');
+    expect(a.getState().catalogStatus.state).toBe('loaded');
+    expect(b.getState().getAsset('shared')?.name).toBe('B');
+    const weaponsA = selectAssetsByKind('weapon')(a.getState());
+    selectAssetsByKind('weapon')(b.getState());
+    expect(selectAssetsByKind('weapon')(a.getState())).toBe(weaponsA);
+  });
+
+  it('seeds only asset URLs that ship in public/', () => {
+    const missing = SEED_ASSETS.filter((asset) => asset.url && !fs.existsSync(path.join(ROOT, 'public', asset.url)));
+    expect(missing.map((asset) => asset.url)).toEqual([]);
   });
 });

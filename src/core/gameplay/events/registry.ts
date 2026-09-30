@@ -1,3 +1,4 @@
+import { isFlagValue } from './state';
 import type {
   GameplayActionHandler,
   GameplayConditionHandler,
@@ -14,14 +15,20 @@ export class GameplayEventRegistry {
     type: TCondition['type'],
     handler: GameplayConditionHandler<TCondition>,
   ): void {
-    this.conditions.set(type, handler as GameplayConditionHandler);
+    this.conditions.set(type, (condition, context) => {
+      if (context.isCurrent ? !context.isCurrent() : context.signal?.aborted) return false;
+      return handler(condition as TCondition, context);
+    });
   }
 
   registerAction<TAction extends GameplayEventAction>(
     type: TAction['type'],
     handler: GameplayActionHandler<TAction>,
   ): void {
-    this.actions.set(type, handler as GameplayActionHandler);
+    this.actions.set(type, (action, context) => {
+      if (context.isCurrent ? !context.isCurrent() : context.signal?.aborted) return;
+      return handler(action as TAction, context);
+    });
   }
 
   getCondition(type: string): GameplayConditionHandler | undefined {
@@ -42,35 +49,11 @@ export function setDefaultGameplayEventServices(factory: (() => GameplayEventSer
 }
 
 function registerServiceHandlers(registry: GameplayEventRegistry, services: GameplayEventServices): void {
-  registry.registerCondition<Extract<GameplayEventCondition, { type: 'hasItem' }>>('hasItem', (condition) =>
-    services.hasItem(condition.itemId, condition.count ?? 1),
-  );
-  registry.registerCondition<Extract<GameplayEventCondition, { type: 'questStatus' }>>('questStatus', (condition) =>
-    services.questStatus(condition.questId) === condition.status,
-  );
-  registry.registerCondition<Extract<GameplayEventCondition, { type: 'eventActive' }>>('eventActive', (condition) =>
-    services.isEventActive(condition.eventId),
-  );
-  registry.registerAction<Extract<GameplayEventAction, { type: 'giveItem' }>>('giveItem', (action) => {
-    services.addItem(action.itemId, action.count ?? 1);
-  });
-  registry.registerAction<Extract<GameplayEventAction, { type: 'removeItem' }>>('removeItem', (action) => {
-    services.removeItem(action.itemId, action.count ?? 1);
-  });
-  registry.registerAction<Extract<GameplayEventAction, { type: 'startQuest' }>>('startQuest', (action) => {
-    services.startQuest(action.questId);
-  });
-  registry.registerAction<Extract<GameplayEventAction, { type: 'completeQuest' }>>('completeQuest', (action) => {
-    services.completeQuest(action.questId);
-  });
   registry.registerAction<Extract<GameplayEventAction, { type: 'showDialog' }>>('showDialog', (action) => {
     services.showDialog(action.dialogTreeId, action.npcId);
   });
   registry.registerAction<Extract<GameplayEventAction, { type: 'toast' }>>('toast', (action) => {
     services.notify(action.kind ?? 'info', action.text);
-  });
-  registry.registerAction<Extract<GameplayEventAction, { type: 'notifyQuestFlag' }>>('notifyQuestFlag', (action) => {
-    services.notifyQuestFlag(action.key, action.value);
   });
 }
 
@@ -85,9 +68,13 @@ export function createDefaultGameplayEventRegistry(
   );
   registry.registerCondition('custom', () => false);
   registry.registerAction<Extract<GameplayEventAction, { type: 'setFlag' }>>('setFlag', (action, context) => {
-    context.state.flags[action.key] = action.value;
+    if (!isFlagValue(action.value)) return;
+    if (context.setFlag) context.setFlag(action.key, action.value);
+    else context.state.flags[action.key] = action.value;
   });
-  registry.registerAction('emit', () => undefined);
+  registry.registerAction<Extract<GameplayEventAction, { type: 'emit' }>>('emit', (action) => {
+    services?.emit?.(action.eventName, action.payload);
+  });
   registry.registerAction('custom', () => undefined);
   if (services) registerServiceHandlers(registry, services);
 

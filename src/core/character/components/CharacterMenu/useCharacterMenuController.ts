@@ -29,6 +29,7 @@ import type {
 } from './types';
 import { useAssetStore, type AssetRecord } from '../../../assets';
 import { requestCameraCloseUp, restoreCameraCloseUp } from '../../../camera/closeUp';
+import { useWorldInputScope } from '../../../input/useWorldInputScope';
 import { useCharacterStore } from '../../stores/characterStore';
 import type { OutfitSlot } from '../../types';
 
@@ -112,6 +113,7 @@ export function useCharacterMenuController({
   isAssetOwned = isOwnedAsset,
   closeUpController,
 }: CharacterMenuProps = {}): CharacterMenuRenderContext {
+  const inputScope = useWorldInputScope();
   const controlled = typeof open === 'boolean';
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = controlled ? Boolean(open) : internalOpen;
@@ -297,9 +299,9 @@ export function useCharacterMenuController({
       if (event.code !== wantedCode && event.key.toLowerCase() !== wantedKey) return;
       toggleMenu();
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [controlled, toggleKey, toggleMenu]);
+    const offKeyDown = inputScope.listen('keydown', handleKeyDown);
+    return () => offKeyDown();
+  }, [inputScope, controlled, toggleKey, toggleMenu]);
   useEffect(() => {
     if (isOpen || previewMode !== 'closeUp') return;
     restoreCloseUp();

@@ -1,12 +1,10 @@
-import baseConfig from './jest.config.js';
+import { base } from './jest.config.js';
 
 export default {
-  ...baseConfig,
-  testMatch: [
-    '<rootDir>/src/core/boilerplate/__tests__/AbstractBridge.test.ts',
-    '<rootDir>/src/core/boilerplate/__tests__/ManagedEntity.test.ts',
-    '<rootDir>/src/core/boilerplate/decorators/__tests__/bridge.test.ts',
-    '<rootDir>/src/core/boilerplate/hooks/__tests__/useManagedEntity.test.ts',
-    '<rootDir>/src/core/boilerplate/hooks/__tests__/useBatchManagedEntities.test.ts',
-  ],
+  ...base,
+  testEnvironment: 'node',
+  // A root path instead of a `<rootDir>` glob: on Windows a checkout under a dot folder (`C:\x\.wt\...`) turns into a
+  // glob whose `\.` escapes the dot, and nothing matches.
+  roots: ['<rootDir>/src/core/boilerplate/__tests__'],
+  testMatch: ['**/*.test.ts'],
 };

@@ -9,11 +9,6 @@ jest.mock('../../hooks/useBuildingEditor', () => ({ useBuildingEditor: () => ({}
 jest.mock('../../../npc/components/NPCSystem', () => ({ NPCSystem: () => null }));
 jest.mock('../BuildingSystem', () => ({ BuildingSystem: () => null }));
 jest.mock('../BuildingRenderStateDriver', () => ({ BuildingRenderStateDriver: () => null }));
-jest.mock('../BuildingGpuMirrorDriver', () => ({ BuildingGpuMirrorDriver: () => null }));
-jest.mock('../BuildingGpuUploadDriver', () => ({ BuildingGpuUploadDriver: () => null }));
-jest.mock('../BuildingGpuCullingDriver', () => ({ BuildingGpuCullingDriver: () => null }));
-jest.mock('../BuildingIndirectDrawDriver', () => ({ BuildingIndirectDrawDriver: () => null }));
-jest.mock('../BuildingIndirectArgsUploadDriver', () => ({ BuildingIndirectArgsUploadDriver: () => null }));
 jest.mock('../BuildingVisibilityDriver', () => ({ BuildingVisibilityDriver: () => null }));
 
 describe('building keyboard input', () => {

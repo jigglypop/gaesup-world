@@ -1,9 +1,13 @@
 import { loadCoreWasm, type GaesupCoreWasmExports } from '../../wasm/loader';
-import { NavigationSystem } from '../NavigationSystem';
+import { NavigationSystem, type NavigationConfig } from '../NavigationSystem';
+
+type AStarFindPath = GaesupCoreWasmExports['astar_find_path'];
+type AStarFindPathWeighted = GaesupCoreWasmExports['astar_find_path_weighted'];
 
 type MockWasm = GaesupCoreWasmExports & {
-  astar_find_path: jest.MockedFunction<GaesupCoreWasmExports['astar_find_path']>;
-  astar_find_path_weighted: jest.MockedFunction<GaesupCoreWasmExports['astar_find_path_weighted']>;
+  alloc_u32: jest.MockedFunction<GaesupCoreWasmExports['alloc_u32']>;
+  astar_find_path: jest.MockedFunction<AStarFindPath>;
+  astar_find_path_weighted: jest.MockedFunction<AStarFindPathWeighted>;
 };
 
 let mockWasm: MockWasm | null = null;
@@ -23,7 +27,7 @@ const TEST_CONFIG = {
   maxStepHeight: 0.75,
 };
 
-function createNavigation(config = TEST_CONFIG): NavigationSystem {
+function createNavigation(config: Partial<NavigationConfig> = TEST_CONFIG): NavigationSystem {
   return NavigationSystem.getInstance(config);
 }
 
@@ -74,7 +78,7 @@ function createMockWasm(options: { omitWeighted?: boolean } = {}): MockWasm {
     spatial_grid_query: jest.fn(),
     update_snow_particles: jest.fn(),
     update_fire_particles: jest.fn(),
-    astar_find_path: jest.fn((
+    astar_find_path: jest.fn<number, Parameters<AStarFindPath>>((
       _gridPtr,
       _gridWidth,
       _gridHeight,
@@ -84,7 +88,7 @@ function createMockWasm(options: { omitWeighted?: boolean } = {}): MockWasm {
       goalZ,
       outPathPtr,
     ) => writePath(outPathPtr, [[startX, startZ], [goalX, goalZ]])),
-    astar_find_path_weighted: jest.fn((
+    astar_find_path_weighted: jest.fn<number, Parameters<AStarFindPathWeighted>>((
       _costPtr,
       _gridWidth,
       _gridHeight,
@@ -369,7 +373,9 @@ describe('NavigationSystem', () => {
     navigation.setCost(1.5, 0.5, 50);
 
     const path = navigation.findPath(0.5, 0.5, 4.5, 0.5, 0, true);
-    const [costPtr, gridWidth, gridHeight] = mockWasm.astar_find_path_weighted.mock.calls[0] ?? [];
+    const weightedCall = mockWasm.astar_find_path_weighted.mock.calls[0];
+    if (!weightedCall) throw new Error('weighted WASM pathfinding was not called');
+    const [costPtr, gridWidth, gridHeight] = weightedCall;
 
     expect(costPtr).toEqual(expect.any(Number));
     expect(gridWidth).toBe(6);
@@ -484,5 +490,37 @@ describe('NavigationSystem', () => {
     const path = navigation.findPath(0.5, 0.5, 4.5, 0.5);
 
     expect(path.map(([, y]) => y)).toEqual([0, 0.5, 1, 1.5, 2]);
+  });
+
+  it('builds the traversal grid of a footprint once per grid change, whatever the query count', async () => {
+    const navigation = createNavigation();
+    await navigation.init();
+    navigation.setBlocked(3, 3, 1, 1);
+    const occupy = jest.spyOn(navigation as unknown as { canOccupyCell: () => boolean }, 'canOccupyCell');
+    const first = navigation.findPath(0.5, 0.5, 5.5, 5.5, { agentRadius: 0.4 });
+    for (let query = 1; query < 100; query++) expect(navigation.findPath(0.5, 0.5, 5.5, 5.5, { agentRadius: 0.4 })).toEqual(first);
+    expect(occupy).toHaveBeenCalledTimes(36);
+
+    navigation.setBlocked(1, 4, 1, 1);
+    for (let query = 0; query < 100; query++) navigation.findPath(0.5, 0.5, 5.5, 5.5, { agentRadius: 0.4 });
+    expect(occupy).toHaveBeenCalledTimes(72);
+  });
+
+  it('copies the grid into WASM memory only after it changes', async () => {
+    mockWasm = createMockWasm();
+    const navigation = createNavigation();
+    await navigation.init();
+    navigation.findPath(0.5, 0.5, 4.5, 0.5);
+    const gridPtr = mockWasm.astar_find_path.mock.calls[0]![0];
+    const wasmGrid = () => new Uint8Array(mockWasm!.memory.buffer, gridPtr, 36);
+    wasmGrid()[20] = 7;
+
+    navigation.findPath(0.5, 0.5, 4.5, 0.5);
+    expect(wasmGrid()[20]).toBe(7);
+
+    navigation.setBlocked(5.5, 5.5, 1, 1);
+    navigation.findPath(0.5, 0.5, 4.5, 0.5);
+    expect(wasmGrid()[20]).toBe(1);
+    expect(wasmGrid()[35]).toBe(0);
   });
 });

@@ -1,6 +1,4 @@
-import React from 'react';
 import { renderHook } from '@testing-library/react';
-
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
 import { useAssetStore } from '../../../../assets';
@@ -22,8 +20,8 @@ test('menu reset follows the active character without deleting other profiles', 
     const current = useCharacterStore.getState();
     expect(current.activeCharacterId).toBe('second');
     expect(current.outfits.hat).toBeNull();
-    expect(current.characters.first?.outfits.hat).toBe('first-hat');
-    expect(current.serialize().characters.first?.outfits.hat).toBe('first-hat');
+    expect(current.characters['first']?.outfits.hat).toBe('first-hat');
+    expect(current.serialize().characters['first']?.outfits.hat).toBe('first-hat');
   } finally {
     unmount();
     useCharacterStore.setState(previous, true);
@@ -105,8 +103,10 @@ describe('CharacterMenu 커스텀 UI', () => {
     const root = renderer as ReactTestRenderer;
     const buttons = root.root.findAllByProps({ 'data-testid': 'asset-button' });
     expect(buttons).toHaveLength(1);
-    expect(buttons[0].children).toEqual(['Owned Hat']);
-    const handleClick = buttons[0].props.onClick as () => void;
+    const ownedButton = buttons[0];
+    if (!ownedButton) throw new Error('Expected the owned asset button');
+    expect(ownedButton.children).toEqual(['Owned Hat']);
+    const handleClick = ownedButton.props['onClick'] as () => void;
     act(() => {
       handleClick();
     });

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { lazyStore } from '../../stores/lazyStore';
 import type { I18nSerialized, LocaleBundle, LocaleId, LocaleResource } from '../types';
 
 type State = {
@@ -34,7 +35,7 @@ function interpolate(template: string, vars?: Record<string, string | number>): 
   });
 }
 
-export const useI18nStore = create<State>((set, get) => ({
+export const useI18nStore = lazyStore(() => create<State>((set, get) => ({
   locale: detectLocale(),
   bundle: { ko: {}, en: {}, ja: {} },
 
@@ -80,7 +81,7 @@ export const useI18nStore = create<State>((set, get) => ({
     return () => set({ locale });
   },
   hydrate: (data) => get().prepareHydrate(data)(),
-}));
+})));
 
 export function t(key: string, vars?: Record<string, string | number>): string {
   return useI18nStore.getState().t(key, vars);

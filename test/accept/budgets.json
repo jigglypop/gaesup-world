@@ -1,0 +1,21 @@
+{
+  "$comment": "Acceptance scenarios; this file is their only definition. status: green must pass; known-red must exceed its budget until its item lands (then the runner fails and asks to flip it to green); pending has no measurement yet. A number is an upper bound, a boolean must match, {\"min\",\"max\"} bounds both ends, null is recorded but not judged. A non-finite measurement counts as not measured. Raising a budget needs the owner's approval.",
+  "scenarios": {
+    "S-H01": { "title": "10k 객체 문서에서 객체 1개 이동", "runner": "headless", "item": "COR-04a", "status": "pending", "budget": { "projectorProcessed": 1, "fullScans": 0 } },
+    "S-H02": { "title": "깊이 8, 1k 엔티티 루트 이동 후 정지 틱 100회", "runner": "headless", "item": "COR-03a", "status": "pending", "budget": { "recomputedMatchesSubtree": true, "idleRecomputes": 0, "idleAllocatedBytes": 0 } },
+    "S-H03": { "title": "같은 시스템 집합을 무작위 등록 순서로 10회", "runner": "headless", "item": "COR-05a", "status": "pending", "budget": { "distinctOrders": 1 } },
+    "S-H04": { "title": "60Hz와 144Hz 프레임 시퀀스 10초", "runner": "headless", "item": "COR-05b", "status": "pending", "budget": { "sameFixedTicks": true, "sameFixedUpdateCalls": true } },
+    "S-H05": { "title": "Play 중 이동·생성·삭제 후 Stop", "runner": "headless", "item": "COR-06b", "status": "pending", "budget": { "documentUnchanged": true, "savesDuringPlay": 0 } },
+    "S-H06": { "title": "Pause 5초", "runner": "headless", "item": "COR-06a", "status": "pending", "budget": { "physicsStepsWhilePaused": 0, "presentationRan": true } },
+    "S-H07": { "title": "헤드리스 물리: 캡슐 캐릭터 입력 재생 10초 2회", "runner": "headless", "item": "COR-08a", "status": "pending", "budget": { "grounded": true, "deterministic": true } },
+    "S-H08": { "title": "runtime 2개 생성·조작 후 dispose", "runner": "headless", "item": "COR-09d", "status": "green", "budget": { "sharedState": 0, "leakedListeners": 0, "leakedTimers": 0 } },
+    "S-H09": { "title": "10k 타일 월드에 타일 1개 추가", "runner": "headless", "item": "DOM-01c", "status": "pending", "budget": { "touchedGroups": 1, "deltas": 1, "fullNavigationResets": 0 } },
+    "S-H10": { "title": "변경 없는 autosave, 이어서 도메인 1개 변경 후 autosave", "runner": "headless", "item": "AST-06a", "status": "green", "budget": { "unchangedSerializeCalls": 0, "changedDomainsSerialized": { "min": 1, "max": 1 } } },
+    "S-H11": { "title": "기본 runtime + NPC 30체 60초", "runner": "headless", "item": "DOM-03a", "status": "green", "budget": { "externalFetches": 0 } },
+    "S-H12": { "title": "save → load, legacy 포맷 load", "runner": "headless", "item": "AST-06b", "status": "pending", "budget": { "roundTripEqual": true, "legacyLoaded": true } },
+    "S-H13": { "title": "로컬 정지 송신률과 Update 크기", "runner": "headless", "item": "DOM-08", "status": "green", "budget": { "restingUpdatesPerSecond": { "min": 0.5, "max": 2 }, "maxMovingUpdateBytes": 120 } },
+    "S-H14": { "title": "공개 엔트리가 도달하는 모듈의 최상위 부수효과", "runner": "headless", "item": "COR-12b", "status": "green", "budget": { "statementCalls": 0, "classDecorators": 0, "globalStores": 0, "otherCalls": null, "sourceFiles": null } },
+    "S-H15": { "title": "에셋 URL 변경 후 저장본 load, prefab base 변경", "runner": "headless", "item": "AST-03b", "status": "pending", "budget": { "legacyUrlLoaded": true, "prefabChangePropagated": true } },
+    "S-H16": { "title": "2k 객체 문서에서 편집 후 undo", "runner": "headless", "item": "AST-07a", "status": "pending", "budget": { "undoTouchesOnlyChanged": true, "resetDeltas": 0 } }
+  }
+}

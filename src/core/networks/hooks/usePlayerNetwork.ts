@@ -41,9 +41,10 @@ export function usePlayerNetwork(defaultOptions: UsePlayerNetworkOptions): UsePl
         setIsConnected(true);
         setError(undefined);
       },
-      onDisconnect: () => {
+      onDisconnect: (info) => {
         setIsConnected(false);
-        setPlayers(new Map());
+        // A reconnecting drop keeps players; the next Welcome reconciles them.
+        if (!info?.reconnecting) setPlayers(new Map());
       },
       onPlayerJoin: (playerId, state) => {
         setPlayers(prev => {

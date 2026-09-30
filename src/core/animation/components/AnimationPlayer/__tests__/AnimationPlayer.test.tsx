@@ -1,8 +1,8 @@
-import React from 'react';
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react';
-import { AnimationPlayer } from '../index';
+
+import { AnimationSnapshot } from '../../../bridge/types';
 import { useAnimationBridge } from '../../../hooks/useAnimationBridge';
-import { AnimationSnapshot } from '../../../core/types';
+import { AnimationPlayer } from '../index';
 
 // Mock the useAnimationBridge hook
 jest.mock('../../../hooks/useAnimationBridge');

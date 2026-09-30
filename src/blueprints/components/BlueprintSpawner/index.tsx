@@ -1,9 +1,9 @@
 import { useRef, useEffect } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import { RigidBody, RapierRigidBody } from '@react-three/rapier';
 import { Group } from 'three';
 
+import { useEngineFrame } from '@/core/runtime/frame';
 import { logger } from '@/core/utils/logger';
 
 import { BlueprintSpawnerProps } from './types';
@@ -34,9 +34,9 @@ export function BlueprintSpawner({
     callbacksRef.current = { onSpawn, onDestroy };
   }, [onSpawn, onDestroy]);
 
-  useFrame((_, delta) => {
+  useEngineFrame('prePhysics', (delta) => {
     entityRef.current?.update(delta, getMovementInput?.());
-  });
+  }, { label: 'blueprints:spawner' });
 
   useEffect(() => {
     const factory = BlueprintFactory.getInstance();

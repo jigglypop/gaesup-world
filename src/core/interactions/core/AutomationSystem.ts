@@ -1,9 +1,9 @@
 import type { Vector3 } from 'three';
 
-import { HandleError, ManageRuntime, Profile, RegisterSystem } from '@/core/boilerplate/decorators';
 import { AbstractSystem } from '@/core/boilerplate/entity/AbstractSystem';
 import type { SystemContext } from '@/core/boilerplate/entity/BaseSystem';
 import type { BaseMetrics, BaseState, SystemUpdateArgs } from '@/core/boilerplate/types';
+import { createUniqueId } from '@/core/utils/id';
 import { logger } from '@/core/utils/logger';
 
 import type {
@@ -73,8 +73,6 @@ const createDefaultConfig = (): AutomationConfig => ({
   },
 });
 
-@RegisterSystem('automation')
-@ManageRuntime({ autoStart: false })
 export class AutomationSystem extends AbstractSystem<AutomationSystemState, AutomationSystemMetrics> {
   private config: AutomationConfig;
   private executionGeneration = 0;
@@ -108,10 +106,8 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     };
   }
 
-  @HandleError()
-  @Profile()
   addAction(action: Omit<AutomationAction, 'id' | 'timestamp'>): string {
-    const id = `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = createUniqueId('action');
     const fullAction: AutomationAction = {
       ...action,
       id,
@@ -129,7 +125,6 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     return id;
   }
 
-  @HandleError()
   removeAction(id: string): boolean {
     const index = this.state.queue.actions.findIndex((action) => action.id === id);
     if (index === -1) return false;
@@ -142,7 +137,6 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     return true;
   }
 
-  @HandleError()
   clearQueue(): void {
     if (this.state.queue.isRunning) this.stop();
     this.state.queue.actions = [];
@@ -151,8 +145,6 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     this.emit('queueCleared');
   }
 
-  @HandleError()
-  @Profile()
   override async start(): Promise<void> {
     if (
       this.isDisposed ||
@@ -226,7 +218,6 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     }
   }
 
-  @Profile()
   private async executeNext(generation: number): Promise<void> {
     if (!this.isExecutionActive(generation)) return;
 
@@ -269,7 +260,6 @@ export class AutomationSystem extends AbstractSystem<AutomationSystemState, Auto
     }
   }
 
-  @Profile()
   private async executeAction(
     action: AutomationAction,
     generation: number,

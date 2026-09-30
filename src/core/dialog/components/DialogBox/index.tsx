@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useReducer } from 'react';
 
-import { useDialogStore } from '../../stores/dialogStore';
+import { useWorldInputScope } from '../../../input/useWorldInputScope';
+import { WorldInputSurface } from '../../../input/WorldInputSurface';
+import { useDialogStore, useDialogStoreApi } from '../../stores/dialogStore';
 import type { DialogChoice } from '../../types';
 
 export type DialogBoxProps = {
@@ -9,6 +11,8 @@ export type DialogBoxProps = {
 };
 
 export function DialogBox({ advanceKey = 'e', closeKey = 'Escape' }: DialogBoxProps) {
+  const inputScope = useWorldInputScope();
+  const dialogStore = useDialogStoreApi();
   const node = useDialogStore((s) => s.node);
   const runner = useDialogStore((s) => s.runner);
   const advance = useDialogStore((s) => s.advance);
@@ -18,11 +22,11 @@ export function DialogBox({ advanceKey = 'e', closeKey = 'Escape' }: DialogBoxPr
 
   const choices = runner?.visibleChoices() ?? [];
   const handleChoose = useCallback((choice: DialogChoice) => {
-    if (!runner || useDialogStore.getState().runner !== runner) return;
+    if (!runner || dialogStore.getState().runner !== runner) return;
     const index = runner.visibleChoices().indexOf(choice);
     if (index >= 0) choose(index);
     else refreshChoices();
-  }, [runner, choose]);
+  }, [runner, choose, dialogStore]);
 
   useEffect(() => {
     if (!node) return;
@@ -49,14 +53,14 @@ export function DialogBox({ advanceKey = 'e', closeKey = 'Escape' }: DialogBoxPr
         if (choice) handleChoose(choice);
       }
     };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [node, choices, advance, handleChoose, close, advanceKey, closeKey]);
+    const offKey = inputScope.listen('keydown', onKey, true);
+    return () => offKey();
+  }, [inputScope, node, choices, advance, handleChoose, close, advanceKey, closeKey]);
 
   if (!node) return null;
 
   return (
-    <div
+    <WorldInputSurface
       role="dialog"
       aria-label={node.speaker ? `${node.speaker} 대화` : '대화'}
       data-world-overlay
@@ -71,14 +75,14 @@ export function DialogBox({ advanceKey = 'e', closeKey = 'Escape' }: DialogBoxPr
         overflowY: 'auto',
         overflowWrap: 'anywhere',
         zIndex: 'var(--gaesup-z-panel, 90)',
-        background: 'rgba(18,20,28,0.62)',
-        color: '#f3f4f8',
-        borderRadius: 14,
-        border: '1px solid rgba(255,255,255,0.12)',
-        boxShadow: '0 12px 28px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
-        backdropFilter: 'blur(20px) saturate(140%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(140%)',
-        fontFamily: "'Pretendard', system-ui, sans-serif",
+        background: 'var(--gaesup-ui-surface, rgba(18,20,28,0.62))',
+        color: 'var(--gaesup-ui-text, #f3f4f8)',
+        borderRadius: 'var(--gaesup-ui-radius, 14px)',
+        border: '1px solid var(--gaesup-ui-border, rgba(255,255,255,0.12))',
+        boxShadow: 'var(--gaesup-ui-shadow, 0 12px 28px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06))',
+        backdropFilter: 'var(--gaesup-ui-blur, blur(20px) saturate(140%))',
+        WebkitBackdropFilter: 'var(--gaesup-ui-blur, blur(20px) saturate(140%))',
+        fontFamily: "var(--gaesup-ui-font, 'Pretendard', system-ui, sans-serif)",
         fontSize: 14,
         padding: 14,
       }}
@@ -87,8 +91,8 @@ export function DialogBox({ advanceKey = 'e', closeKey = 'Escape' }: DialogBoxPr
         <div style={{
           display: 'inline-block',
           padding: '3px 8px',
-          background: '#ffd84a',
-          color: '#1a1a1a',
+          background: 'var(--gaesup-ui-accent, #ffd84a)',
+          color: 'var(--gaesup-ui-accent-text, #1a1a1a)',
           borderRadius: 6,
           fontWeight: 700,
           fontSize: 12,
@@ -97,7 +101,7 @@ export function DialogBox({ advanceKey = 'e', closeKey = 'Escape' }: DialogBoxPr
       )}
       <div style={{ lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{node.text}</div>
       {choices.length === 0 ? (
-        <button type="button" onClick={advance} style={{ marginTop: 10, marginRight: 8, padding: '9px 12px', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: 'inherit', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8 }}>
+        <button type="button" onClick={advance} style={{ marginTop: 10, marginRight: 8, padding: '9px 12px', cursor: 'pointer', background: 'var(--gaesup-ui-control, rgba(255,255,255,0.06))', color: 'inherit', border: '1px solid var(--gaesup-ui-border, rgba(255,255,255,0.12))', borderRadius: 8 }}>
           [{advanceKey.toUpperCase()}] 다음
         </button>
       ) : (
@@ -110,28 +114,28 @@ export function DialogBox({ advanceKey = 'e', closeKey = 'Escape' }: DialogBoxPr
               style={{
                 textAlign: 'left',
                 padding: '9px 12px',
-                background: 'rgba(255,255,255,0.06)',
-                color: '#f3f4f8',
-                border: '1px solid rgba(255,255,255,0.12)',
+                background: 'var(--gaesup-ui-control, rgba(255,255,255,0.06))',
+                color: 'var(--gaesup-ui-text, #f3f4f8)',
+                border: '1px solid var(--gaesup-ui-border, rgba(255,255,255,0.12))',
                 borderRadius: 8,
                 cursor: 'pointer',
-                fontFamily: "'Pretendard', system-ui, sans-serif",
+                fontFamily: "var(--gaesup-ui-font, 'Pretendard', system-ui, sans-serif)",
                 fontSize: 13,
                 fontWeight: 500,
               }}
             >
               <span style={{
-                display: 'inline-block', width: 18, color: '#ffd84a', marginRight: 6,
+                display: 'inline-block', width: 18, color: 'var(--gaesup-ui-accent-strong, #ffd84a)', marginRight: 6,
               }}>{i + 1}.</span>
               {c.text}
             </button>
           ))}
         </div>
       )}
-      <button type="button" onClick={close} style={{ marginTop: 10, marginRight: 8, padding: '9px 12px', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', color: 'inherit', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8 }}>
+      <button type="button" onClick={close} style={{ marginTop: 10, marginRight: 8, padding: '9px 12px', cursor: 'pointer', background: 'var(--gaesup-ui-control, rgba(255,255,255,0.06))', color: 'inherit', border: '1px solid var(--gaesup-ui-border, rgba(255,255,255,0.12))', borderRadius: 8 }}>
         대화 닫기
       </button>
-    </div>
+    </WorldInputSurface>
   );
 }
 

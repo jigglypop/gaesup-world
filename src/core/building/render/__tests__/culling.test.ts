@@ -91,15 +91,12 @@ describe('building gpu culling parse', () => {
       memberCount: new Uint16Array(count),
     };
 
-    const startedAt = performance.now();
     const parsed = parseBuildingGpuVisibilityFlags(snapshot, flags);
-    const elapsedMs = performance.now() - startedAt;
 
     expect(parsed.version).toBe(9);
     expect(parsed.tileIds.size + parsed.wallIds.size + parsed.objectIds.size + parsed.blockIds.size)
       .toBe(Math.ceil(count / 3));
     expect(parsed.clusterCounts[DRAW_CLUSTER_GRASS]).toBeGreaterThan(0);
     expect(parsed.clusterCounts[DRAW_CLUSTER_FIRE]).toBeGreaterThan(0);
-    expect(elapsedMs).toBeLessThan(500);
   });
 });

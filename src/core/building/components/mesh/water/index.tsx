@@ -1,26 +1,47 @@
 import { lazy, Suspense, useEffect, useMemo, useRef } from "react";
 
-import { extend, useFrame, useThree } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { Water } from "three-stdlib";
 
+import { extendOnce } from '@/core/rendering/extendOnce';
 import { getDefaultToonMode } from "@core/rendering/toon";
-import { weightFromDistance } from "@core/utils/sfe";
 
-import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
+import { createGlslWaterBedMaterial, createGlslWaterMaterial } from './glsl';
+import { getSharedWaterNormals } from './normals';
+import { distanceToWater, selectWaterDetail, type WaterLodState } from './shading';
+import { rendererKind } from '../../../../rendering/webgpu';
+import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
+import { useShoreField, type ShoreField } from '../../../terrain';
 
 class OwnedWater extends Water {
-  dispose(): void {
+  override dispose(): void {
     const mirror: unknown = this.material.uniforms['mirrorSampler']?.value;
     if (mirror instanceof THREE.Texture) mirror.renderTarget?.dispose();
     this.material.dispose();
+    // Object3D.dispose (three r186+) notifies renderers; older supported releases lack it.
+    super.dispose?.();
   }
 }
 
-extend({ Water: OwnedWater });
+const extendWater = extendOnce({ Water: OwnedWater });
+const WATER_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:water' };
 const NodeWaterMaterial = lazy(() => import('./NodeWaterMaterial'));
+const NodeWaterBed = lazy(() => import('./NodeWaterMaterial').then((module) => ({ default: module.NodeWaterBed })));
+const SURFACE_Y = 0.1;
+/** Meters over which fallback coverage climbs from a shore side (0.5) to open water (1), like a blurred field. */
+const SHORE_RAMP = 2.5;
+/** Fallback distance to land where no shore side is near. */
+const OPEN_DISTANCE = 1000;
+/** The open sea's floor is three times finer than its surface, so its shelf follows the shore closely. */
+const SEA_BED_DETAIL = 3;
+/** Water draws first among see-through things: it shows the opaque scene behind it, and they draw over it. */
+const WATER_RENDER_ORDER = -1;
+
+type ShoreSides = { north: boolean; south: boolean; east: boolean; west: boolean };
 
 type WaterProps = {
+  /** `far` hides the surface past that distance. `near` and `strength` are unused: detail follows `WATER_DETAIL_LOD` (40/52 m). */
   lod?: {
     near?: number;
     far?: number;
@@ -30,242 +51,111 @@ type WaterProps = {
   size?: number;
   width?: number;
   depth?: number;
-  shore?: Partial<{
-    north: boolean;
-    south: boolean;
-    east: boolean;
-    west: boolean;
-  }>;
+  /** @deprecated Shores come from the world's shore field; only water without one shades these sides as shore. */
+  shore?: Partial<ShoreSides>;
+  /** An open sea under the camera, over a sea floor that shelves away from the shore; no banks of its own. */
   followCamera?: boolean;
-  /**
-   * When true, uses a lightweight stylized shader without reflection RT.
-   * Defaults to the global toon mode. The normal path keeps the original Water quality.
-   */
+  /** Borrowed repeating normal texture. The caller owns its lifetime. */
+  normalMap?: THREE.Texture;
+  /** Unlit stylized shading. Defaults to the global toon mode. */
   toon?: boolean;
+  /** Multiplier for the surface color (1 = authored colors), e.g. to dim water at night. */
+  brightness?: number;
+  /** Shore coverage to shade with. Defaults to the world's building field (`useShoreField`); `null` opts out. */
+  field?: ShoreField | null;
 };
 
-// Vertex displacement uses world-space frequencies (cycles per meter) so wave
-// length stays constant regardless of tile scale. Three octaves give the surface
-// enough motion to read on tiles of every size.
-const TOON_WATER_VERT = /* glsl */ `
-uniform float uTime;
-varying vec2 vUv;
-varying vec3 vWorldPos;
-varying float vWave;
-
-void main() {
-  vUv = uv;
-  vec3 p = position;
-  float w1 = sin(p.x * 0.55 + uTime * 0.85) * 0.085;
-  float w2 = sin(p.y * 0.78 - uTime * 1.05 + p.x * 0.33) * 0.055;
-  float w3 = sin((p.x + p.y) * 1.40 + uTime * 1.60) * 0.025;
-  float w  = w1 + w2 + w3;
-  p.z += w;
-  vWave = w;
-  vWorldPos = (modelMatrix * vec4(p, 1.0)).xyz;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
-}
-`;
-
-// Fragment uses world-XZ for every detail layer (foam stripes, sparse specks,
-// rippling highlights, depth tint) so density and pattern stay visually
-// consistent at every tile size. Edge vignette softens the rectangular border.
-const TOON_WATER_FRAG = /* glsl */ `
-uniform vec3 uShallow;
-uniform vec3 uDeep;
-uniform vec3 uFoam;
-uniform float uTime;
-varying vec2 vUv;
-varying vec3 vWorldPos;
-varying float vWave;
-
-float hash21(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-
-float vnoise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  float a = hash21(i);
-  float b = hash21(i + vec2(1.0, 0.0));
-  float c = hash21(i + vec2(0.0, 1.0));
-  float d = hash21(i + vec2(1.0, 1.0));
-  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-}
-
-float fbm(vec2 p) {
-  float v = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 4; i++) {
-    v += a * vnoise(p);
-    p = p * 2.07 + vec2(13.7, 7.1);
-    a *= 0.5;
+/**
+ * A level grid whose `waterCoverage` climbs from the shore sides into the open and whose `waterDistance` is meters to
+ * the nearest of them; without shores it is open water.
+ */
+function createSurfaceGeometry(width: number, depth: number, segments: number, shore: ShoreSides | null): THREE.PlaneGeometry {
+  const geometry = new THREE.PlaneGeometry(width, depth, segments, segments);
+  const position = geometry.getAttribute('position');
+  const coverage = new Float32Array(position.count);
+  const distances = new Float32Array(position.count);
+  for (let i = 0; i < position.count; i++) {
+    // The plane's +y becomes north (-z) once it lies flat.
+    const x = position.getX(i);
+    const y = position.getY(i);
+    let distance = Number.POSITIVE_INFINITY;
+    if (shore?.west) distance = Math.min(distance, x + width / 2);
+    if (shore?.east) distance = Math.min(distance, width / 2 - x);
+    if (shore?.north) distance = Math.min(distance, depth / 2 - y);
+    if (shore?.south) distance = Math.min(distance, y + depth / 2);
+    coverage[i] = Math.min(1, 0.5 + distance / (2 * SHORE_RAMP));
+    distances[i] = Math.min(distance, OPEN_DISTANCE);
   }
-  return v;
+  geometry.setAttribute('waterCoverage', new THREE.BufferAttribute(coverage, 1));
+  geometry.setAttribute('waterDistance', new THREE.BufferAttribute(distances, 1));
+  geometry.computeBoundingBox();
+  geometry.computeBoundingSphere();
+  return geometry;
 }
 
-float band(float v, float c, float w) {
-  return smoothstep(c - w, c, v) - smoothstep(c, c + w, v);
-}
-
-void main() {
-  vec2 wp = vWorldPos.xz;
-
-  float baseNoise = fbm(wp * 0.18 + vec2(uTime * 0.04, -uTime * 0.03));
-  float depthCol  = clamp(0.5 + vWave * 3.5 + (baseNoise - 0.5) * 0.55, 0.0, 1.0);
-  vec3  base      = mix(uDeep, uShallow, depthCol);
-
-  float stripeCoord = (wp.x + wp.y) * 0.55 + uTime * 0.35 + baseNoise * 0.8;
-  float stripe      = sin(stripeCoord * 6.0) * 0.5 + 0.5;
-  float stripeFoam  = band(stripe, 0.86, 0.10) * (0.35 + depthCol * 0.65);
-
-  float specks = smoothstep(0.78, 0.95, fbm(wp * 0.62 + uTime * 0.10));
-  float ripple = smoothstep(0.60, 0.95, fbm(wp * 1.30 + uTime * 0.60));
-
-  vec3 col = mix(base, uFoam, stripeFoam * 0.55 + specks * 0.50 + ripple * 0.18);
-
-  float edge = smoothstep(0.0, 0.06, min(min(vUv.x, vUv.y), min(1.0 - vUv.x, 1.0 - vUv.y)));
-  col = mix(col * 0.86, col, edge);
-
-  gl_FragColor = vec4(col, 0.88);
-}
-`;
-
-let _sharedWaterNormals: THREE.DataTexture | null = null;
-
-function noise2(x: number, y: number): number {
-  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123;
-  return s - Math.floor(s);
-}
-
-function smoothNoise(x: number, y: number): number {
-  const xi = Math.floor(x);
-  const yi = Math.floor(y);
-  const xf = x - xi;
-  const yf = y - yi;
-  const u = xf * xf * (3 - 2 * xf);
-  const v = yf * yf * (3 - 2 * yf);
-  const a = noise2(xi, yi);
-  const b = noise2(xi + 1, yi);
-  const c = noise2(xi, yi + 1);
-  const d = noise2(xi + 1, yi + 1);
-  return THREE.MathUtils.lerp(
-    THREE.MathUtils.lerp(a, b, u),
-    THREE.MathUtils.lerp(c, d, u),
-    v,
-  );
-}
-
-function waterHeight(x: number, y: number): number {
-  let value = 0;
-  let amp = 0.58;
-  let freq = 1.15;
-  for (let i = 0; i < 5; i += 1) {
-    value += smoothNoise(x * freq + 17.3 * i, y * freq - 9.1 * i) * amp;
-    freq *= 2.03;
-    amp *= 0.48;
-  }
-  value += Math.sin(x * 8.2 + y * 1.7) * 0.06;
-  value += Math.cos(y * 7.1 - x * 2.4) * 0.05;
-  return value;
-}
-
-function getSharedWaterNormals(size = 128): THREE.DataTexture {
-  if (_sharedWaterNormals) return _sharedWaterNormals;
-  const data = new Uint8Array(size * size * 4);
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      const i = (y * size + x) * 4;
-      const u = x / size;
-      const v = y / size;
-      const e = 1 / size;
-      const hL = waterHeight(u - e, v);
-      const hR = waterHeight(u + e, v);
-      const hD = waterHeight(u, v - e);
-      const hU = waterHeight(u, v + e);
-      const nx = (hL - hR) * 1.15;
-      const ny = (hD - hU) * 1.15;
-      const nz = 1.0;
-      const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
-      data[i] = Math.round((nx / len * 0.5 + 0.5) * 255);
-      data[i + 1] = Math.round((ny / len * 0.5 + 0.5) * 255);
-      data[i + 2] = Math.round((nz / len * 0.5 + 0.5) * 255);
-      data[i + 3] = 255;
-    }
-  }
-
-  const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = true;
-  texture.colorSpace = THREE.NoColorSpace;
-  texture.needsUpdate = true;
-  _sharedWaterNormals = texture;
-  return texture;
-}
-
-export default function Ocean({ lod, center, size = 16, width, depth, shore, toon, followCamera = false }: WaterProps) {
+export default function Ocean({ lod, center, size = 16, width, depth, shore, toon, normalMap, followCamera = false, brightness = 1, field: fieldProp }: WaterProps) {
+  extendWater();
   const useToon = toon ?? getDefaultToonMode();
-  const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+  const useNodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
+  const worldField = useShoreField();
+  const field = fieldProp === undefined ? worldField : fieldProp;
+  // three-stdlib's mirror Water renders through WebGL-only APIs and cannot follow a shore; plain classic water keeps it.
+  const useMirrorWater = !useToon && !useNodes && !field;
+  // Water bound to a field waits for its first build; the open sea starts as open water.
+  const ready = followCamera || !field || field.version > 0;
+  const groupRef = useRef<THREE.Group | null>(null);
   const waterRef = useRef<Water | null>(null);
-  const toonMatRef = useRef<THREE.ShaderMaterial | null>(null);
-  const toonMeshRef = useRef<THREE.Mesh | null>(null);
-  const fallbackMeshRef = useRef<THREE.Mesh | null>(null);
-  const centerRef = useRef(
-    new THREE.Vector3(center?.[0] ?? 0, center?.[1] ?? 0, center?.[2] ?? 0),
-  );
-  const lastVisibleRef = useRef<boolean>(true);
-  const highQualityRef = useRef<boolean>(!lod);
-  const lodCheckAccumRef = useRef<number>(lod ? Number.POSITIVE_INFINITY : 0);
-  const timeAccumRef = useRef<number>(0);
-  const shallowMaterial = useMemo(
-    () =>
-      new THREE.MeshPhysicalMaterial({
-        color: '#8dbab5',
-        roughness: 0.28,
-        metalness: 0.02,
-        transparent: true,
-        opacity: 0.42,
-        clearcoat: 0.18,
-        clearcoatRoughness: 0.72,
-        depthWrite: false,
-      }),
-    [],
-  );
-  const shoreMask = useMemo(
-    () => ({
+  const fallbackRef = useRef<THREE.Mesh | null>(null);
+  const lodState = useRef<WaterLodState>({ detailed: true }).current;
+  const visibleRef = useRef(true);
+  const checkRef = useRef(Number.POSITIVE_INFINITY);
+  const mirrorTimeRef = useRef(0);
+  const surfaceWidth = width ?? size;
+  const surfaceDepth = depth ?? size;
+  const segments = Math.max(8, Math.min(64, Math.round(Math.max(surfaceWidth, surfaceDepth) * 2)));
+  const centerX = center?.[0] ?? 0;
+  const centerZ = center?.[2] ?? 0;
+
+  // Shared procedural normal texture avoids per-tile image decode and upload.
+  const waterNormals = normalMap ?? getSharedWaterNormals();
+
+  const sides = useMemo<ShoreSides | null>(
+    () => (followCamera ? null : {
       north: shore?.north ?? true,
       south: shore?.south ?? true,
       east: shore?.east ?? true,
       west: shore?.west ?? true,
     }),
-    [shore?.east, shore?.north, shore?.south, shore?.west],
+    [followCamera, shore?.east, shore?.north, shore?.south, shore?.west],
   );
-  const surfaceWidth = width ?? size;
-  const surfaceDepth = depth ?? size;
-  const shoreWidth = Math.min(Math.min(surfaceWidth, surfaceDepth) * 0.18, 0.72);
-  const insetNorth = shoreMask.north ? shoreWidth : 0;
-  const insetSouth = shoreMask.south ? shoreWidth : 0;
-  const insetEast = shoreMask.east ? shoreWidth : 0;
-  const insetWest = shoreMask.west ? shoreWidth : 0;
-  const waterWidth = Math.max(surfaceWidth - insetWest - insetEast, surfaceWidth * 0.34);
-  const waterDepth = Math.max(surfaceDepth - insetNorth - insetSouth, surfaceDepth * 0.34);
-  const waterOffsetX = (insetWest - insetEast) * 0.5;
-  const waterOffsetZ = (insetNorth - insetSouth) * 0.5;
-  const shoreSpanX = Math.max(
-    surfaceWidth - (shoreMask.west ? shoreWidth * 0.25 : 0) - (shoreMask.east ? shoreWidth * 0.25 : 0),
-    surfaceWidth * 0.42,
+  const geometry = useMemo(
+    () => createSurfaceGeometry(surfaceWidth, surfaceDepth, segments, sides),
+    [segments, sides, surfaceDepth, surfaceWidth],
   );
-  const shoreSpanZ = Math.max(
-    surfaceDepth - (shoreMask.north ? shoreWidth * 0.25 : 0) - (shoreMask.south ? shoreWidth * 0.25 : 0),
-    surfaceDepth * 0.42,
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  // The sea floor steps with the surface grid (whole surface cells), so its vertices stay on fixed world points too.
+  const bedGeometry = useMemo(
+    () => (followCamera ? createSurfaceGeometry(surfaceWidth, surfaceDepth, segments * SEA_BED_DETAIL, null) : geometry),
+    [followCamera, geometry, segments, surfaceDepth, surfaceWidth],
   );
-  
-  // Shared procedural normal texture avoids per-tile image decode and upload.
-  const waterNormals = useToon ? null : getSharedWaterNormals();
+  useEffect(() => () => { if (bedGeometry !== geometry) bedGeometry.dispose(); }, [bedGeometry, geometry]);
+
+  const glslMaterial = useMemo(
+    () => (useNodes || useMirrorWater ? null : createGlslWaterMaterial({ normals: waterNormals, field, open: followCamera })),
+    [field, followCamera, useMirrorWater, useNodes, waterNormals],
+  );
+  useEffect(() => () => glslMaterial?.dispose(), [glslMaterial]);
+  const glslBedMaterial = useMemo(
+    () => (useNodes || useMirrorWater ? null : createGlslWaterBedMaterial({ normals: waterNormals, field, open: followCamera })),
+    [field, followCamera, useMirrorWater, useNodes, waterNormals],
+  );
+  useEffect(() => () => glslBedMaterial?.dispose(), [glslBedMaterial]);
+  useEffect(() => {
+    for (const material of [glslMaterial, glslBedMaterial]) {
+      const uniform = material?.uniforms['uBrightness'];
+      if (uniform) uniform.value = brightness;
+    }
+  }, [glslMaterial, glslBedMaterial, brightness]);
 
   const renderTargetSize = useMemo(() => {
     const longest = Math.max(surfaceWidth, surfaceDepth);
@@ -273,225 +163,116 @@ export default function Ocean({ lod, center, size = 16, width, depth, shore, too
     if (longest <= 24) return 256;
     return 384;
   }, [surfaceDepth, surfaceWidth]);
-
-  useEffect(() => {
-    centerRef.current.set(center?.[0] ?? 0, center?.[1] ?? 0, center?.[2] ?? 0);
-  }, [center]);
-
-  useEffect(() => {
-    highQualityRef.current = !lod;
-    lodCheckAccumRef.current = lod ? Number.POSITIVE_INFINITY : 0;
-  }, [lod]);
-  
   const config = useMemo(
     () => ({
       textureWidth: renderTargetSize,
       textureHeight: renderTargetSize,
-      ...(waterNormals ? { waterNormals } : {}),
+      waterNormals,
       sunDirection: new THREE.Vector3(0.1, 0.7, 0.2),
       sunColor: 0xffffff,
       waterColor: 0x001e0f,
       distortionScale: 3.7,
     }),
-    [renderTargetSize, waterNormals]
+    [renderTargetSize, waterNormals],
   );
-  
-  // Tessellation density also scales with tile size so wave amplitude stays smooth on
-  // large tiles. Capped to keep big tiles from blowing up the vertex count.
-  const segs = useMemo(() => {
-    const longest = Math.max(waterWidth, waterDepth);
-    const base = useToon ? Math.round(longest * 2.5) : Math.round(longest * 1.2);
-    return Math.max(useToon ? 14 : 6, Math.min(useToon ? 56 : 32, base));
-  }, [useToon, waterWidth, waterDepth]);
-  const geom = useMemo(() => {
-    const geometry = new THREE.PlaneGeometry(waterWidth, waterDepth, segs, segs);
-    geometry.computeBoundingBox();
-    geometry.computeBoundingSphere();
-    return geometry;
-  }, [waterDepth, waterWidth, segs]);
   const fallbackMaterial = useMemo(
-    () =>
-      new THREE.MeshPhysicalMaterial({
-        color: '#2f8dbd',
-        roughness: 0.18,
-        metalness: 0,
-        transparent: true,
-        opacity: 0.72,
-        clearcoat: 0.45,
-        clearcoatRoughness: 0.24,
-        normalMap: waterNormals,
-        normalScale: new THREE.Vector2(0.22, 0.22),
-        depthWrite: false,
-      }),
-    [waterNormals],
-  );
-  const toonMaterial = useMemo(() => {
-    if (!useToon || useNodes) return null;
-    return new THREE.ShaderMaterial({
-      uniforms: {
-        uTime: { value: 0 },
-        uShallow: { value: new THREE.Color('#9ed6c8') },
-        uDeep: { value: new THREE.Color('#1f5f88') },
-        uFoam: { value: new THREE.Color('#ffffff') },
-      },
-      vertexShader: TOON_WATER_VERT,
-      fragmentShader: TOON_WATER_FRAG,
+    () => (useMirrorWater ? new THREE.MeshPhysicalMaterial({
+      color: '#2f8dbd',
+      roughness: 0.18,
+      metalness: 0,
       transparent: true,
+      opacity: 0.72,
+      clearcoat: 0.45,
+      clearcoatRoughness: 0.24,
+      normalMap: waterNormals,
+      normalScale: new THREE.Vector2(0.08, 0.08),
       depthWrite: false,
-    });
-  }, [useToon, useNodes]);
+    }) : null),
+    [useMirrorWater, waterNormals],
+  );
+  useEffect(() => () => fallbackMaterial?.dispose(), [fallbackMaterial]);
 
-  useEffect(() => () => geom.dispose(), [geom]);
-  useEffect(() => () => fallbackMaterial.dispose(), [fallbackMaterial]);
-  useEffect(() => () => toonMaterial?.dispose(), [toonMaterial]);
-
-  useEffect(() => {
-    return () => {
-      shallowMaterial.dispose();
-    };
-  }, [shallowMaterial]);
-
-  useFrame((state, delta) => {
-    const target = useToon ? (toonMeshRef.current as THREE.Object3D | null) : (waterRef.current as THREE.Object3D | null);
-    if (!target) return;
-
-    const water = waterRef.current as THREE.Object3D | null;
-    const fallback = fallbackMeshRef.current;
+  useSharedFrame(WATER_FRAME, (delta, elapsedSeconds, three) => {
+    const group = groupRef.current;
+    if (!group) return;
+    const camera = three.camera.position;
     if (followCamera) {
-      const x = state.camera.position.x - centerRef.current.x + waterOffsetX;
-      const z = state.camera.position.z - centerRef.current.z + waterOffsetZ;
-      target.position.set(x, 0.1, z);
-      if (water && water !== target) water.position.set(x, 0.1, z);
-      if (fallback) fallback.position.set(x, 0.095, z);
+      // Whole grid steps keep vertices on fixed world points, so the swell never slides across them.
+      const step = surfaceWidth / segments;
+      group.position.set(Math.round((camera.x - centerX) / step) * step, 0, Math.round((camera.z - centerZ) / step) * step);
     }
-
-    if (lod) {
-      lodCheckAccumRef.current += Math.max(0, delta);
-      const checkInterval = lastVisibleRef.current ? 0.2 : 0.5;
-      if (lodCheckAccumRef.current >= checkInterval) {
-        lodCheckAccumRef.current = 0;
-
-        const near = lod.near ?? 30;
-        const far = lod.far ?? 180;
-        const strength = lod.strength ?? 4;
-        const dist = state.camera.position.distanceTo(centerRef.current);
-        const w = weightFromDistance(dist, near, far, strength);
-        const visible = w > 0;
-        highQualityRef.current = !useToon && dist <= near;
-        if (visible !== lastVisibleRef.current) {
-          lastVisibleRef.current = visible;
-          target.visible = visible;
-        }
-      }
-
-      if (!lastVisibleRef.current) {
-        if (water) water.visible = false;
-        if (fallback) fallback.visible = false;
-        return;
-      }
+    checkRef.current += Math.max(0, delta);
+    if (checkRef.current >= (visibleRef.current ? 0.2 : 0.5)) {
+      checkRef.current = 0;
+      group.updateWorldMatrix(true, false);
+      const origin = group.matrixWorld.elements;
+      const distance = distanceToWater(
+        camera.x, camera.y, camera.z,
+        origin[12]!, origin[13]! + SURFACE_Y, origin[14]!,
+        surfaceWidth / 2, surfaceDepth / 2,
+      );
+      visibleRef.current = !lod || distance < (lod.far ?? 180);
+      lodState.detailed = selectWaterDetail(lodState.detailed, distance);
     }
+    group.visible = ready && visibleRef.current;
+    if (!group.visible) return;
 
-    if (useToon) {
-      if (fallback) fallback.visible = false;
-      const u = toonMatRef.current?.uniforms?.['uTime'];
-      if (u) u.value = getFrameElapsedSeconds(state);
-    } else {
-      const useHighQualityWater = highQualityRef.current;
-      if (water) water.visible = useHighQualityWater;
-      if (fallback) fallback.visible = !useHighQualityWater;
-      if (!useHighQualityWater) return;
-
-      timeAccumRef.current += Math.max(0, delta);
-      if (timeAccumRef.current < 1 / 30) return;
-      const time = waterRef.current?.material.uniforms?.["time"];
-      if (time) time.value += timeAccumRef.current * 0.3;
-      timeAccumRef.current = 0;
+    for (const material of [glslMaterial, glslBedMaterial]) {
+      if (!material) continue;
+      material.uniforms['uTime']!.value = elapsedSeconds;
+      material.uniforms['uDetail']!.value = lodState.detailed ? 1 : 0;
     }
+    if (!useMirrorWater) return;
+    const mirror = waterRef.current;
+    if (mirror) mirror.visible = lodState.detailed;
+    if (fallbackRef.current) fallbackRef.current.visible = !lodState.detailed;
+    if (!mirror || !lodState.detailed) return;
+    mirrorTimeRef.current += Math.max(0, delta);
+    if (mirrorTimeRef.current < 1 / 30) return;
+    const time = mirror.material.uniforms['time'];
+    if (time) time.value += mirrorTimeRef.current * 0.3;
+    mirrorTimeRef.current = 0;
   });
 
   return (
-    <group>
-      {shoreMask.north && (
-        <mesh
-          rotation-x={-Math.PI / 2}
-          position={[0, 0.055, -surfaceDepth / 2 + shoreWidth / 2]}
-          material={shallowMaterial}
-          receiveShadow
-        >
-          <planeGeometry args={[shoreSpanX, shoreWidth, 1, 1]} />
-        </mesh>
-      )}
-
-      {shoreMask.south && (
-        <mesh
-          rotation-x={-Math.PI / 2}
-          position={[0, 0.055, surfaceDepth / 2 - shoreWidth / 2]}
-          material={shallowMaterial}
-          receiveShadow
-        >
-          <planeGeometry args={[shoreSpanX, shoreWidth, 1, 1]} />
-        </mesh>
-      )}
-
-      {shoreMask.west && (
-        <mesh
-          rotation-x={-Math.PI / 2}
-          position={[-surfaceWidth / 2 + shoreWidth / 2, 0.055, 0]}
-          material={shallowMaterial}
-          receiveShadow
-        >
-          <planeGeometry args={[shoreWidth, shoreSpanZ, 1, 1]} />
-        </mesh>
-      )}
-
-      {shoreMask.east && (
-        <mesh
-          rotation-x={-Math.PI / 2}
-          position={[surfaceWidth / 2 - shoreWidth / 2, 0.055, 0]}
-          material={shallowMaterial}
-          receiveShadow
-        >
-          <planeGeometry args={[shoreWidth, shoreSpanZ, 1, 1]} />
-        </mesh>
-      )}
-
-      {useToon ? (
+    <group ref={groupRef} visible={ready}>
+      {useNodes ? (
         <Suspense fallback={null}>
-          <mesh
-            ref={toonMeshRef}
-            geometry={geom}
-            rotation-x={-Math.PI / 2}
-            position={[waterOffsetX, 0.1, waterOffsetZ]}
-            frustumCulled
-          >
-            {useNodes ? <NodeWaterMaterial /> : (
-              <primitive
-                ref={toonMatRef}
-                object={toonMaterial as THREE.ShaderMaterial}
-                attach="material"
-              />
-            )}
+          <mesh geometry={geometry} rotation-x={-Math.PI / 2} position={[0, SURFACE_Y, 0]} renderOrder={WATER_RENDER_ORDER}>
+            <NodeWaterMaterial
+              normalMap={waterNormals}
+              brightness={brightness}
+              toon={useToon}
+              field={field}
+              open={followCamera}
+              lod={lodState}
+            />
+          </mesh>
+          <mesh geometry={bedGeometry} rotation-x={-Math.PI / 2} position={[0, SURFACE_Y, 0]} receiveShadow={!followCamera}>
+            <NodeWaterBed field={field} open={followCamera} normalMap={waterNormals} />
           </mesh>
         </Suspense>
-      ) : (
+      ) : useMirrorWater ? (
         <>
-          <water
-            ref={waterRef}
-            args={[geom, config]}
-            rotation-x={-Math.PI / 2}
-            position={[waterOffsetX, 0.1, waterOffsetZ]}
-            frustumCulled
-          />
-          <mesh
-            ref={fallbackMeshRef}
-            geometry={geom}
-            material={fallbackMaterial}
-            rotation-x={-Math.PI / 2}
-            position={[waterOffsetX, 0.095, waterOffsetZ]}
-            visible={false}
-            frustumCulled
-          />
+          <water ref={waterRef} args={[geometry, config]} rotation-x={-Math.PI / 2} position={[0, SURFACE_Y, 0]} />
+          {fallbackMaterial && (
+            <mesh
+              ref={fallbackRef}
+              geometry={geometry}
+              material={fallbackMaterial}
+              rotation-x={-Math.PI / 2}
+              position={[0, SURFACE_Y - 0.005, 0]}
+              visible={false}
+            />
+          )}
         </>
+      ) : (
+        glslMaterial && glslBedMaterial && (
+          <>
+            <mesh geometry={geometry} material={glslMaterial} rotation-x={-Math.PI / 2} position={[0, SURFACE_Y, 0]} renderOrder={WATER_RENDER_ORDER} />
+            <mesh geometry={bedGeometry} material={glslBedMaterial} rotation-x={-Math.PI / 2} position={[0, SURFACE_Y, 0]} />
+          </>
+        )
       )}
     </group>
   );

@@ -65,9 +65,9 @@ export function ToastHost({ position = 'top-right', max = 5 }: ToastHostProps) {
               overflowWrap: 'anywhere',
               padding: '9px 14px',
               borderRadius: 12,
-              background: s.bg,
-              color: '#f3f4f8',
-              fontFamily: "'Pretendard', system-ui, sans-serif",
+              background: `var(--gaesup-toast-${t.kind}, ${s.bg})`,
+              color: 'var(--gaesup-ui-text, #f3f4f8)',
+              fontFamily: "var(--gaesup-ui-font, 'Pretendard', system-ui, sans-serif)",
               fontSize: 13,
               fontWeight: 500,
               display: 'flex',
@@ -75,8 +75,8 @@ export function ToastHost({ position = 'top-right', max = 5 }: ToastHostProps) {
               gap: 10,
               border: `1px solid ${s.ring}55`,
               boxShadow: `0 8px 22px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.05)`,
-              backdropFilter: 'blur(18px) saturate(140%)',
-              WebkitBackdropFilter: 'blur(18px) saturate(140%)',
+              backdropFilter: 'var(--gaesup-ui-blur, blur(18px) saturate(140%))',
+              WebkitBackdropFilter: 'var(--gaesup-ui-blur, blur(18px) saturate(140%))',
               animation: 'gaesup-toast-in 220ms ease-out both',
             }}
           >

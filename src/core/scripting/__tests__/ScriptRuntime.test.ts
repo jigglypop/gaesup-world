@@ -128,6 +128,33 @@ describe('ScriptRuntime', () => {
     }
   });
 
+  test('외부 구독은 트리거 존 이벤트를 받고 런타임 재시작 뒤에도 유지되며 해제 후에는 받지 않는다', () => {
+    const unregister = registerBuiltinScripts();
+    const controller = createController([scriptComponent('zone', BUILTIN_SCRIPT_IDS.triggerZone)]);
+    const runtime = new ScriptRuntime({ controller });
+    const entered = jest.fn();
+    const exited = jest.fn();
+    try {
+      runtime.start();
+      const offEnter = runtime.on('zone:enter', entered);
+      runtime.on('zone:exit', exited);
+      runtime.dispatchPhysicsEvent('triggerEnter', 'target', 'player');
+      runtime.dispatchPhysicsEvent('triggerExit', 'target', 'player');
+      expect(entered).toHaveBeenCalledWith({ zoneId: 'target', otherId: 'player' });
+      expect(exited).toHaveBeenCalledWith({ zoneId: 'target', otherId: 'player' });
+      runtime.stop();
+      runtime.start();
+      runtime.dispatchPhysicsEvent('triggerEnter', 'target', 'player');
+      expect(entered).toHaveBeenCalledTimes(2);
+      offEnter();
+      runtime.dispatchPhysicsEvent('triggerEnter', 'target', 'player');
+      expect(entered).toHaveBeenCalledTimes(2);
+    } finally {
+      runtime.stop();
+      unregister();
+    }
+  });
+
   test('문은 상호작용으로 열림 각도까지 회전하고 다시 닫힌다', () => {
     const unregister = registerBuiltinScripts();
     const controller = createController([

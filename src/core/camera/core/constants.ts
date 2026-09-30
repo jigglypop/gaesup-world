@@ -1,5 +1,3 @@
-import { V3 } from '../../utils/vector';
-
 export const CAMERA_CONSTANTS = {
   THROTTLE_MS: 16,
   POSITION_THRESHOLD: 0.001,
@@ -12,32 +10,25 @@ export const CAMERA_CONSTANTS = {
 } as const;
 
 export const CAMERA_DEFAULTS = {
-  OFFSET: V3(-10, -10, -10),
-  MAX_DISTANCE: -7,
-  DISTANCE: -1,
   X_DISTANCE: 15,
   Y_DISTANCE: 8,
   Z_DISTANCE: 15,
+  /** First person: eye height above the character's feet and how far ahead of the body the eye sits. */
+  FIRST_PERSON_EYE_HEIGHT: 2,
+  FIRST_PERSON_FORWARD: 0.45,
   ZOOM: 1,
   ENABLE_ZOOM: true,
   ZOOM_SPEED: 0.001,
   MIN_ZOOM: 0.45,
   MAX_ZOOM: 2.4,
-  TARGET: V3(0, 0, 0),
-  POSITION: V3(-15, 8, -15),
   FOCUS: false,
   ENABLE_COLLISION: true,
   COLLISION_MARGIN: 0.1,
+  COLLISION_FADE_OPACITY: 0.3,
   SMOOTHING: {
     POSITION: 0.08,
     ROTATION: 0.1,
     FOV: 0.1,
   },
   FOV: 75,
-  MIN_FOV: 10,
-  MAX_FOV: 120,
-  BOUNDS: {
-    MIN_Y: 2,
-    MAX_Y: 50,
-  },
 } as const; 

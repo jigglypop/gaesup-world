@@ -1,16 +1,18 @@
+/** @jest-environment jsdom */
 import { act, renderHook } from '@testing-library/react';
 
-import { useSpawnFromBlueprint } from '../useSpawnFromBlueprint';
+import type { WorldBridge } from '../../../core/world/bridge/WorldBridge';
 import { WARRIOR_BLUEPRINT } from '../../characters/warrior';
 import { blueprintRegistry } from '../../registry';
-import type { WorldBridge } from '../../../core/world/bridge/WorldBridge';
+import { useSpawnFromBlueprint } from '../useSpawnFromBlueprint';
 
 const mockAddObject = jest.fn<string, Parameters<WorldBridge['addObject']>>(() => 'spawned');
 const mockSetUrls = jest.fn();
 const mockSetMode = jest.fn();
 const mockGetEngine = jest.fn<unknown, [string]>(() => ({}));
 jest.mock('../../../core/boilerplate', () => ({
-  BridgeFactory: { getOrCreate: () => ({ addObject: mockAddObject, getEngine: mockGetEngine }) },
+  ...jest.requireActual<object>('../../../core/boilerplate'),
+  BridgeFactory: { getOrCreateFor: () => ({ addObject: mockAddObject, getEngine: mockGetEngine }) },
 }));
 jest.mock('../../../core/stores/gaesupStore', () => ({
   useGaesupStore: (selector: (state: unknown) => unknown) => selector({ setUrls: mockSetUrls, setMode: mockSetMode }),
@@ -36,14 +38,14 @@ test('spawning a parts-based character uses its body model for both world metada
   await act(async () => {
     expect(await result.current.spawnEntity(WARRIOR_BLUEPRINT.id)).not.toBeNull();
   });
-  expect(mockAddObject.mock.calls[0]?.[1].metadata).toEqual(expect.objectContaining({ characterUrl: 'gltf/ally_body.glb' }));
-  expect(mockSetUrls).toHaveBeenCalledWith({ characterUrl: 'gltf/ally_body.glb' });
+  expect(mockAddObject.mock.calls[0]?.[1].metadata).toEqual(expect.objectContaining({ characterUrl: 'gltf/trainer_green.glb' }));
+  expect(mockSetUrls).toHaveBeenCalledWith({ characterUrl: 'gltf/trainer_green.glb' });
   expect(blueprintRegistry.get(WARRIOR_BLUEPRINT.id)).toBe(WARRIOR_BLUEPRINT);
 });
 
 test.each([
   { model: ' /legacy.glb ', metadata: '/metadata.glb', body: true, expected: '/legacy.glb' },
-  { model: ' ', metadata: '/metadata.glb', body: true, expected: 'gltf/ally_body.glb' },
+  { model: ' ', metadata: '/metadata.glb', body: true, expected: 'gltf/trainer_green.glb' },
   { model: '', metadata: ' /metadata.glb ', body: false, expected: '/metadata.glb' },
   { model: '', metadata: '', body: false, expected: '' },
 ])('resolves model precedence for $expected', async ({ model, metadata, body, expected }) => {

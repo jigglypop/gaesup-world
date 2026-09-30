@@ -5,7 +5,13 @@ export { ScriptRuntime } from './ScriptRuntime';
 export type { ScriptRuntimeOptions } from './ScriptRuntime';
 export { useScriptRuntime } from './react/useScriptRuntime';
 export { ScriptRuntimeHost } from './react/ScriptRuntimeHost';
-export type { ScriptRuntimeHostProps, UseScriptRuntimeOptions } from './react/types';
+export { useScriptObjectTransform } from './react/useScriptObjectTransform';
+export type {
+  ScriptPlayMode,
+  ScriptPlayModeSource,
+  ScriptRuntimeHostProps,
+  UseScriptRuntimeOptions,
+} from './react/types';
 export {
   BUILTIN_SCRIPT_IDS,
   collectibleScript,

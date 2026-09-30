@@ -1,7 +1,5 @@
-import mitt from 'mitt';
-
-import { CameraEventValue, CameraSystemEvents, CameraSystemConfig, ICameraSystemMonitor, CameraSystemEmitter, CameraSystemState } from './types';
-import { Profile, HandleError } from '../../boilerplate/decorators';
+import { CameraEventValue, CameraSystemConfig, ICameraSystemMonitor, CameraSystemEmitter, CameraSystemState } from './types';
+import { InMemoryEventBus } from '../../plugins/EventBus';
 
 export function cloneCameraSystemConfig(config: CameraSystemConfig): CameraSystemConfig {
   return {
@@ -10,7 +8,7 @@ export function cloneCameraSystemConfig(config: CameraSystemConfig): CameraSyste
     smoothing: { ...config.smoothing },
     ...(config.focusTarget ? { focusTarget: { ...config.focusTarget } } : {}),
     ...(config.offset ? { offset: { ...config.offset } } : {}),
-    ...(config.lookAt ? { lookAt: { ...config.lookAt } } : {}),
+    ...(config.bounds ? { bounds: { ...config.bounds } } : {}),
   };
 }
 
@@ -23,11 +21,10 @@ export abstract class BaseCameraSystem implements ICameraSystemMonitor {
     lastUpdateTime: 0,
   };
   protected constructor(initialConfig: CameraSystemConfig) {
-    this.emitter = mitt<CameraSystemEvents>();
+    this.emitter = new InMemoryEventBus();
     this.config = cloneCameraSystemConfig(initialConfig);
   }
 
-  @HandleError()
   public updateConfig(newConfig: Partial<CameraSystemConfig>): void {
     const oldConfig = { ...this.config };
     this.config = cloneCameraSystemConfig({ ...this.config, ...newConfig });
@@ -66,7 +63,6 @@ export abstract class BaseCameraSystem implements ICameraSystemMonitor {
     };
   }
 
-  @Profile()
   protected trackFrameMetrics(deltaTime: number): void {
     this.metrics.frameCount++;
     this.metrics.totalFrameTime += deltaTime;
@@ -77,9 +73,8 @@ export abstract class BaseCameraSystem implements ICameraSystemMonitor {
     this.emitter.emit('error', { message, details });
   }
 
-  @HandleError()
   public destroy(): void {
-    this.emitter.all.clear();
+    this.emitter.clear();
   }
 
   abstract update(deltaTime: number): void;

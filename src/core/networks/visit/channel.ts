@@ -1,5 +1,6 @@
 import type { VisitChannel, VisitChannelEvent, VisitSnapshot } from './types';
-import { MAX_VISIT_SNAPSHOT_DOMAINS, MAX_VISIT_WIRE_MESSAGE_LENGTH } from '../core/remoteInputLimits';
+import { isRecord } from '../../utils/guards';
+import { MAX_REMOTE_WIRE_MESSAGE_LENGTH, MAX_VISIT_SNAPSHOT_DOMAINS } from '../core/remoteInputLimits';
 
 class LocalVisitChannelImpl implements VisitChannel {
   private listeners = new Set<(event: VisitChannelEvent) => void>();
@@ -50,9 +51,11 @@ export type WebSocketTransport = {
   /**
    * Register a listener for raw incoming text frames. Should return an
    * unsubscribe function. Implementations are expected to filter to the
-   * relevant message types upstream.
+   * relevant message types upstream. Pass `senderId`, the peer the relay
+   * authenticated as the frame's sender, so only a room's host can publish
+   * or close it; without it the channel cannot tell a host from an impostor.
    */
-  onMessage: (cb: (raw: string) => void) => () => void;
+  onMessage: (cb: (raw: string, senderId?: string) => void) => () => void;
 };
 
 const WIRE_VERSION = 1;
@@ -62,10 +65,6 @@ const LEAVE_TYPE = 'VisitLeave';
 type WireSnapshot = { type: typeof SNAPSHOT_TYPE; v: number; snapshot: VisitSnapshot };
 type WireLeave = { type: typeof LEAVE_TYPE; v: number; hostId: string };
 type WireMessage = WireSnapshot | WireLeave;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
 
 function isIdentifier(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -91,7 +90,7 @@ function isVisitSnapshot(value: unknown): value is VisitSnapshot {
 }
 
 function tryParseWire(raw: string): WireMessage | null {
-  if (raw.length > MAX_VISIT_WIRE_MESSAGE_LENGTH) return null;
+  if (raw.length > MAX_REMOTE_WIRE_MESSAGE_LENGTH) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!isRecord(parsed) || parsed['v'] !== WIRE_VERSION) return null;
@@ -115,9 +114,11 @@ function tryParseWire(raw: string): WireMessage | null {
  */
 export function createWebSocketVisitChannel(transport: WebSocketTransport): VisitChannel {
   const listeners = new Set<(event: VisitChannelEvent) => void>();
-  let unsubscribe: (() => void) | null = transport.onMessage((raw) => {
+  let unsubscribe: (() => void) | null = transport.onMessage((raw, senderId) => {
     const msg = tryParseWire(raw);
     if (!msg) return;
+    const hostId = msg.type === SNAPSHOT_TYPE ? msg.snapshot.hostId : msg.hostId;
+    if (senderId !== undefined && senderId !== hostId) return;
     if (msg.type === SNAPSHOT_TYPE) {
       emit({ type: 'snapshot', snapshot: msg.snapshot });
     } else if (msg.type === LEAVE_TYPE) {

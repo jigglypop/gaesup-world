@@ -2,7 +2,6 @@ export type UrlsState = {
   characterUrl?: string;
   vehicleUrl?: string;
   airplaneUrl?: string;
-  wheelUrl?: string;
   ridingUrl?: string;
 };
 

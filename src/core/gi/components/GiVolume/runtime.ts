@@ -1,4 +1,6 @@
+import type { GiRuntime, GiRuntimeParams } from './types';
 import { instantiateGiWasm } from '../../core/giWasm';
+import { probeAtlasLength, takeProbeAtlas } from '../../core/probeAtlas';
 import { ProbeCascade } from '../../core/probeCascade';
 import { createVoxelGrid } from '../../core/voxelGrid';
 import {
@@ -8,8 +10,7 @@ import {
   expandBounds,
   rebuildVoxelGrid,
 } from '../../core/voxelScene';
-import type { Aabb, GiEnvironment, ProbeVolumeConfig, VoxelSourceBox } from '../../types';
-import type { GiRuntime, GiRuntimeParams } from './types';
+import type { Aabb, GiEnvironment, ProbeAtlasUpload, ProbeVolumeConfig, VoxelSourceBox } from '../../types';
 
 const BOUNDS_SNAP = 8;
 const PROBE_HEIGHT_OFFSET = 0.5;
@@ -98,7 +99,7 @@ export function createGiRuntime(
     signature,
     grid,
     cascade,
-    exportBuffers: cascade.levels.map((level) => level.exportFaceData()),
+    spareAtlases: [],
     uploadedVersion: -1,
   };
 }
@@ -116,4 +117,18 @@ export async function attachGiWasm(
   if (!wasm || runtime.cascade.usesWasm) return runtime.cascade.usesWasm;
   runtime.cascade.attachWasm(wasm);
   return true;
+}
+
+/**
+ * Packs every level of the runtime's cascade into half-float atlases for GiIrradiance.updateAtlas, reusing arrays the
+ * renderer handed back (hand them back through `spareAtlases`).
+ */
+export function packRuntimeAtlases(runtime: GiRuntime): ProbeAtlasUpload[] {
+  const uploads = runtime.cascade.levels.map((level) => {
+    const atlas = takeProbeAtlas(runtime.spareAtlases, probeAtlasLength(level.config.counts));
+    level.packAtlas(atlas);
+    return { config: level.config, atlas };
+  });
+  runtime.uploadedVersion = runtime.cascade.version;
+  return uploads;
 }

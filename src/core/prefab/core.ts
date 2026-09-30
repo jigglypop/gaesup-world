@@ -114,6 +114,24 @@ export function validatePrefabDocument(prefab: PrefabDocument): PrefabValidation
   };
 }
 
+export function collectPrefabSubtreeIds(
+  objects: readonly SceneObject[],
+  seedIds: Iterable<SceneObjectId>,
+): Set<SceneObjectId> {
+  const ids = new Set(seedIds);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const object of objects) {
+      if (object.parentId !== undefined && ids.has(object.parentId) && !ids.has(object.id)) {
+        ids.add(object.id);
+        changed = true;
+      }
+    }
+  }
+  return ids;
+}
+
 export function getPrefabRootObjectIds(objects: SceneObject[]): SceneObjectId[] {
   const objectIds = new Set(objects.map((object) => object.id));
   return objects

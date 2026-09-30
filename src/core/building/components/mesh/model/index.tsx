@@ -1,10 +1,18 @@
-import React, { Suspense, useEffect, useMemo } from 'react';
+import { Suspense, useContext, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
-import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
+import { LampRegistryContext } from './lampPool';
+import { AssetBoundary } from '../../../../assets/AssetBoundary';
+import { normalizeImportedMaterials } from '../../../../assets/materialPolicy';
+import { useGLTFAsset } from '../../../../assets/useGLTFAsset';
+import { releaseObject } from '../../../../rendering/release';
+import { castSubtreeNearShadowOnly } from '../../../../rendering/sky/nearShadow';
 import type { BuildingModelFallbackKind } from '../../../types';
+
+const LAMP_INTENSITY = 0.65;
+const LAMP_DISTANCE = 5;
 
 type ModelObjectProps = {
   url?: string;
@@ -12,37 +20,26 @@ type ModelObjectProps = {
   fallbackKind?: BuildingModelFallbackKind;
   scale?: number;
   color?: string;
+  /** `all` cascades, the nearest (`near`, default) or none. */
+  shadow?: 'all' | 'near' | 'none';
 };
 
-type ModelObjectState = {
-  failed: boolean;
-};
-
-class ModelErrorBoundary extends React.Component<
-  { fallback: React.ReactNode; children: React.ReactNode },
-  ModelObjectState
-> {
-  override state: ModelObjectState = { failed: false };
-
-  static getDerivedStateFromError(): ModelObjectState {
-    return { failed: true };
-  }
-
-  override componentDidUpdate(prevProps: { children: React.ReactNode }): void {
-    if (prevProps.children !== this.props.children && this.state.failed) {
-      this.setState({ failed: false });
-    }
-  }
-
-  override render(): React.ReactNode {
-    if (this.state.failed) return this.props.fallback;
-    return this.props.children;
-  }
-}
-
-function LoadedModel({ url }: { url: string }) {
-  const { scene } = useGLTF(url) as { scene: THREE.Object3D };
-  const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
+function LoadedModel({ url, shadow }: { url: string; shadow: NonNullable<ModelObjectProps['shadow']> }) {
+  const { scene } = useGLTFAsset(url);
+  const clone = useMemo(() => {
+    const owned = SkeletonUtils.clone(scene);
+    normalizeImportedMaterials(owned, 'prop');
+    return owned;
+  }, [scene]);
+  useEffect(() => () => releaseObject(clone), [clone]);
+  useEffect(() => {
+    if (shadow === 'near') return castSubtreeNearShadowOnly(clone);
+    clone.traverse((child) => {
+      child.castShadow = shadow === 'all';
+      child.receiveShadow = true;
+    });
+    return undefined;
+  }, [clone, shadow]);
 
   return <primitive object={clone} />;
 }
@@ -65,13 +62,21 @@ function cylinderGeometry(args: [number, number, number, number], position: [num
   );
 }
 
-function FallbackModel({
-  kind = 'generic',
-  color = '#9b7653',
-}: {
+type FallbackProps = {
   kind?: BuildingModelFallbackKind | undefined;
   color?: string | undefined;
-}) {
+};
+
+function FallbackModel({ kind, color }: FallbackProps) {
+  const ref = useRef<THREE.Group>(null);
+  useEffect(() => (ref.current ? castSubtreeNearShadowOnly(ref.current) : undefined), [kind, color]);
+  return <group ref={ref}><FallbackShape kind={kind} color={color} /></group>;
+}
+
+function FallbackShape({
+  kind = 'generic',
+  color = '#9b7653',
+}: FallbackProps) {
   const dark = new THREE.Color(color).multiplyScalar(0.72).getStyle();
   const light = new THREE.Color(color).lerp(new THREE.Color('#ffffff'), 0.35).getStyle();
 
@@ -113,8 +118,11 @@ function FallbackModel({
     return (
       <group>
         {cylinderGeometry([0.06, 0.08, 1.5, 12], [0, 0.75, 0], dark, 'pole')}
-        {cylinderGeometry([0.28, 0.18, 0.35, 16], [0, 1.55, 0], color, 'shade')}
-        <pointLight position={[0, 1.55, 0]} intensity={0.65} distance={5} color={light} />
+        <mesh position={[0, 1.55, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.28, 0.18, 0.35, 16]} />
+          <meshStandardMaterial color={color} emissive={light} emissiveIntensity={0.6} roughness={0.7} metalness={0.05} />
+        </mesh>
+        <LampLight color={light} />
       </group>
     );
   }
@@ -179,21 +187,32 @@ function FallbackModel({
   return boxGeometry([1, 1, 1], [0, 0.5, 0], color, 'generic');
 }
 
-export default function ModelObject({ url, label, fallbackKind, scale = 1, color }: ModelObjectProps) {
+/** Inside a building world the lamp borrows a pooled light; standalone it owns one. */
+function LampLight({ color }: { color: string }) {
+  const registry = useContext(LampRegistryContext);
+  const anchor = useRef<THREE.Group>(null);
+  useLayoutEffect(() => {
+    const object = anchor.current;
+    if (!registry || !object) return undefined;
+    return registry.add({ object, color: new THREE.Color(color), intensity: LAMP_INTENSITY, distance: LAMP_DISTANCE });
+  }, [registry, color]);
+  return (
+    <group ref={anchor} position={[0, 1.55, 0]}>
+      {!registry && <pointLight intensity={LAMP_INTENSITY} distance={LAMP_DISTANCE} color={color} />}
+    </group>
+  );
+}
+
+export default function ModelObject({ url, label, fallbackKind, scale = 1, color, shadow = 'near' }: ModelObjectProps) {
   const fallback = <FallbackModel kind={fallbackKind} color={color} />;
-
-  useEffect(() => {
-    if (url) useGLTF.preload(url);
-  }, [url]);
-
   return (
     <group name={label ?? 'building-model-object'} scale={[scale, scale, scale]}>
       {url ? (
-        <ModelErrorBoundary fallback={fallback}>
+        <AssetBoundary source={url} fallback={fallback}>
           <Suspense fallback={fallback}>
-            <LoadedModel url={url} />
+            <LoadedModel url={url} shadow={shadow} />
           </Suspense>
-        </ModelErrorBoundary>
+        </AssetBoundary>
       ) : fallback}
     </group>
   );

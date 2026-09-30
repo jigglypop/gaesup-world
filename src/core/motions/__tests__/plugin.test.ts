@@ -1,3 +1,4 @@
+import { createMemoryInputBackend } from '../../interactions/core';
 import { createPluginRegistry } from '../../plugins';
 import { PhysicsBridge } from '../bridge/PhysicsBridge';
 import {
@@ -144,29 +145,7 @@ describe('motions plugin', () => {
   it('uses custom physics and input factories when provided', async () => {
     const registry = createPluginRegistry();
     const physicsBridge = new PhysicsBridge();
-    const inputAdapter = {
-      getKeyboard: () => ({
-        forward: true,
-        backward: false,
-        leftward: false,
-        rightward: false,
-        shift: false,
-        space: false,
-        keyZ: false,
-        keyR: false,
-        keyF: false,
-        keyE: false,
-        escape: false,
-      }),
-      getMouse: () => ({
-        target: { x: 0, y: 0, z: 0 },
-        angle: 0,
-        isActive: false,
-        shouldRun: false,
-      }),
-      updateKeyboard: jest.fn(),
-      updateMouse: jest.fn(),
-    };
+    const inputAdapter = createMemoryInputBackend({ keyboard: { forward: true } });
     registry.register(createMotionsPlugin({
       createPhysicsBridge: () => physicsBridge,
       createInputAdapter: () => inputAdapter,

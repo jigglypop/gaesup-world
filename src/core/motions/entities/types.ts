@@ -14,7 +14,10 @@ import {
 import * as THREE from 'three';
 
 import type { AnimatorControllerDefinition } from '@core/animation/core/animator/types';
+import type { ImportedMaterialPolicy } from '@core/assets/materialPolicy';
 import type { CollisionUserData } from '@core/boilerplate/hooks/useCollisionHandler';
+
+import type { CharacterBoneAttachment } from '../../character/attachments';
 
 export type Part = {
   id?: string;
@@ -23,6 +26,8 @@ export type Part = {
   color?: string;
   /** Base-model node names to hide while this part is equipped (from asset `hideBodyRegions`). */
   hideNodeNames?: string[];
+  /** Rigid parts follow this named bone; omit for shared-skeleton garments. */
+  attachment?: CharacterBoneAttachment;
 };
 
 export type ModelRendererProps = {
@@ -33,20 +38,8 @@ export type ModelRendererProps = {
   offset ? : THREE.Vector3;
 }
 
-export type PartsGroupRefProps = {
-  url: string;
-  isActive: boolean;
-  componentType: string;
-  currentAnimation ? : string;
-  color ? : string;
-  skeleton ? : THREE.Skeleton | null;
-}
+export type { PartsGroupRefProps } from './refs/types';
 
-export type riderRefType = {
-  url: string;
-  children ? : React.ReactNode;
-  offset ? : THREE.Vector3;
-}
 export type GroundRay = {
   origin: THREE.Vector3;
   direction: THREE.Vector3;
@@ -59,8 +52,6 @@ export type PhysicsEntityProps = {
   onReady ? : () => void;
   onFrame ? : () => void;
   onDestroy ? : () => void;
-  /** @deprecated Use onDestroy. */
-  onDestory ? : () => void;
   onAnimate ? : () => void;
   url: string;
   name ? : string;
@@ -71,8 +62,12 @@ export type PhysicsEntityProps = {
   colliderSize?: { height: number; radius: number };
   isActive: boolean;
   componentType: string;
+  /** Background characters: the animation only advances while this radius around the model is in view. */
+  animationCullRadius?: number;
   rigidbodyType ? : RigidBodyTypeString;
   groundRay ? : GroundRay;
+  /** Additional support policy for detection-only or one-way physics contacts. */
+  groundContactFilter?: (actor: RapierCollider, support: RapierCollider) => boolean;
   rigidBodyProps ? : RigidBodyProps;
   parts ? : Part[];
   /**
@@ -80,6 +75,10 @@ export type PhysicsEntityProps = {
    * Useful when you want per-entity coloring without adding a separate "part" GLTF.
    */
   baseColor?: string;
+  /** Preserve the authored GLTF hierarchy, transforms and materials for imported rigs. */
+  modelHierarchy?: boolean;
+  /** How the model's imported materials are adjusted; `'figure'` draws generated characters matte. Default `'keep'`. */
+  materialPolicy?: ImportedMaterialPolicy;
   /**
    * Hide specific mesh nodes from the base model renderer.
    * Useful when a "part" GLB includes an overlapping mesh (prevents z-fighting/ghosting).
@@ -92,6 +91,8 @@ export type PhysicsEntityProps = {
   outerGroupRef ? : RefObject < THREE.Group > ;
   innerGroupRef ? : RefObject < THREE.Group > ;
   children ? : ReactNode;
+  /** Physical attachments stay outside the interpolated visual hierarchy. */
+  colliderChildren?: ReactNode;
   userData ? : CollisionUserData;
   sensor ? : boolean;
   onIntersectionEnter ? : (payload: CollisionPayload) => void;
@@ -103,8 +104,7 @@ export type PhysicsEntityProps = {
   ridingUrl ? : string;
   offset ? : THREE.Vector3;
   /**
-   * 모델 자체의 전방축이 뒤집혀있는(GLTF 전방 -Z) 경우 보정용 yaw 오프셋
-   * - 기본값: componentType === 'character' ? Math.PI : 0 (InnerGroupRef에서 처리)
+   * Yaw correction for a model whose front is not glTF's +Z (for example `Math.PI` for a model facing -Z). Default 0.
    */
   modelYawOffset?: number;
   currentAnimation ? : string;

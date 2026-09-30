@@ -1,42 +1,36 @@
-import { StrictMode } from 'react';
+import { StrictMode, type ReactNode } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import { renderHook } from '@testing-library/react';
 import * as THREE from 'three';
 
+import { frameScheduler } from '@core/runtime/frame';
+
+import type { AnimationBridge } from '../../../animation/bridge/AnimationBridge';
 import { getGlobalAnimationBridge } from '../../../animation/hooks/useAnimationBridge';
-import { CHARACTER_ANIMATOR_FRAME_PRIORITY, useCharacterAnimator } from '../useCharacterAnimator';
+import { GaesupRuntimeProvider } from '../../../runtime/context';
+import { createGaesupRuntime } from '../../../runtime/createGaesupRuntime';
+import { useCharacterAnimator } from '../useCharacterAnimator';
 import { getGlobalStateManager } from '../useStateSystem';
 
-jest.mock('@react-three/fiber', () => ({ useFrame: jest.fn() }));
-
-type FrameCallback = (state: object, delta: number) => void;
-
-const mockUseFrame = jest.mocked(useFrame);
-
-function registerCharacterClips(names: string[]) {
+function registerCharacterClips(names: string[], target: AnimationBridge = getGlobalAnimationBridge()) {
   const root = new THREE.Object3D();
   const mixer = new THREE.AnimationMixer(root);
   const actions: Record<string, THREE.AnimationAction> = {};
   names.forEach((name) => {
     actions[name] = mixer.clipAction(new THREE.AnimationClip(name, 1, []));
   });
-  getGlobalAnimationBridge().registerAnimations('character', actions);
+  target.registerAnimations('character', actions);
   return actions;
 }
 
 function runFrames(frames: number, delta: number) {
-  const callbacks = mockUseFrame.mock.calls.map((call) => call[0] as FrameCallback);
-  for (let i = 0; i < frames; i++) {
-    callbacks.forEach((callback) => callback({}, delta));
-  }
+  for (let i = 0; i < frames; i++) frameScheduler.tick(delta, i * delta * 1000);
 }
 
 describe('useCharacterAnimator', () => {
   const bridge = getGlobalAnimationBridge();
 
   beforeEach(() => {
-    mockUseFrame.mockClear();
     getGlobalStateManager().resetGameStates();
     bridge.unregisterAnimations('character');
   });
@@ -52,7 +46,7 @@ describe('useCharacterAnimator', () => {
       initialProps: { enabled: true },
     });
     expect(bridge.getAnimator('character')?.controllerId).toBe('gaesup.character');
-    expect(mockUseFrame).toHaveBeenCalledWith(expect.any(Function), CHARACTER_ANIMATOR_FRAME_PRIORITY);
+    expect(frameScheduler.count('animation')).toBe(1);
     view.rerender({ enabled: false });
     expect(bridge.getAnimator('character')).toBeNull();
     view.unmount();
@@ -135,5 +129,25 @@ describe('useCharacterAnimator', () => {
     runFrames(1, 0.5);
     expect(actions['pose']!.time).toBeCloseTo(0.5);
     view.unmount();
+  });
+
+  test('runtime이 있으면 runtime 상태와 브리지로 구동하고 전역 브리지는 건드리지 않는다', async () => {
+    const runtime = createGaesupRuntime();
+    await runtime.setup();
+    const runtimeBridge = runtime.animationBridge;
+    registerCharacterClips(['idle', 'walk', 'run'], runtimeBridge);
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <GaesupRuntimeProvider runtime={runtime}>{children}</GaesupRuntimeProvider>
+    );
+    const view = renderHook(() => useCharacterAnimator({ enabled: true }), { wrapper });
+    try {
+      expect(bridge.getAnimator('character')).toBeNull();
+      runtime.stateManager.updateGameStates({ isMoving: true, isNotMoving: false });
+      runFrames(60, 1 / 60);
+      expect(runtimeBridge.snapshot('character')?.currentAnimation).toBe('walk');
+    } finally {
+      view.unmount();
+      await runtime.dispose();
+    }
   });
 });

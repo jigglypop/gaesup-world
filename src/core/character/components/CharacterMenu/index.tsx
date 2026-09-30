@@ -29,6 +29,7 @@ import type {
   CharacterPreviewMode,
 } from './types';
 import { useCharacterMenuController } from './useCharacterMenuController';
+import { WorldInputSurface } from '../../../input/WorldInputSurface';
 import './styles.css';
 
 function renderSection(
@@ -150,7 +151,7 @@ function renderRoot(
 export function CharacterMenu(props: CharacterMenuProps = {}) {
   const context = useCharacterMenuController(props);
   if (!context.isOpen) return null;
-  return <>{renderRoot(context, props.renderers, props.children)}</>;
+  return <WorldInputSurface tabIndex={-1} style={{ display: 'contents' }}>{renderRoot(context, props.renderers, props.children)}</WorldInputSurface>;
 }
 export {
   CHARACTER_MENU_DEFAULT_FEATURES,

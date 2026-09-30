@@ -1,4 +1,5 @@
 import { StrictMode } from 'react';
+
 import { act, renderHook } from '@testing-library/react';
 import { Vector3 } from 'three';
 

@@ -1,16 +1,20 @@
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
+import {
+  clearGroundContact,
+  readGroundContact,
+  reportGroundContact,
+} from '@/core/motions/core/system/groundContacts';
 import { MotionSystem } from '@/core/motions/core/system/MotionSystem';
 import { MotionType } from '@/core/motions/core/system/types';
 import { GameStatesType } from '@/core/world/components/Rideable/types';
-import { ValidateCommand } from '@core/boilerplate';
-import { CoreBridge, DomainBridge, EnableEventLog } from '@core/boilerplate';
-import { DIContainer } from '@core/boilerplate';
+import { CoreBridge } from '@core/boilerplate';
 
 import { MotionCommand, MotionEntity, MotionSnapshot } from './types';
 
 const GROUNDED_VERTICAL_SPEED = 0.25;
+const UP = new THREE.Vector3(0, 1, 0);
 
 function createCommandGameStates(): GameStatesType {
   return {
@@ -26,14 +30,16 @@ function createCommandGameStates(): GameStatesType {
   };
 }
 
-@DomainBridge('motion')
-@EnableEventLog()
 export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, MotionCommand> {
   private tempQuaternion = new THREE.Quaternion();
   private readonly commandGameStates = createCommandGameStates();
   private readonly syncPosition = new THREE.Vector3();
   private readonly syncVelocity = new THREE.Vector3();
   private playerEntityId: string | null = null;
+
+  constructor() {
+    super({ eventLog: true });
+  }
 
   private createEmptySnapshot(type: MotionType): MotionSnapshot {
     return {
@@ -67,32 +73,41 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
     void _;
     if (!type || !rigidBody) return null;
     const system = new MotionSystem({ type });
-    DIContainer.getInstance().injectProperties(system);
     return {
       system,
       rigidBody,
       type,
-      grounded: null,
       dispose: () => system.dispose()
     };
   }
 
-  @ValidateCommand()
   protected executeCommand(entity: MotionEntity, command: MotionCommand, entityId: string): void {
     const { system, rigidBody } = entity;
     switch (command.type) {
+      // Ground bodies steer in the plane with the configured speed; only airplanes steer vertically.
       case 'move':
         if (command.data?.movement) {
-          system.applyForce(command.data.movement, rigidBody);
+          this.syncEntity(entity, entityId);
+          const config = this.getOrCreateSnapshot(entityId, entity.type).config;
+          system.applyForce(command.data.movement, rigidBody, config, entity.type !== 'airplane');
         }
         break;
+      // A grounded body leaves the ground at `jumpForce` m/s and keeps its horizontal speed.
       case 'jump': {
-        this.syncEntity(entity);
+        this.syncEntity(entity, entityId);
         const jumpSpeed = this.getOrCreateSnapshot(entityId, entity.type).config.jumpForce;
-        const jumpForce = system.calculateJump({ jumpSpeed }, this.commandGameStates);
-        if (jumpForce.length() > 0) {
-          system.applyForce(jumpForce, rigidBody);
+        const jump = system.calculateJump({ jumpSpeed }, this.commandGameStates);
+        if (jump.y > 0) {
+          const velocity = rigidBody.linvel();
+          rigidBody.setLinvel({ x: velocity.x, y: jump.y, z: velocity.z }, true);
         }
+        break;
+      }
+      // Faces the body toward yaw `direction` (radians about +Y).
+      case 'turn': {
+        const yaw = command.data?.direction;
+        if (typeof yaw !== 'number' || !Number.isFinite(yaw)) break;
+        rigidBody.setRotation(this.tempQuaternion.setFromAxisAngle(UP, yaw), true);
         break;
       }
       case 'stop':
@@ -101,6 +116,7 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
         break;
       case 'reset':
         system.reset();
+        reportGroundContact(entityId, false);
         rigidBody.setTranslation({ x: 0, y: 0, z: 0 }, true);
         rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
         break;
@@ -131,7 +147,7 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
     this.tempQuaternion.set(r.x, r.y, r.z, r.w);
     snapshot.rotation.setFromQuaternion(this.tempQuaternion);
 
-    system.syncFromBody(snapshot.position, snapshot.velocity, this.resolveGrounded(entity, v.y));
+    system.syncFromBody(snapshot.position, snapshot.velocity, this.resolveGrounded(entityId, v.y));
     const state = system.getState();
     snapshot.isGrounded = state.isGrounded;
     snapshot.isMoving = state.isMoving;
@@ -149,35 +165,33 @@ export class MotionBridge extends CoreBridge<MotionEntity, MotionSnapshot, Motio
   }
 
   reportGrounded(entityId: string, grounded: boolean): void {
-    const entity = this.getEngine(entityId);
-    if (entity) entity.grounded = grounded;
+    reportGroundContact(entityId, grounded);
   }
 
-  private resolveGrounded(entity: MotionEntity, verticalVelocity: number): boolean {
-    return entity.grounded ?? Math.abs(verticalVelocity) < GROUNDED_VERTICAL_SPEED;
+  private resolveGrounded(entityId: string, verticalVelocity: number): boolean {
+    return readGroundContact(entityId) ?? Math.abs(verticalVelocity) < GROUNDED_VERTICAL_SPEED;
   }
 
-  private syncEntity(entity: MotionEntity): void {
+  private syncEntity(entity: MotionEntity, entityId: string): void {
     const t = entity.rigidBody.translation();
     const v = entity.rigidBody.linvel();
     this.syncPosition.set(t.x, t.y, t.z);
     this.syncVelocity.set(v.x, v.y, v.z);
-    entity.system.syncFromBody(this.syncPosition, this.syncVelocity, this.resolveGrounded(entity, v.y));
+    entity.system.syncFromBody(this.syncPosition, this.syncVelocity, this.resolveGrounded(entityId, v.y));
   }
 
   setPlayerEntity(entityId: string | null): void {
     this.playerEntityId = entityId;
   }
 
+  /** The entity the local player drives; null while none is mounted (edit mode), never some other entity. */
   getPlayerEntityId(): string | null {
-    if (this.playerEntityId !== null && this.engines.has(this.playerEntityId)) return this.playerEntityId;
-    if (this.playerEntityId !== null) return null;
-    for (const id of this.engines.keys()) return id;
-    return null;
+    return this.playerEntityId !== null && this.engines.has(this.playerEntityId) ? this.playerEntityId : null;
   }
 
   override unregister(id: string): void {
     super.unregister(id);
+    clearGroundContact(id);
     if (this.playerEntityId === id) this.playerEntityId = null;
   }
 

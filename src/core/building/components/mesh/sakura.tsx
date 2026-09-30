@@ -1,13 +1,22 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { createToonMaterial, getDefaultToonMode } from '@core/rendering/toon';
-import { useWeatherStore } from '@core/weather/stores/weatherStore';
+import { windSway } from '@core/weather/core/field';
 
-import { getFrameElapsedSeconds } from '../../../boilerplate/hooks/frameTime';
+import { CompileGate } from '../../../rendering/CompileGate';
+import { rendererKind } from '../../../rendering/webgpu';
+import { useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
 import type { BuildingTreeKind } from '../../types';
+import { useInstanceCapacity } from '../BuildingBatches/capacity';
+
+// WebGPU draws points one pixel wide and cannot run the GLSL falling petals; there the petals are node sprites.
+const NodeTreeParticles = lazy(() => import('./NodeTreeParticles'));
+
+const SAKURA_BATCH_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:sakura-batch' };
+const SAKURA_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:sakura' };
 
 type SakuraProps = { size?: number; toon?: boolean };
 
@@ -69,8 +78,8 @@ function getSharedMaterials(toon: boolean): SakuraMatSet {
       _sharedMatToon = {
         bark: createToonMaterial({ color: '#5e3d30', steps: 3 }),
         barkDark: createToonMaterial({ color: '#3f271e', steps: 3 }),
-        blossomShell: createToonMaterial({ color: '#f7bfd2', transparent: true, opacity: 0.78, steps: 4, depthWrite: false }),
-        blossomCore: createToonMaterial({ color: '#ffe6f0', transparent: true, opacity: 0.6, steps: 4, depthWrite: false }),
+        blossomShell: createToonMaterial({ color: '#f7bfd2', steps: 4 }),
+        blossomCore: createToonMaterial({ color: '#ffe6f0', steps: 4 }),
       };
     }
     return _sharedMatToon;
@@ -79,8 +88,8 @@ function getSharedMaterials(toon: boolean): SakuraMatSet {
     _sharedMatPbr = {
       bark: new THREE.MeshStandardMaterial({ color: '#5e3d30', roughness: 0.95, metalness: 0.02 }),
       barkDark: new THREE.MeshStandardMaterial({ color: '#3f271e', roughness: 1, metalness: 0.01 }),
-      blossomShell: new THREE.MeshStandardMaterial({ color: '#f7bfd2', roughness: 0.92, metalness: 0.0, transparent: true, opacity: 0.68 }),
-      blossomCore: new THREE.MeshStandardMaterial({ color: '#ffe6f0', roughness: 0.84, metalness: 0.0, transparent: true, opacity: 0.5 }),
+      blossomShell: new THREE.MeshStandardMaterial({ color: '#f7bfd2', roughness: 0.92, metalness: 0.0 }),
+      blossomCore: new THREE.MeshStandardMaterial({ color: '#ffe6f0', roughness: 0.84, metalness: 0.0 }),
     };
   }
   return _sharedMatPbr;
@@ -326,7 +335,18 @@ type TreeSpec = {
 
 const _defaultBlossom = new THREE.Color('#f7bfd2');
 const _defaultBark = new THREE.Color('#5e3d30');
+/** The shared materials' colors (see `getSharedMaterials`). */
+const _darkBark = new THREE.Color('#3f271e');
+const _coreBlossom = new THREE.Color('#ffe6f0');
 const _white = new THREE.Color('#ffffff');
+const _barkCol = new THREE.Color();
+const _darkCol = new THREE.Color();
+const _shellCol = new THREE.Color();
+const _coreCol = new THREE.Color();
+
+/** `out` such that `base * out = target`. */
+const ratio = (out: THREE.Color, target: THREE.Color, base: THREE.Color) =>
+  out.setRGB(target.r / base.r, target.g / base.g, target.b / base.b);
 
 const TREE_PRESETS: Record<BuildingTreeKind, {
   canopyColor: string;
@@ -412,7 +432,16 @@ void main() {
 }
 `;
 
+function sakuraBatchSignature(trees: SakuraTreeEntry[]): string {
+  let signature = `${trees.length}`;
+  for (const tree of trees) {
+    signature += `|${tree.position[0]},${tree.position[1]},${tree.position[2]},${tree.size},${tree.treeKind ?? ''},${tree.blossomColor ?? ''},${tree.barkColor ?? ''}`;
+  }
+  return signature;
+}
+
 export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: boolean }) {
+  const nodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
   const barkRef = useRef<THREE.InstancedMesh>(null!);
   const darkRef = useRef<THREE.InstancedMesh>(null!);
   const topRef = useRef<THREE.InstancedMesh>(null!);
@@ -423,7 +452,12 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
   const useToon = toon ?? getDefaultToonMode();
   const geo = getSharedGeometry();
   const mat = getSharedMaterials(useToon);
-  const specs = useMemo(() => computeSpecs(trees), [trees]);
+  // The building regroups every object on any edit; unchanged trees keep their specs, geometry and pipelines.
+  const signature = useMemo(() => sakuraBatchSignature(trees), [trees]);
+  const stableTreesRef = useRef({ signature, trees });
+  if (stableTreesRef.current.signature !== signature) stableTreesRef.current = { signature, trees };
+  const stableTrees = stableTreesRef.current.trees;
+  const specs = useMemo(() => computeSpecs(stableTrees), [stableTrees]);
 
   const counts = useMemo(() => {
     let bark = 0, dark = 0, cluster = 0, canopy = 0, ground = 0, falling = 0;
@@ -437,6 +471,12 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
     }
     return { bark, dark, top: specs.length, cluster, canopy, ground, falling };
   }, [specs]);
+  // Capacities with headroom: a new tree fills a free slot instead of rebuilding the meshes, and with them the
+  // shaders, whose instance buffers are sized by capacity.
+  const barkCapacity = useInstanceCapacity(counts.bark);
+  const darkCapacity = useInstanceCapacity(counts.dark);
+  const topCapacity = useInstanceCapacity(counts.top);
+  const clusterCapacity = useInstanceCapacity(counts.cluster);
 
   const avgScale = useMemo(() => {
     if (specs.length === 0) return 1;
@@ -516,31 +556,29 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
       const tp = s.pos;
       const barkTint = s.bark !== _defaultBark;
       const blossomTint = s.blossom !== _defaultBlossom;
+      // Instance colors multiply the shared material's own color, so a tint is written as its ratio to that color.
+      const barkColor = barkTint ? ratio(_barkCol, s.bark, _defaultBark) : _white;
+      const darkColor = barkTint ? ratio(_darkCol, _tmpCol.copy(s.bark).multiplyScalar(0.65), _darkBark) : _white;
+      const shellColor = blossomTint ? ratio(_shellCol, s.blossom, _defaultBlossom) : _white;
+      const coreColor = blossomTint ? ratio(_coreCol, _tmpCol.copy(s.blossom).lerp(_white, 0.4), _coreBlossom) : _white;
 
       composeInstance(barkRef.current, bi, tp,
         [0, s.trunkHeight * 0.5, 0], [0.02, 0, -0.04],
         [0, 0, 0], null, [0.3 * s.scale, s.trunkHeight, 0.3 * s.scale]);
-      if (hasCustomColor) {
-        barkRef.current.setColorAt(bi, barkTint ? s.bark : _defaultBark);
-      }
+      if (hasCustomColor) barkRef.current.setColorAt(bi, barkColor);
       bi++;
 
       composeInstance(topRef.current, ti, tp,
         [0, s.trunkHeight * 0.5, 0], [0.02, 0, -0.04],
         [0, s.trunkHeight * 0.48, 0], null, [0.24 * s.scale, 0.32 * s.scale, 0.24 * s.scale]);
-      if (hasCustomColor) {
-        const tc = barkTint ? _tmpCol.copy(s.bark).multiplyScalar(0.65) : _tmpCol.set('#3f271e');
-        topRef.current.setColorAt(ti, tc);
-      }
+      if (hasCustomColor) topRef.current.setColorAt(ti, darkColor);
       ti++;
 
       for (const b of s.branches) {
         composeInstance(barkRef.current, bi, tp,
           [0, b.pivotY, 0], [b.lean, b.yaw, b.bend],
           [0, b.length * 0.5, 0], null, [b.radius, b.length, b.radius]);
-        if (hasCustomColor) {
-          barkRef.current.setColorAt(bi, barkTint ? s.bark : _defaultBark);
-        }
+        if (hasCustomColor) barkRef.current.setColorAt(bi, barkColor);
         bi++;
       }
 
@@ -548,10 +586,7 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
         composeInstance(darkRef.current, di, tp,
           [0, 0.14 * s.scale, 0], [0, r.angle, r.spread],
           [0, r.length * 0.22, 0], null, [r.radius, r.length, r.radius]);
-        if (hasCustomColor) {
-          const dc = barkTint ? _tmpCol.copy(s.bark).multiplyScalar(0.65) : _tmpCol.set('#3f271e');
-          darkRef.current.setColorAt(di, dc);
-        }
+        if (hasCustomColor) darkRef.current.setColorAt(di, darkColor);
         di++;
       }
       for (const b of s.branches) {
@@ -559,26 +594,16 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
           [0, b.pivotY, 0], [b.lean, b.yaw, b.bend],
           [0, b.length * 0.76, 0], [b.twigLean, b.twigYaw, b.bend * -0.42],
           [b.radius * 0.52, b.twigLength, b.radius * 0.52]);
-        if (hasCustomColor) {
-          const dc = barkTint ? _tmpCol.copy(s.bark).multiplyScalar(0.65) : _tmpCol.set('#3f271e');
-          darkRef.current.setColorAt(di, dc);
-        }
+        if (hasCustomColor) darkRef.current.setColorAt(di, darkColor);
         di++;
       }
 
       for (const c of s.clusters) {
         composeSimple(shellRef.current, si, tp, c.position, c.rotation, c.outerScale);
-        if (hasCustomColor) {
-          shellRef.current.setColorAt(si, blossomTint ? s.blossom : _defaultBlossom);
-        }
+        if (hasCustomColor) shellRef.current.setColorAt(si, shellColor);
         si++;
         composeSimple(coreRef.current, ci, tp, c.position, c.rotation, c.innerScale);
-        if (hasCustomColor) {
-          const cc = blossomTint
-            ? _tmpCol.copy(s.blossom).lerp(_white, 0.4)
-            : _tmpCol.set('#ffe6f0');
-          coreRef.current.setColorAt(ci, cc);
-        }
+        if (hasCustomColor) coreRef.current.setColorAt(ci, coreColor);
         ci++;
       }
     }
@@ -586,6 +611,7 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
     for (const [ref, count] of [[barkRef, bi], [darkRef, di], [topRef, ti], [shellRef, si], [coreRef, ci]] as const) {
       ref.current.count = count as number;
       ref.current.instanceMatrix.needsUpdate = true;
+      ref.current.computeBoundingSphere();
       if (hasCustomColor && ref.current.instanceColor) {
         ref.current.instanceColor.needsUpdate = true;
       }
@@ -597,7 +623,7 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
     fallingGeo.dispose(); fallingMat.dispose();
   }, [canopyGeo, groundGeo, fallingGeo, fallingMat]);
 
-  useFrame((state) => {
+  useSharedFrame(SAKURA_BATCH_FRAME, (_, elapsedSeconds, three) => {
     const points = fallingRef.current;
     if (!points) return;
     const parent = points.parent;
@@ -606,37 +632,42 @@ export function SakuraBatch({ trees, toon }: { trees: SakuraTreeEntry[]; toon?: 
     if (m?.uniforms) {
       const uTime = m.uniforms['uTime'];
       const uScale = m.uniforms['uScale'];
-      const w = useWeatherStore.getState().current;
-      const intensity = w?.intensity ?? 0;
-      const base =
-        w?.kind === 'storm' ? 2.4 :
-        w?.kind === 'rain'  ? 1.6 :
-        w?.kind === 'snow'  ? 1.2 :
-        w?.kind === 'cloudy'? 1.1 :
-                              0.9;
       const uWind = m.uniforms['uWind'];
-      if (uTime) uTime.value = getFrameElapsedSeconds(state);
-      if (uScale) uScale.value = state.gl.domElement.height * 0.5;
-      if (uWind) uWind.value = base + intensity * 0.7;
+      if (uTime) uTime.value = elapsedSeconds;
+      if (uScale) uScale.value = three.gl.domElement.height * 0.5;
+      if (uWind) uWind.value = windSway();
     }
-  });
+  }, !nodes);
 
   if (specs.length === 0) return null;
 
   return (
     <>
-      <instancedMesh ref={barkRef} args={[geo.limb, mat.bark, counts.bark]} castShadow />
-      <instancedMesh ref={darkRef} args={[geo.limb, mat.barkDark, counts.dark]} />
-      <instancedMesh ref={topRef} args={[geo.trunkTop, mat.barkDark, counts.top]} castShadow />
-      <instancedMesh ref={shellRef} args={[geo.canopyCluster, mat.blossomShell, counts.cluster]} castShadow />
-      <instancedMesh ref={coreRef} args={[geo.canopyCore, mat.blossomCore, counts.cluster]} />
-      <points geometry={canopyGeo}>
-        <pointsMaterial size={0.08 * avgScale} sizeAttenuation vertexColors transparent opacity={0.82} depthWrite={false} />
-      </points>
-      <points ref={fallingRef} geometry={fallingGeo} material={fallingMat} frustumCulled={false} />
-      <points geometry={groundGeo}>
-        <pointsMaterial size={0.085 * avgScale} sizeAttenuation vertexColors transparent opacity={0.7} depthWrite={false} />
-      </points>
+      <instancedMesh ref={barkRef} args={[geo.limb, mat.bark, barkCapacity]} castShadow />
+      <instancedMesh ref={darkRef} args={[geo.limb, mat.barkDark, darkCapacity]} />
+      <instancedMesh ref={topRef} args={[geo.trunkTop, mat.barkDark, topCapacity]} castShadow />
+      <instancedMesh ref={shellRef} args={[geo.canopyCluster, mat.blossomShell, clusterCapacity]} castShadow />
+      <instancedMesh ref={coreRef} args={[geo.canopyCore, mat.blossomCore, clusterCapacity]} />
+      {nodes ? (
+        // Size and opacity are uniforms and another tree only swaps instance buffers, so the gate compiles them once.
+        <Suspense fallback={null}>
+          <CompileGate>
+            <NodeTreeParticles geometry={canopyGeo} size={0.08 * avgScale} opacity={0.82} />
+            <NodeTreeParticles geometry={fallingGeo} size={1} opacity={0.88} falling />
+            <NodeTreeParticles geometry={groundGeo} size={0.085 * avgScale} opacity={0.7} />
+          </CompileGate>
+        </Suspense>
+      ) : (
+        <>
+          <points geometry={canopyGeo}>
+            <pointsMaterial size={0.08 * avgScale} sizeAttenuation vertexColors transparent opacity={0.82} depthWrite={false} />
+          </points>
+          <points ref={fallingRef} geometry={fallingGeo} material={fallingMat} frustumCulled={false} />
+          <points geometry={groundGeo}>
+            <pointsMaterial size={0.085 * avgScale} sizeAttenuation vertexColors transparent opacity={0.7} depthWrite={false} />
+          </points>
+        </>
+      )}
     </>
   );
 }
@@ -747,16 +778,15 @@ export default function Sakura({ size = 4, toon }: SakuraProps) {
 
   useEffect(() => () => { canopyGeo.dispose(); groundGeo.dispose(); fallingGeo.dispose(); fallingMat.dispose(); }, [canopyGeo, groundGeo, fallingGeo, fallingMat]);
 
-  useFrame((state) => {
+  useSharedFrame(SAKURA_FRAME, (_, elapsed, three) => {
     const parent = fallingRef.current?.parent;
     if (parent && !parent.visible) return;
-    const elapsed = getFrameElapsedSeconds(state);
     const m = fallingRef.current?.material as THREE.ShaderMaterial | undefined;
     if (m?.uniforms) {
       const uTime = m.uniforms['uTime'];
       const uScale = m.uniforms['uScale'];
       if (uTime) uTime.value = elapsed;
-      if (uScale) uScale.value = state.gl.domElement.height * 0.5;
+      if (uScale) uScale.value = three.gl.domElement.height * 0.5;
     }
     if (crownRef.current) {
       crownRef.current.rotation.z = Math.sin(elapsed * 0.42 + scale) * 0.028;

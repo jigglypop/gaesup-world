@@ -3,34 +3,36 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { DialogBox } from '../components/DialogBox';
 import { getDialogRegistry } from '../registry/DialogRegistry';
 import { useDialogStore } from '../stores/dialogStore';
-import { useInventoryStore } from '../../inventory/stores/inventoryStore';
 
 afterEach(() => { useDialogStore.getState().close(); });
 
 test.each(['click', 'key'] as const)('a stale conditional choice never executes the following choice via %s', (input) => {
-  const inventory = useInventoryStore.getState().serialize();
+  let hasWood = true;
   const effect = jest.fn();
   getDialogRegistry().register({ id: 'conditional-input', startId: 'a', nodes: {
     a: { id: 'a', text: '', choices: [
-      { text: '목재 전달', condition: { type: 'hasItem', itemId: 'wood' }, effects: [{ type: 'custom', key: 'deliver' }] },
+      { text: '목재 전달', condition: { type: 'custom', key: 'hasWood' }, effects: [{ type: 'custom', key: 'deliver' }] },
       { text: '다른 행동', effects: [{ type: 'custom', key: 'other' }] },
     ] },
   } });
   const view = render(<DialogBox />);
   try {
-    useInventoryStore.getState().add('wood', 1);
-    act(() => { useDialogStore.getState().start('conditional-input', { onCustomEffect: effect }); });
+    act(() => {
+      useDialogStore.getState().start('conditional-input', {
+        onCustomEffect: effect,
+        evaluateCondition: (condition) => condition.key === 'hasWood' && hasWood,
+      });
+    });
     expect(screen.getByRole('button', { name: /목재 전달/ })).toBeInTheDocument();
-    useInventoryStore.getState().removeById('wood', useInventoryStore.getState().countOf('wood'));
+    hasWood = false;
     if (input === 'click') fireEvent.click(screen.getByRole('button', { name: /목재 전달/ }));
     else fireEvent.keyDown(window, { key: '1' });
     expect(effect).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /목재 전달/ })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /다른 행동/ }));
-    expect(effect).toHaveBeenCalledWith({ type: 'custom', key: 'other' });
+    expect(effect).toHaveBeenCalledWith({ type: 'custom', key: 'other' }, {});
   } finally {
     view.unmount();
-    useInventoryStore.getState().hydrate(inventory);
   }
 });
 
@@ -73,17 +75,15 @@ test('pointer controls advance and close without a physical keyboard', () => {
 });
 
 test('when every choice is unavailable, next follows the fallback and allows the conversation to end', () => {
-  const inventory = useInventoryStore.getState().serialize();
   getDialogRegistry().register({ id: 'unavailable-choices', startId: 'a', nodes: {
     a: { id: 'a', text: '목재가 필요해요', next: 'b', choices: [
-      { text: '목재 건네기', condition: { type: 'hasItem', itemId: 'wood' }, next: null },
+      { text: '목재 건네기', condition: { type: 'custom', key: 'hasWood' }, next: null },
     ] },
     b: { id: 'b', text: '다음에 다시 만나요', next: null },
   } });
   const view = render(<DialogBox />);
   try {
-    useInventoryStore.getState().clear();
-    act(() => { useDialogStore.getState().start('unavailable-choices'); });
+    act(() => { useDialogStore.getState().start('unavailable-choices', { evaluateCondition: () => false }); });
     expect(screen.queryByRole('button', { name: /목재 건네기/ })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '[E] 다음' }));
     expect(screen.getByText('다음에 다시 만나요')).toBeInTheDocument();
@@ -91,6 +91,5 @@ test('when every choice is unavailable, next follows the fallback and allows the
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   } finally {
     view.unmount();
-    useInventoryStore.getState().hydrate(inventory);
   }
 });

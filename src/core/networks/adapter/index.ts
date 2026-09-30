@@ -32,6 +32,7 @@ export type {
   CommandAuthorityRoute,
   CommandAuthorityRouter,
   CommandAuthorityRouterOptions,
+  CommandSession,
   CreateCommandAcceptedResultOptions,
   CreateCommandRejectedResultOptions,
 } from './authority';

@@ -1,9 +1,10 @@
 import React, { FC, lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 
 import { useTexture } from '@react-three/drei';
-import { extend, useFrame, useThree } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
+import { extendOnce } from '@/core/rendering/extendOnce';
 import { shaderMaterial } from '@/core/rendering/legacyDrei';
 import { weightFromDistance } from "@core/utils/sfe";
 
@@ -11,29 +12,41 @@ import { weightFromDistance } from "@core/utils/sfe";
 import fragmentShader from "./frag.glsl";
 import { FlagBatchProps, FlagMeshProps, FlagMaterialInstance, FlagSurfaceMaterialProps } from "./type";
 import vertexShader from "./vert.glsl";
-import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
+import { MILLISECONDS_IN_SECOND } from '../../../../boilerplate/types';
+import { CompileGate } from '../../../../rendering/CompileGate';
+import { rendererKind } from '../../../../rendering/webgpu';
+import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
 import { FLAG_STYLE_META, FlagStyle } from "../../../types";
+import { useInstanceCapacity } from "../../BuildingBatches/capacity";
+
+const FLAG_BATCH_HZ = 30;
+const FLAG_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:flag' };
+const FLAG_BATCH_FRAME: SharedFrameChannel = {
+  phase: 'effects',
+  label: 'building:flag-batch',
+  throttleMs: MILLISECONDS_IN_SECOND / FLAG_BATCH_HZ,
+};
 
 const FlagMaterial = shaderMaterial(
   {
     map: null as THREE.Texture | null,
     time: 0,
     windStrength: 1.0,
-    transmission: 0.05,
     envMapIntensity: 1,
   },
   vertexShader,
   fragmentShader,
 );
 
-extend({ FlagMaterial });
+const extendFlagMaterial = extendOnce({ FlagMaterial });
 
 const NodeFlagMaterial = lazy(() => import('./NodeFlagMaterial'));
 
 function FlagSurfaceMaterial(props: FlagSurfaceMaterialProps) {
-  const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+  extendFlagMaterial();
+  const useNodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
   if (useNodes) return <NodeFlagMaterial {...props} />;
-  return <flagMaterial ref={props.materialRef} map={props.texture} transmission={0.05}
+  return <flagMaterial ref={props.materialRef} map={props.texture}
     windStrength={props.windStrength} envMapIntensity={1} side={THREE.DoubleSide} transparent />;
 }
 
@@ -69,7 +82,7 @@ function FlagWithTexture({
     if (center) centerRef.current.set(center[0], center[1], center[2]);
   }, [center]);
 
-  useFrame((state, delta) => {
+  useSharedFrame(FLAG_FRAME, (delta, elapsedSeconds, three) => {
     if (lod) {
       const near = lod.near ?? 30;
       const far = lod.far ?? 180;
@@ -78,7 +91,7 @@ function FlagWithTexture({
       if (lodAccumRef.current >= (lastVisibleRef.current ? 0.2 : 0.5)) {
         lodAccumRef.current = 0;
         if (!center && meshRef.current) meshRef.current.getWorldPosition(centerRef.current);
-        const w = weightFromDistance(state.camera.position.distanceTo(centerRef.current), near, far, str);
+        const w = weightFromDistance(three.camera.position.distanceTo(centerRef.current), near, far, str);
         const vis = w > 0;
         if (vis !== lastVisibleRef.current) {
           lastVisibleRef.current = vis;
@@ -89,7 +102,7 @@ function FlagWithTexture({
     }
     const u = materialRef.current;
     if (!u) return;
-    u.time = getFrameElapsedSeconds(state) * 5;
+    u.time = elapsedSeconds * 5;
     u.windStrength = windStrength;
   });
 
@@ -106,10 +119,10 @@ function FlagWithFallback({
   const materialRef = useRef<FlagMaterialInstance>(null!);
   const fallbackTex = useMemo(() => getFallbackTexture(), []);
 
-  useFrame((state) => {
+  useSharedFrame(FLAG_FRAME, (_, elapsedSeconds) => {
     const u = materialRef.current;
     if (!u) return;
-    u.time = getFrameElapsedSeconds(state) * 5;
+    u.time = elapsedSeconds * 5;
     u.windStrength = windStrength;
   });
 
@@ -218,7 +231,7 @@ function PoleBatch({ entries }: { entries: FlagEntry[] }) {
 
   const matrices = useMemo(() => buildPoleMatrices(entries), [entries]);
   const count = matrices.length;
-  const capacity = useMemo(() => Math.max(1, count), [count]);
+  const capacity = useInstanceCapacity(count);
 
   const isFrame = entries.some((e) => e.style === "panel");
   const mat = isFrame ? _frameMat : _poleMat;
@@ -253,9 +266,8 @@ type ClothBatchInnerProps = {
 function ClothBatchInner({ entries, windStrength, texture }: ClothBatchInnerProps) {
   const ref = useRef<THREE.InstancedMesh>(null!);
   const materialRef = useRef<FlagMaterialInstance>(null!);
-  const frameAccumRef = useRef(0);
   const count = entries.length;
-  const capacity = useMemo(() => Math.max(1, count), [count]);
+  const capacity = useInstanceCapacity(count);
 
   const wGeo = entries[0]?.flagWidth ?? 1.5;
   const hGeo = entries[0]?.flagHeight ?? 1.0;
@@ -306,13 +318,10 @@ function ClothBatchInner({ entries, windStrength, texture }: ClothBatchInnerProp
     mesh.computeBoundingSphere();
   }, [entries, count, wGeo, hGeo, geometry]);
 
-  useFrame((state, delta) => {
-    frameAccumRef.current += Math.max(0, delta);
-    if (frameAccumRef.current < 1 / 30) return;
-    frameAccumRef.current = 0;
+  useSharedFrame(FLAG_BATCH_FRAME, (_, elapsedSeconds) => {
     const u = materialRef.current;
     if (!u) return;
-    u.time = getFrameElapsedSeconds(state) * 5;
+    u.time = elapsedSeconds * 5;
     u.windStrength = windStrength;
   });
 
@@ -354,10 +363,11 @@ function ClothBatchGroup({
   textureUrl: string;
   windStrength: number;
 }) {
+  // The cloth waits on its texture and lazy node material, so it has its own gate inside its boundary.
   if (textureUrl) {
-    return <Suspense fallback={null}><ClothBatchTextured entries={entries} textureUrl={textureUrl} windStrength={windStrength} /></Suspense>;
+    return <Suspense fallback={null}><CompileGate><ClothBatchTextured entries={entries} textureUrl={textureUrl} windStrength={windStrength} /></CompileGate></Suspense>;
   }
-  return <Suspense fallback={null}><ClothBatchFallback entries={entries} windStrength={windStrength} /></Suspense>;
+  return <Suspense fallback={null}><CompileGate><ClothBatchFallback entries={entries} windStrength={windStrength} /></CompileGate></Suspense>;
 }
 
 // --- Main batch component ---

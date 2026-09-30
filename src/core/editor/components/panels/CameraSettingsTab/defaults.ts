@@ -3,6 +3,7 @@ import type {
   CameraSettingsLabels,
   CameraSettingsSection,
 } from './types';
+import { CAMERA_DEFAULTS } from '../../../../camera/core/constants';
 
 const CAMERA_SETTINGS_DISTANCE_MIN = -50;
 const CAMERA_SETTINGS_DISTANCE_MAX = 50;
@@ -24,11 +25,11 @@ const CAMERA_SETTINGS_ZOOM_MAX = 5;
 const CAMERA_SETTINGS_ZOOM_STEP = 0.1;
 const CAMERA_SETTINGS_FOCUS_MIN = 1;
 const CAMERA_SETTINGS_FOCUS_MAX = 50;
-const CAMERA_SETTINGS_MAX_DISTANCE_MIN = 5;
-const CAMERA_SETTINGS_MAX_DISTANCE_MAX = 100;
+const CAMERA_SETTINGS_BOUND_MAX_MIN = 5;
 const CAMERA_SETTINGS_BOUND_MIN = -10;
 const CAMERA_SETTINGS_BOUND_MAX = 100;
 const CAMERA_SETTINGS_DISTANCE_STEP = 1;
+const CAMERA_SETTINGS_OPACITY_STEP = 0.05;
 export const CAMERA_SETTINGS_DEFAULT_LABELS: CameraSettingsLabels = {
   modePrefix: '모드',
   fallbackMode: '3인칭',
@@ -186,6 +187,23 @@ export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] 
         defaultValue: false,
       },
       {
+        key: 'collisionFade',
+        label: '가리면 반투명',
+        kind: 'checkbox',
+        path: 'collisionMode',
+        defaultValue: false,
+      },
+      {
+        key: 'collisionFadeOpacity',
+        label: '가림 불투명도',
+        kind: 'range',
+        path: 'collisionFadeOpacity',
+        min: 0,
+        max: 1,
+        step: CAMERA_SETTINGS_OPACITY_STEP,
+        defaultValue: CAMERA_DEFAULTS.COLLISION_FADE_OPACITY,
+      },
+      {
         key: 'enableFocus',
         label: '초점 모드',
         kind: 'checkbox',
@@ -201,16 +219,6 @@ export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] 
         max: CAMERA_SETTINGS_FOCUS_MAX,
         step: CAMERA_SETTINGS_DISTANCE_STEP,
         defaultValue: 15,
-      },
-      {
-        key: 'maxDistance',
-        label: '최대 거리',
-        kind: 'range',
-        path: 'maxDistance',
-        min: CAMERA_SETTINGS_MAX_DISTANCE_MIN,
-        max: CAMERA_SETTINGS_MAX_DISTANCE_MAX,
-        step: CAMERA_SETTINGS_DISTANCE_STEP,
-        defaultValue: 50,
       },
     ],
   },
@@ -233,7 +241,7 @@ export const CAMERA_SETTINGS_DEFAULT_SECTIONS: readonly CameraSettingsSection[] 
         label: '최대 높이',
         kind: 'range',
         path: 'bounds.maxY',
-        min: CAMERA_SETTINGS_MAX_DISTANCE_MIN,
+        min: CAMERA_SETTINGS_BOUND_MAX_MIN,
         max: CAMERA_SETTINGS_BOUND_MAX,
         step: CAMERA_SETTINGS_DISTANCE_STEP,
         defaultValue: 50,

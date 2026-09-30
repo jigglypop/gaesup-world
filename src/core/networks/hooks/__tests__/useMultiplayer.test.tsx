@@ -53,6 +53,21 @@ test('runtime connection overrides survive equivalent renders and apply to the n
   } finally { view.unmount(); }
 });
 
+test('enableRateLimit hands the per-peer maxMessagesPerSecond budget to the manager', () => {
+  jest.clearAllMocks();
+  const view = renderHook(({ enableRateLimit }) => useMultiplayer({
+    config: { ...defaultMultiplayerConfig, enableRateLimit, maxMessagesPerSecond: 30 },
+  }), { initialProps: { enableRateLimit: true } });
+  const options = { roomId: 'room', playerName: 'player', playerColor: '#fff' };
+  try {
+    act(() => view.result.current.connect(options));
+    expect(jest.mocked(PlayerNetworkManager).mock.calls.at(-1)?.[0].maxMessagesPerSecond).toBe(30);
+    view.rerender({ enableRateLimit: false });
+    act(() => view.result.current.connect(options));
+    expect(jest.mocked(PlayerNetworkManager).mock.calls.at(-1)?.[0].maxMessagesPerSecond).toBe(0);
+  } finally { view.unmount(); }
+});
+
 test('chat range follows prop changes until explicitly overridden and accepts zero', () => {
   jest.clearAllMocks();
   const view = renderHook(({ proximityRange }) => useMultiplayer({
@@ -228,4 +243,15 @@ test('manual reconnect resumes position updates with the same rigid body ref', (
     unmount();
     jest.useRealTimers();
   }
+});
+
+test("connect()'s characterUrl is the model this connection announces, over the hook option", () => {
+  jest.clearAllMocks();
+  const view = renderHook(() => useMultiplayer({ config: defaultMultiplayerConfig, characterUrl: '/hook.glb' }));
+  try {
+    act(() => view.result.current.connect({ roomId: 'room', playerName: 'player', playerColor: '#fff', characterUrl: '/chosen.glb' }));
+    expect(jest.mocked(PlayerNetworkManager).mock.calls.at(-1)?.[0].modelUrl).toBe('/chosen.glb');
+    act(() => view.result.current.connect({ roomId: 'room', playerName: 'player', playerColor: '#fff' }));
+    expect(jest.mocked(PlayerNetworkManager).mock.calls.at(-1)?.[0].modelUrl).toBe('/hook.glb');
+  } finally { view.unmount(); }
 });

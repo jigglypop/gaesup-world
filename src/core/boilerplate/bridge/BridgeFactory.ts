@@ -1,73 +1,34 @@
-import { BridgeConstructor, BridgeInstance } from '../types'
-import { BridgeRegistry } from './BridgeRegistry'
-import { logger } from '../../utils/logger'
-import { DIContainer } from '../di'
+import type { BridgeInstance } from '../types'
 
+type BridgeClass<T extends BridgeInstance = BridgeInstance> = new () => T
+
+/** Bridges for callers that run without a runtime: one shared instance per class. A runtime creates its own. */
 export class BridgeFactory {
-    private static instances = new Map<string, BridgeInstance>()
-    static create<T extends BridgeInstance>(domain: string): T | null {
-        const existing = BridgeFactory.instances.get(domain)
-        if (existing) {
-            return existing as T
-        }
-        const BridgeClass = BridgeRegistry.get(domain) as BridgeConstructor | undefined
-        if (!BridgeClass) {
-            logger.error(`[BridgeFactory] No bridge registered for domain: ${domain}`)
-            return null
-        }
-        try {
-            const instance = DIContainer.getInstance().resolve(BridgeClass) as T
-            BridgeFactory.instances.set(domain, instance)
-            logger.info(`[BridgeFactory] Created bridge instance for domain: ${domain}`)
-            return instance
-        } catch (error) {
-            logger.error(
-              `[BridgeFactory] Failed to create bridge for domain: ${domain}`,
-              error instanceof Error ? error : String(error),
-            )
-            return null
-        }
-    }
-    static get<T extends BridgeInstance>(domain: string): T | null {
-        const instance = BridgeFactory.instances.get(domain)
-        return instance ? (instance as T) : null
-    }
+  private static instances = new Map<BridgeClass, BridgeInstance>()
 
-    static getOrCreate<T extends BridgeInstance>(domain: string): T | null {
-        return BridgeFactory.get<T>(domain) ?? BridgeFactory.create<T>(domain)
-    }
-    
-    static has(domain: string): boolean {
-        return BridgeFactory.instances.has(domain)
-    }
-    
-    static dispose(domain: string): void {
-        const instance = BridgeFactory.instances.get(domain)
-        if (instance) {
-            logger.info(`[BridgeFactory] Disposing bridge instance for domain: ${domain}`)
-            instance.dispose()
-            BridgeFactory.instances.delete(domain)
-        }
-    }
-    
-    static disposeAll(): void {
-        logger.info(`[BridgeFactory] Disposing all bridge instances (${BridgeFactory.instances.size} total)`)
-        BridgeFactory.instances.forEach((instance, domain) => {
-            logger.info(`[BridgeFactory] Disposing: ${domain}`)
-            instance.dispose()
-        })
-        BridgeFactory.instances.clear()
-    }
-    
-    static listDomains(): string[] {
-        return BridgeRegistry.list()
-    }
-    
-    static listActiveInstances(): string[] {
-        return Array.from(BridgeFactory.instances.keys())
-    }
-    
-    static getInstanceCount(): number {
-        return BridgeFactory.instances.size
-    }
-} 
+  static getOrCreateFor<T extends BridgeInstance>(Bridge: BridgeClass<T>): T {
+    const existing = BridgeFactory.instances.get(Bridge) as T | undefined
+    if (existing) return existing
+    const created = new Bridge()
+    BridgeFactory.instances.set(Bridge, created)
+    return created
+  }
+
+  static get<T extends BridgeInstance>(Bridge: BridgeClass<T>): T | null {
+    return (BridgeFactory.instances.get(Bridge) as T | undefined) ?? null
+  }
+
+  /** Drops the cached instance before disposing it, so a later lookup builds a new one. */
+  static dispose(Bridge: BridgeClass): void {
+    const instance = BridgeFactory.instances.get(Bridge)
+    if (!instance) return
+    BridgeFactory.instances.delete(Bridge)
+    instance.dispose()
+  }
+
+  static disposeAll(): void {
+    const instances = [...BridgeFactory.instances.values()]
+    BridgeFactory.instances.clear()
+    instances.forEach((instance) => instance.dispose())
+  }
+}

@@ -1,37 +1,29 @@
-export default {
+import { readFileSync } from 'node:fs';
+
+// tsconfig `paths` is the only alias list; Vite reads it through resolve.tsconfigPaths.
+const { paths } = JSON.parse(readFileSync(new URL('./tsconfig.json', import.meta.url), 'utf8')).compilerOptions;
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const pathAliases = Object.fromEntries(
+  Object.entries(paths).map(([alias, [target]]) => [
+    `^${escapeRegExp(alias).replace('\\*', '(.*)')}$`,
+    `<rootDir>/${target.replace(/^\.\//, '').replace('*', '$1')}`,
+  ]),
+);
+
+/** Options shared by every project and by jest.memory.config.js. */
+export const base = {
   preset: 'ts-jest',
-  testEnvironment: 'jsdom',
+  // Asset and style stubs come first so an aliased .css or .glsl import never loads the raw file.
   moduleNameMapper: {
-    '^gaesup-world$': '<rootDir>/src/index.ts',
-    '^gaesup-world/admin$': '<rootDir>/src/admin-entry.ts',
-    '^gaesup-world/assets$': '<rootDir>/src/assets.ts',
-    '^gaesup-world/blueprints$': '<rootDir>/src/blueprints/index.ts',
-    '^gaesup-world/blueprints/editor$': '<rootDir>/src/blueprints/editor.ts',
-    '^gaesup-world/building$': '<rootDir>/src/building.ts',
-    '^gaesup-world/editor$': '<rootDir>/src/editor.ts',
-    '^gaesup-world/gameplay$': '<rootDir>/src/gameplay.ts',
-    '^gaesup-world/navigation$': '<rootDir>/src/navigation.ts',
-    '^gaesup-world/network$': '<rootDir>/src/network.ts',
-    '^gaesup-world/next$': '<rootDir>/src/next.ts',
-    '^gaesup-world/postprocessing$': '<rootDir>/src/postprocessing.ts',
-    '^gaesup-world/plugins$': '<rootDir>/src/plugins.ts',
-    '^gaesup-world/runtime$': '<rootDir>/src/runtime.ts',
-    '^gaesup-world/server-contracts$': '<rootDir>/src/server-contracts.ts',
-    '^@react-three/postprocessing$': '<rootDir>/test/mocks/reactThreePostprocessing.tsx',
-    '^@/(.*)$': '<rootDir>/src/$1',
-    '^@core/(.*)$': '<rootDir>/src/core/$1',
-    '^@hooks/(.*)$': '<rootDir>/src/core/hooks/$1',
-    '^@stores/(.*)$': '<rootDir>/src/core/stores/$1',
-    '^@components/(.*)$': '<rootDir>/src/core/components/$1',
-    '^@constants/(.*)$': '<rootDir>/src/core/constants/$1',
-    '^@utils/(.*)$': '<rootDir>/src/core/utils/$1',
-    '^@types/(.*)$': '<rootDir>/src/core/types/$1',
-    '^@motions/(.*)$': '<rootDir>/src/core/motions/$1',
-    '^@debug/(.*)$': '<rootDir>/src/core/debug/$1',
     '\\.(glsl|vert|frag|wasm|glb)$': '<rootDir>/test/mocks/assetModule.ts',
+    // Vite's inline worker constructors; tests drive the worker's logic (GiWorkerHost) directly instead.
+    '\\?worker&inline$': '<rootDir>/test/mocks/inlineWorker.ts',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '^@react-three/postprocessing$': '<rootDir>/test/mocks/reactThreePostprocessing.tsx',
+    ...pathAliases,
   },
   transform: {
+    '^.+\\.m?js$': ['ts-jest', { tsconfig: { allowJs: true, checkJs: false, module: 'CommonJS' }, diagnostics: false }],
     '^.+\\.(ts|tsx)$': [
       'ts-jest',
       {
@@ -42,15 +34,37 @@ export default {
     ],
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand|mitt)/)',
+    'node_modules/(?!(\\.pnpm|three|@react-three|three-stdlib|@react-spring|@use-gesture|react-use-refs|zustand)/)',
   ],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '<rootDir>/.claude/'],
+  // Agent worktrees live under .claude/ and carry their own package.json; keep them out of the module map.
+  modulePathIgnorePatterns: ['<rootDir>/.claude/'],
+  // A no-op without a DOM, so node tests that opt into jsdom still get a canvas.
+  setupFiles: ['jest-canvas-mock'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+};
+
+export default {
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
     '!src/**/*.test.{ts,tsx}',
     '!src/**/index.ts',
   ],
-  setupFiles: ['jest-canvas-mock'],
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  projects: [
+    // Logic tests skip jsdom setup. A .test.ts that needs a DOM starts with `/** @jest-environment jsdom */`, as does
+    // one whose code checks prototypes of structuredClone results: jest's node realm gets the host's clones.
+    {
+      ...base,
+      displayName: 'node',
+      testEnvironment: 'node',
+      testMatch: ['**/*.test.ts'],
+      testPathIgnorePatterns: [...base.testPathIgnorePatterns, '/src/__tests__/', '/test/accept/'],
+    },
+    { ...base, displayName: 'dom', testEnvironment: 'jsdom', testMatch: ['**/*.test.tsx'] },
+    // Package, export and public API contracts.
+    { ...base, displayName: 'package', testEnvironment: 'node', testMatch: ['**/src/__tests__/**/*.test.ts'] },
+    // Headless acceptance scenarios; their definitions, budgets and status live in test/accept/budgets.json.
+    { ...base, displayName: 'accept', testEnvironment: 'node', testMatch: ['<rootDir>/test/accept/**/*.test.ts'] },
+  ],
 };

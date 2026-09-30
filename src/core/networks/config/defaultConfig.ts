@@ -1,59 +1,19 @@
-import { MultiplayerConfig } from '../types';
+import { MultiplayerConfig, NetworkConfig } from '../types';
 
-export const defaultMultiplayerConfig: MultiplayerConfig = {
-  // 기본 NetworkConfig
-  updateFrequency: 30,
-  maxConnections: 100,
-  messageQueueSize: 1000,
-  
-  // 통신 설정
-  maxDistance: 100.0,
-  signalStrength: 1.0,
-  bandwidth: 1000,
+/** Client defaults every multiplayer config starts from. */
+export const DEFAULT_NETWORK_CONFIG: Readonly<NetworkConfig> = Object.freeze({
   proximityRange: 10.0,
-  
-  // 최적화 설정
-  enableBatching: true,
-  batchSize: 10,
-  compressionLevel: 1,
-  connectionPoolSize: 50,
-  
-  // 메시지 설정
-  enableChatMessages: true,
-  enableActionMessages: true,
-  enableStateMessages: true,
-  enableSystemMessages: true,
-  
-  // 신뢰성 설정
   reliableRetryCount: 3,
   reliableTimeout: 5000,
   enableAck: true,
-  
-  // 그룹 설정
-  maxGroupSize: 20,
-  autoJoinProximity: true,
-  groupMessagePriority: 'normal',
-  
-  // 디버깅 설정
-  enableDebugPanel: false,
-  enableVisualizer: false,
-  showConnectionLines: false,
-  showMessageFlow: false,
-  debugUpdateInterval: 500,
   logLevel: 'warn',
   logToConsole: true,
-  logToFile: false,
-  maxLogEntries: 1000,
-  
-  // 보안 설정
-  enableEncryption: false,
   enableRateLimit: true,
   maxMessagesPerSecond: 100,
-  
-  // 메모리 관리
-  messageGCInterval: 30000,
-  connectionTimeout: 30000,
-  inactiveNodeCleanup: 60000,
+});
+
+export const defaultMultiplayerConfig: MultiplayerConfig = {
+  ...DEFAULT_NETWORK_CONFIG,
 
   // 멀티플레이어 전용 설정
   websocket: {
@@ -73,4 +33,4 @@ export const defaultMultiplayerConfig: MultiplayerConfig = {
     nameTagSize: 0.5,
     characterScale: 1
   }
-}; 
+};

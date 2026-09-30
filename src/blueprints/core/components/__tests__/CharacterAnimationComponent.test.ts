@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
-import { CharacterAnimationComponent } from '../CharacterAnimationComponent';
-import type { ComponentContext } from '../../types';
 import { BlueprintFactory } from '../../../factory/BlueprintFactory';
+import type { ComponentContext } from '../../types';
+import { CharacterAnimationComponent } from '../CharacterAnimationComponent';
 
 test('uses the requested gait at custom speeds and stays idle when stationary', () => {
   const animationClips = Object.fromEntries(['idle', 'walk', 'run'].map(name => [name, new THREE.AnimationClip(name, 1, [])]));

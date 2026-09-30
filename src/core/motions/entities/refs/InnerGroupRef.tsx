@@ -9,12 +9,9 @@ import { InnerGroupRefType } from './types';
 export const CHARACTER_SKIN_NODE_NAMES = ['body', 'skin', 'Body', 'Skin'];
 
 export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THREE.Group>) => {
-  const modelYawOffset =
-    typeof props.modelYawOffset === 'number'
-      ? props.modelYawOffset
-      : props.componentType === 'character'
-        ? Math.PI
-        : 0;
+  // glTF models face +Z and the movement yaw turns +Z along the direction of travel, so no correction by default.
+  // A default of π for characters turned every glTF figure around: they walked away facing the camera.
+  const modelYawOffset = props.modelYawOffset ?? 0;
   const isCharacter = props.componentType === 'character';
   // Characters: never let an outfit part's color bleed onto the base body, and tint
   // only skin nodes so authored materials (eyes, face) survive.
@@ -27,20 +24,21 @@ export const InnerGroupRef = forwardRef((props: InnerGroupRefType, ref: Ref<THRE
         {props.objectNode && props.animationRef && (
           <primitive
             object={props.objectNode}
-            visible={false}
+            visible={props.modelHierarchy === true}
+            dispose={null}
             receiveShadow
             castShadow
             ref={props.animationRef}
           />
         )}
-        <ModelRenderer
+        {!props.modelHierarchy && <ModelRenderer
           nodes={props.nodes}
           skeleton={props.skeleton}
           url={props.url || ''}
           {...(baseColor ? { color: baseColor } : {})}
           {...(colorNodeNames ? { colorNodeNames } : {})}
           {...(props.excludeBaseNodes && props.excludeBaseNodes.length > 0 ? { excludeNodeNames: props.excludeBaseNodes } : {})}
-        />
+        />}
       </group>
     </group>
   );

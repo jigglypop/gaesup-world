@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
-import { autoDetectProfile, profileForTier } from '../detect';
+import { lazyStore } from '../../stores/lazyStore';
+import { autoDetectProfile, profileForTier, type RendererIdentity } from '../detect';
 import type { DeviceCapabilities, PerfProfile, PerfTier } from '../types';
 
 type State = {
@@ -8,20 +9,21 @@ type State = {
   capabilities: DeviceCapabilities | null;
   manualOverride: boolean;
 
-  detect: () => void;
+  /** Classifies the device. Pass the identity of an existing renderer to skip the probe context. */
+  detect: (identity?: RendererIdentity | null) => void;
   setTier: (tier: PerfTier) => void;
   resetAuto: () => void;
 };
 
 const initial = profileForTier('medium');
 
-export const usePerfStore = create<State>((set) => ({
+export const usePerfStore = lazyStore(() => create<State>((set) => ({
   profile: initial,
   capabilities: null,
   manualOverride: false,
 
-  detect: () => {
-    const { profile, capabilities } = autoDetectProfile();
+  detect: (identity) => {
+    const { profile, capabilities } = autoDetectProfile(identity);
     set({ profile, capabilities, manualOverride: false });
   },
 
@@ -33,4 +35,4 @@ export const usePerfStore = create<State>((set) => ({
     const { profile, capabilities } = autoDetectProfile();
     set({ profile, capabilities, manualOverride: false });
   },
-}));
+})));

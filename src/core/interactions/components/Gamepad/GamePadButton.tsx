@@ -2,16 +2,20 @@ import { useEffect, useRef, useState } from 'react';
 
 import './styles.css';
 import { GamePadButtonType } from './types';
+import { useWorldInputScope } from '../../../input/useWorldInputScope';
 
 export default function GamePadButton({ value, name, gamePadButtonStyle, onInput }: GamePadButtonType & {
   onInput: (key: string, down: boolean) => boolean;
 }) {
+  const inputScope = useWorldInputScope();
   const [isClicked, setIsClicked] = useState(false);
   const pressed = useRef(false);
   const inputRef = useRef(onInput);
   inputRef.current = onInput;
 
   const handlePress = () => {
+    if (!inputScope.isEnabled()) return;
+    inputScope.activate();
     if (pressed.current || !onInput(value, true)) return;
     pressed.current = true;
     setIsClicked(true);
@@ -36,16 +40,8 @@ export default function GamePadButton({ value, name, gamePadButtonStyle, onInput
       pressed.current = false;
       setIsClicked(false);
     };
-    const handleVisibilityChange = () => {
-      if (document.hidden) handleCancel();
-    };
-    window.addEventListener('blur', handleCancel);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      window.removeEventListener('blur', handleCancel);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isClicked, value]);
+    return inputScope.onBlur(handleCancel);
+  }, [isClicked, value, inputScope]);
 
   return (
     <button

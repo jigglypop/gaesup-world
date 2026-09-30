@@ -1,3 +1,4 @@
+import { cellSpan } from '../../model/footprint';
 import type { TileConfig } from '../../types';
 import { TILE_CONSTANTS } from '../../types/constants';
 
@@ -47,7 +48,7 @@ export function buildWaterPatches(waterTiles: Pick<TileConfig, 'position' | 'siz
   const unitSize = TILE_CONSTANTS.GRID_CELL_SIZE / 2;
   const cellsByLevel = new Map<number, Set<string>>();
   for (const tile of waterTiles) {
-    const size = Math.max(1, Math.round(tile.size || 1));
+    const size = cellSpan(tile.size);
     const tileSize = size * TILE_CONSTANTS.GRID_CELL_SIZE;
     const half = tileSize / 2;
     const minX = Math.round((tile.position.x - half) / unitSize);

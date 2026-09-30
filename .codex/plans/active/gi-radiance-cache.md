@@ -20,6 +20,7 @@
 2. building 상태를 복셀 박스로 변환(`gi/utils`), `GiVolume` 컴포넌트, TSL 조도 노드(`rendering/tsl/gi.ts`), 공개 API, `examples/pages/GiPage`. 코드 작성과 타입·셰이더 생성 검증 완료, 브라우저 미검증.
 3. 프로브 갱신 WASM 커널. 완료(패리티·성능 측정).
 4. 후속: 메인 월드 Canvas의 WebGPU 전환 후 building 머티리얼에 연결, 워커 병렬화 또는 GPU 컴퓨트 이관, 가시성(Chebyshev) 가중, 카메라 추종 촘촘한 레벨, 작은 발광체의 직접광 처리, 동적 캐릭터 복셀화.
+5. 워커 이관(완료): 추적·아틀라스 패킹을 인라인 Web Worker(`gi/worker`)로 옮기고, 수렴하면 갱신을 4분의 1로 줄이며(`probeSchedule.ts`), 셰이더 샘플을 픽셀당 12번에서 3번으로 줄였다. 메인 스레드 GI 비용이 예제 섬에서 초당 140~190ms에서 0.3ms가 됐다.
 
 ## 제외
 

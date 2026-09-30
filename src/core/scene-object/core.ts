@@ -14,6 +14,7 @@ import type {
   SceneValidationResult,
   SceneVector3,
 } from './types';
+import { createUniqueId } from '../utils/id';
 
 export const SCENE_DOCUMENT_VERSION = 1;
 
@@ -22,9 +23,6 @@ export const DEFAULT_SCENE_TRANSFORM: SceneTransform = {
   rotation: [0, 0, 0],
   scale: [1, 1, 1],
 };
-
-let sceneObjectCounter = 0;
-let sceneComponentCounter = 0;
 
 export function createSceneComponent<TType extends string, TData extends SceneJsonAuthoringObject>(
   input: CreateSceneComponentInput<TType, TData> & { data: TData },
@@ -52,7 +50,7 @@ export function createSceneComponent(input: CreateSceneComponentInput): SceneCom
   );
 
   return {
-    id: id ?? `component-${++sceneComponentCounter}`,
+    id: id ?? createUniqueId('component'),
     type,
     enabled: enabled ?? true,
     data,
@@ -61,7 +59,7 @@ export function createSceneComponent(input: CreateSceneComponentInput): SceneCom
 
 export function createSceneObject(input: CreateSceneObjectInput = {}): SceneObject {
   return {
-    id: input.id ?? `object-${++sceneObjectCounter}`,
+    id: input.id ?? createUniqueId('object'),
     name: input.name ?? 'Scene Object',
     ...(input.parentId !== undefined ? { parentId: input.parentId } : {}),
     transform: normalizeTransform(input.transform),

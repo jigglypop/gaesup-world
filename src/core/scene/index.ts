@@ -6,8 +6,8 @@ export {
   serializeSceneState,
 } from './plugin';
 export type { ScenePluginOptions } from './plugin';
-export { useSceneStore } from './stores/sceneStore';
-export { useRoomVisibilityStore } from './stores/roomVisibilityStore';
+export { createSceneStore, useSceneStore, useSceneStoreApi } from './stores/sceneStore';
+export { createRoomVisibilityStore, useRoomVisibilityStore, useRoomVisibilityStoreApi } from './stores/roomVisibilityStore';
 export { SceneFader } from './components/SceneFader';
 export type { SceneFaderProps } from './components/SceneFader';
 export { SceneRoot } from './components/SceneRoot';
@@ -19,3 +19,6 @@ export type { RoomRootProps } from './components/RoomRoot';
 export { RoomPortal } from './components/RoomPortal';
 export type { RoomPortalProps } from './components/RoomPortal';
 export { RoomVisibilityDriver } from './components/RoomVisibilityDriver';
+
+export type { SceneStore, SceneTransitionOptions } from './stores/sceneStore';
+export type { RoomVisibilityStore } from './stores/roomVisibilityStore';

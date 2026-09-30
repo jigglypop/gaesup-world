@@ -1,5 +1,7 @@
 import type { DomainBinding, SerializedDomainValue } from '../save';
 import type { GaesupPlugin, PluginContext, PluginRuntime } from './types';
+import { createStoreReset } from '../save/core/reset';
+import { createIdentityRevision } from '../save/core/revision';
 
 export type SerializableStoreState<TSerialized extends SerializedDomainValue> = {
   serialize: () => TSerialized;
@@ -22,23 +24,24 @@ export type StoreDomainService<TStore extends { getState: () => unknown }> = {
     : Record<string, never>
 );
 
-export type StoreDomainPluginConfig<
+export interface StoreDomainPluginConfig<
   TSerialized extends SerializedDomainValue,
   TStore extends SerializableStore<TSerialized>,
-> = {
+> {
   id: string;
   name: string;
   saveExtensionId: string;
   storeServiceId: string;
   store: TStore;
+  resolveStore?: (context: PluginContext) => TStore;
   readyEvent: string;
   version?: string;
   runtime?: PluginRuntime;
   capabilities?: string[];
-  serialize?: () => TSerialized;
-  hydrate?: (data: TSerialized | null | undefined) => void;
-  prepareHydrate?: DomainBinding<TSerialized>['prepareHydrate'];
-};
+  serialize?: (store: TStore) => TSerialized;
+  hydrate?: (data: TSerialized | null | undefined, store: TStore) => void;
+  prepareHydrate?: (data: TSerialized | null | undefined, store: TStore) => ReturnType<NonNullable<DomainBinding<TSerialized>['prepareHydrate']>>;
+}
 
 function createStoreService<TStore extends { getState: () => unknown }>(
   store: TStore,
@@ -62,11 +65,6 @@ export function createStoreDomainPlugin<
   TSerialized extends SerializedDomainValue,
   TStore extends SerializableStore<TSerialized>,
 >(config: StoreDomainPluginConfig<TSerialized, TStore>): GaesupPlugin {
-  const serialize = config.serialize ?? (() => config.store.getState().serialize());
-  const hydrate = config.hydrate ?? ((data: TSerialized | null | undefined) => {
-    config.store.getState().hydrate(data);
-  });
-
   return {
     id: config.id,
     name: config.name,
@@ -74,15 +72,21 @@ export function createStoreDomainPlugin<
     runtime: config.runtime ?? 'client',
     capabilities: config.capabilities ?? [config.saveExtensionId],
     setup(ctx: PluginContext) {
+      const store = config.resolveStore?.(ctx) ?? config.store;
+      const { serialize, hydrate, prepareHydrate } = config;
+      const reset = createStoreReset(store);
       const binding: DomainBinding<TSerialized> = {
         key: config.saveExtensionId,
-        serialize,
-        hydrate,
-        ...(config.prepareHydrate ? { prepareHydrate: config.prepareHydrate } : {}),
+        serialize: () => serialize ? serialize(store) : store.getState().serialize(),
+        hydrate: data => hydrate ? hydrate(data, store) : store.getState().hydrate(data),
+        ...(prepareHydrate ? { prepareHydrate: (data: TSerialized | null | undefined) => prepareHydrate(data, store) } : {}),
+        // Zustand replaces the state object on every set, so an unchanged identity means nothing to save.
+        revision: createIdentityRevision(() => [store.getState()]),
+        ...(reset ? { reset } : {}),
       };
 
       ctx.save.register(config.saveExtensionId, binding, config.id);
-      ctx.services.register(config.storeServiceId, createStoreService(config.store), config.id);
+      ctx.services.register(config.storeServiceId, createStoreService(store), config.id);
       ctx.events.emit(config.readyEvent, {
         pluginId: config.id,
         saveExtensionId: config.saveExtensionId,

@@ -1,3 +1,4 @@
+import { isWorldInputSourceOwned } from '../input/WorldInputBackend';
 import {
   createInteractionInputAdapter,
   DEFAULT_INTERACTION_INPUT_EXTENSION_ID,
@@ -20,7 +21,9 @@ export interface MotionsRuntimeOptions {
 
 export interface MotionsRuntimeService {
   create: (options?: MotionsRuntimeOptions) => MotionsRuntime;
+  inputExtensionId?: string;
 }
+export const RUNTIME_OWNED_MOTIONS_SERVICE_ID = 'gaesup.runtime.motions';
 
 export type MotionsTeleportPayload = {
   position: {
@@ -58,6 +61,8 @@ export interface MotionsPluginOptions {
   runtimeServiceId?: string;
   createPhysicsBridge?: () => PhysicsBridge;
   createInputAdapter?: () => InputAdapter;
+  /** Releases a custom source once per plugin generation, after the world disconnects it. */
+  disposeInputAdapter?: (adapter: InputAdapter) => void | Promise<void>;
 }
 
 const DEFAULT_PLUGIN_ID = 'gaesup.motions';
@@ -88,10 +93,12 @@ export function createMotionsRuntime(
   const inputExtensionId = options.inputExtensionId ?? DEFAULT_MOTIONS_INPUT_EXTENSION_ID;
   const physics = ctx.systems.require<MotionsPhysicsExtension>(physicsExtensionId);
   const input = ctx.input.require<MotionsInputExtension>(inputExtensionId);
+  const world = ctx.services.get<MotionsRuntimeService>(RUNTIME_OWNED_MOTIONS_SERVICE_ID);
+  const owned = inputExtensionId === (world?.inputExtensionId ?? DEFAULT_MOTIONS_INPUT_EXTENSION_ID) ? world : undefined;
 
   return {
     physicsBridge: physics.createBridge(),
-    inputAdapter: input.createAdapter(),
+    inputAdapter: owned?.create().inputAdapter ?? input.createAdapter(),
     events: ctx.events,
     extensionIds: {
       physics: physicsExtensionId,
@@ -112,8 +119,7 @@ export function createMotionsPlugin(options: MotionsPluginOptions = {}): GaesupP
   const physicsExtensionId = options.physicsExtensionId ?? DEFAULT_MOTIONS_PHYSICS_EXTENSION_ID;
   const inputExtensionId = options.inputExtensionId ?? DEFAULT_MOTIONS_INPUT_EXTENSION_ID;
   const runtimeServiceId = options.runtimeServiceId ?? DEFAULT_MOTIONS_RUNTIME_SERVICE_ID;
-  const createPhysicsBridge = options.createPhysicsBridge ?? (() => new PhysicsBridge());
-  const createInputAdapter = options.createInputAdapter ?? createInteractionInputAdapter;
+  const inputAdapters = new WeakMap<PluginContext, InputAdapter>();
 
   return {
     id: pluginId,
@@ -122,6 +128,16 @@ export function createMotionsPlugin(options: MotionsPluginOptions = {}): GaesupP
     runtime: 'client',
     capabilities: ['motions', 'physics', 'input'],
     setup(ctx: PluginContext) {
+      const owned = ctx.services.get<MotionsRuntimeService>(RUNTIME_OWNED_MOTIONS_SERVICE_ID);
+      const createPhysicsBridge = options.createPhysicsBridge ?? (() => owned?.create().physicsBridge ?? new PhysicsBridge());
+      const createInputAdapter = () => {
+        let adapter = inputAdapters.get(ctx);
+        if (!adapter) {
+          adapter = options.createInputAdapter?.() ?? owned?.create().inputAdapter ?? createInteractionInputAdapter();
+          inputAdapters.set(ctx, adapter);
+        }
+        return adapter;
+      };
       ctx.systems.register(physicsExtensionId, {
         Bridge: PhysicsBridge,
         createBridge: createPhysicsBridge,
@@ -144,9 +160,11 @@ export function createMotionsPlugin(options: MotionsPluginOptions = {}): GaesupP
       });
     },
     dispose(ctx: PluginContext) {
+      const inputAdapter = inputAdapters.get(ctx); inputAdapters.delete(ctx);
       ctx.systems.remove(physicsExtensionId);
       ctx.input.remove(inputExtensionId);
       ctx.services.remove(runtimeServiceId);
+      if (inputAdapter && options.createInputAdapter && !isWorldInputSourceOwned(inputAdapter)) return options.disposeInputAdapter?.(inputAdapter);
     },
   };
 }

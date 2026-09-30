@@ -3,6 +3,7 @@ import { type ReactNode } from 'react';
 import { useThree } from '@react-three/fiber';
 import ReactThreeTestRenderer from '@react-three/test-renderer';
 import * as THREE from 'three';
+import { Water } from 'three-stdlib';
 
 import { createToonWaterMaterial } from '../../../rendering/tsl/toonWater';
 import Ocean from '../mesh/water';
@@ -10,7 +11,7 @@ import Ocean from '../mesh/water';
 jest.mock('../../../rendering/tsl/toonWater', () => {
   const { MeshBasicMaterial } = jest.requireActual<typeof import('three')>('three');
   return { createToonWaterMaterial: jest.fn(() => ({
-    material: new MeshBasicMaterial({ name: 'node-water-test' }), time: { value: 0 },
+    material: new MeshBasicMaterial({ name: 'node-water-test' }), time: { value: 0 }, brightness: { value: 1 },
   })) };
 });
 
@@ -22,10 +23,10 @@ function RendererMode({ nodes, children }: { nodes: boolean; children: ReactNode
 
 beforeEach(() => jest.mocked(createToonWaterMaterial).mockClear());
 
-test('legacy renderer keeps the GLSL material without loading a node material', async () => {
+test('legacy renderer keeps GLSL water over a GLSL floor without loading a node material', async () => {
   const renderer = await ReactThreeTestRenderer.create(<RendererMode nodes={false}><Ocean toon /></RendererMode>);
-  expect(renderer.scene.findAll((node) => node.instance instanceof THREE.Mesh
-    && node.instance.material instanceof THREE.ShaderMaterial)).toHaveLength(1);
+  const shaders = renderer.scene.findAll((node) => node.instance instanceof THREE.Mesh && node.instance.material instanceof THREE.ShaderMaterial);
+  expect(shaders.map((node) => ((node.instance as THREE.Mesh).material as THREE.Material).name)).toEqual(['water-surface', 'water-bed']);
   expect(createToonWaterMaterial).not.toHaveBeenCalled();
   await renderer.unmount();
 });
@@ -83,4 +84,16 @@ test('a removed suspended surface does not create a material when loading finish
   await renderer.unmount();
   expect(dispose).toHaveBeenCalledTimes(1);
   factory.mockImplementation(createMaterial);
+});
+
+test('WebGPU draws lit node water, never the WebGL-only mirror Water', async () => {
+  const renderer = await ReactThreeTestRenderer.create(<RendererMode nodes><Ocean toon={false} /></RendererMode>);
+  await renderer.advanceFrames(3, 1 / 30);
+  expect(renderer.scene.findAll((node) => node.instance instanceof Water)).toHaveLength(0);
+  const factory = jest.mocked(createToonWaterMaterial);
+  expect(factory).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ toon: false }));
+  const { material } = factory.mock.results.at(-1)!.value as ReturnType<typeof createToonWaterMaterial>;
+  const surfaces = renderer.scene.findAll((node) => node.instance instanceof THREE.Mesh && node.instance.material === material);
+  expect(surfaces.map((node) => (node.instance as THREE.Mesh).visible)).toEqual([true]);
+  await renderer.unmount();
 });

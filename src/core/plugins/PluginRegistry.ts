@@ -6,6 +6,8 @@ import type {
   PluginContext,
   PluginContextOptions,
   PluginDiagnostic,
+  PluginLifecycleEvent,
+  PluginLifecycleListener,
   PluginManifest,
   PluginRecord,
   PluginRegistryApi,
@@ -53,6 +55,7 @@ export class PluginRegistry implements PluginRegistryApi {
   private readonly records = new Map<string, PluginRecord>();
   private readonly setupTasks = new Map<string, Promise<void>>();
   private readonly setupOrder: string[] = [];
+  private readonly lifecycleListeners = new Set<PluginLifecycleListener>();
   private readonly options: PluginContextOptions;
   readonly context: PluginContext;
 
@@ -96,21 +99,33 @@ export class PluginRegistry implements PluginRegistryApi {
     record.status = 'disposing';
     try {
       await record.plugin.dispose?.(this.context);
-      this.removePluginExtensions(id);
       record.status = 'disposed';
-      this.removeFromSetupOrder(id);
     } catch (error) {
       record.status = 'failed';
       record.error = error;
       throw error;
+    } finally {
+      this.removePluginExtensions(id);
+      this.removeFromSetupOrder(id);
+      if (record.status === 'disposed') this.notifyLifecycle('dispose', id);
     }
   }
 
   async disposeAll(): Promise<void> {
     const ids = Array.from(this.setupOrder).reverse();
+    const errors: unknown[] = [];
     for (const id of ids) {
-      await this.dispose(id);
+      try { await this.dispose(id); } catch (error) { errors.push(error); }
     }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length > 1) throw new AggregateError(errors, 'Plugin disposal failed');
+  }
+
+  onLifecycle(listener: PluginLifecycleListener): () => void {
+    this.lifecycleListeners.add(listener);
+    return () => {
+      this.lifecycleListeners.delete(listener);
+    };
   }
 
   has(id: string): boolean {
@@ -194,6 +209,7 @@ export class PluginRegistry implements PluginRegistryApi {
       if (!this.setupOrder.includes(id)) {
         this.setupOrder.push(id);
       }
+      this.notifyLifecycle('setup', id);
     } catch (error) {
       record.status = 'failed';
       record.error = error;
@@ -361,16 +377,18 @@ export class PluginRegistry implements PluginRegistryApi {
     }
   }
 
+  private notifyLifecycle(type: PluginLifecycleEvent['type'], pluginId: string): void {
+    for (const listener of this.lifecycleListeners) listener({ type, pluginId });
+  }
+
   private removePluginExtensions(pluginId: string): void {
     this.context.grid.removeByPlugin(pluginId);
     this.context.placement.removeByPlugin(pluginId);
-    this.context.catalog.removeByPlugin(pluginId);
     this.context.assets.removeByPlugin(pluginId);
     this.context.rendering.removeByPlugin(pluginId);
     this.context.input.removeByPlugin(pluginId);
     this.context.interactions.removeByPlugin(pluginId);
     this.context.npc.removeByPlugin(pluginId);
-    this.context.quests.removeByPlugin(pluginId);
     this.context.blueprints.removeByPlugin(pluginId);
     this.context.editor.removeByPlugin(pluginId);
     this.context.save.removeByPlugin(pluginId);

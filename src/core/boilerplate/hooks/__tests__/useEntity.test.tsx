@@ -1,4 +1,4 @@
-import { createRef } from 'react';
+import type { RefObject } from 'react';
 
 import type { RapierRigidBody } from '@react-three/rapier';
 import { renderHook } from '@testing-library/react';
@@ -59,7 +59,7 @@ describe('useEntity ownership key', () => {
   });
 
   test('keeps an explicit entity ID shared by motion and physics across rerenders', () => {
-    const rigidBodyRef = createRef<RapierRigidBody>();
+    const rigidBodyRef: RefObject<RapierRigidBody> = { current: null! };
     const { rerender } = renderHook(({ id }: { id: string }) => useEntity({ id, rigidBodyRef }), {
       initialProps: { id: 'explicit-entity' },
     });
@@ -72,26 +72,23 @@ describe('useEntity ownership key', () => {
   });
 
   test('keeps an auto-generated entity ID shared by motion and physics across rerenders', () => {
-    const rigidBodyRef = createRef<RapierRigidBody>();
-    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
-    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.25);
+    const rigidBodyRef: RefObject<RapierRigidBody> = { current: null! };
     const { rerender } = renderHook(
       ({ isActive }: { isActive: boolean }) => useEntity({ rigidBodyRef, isActive }),
       { initialProps: { isActive: false } },
     );
 
-    const initialEntityId = 'entity-1700000000000-0.25';
+    const initialEntityId = mockUseMotionSetup.mock.calls[0]![0];
+    expect(initialEntityId).toMatch(/^entity-/);
     expectOwnershipKey(initialEntityId);
 
-    nowSpy.mockReturnValue(1_800_000_000_000);
-    randomSpy.mockReturnValue(0.75);
     rerender({ isActive: true });
 
     expectOwnershipKey(initialEntityId);
   });
 
   test('활성 캐릭터 엔티티만 Animator를 구동하고 지정한 컨트롤러를 전달한다', () => {
-    const rigidBodyRef = createRef<RapierRigidBody>();
+    const rigidBodyRef: RefObject<RapierRigidBody> = { current: null! };
     const controller = createDefaultCharacterAnimator('entity.custom');
     const mockUseCharacterAnimator = jest.mocked(useCharacterAnimator);
     const { rerender } = renderHook(

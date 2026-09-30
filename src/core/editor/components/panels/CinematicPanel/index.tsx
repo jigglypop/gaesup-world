@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   playCameraCinematic,
   type CameraCinematicBeat,
   type CameraCinematicOptions,
+  type CameraCinematicPlayback,
 } from '../../../../camera';
+import { useGaesupRuntime } from '../../../../runtime/runtimeContext';
 import type { EditorPanelBaseProps } from '../types';
 import './styles.css';
 
@@ -12,13 +14,14 @@ type CinematicPanelStatus = {
   kind: 'idle' | 'success' | 'error';
   message: string;
 };
+type PreviewOperation = { controller: AbortController; playback?: CameraCinematicPlayback; detach: () => void };
 
 export type CinematicPanelProps = EditorPanelBaseProps & {
   beats?: CameraCinematicBeat[];
   defaultBeats?: CameraCinematicBeat[];
   playbackOptions?: CameraCinematicOptions;
   onChange?: (beats: CameraCinematicBeat[]) => void;
-  onPreview?: (beats: CameraCinematicBeat[]) => void | Promise<void>;
+  onPreview?: (beats: CameraCinematicBeat[], signal?: AbortSignal) => void | Promise<void>;
 };
 
 const DEFAULT_BEATS: CameraCinematicBeat[] = [
@@ -118,6 +121,13 @@ export function CinematicPanel({
   style,
   children,
 }: CinematicPanelProps) {
+  const runtime = useGaesupRuntime();
+  const previewRef = useRef<PreviewOperation | undefined>(undefined);
+  const stop = () => { const previous = previewRef.current; previewRef.current = undefined; previous?.detach(); previous?.controller.abort(); previous?.playback?.cancel(); };
+  useEffect(() => {
+    const off = runtime?.subscribeLifecycle(() => { if (!runtime.isActive()) { stop(); setStatus({ kind: 'idle', message: '미리 보기가 중지됐습니다' }); } });
+    return () => { off?.(); stop(); };
+  }, [runtime]);
   const controlled = beats !== undefined;
   const [localBeats, setLocalBeats] = useState<CameraCinematicBeat[]>(() =>
     defaultBeats.map(cloneBeat),
@@ -159,19 +169,35 @@ export function CinematicPanel({
   };
 
   const preview = async () => {
+    stop();
+    if (runtime && !runtime.isActive()) { setStatus({ kind: 'idle', message: '월드가 비활성 상태입니다' }); return; }
+    const operation: PreviewOperation = { controller: new AbortController(), detach: () => {} };
+    previewRef.current = operation;
+    const abort = () => { operation.controller.abort(); if (previewRef.current === operation) setStatus({ kind: 'idle', message: '미리 보기가 중지됐습니다' }); };
+    operation.detach = () => playbackOptions?.signal?.removeEventListener('abort', abort);
+    playbackOptions?.signal?.addEventListener('abort', abort, { once: true });
+    if (playbackOptions?.signal?.aborted) abort();
     try {
+      if (operation.controller.signal.aborted) return;
+      setStatus({ kind: 'idle', message: '미리 보기 재생 중' });
       if (onPreview) {
-        await onPreview(currentBeats);
+        await onPreview(currentBeats, operation.controller.signal);
       } else {
-        await playCameraCinematic(currentBeats, playbackOptions).finished;
+        const options = { ...playbackOptions, signal: operation.controller.signal };
+        operation.playback = runtime ? runtime.cinematics.play(currentBeats, options) : playCameraCinematic(currentBeats, options);
+        await operation.playback.finished;
       }
-      setStatus({ kind: 'success', message: '미리 보기가 끝났습니다' });
+      if (previewRef.current === operation && !operation.controller.signal.aborted) setStatus({ kind: 'success', message: operation.playback?.state === 'cancelled' ? '미리 보기가 중지됐습니다' : '미리 보기가 끝났습니다' });
     } catch (error) {
+      if (previewRef.current !== operation || operation.controller.signal.aborted) return;
       setStatus({
         kind: 'error',
         message:
           error instanceof Error ? `미리 보기 실패: ${error.message}` : '미리 보기에 실패했습니다',
       });
+    } finally {
+      operation.detach();
+      if (previewRef.current === operation) previewRef.current = undefined;
     }
   };
 
@@ -209,6 +235,7 @@ export function CinematicPanel({
           >
             미리 보기
           </button>
+          <button type="button" onClick={() => { stop(); setStatus({ kind: 'idle', message: '미리 보기가 중지됐습니다' }); }}>중지</button>
         </div>
       </section>
 

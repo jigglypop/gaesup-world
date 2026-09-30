@@ -1,8 +1,11 @@
+import { indexAabb, queryAabbIds, unindexId } from '../model';
+import { blockBox, boxBoundsXZ, tileBox, wallBox } from '../model/footprint';
 import type { BuildingBlockConfig, PlacedObject, TileGroupConfig, WallGroupConfig } from '../types';
-import { TILE_CONSTANTS } from '../types/constants';
 
 export const VISIBILITY_CELL_SIZE = 18;
 export const VISIBILITY_MAX_DISTANCE = 140;
+/** Resident entities stay mounted until they are this much farther than the entry distance. */
+export const VISIBILITY_RESIDENCY_MARGIN = 20;
 export const VISIBILITY_UPDATE_INTERVAL = 0.12;
 export const VISIBILITY_DIRECTION_BUCKETS = 8;
 export const OCCLUDER_MIN_RADIUS = 3.2;
@@ -25,25 +28,28 @@ export type OccluderRecord = VisibilityRecord & {
   strength: number;
 };
 
-export type VisibilityIndex = {
-  tileById: Map<string, VisibilityRecord>;
-  wallById: Map<string, VisibilityRecord>;
-  blockById: Map<string, VisibilityRecord>;
-  objectById: Map<string, VisibilityRecord>;
-  tileBuckets: Map<string, string[]>;
-  wallBuckets: Map<string, string[]>;
-  blockBuckets: Map<string, string[]>;
-  objectBuckets: Map<string, string[]>;
-  occluderByKey: Map<string, OccluderRecord>;
-  occluderBuckets: Map<string, string[]>;
+export type VisibilityKind = 'tile' | 'wall' | 'block' | 'object';
+
+export const VISIBILITY_KINDS: readonly VisibilityKind[] = ['tile', 'wall', 'block', 'object'];
+
+/** Cell hash over record bounds. Records too large for the hash are always candidates. */
+export type VisibilityBuckets = {
+  cells: Map<number, Set<string>>;
+  cellsById: Map<string, number[]>;
+  unbounded: Set<string>;
+};
+
+export type VisibilityLayer = {
+  byId: Map<string, VisibilityRecord>;
+  buckets: VisibilityBuckets;
+};
+
+export type VisibilityIndex = Record<VisibilityKind, VisibilityLayer> & {
+  occluders: { byKey: Map<string, OccluderRecord>; buckets: VisibilityBuckets };
 };
 
 function toCellCoord(value: number, cellSize: number): number {
   return Math.floor(value / cellSize);
-}
-
-function cellKey(cellX: number, cellZ: number): string {
-  return `${cellX}:${cellZ}`;
 }
 
 export function createVisibilityQueryKey(
@@ -62,32 +68,31 @@ export function createVisibilityQueryKey(
   return `${cellX}:${cellZ}:${dirBucket}`;
 }
 
-function pushRecordBucket(
-  map: Map<string, string[]>,
-  record: VisibilityRecord,
-  value: string,
-  cellSize = VISIBILITY_CELL_SIZE,
-): void {
-  const radius = Math.max(0, Math.ceil(record.radius / cellSize));
-  for (let z = record.cellZ - radius; z <= record.cellZ + radius; z += 1) {
-    for (let x = record.cellX - radius; x <= record.cellX + radius; x += 1) {
-      pushRawBucket(map, x, z, value);
-    }
+const createBuckets = (): VisibilityBuckets => ({ cells: new Map(), cellsById: new Map(), unbounded: new Set() });
+const createLayer = (): VisibilityLayer => ({ byId: new Map(), buckets: createBuckets() });
+
+export function createVisibilityIndex(): VisibilityIndex {
+  return {
+    tile: createLayer(),
+    wall: createLayer(),
+    block: createLayer(),
+    object: createLayer(),
+    occluders: { byKey: new Map(), buckets: createBuckets() },
+  };
+}
+
+export function indexVisibilityRecord(buckets: VisibilityBuckets, key: string, record: VisibilityRecord): void {
+  const { centerX, centerZ, radius } = record;
+  try {
+    indexAabb(buckets.cells, buckets.cellsById, key, centerX - radius, centerX + radius, centerZ - radius, centerZ + radius, VISIBILITY_CELL_SIZE);
+  } catch {
+    buckets.unbounded.add(key);
   }
 }
 
-function pushBucket(map: Map<string, string[]>, record: VisibilityRecord, cellSize = VISIBILITY_CELL_SIZE): void {
-  pushRecordBucket(map, record, record.id, cellSize);
-}
-
-function pushRawBucket(map: Map<string, string[]>, cellX: number, cellZ: number, value: string): void {
-  const key = cellKey(cellX, cellZ);
-  const existing = map.get(key);
-  if (existing) {
-    existing.push(value);
-    return;
-  }
-  map.set(key, [value]);
+export function unindexVisibilityRecord(buckets: VisibilityBuckets, key: string): void {
+  unindexId(buckets.cells, buckets.cellsById, key);
+  buckets.unbounded.delete(key);
 }
 
 function createRecord(
@@ -121,20 +126,18 @@ export function buildTileGroupRecord(group: TileGroupConfig, cellSize = VISIBILI
   if (group.tiles.length === 0) return null;
   let minX = Infinity;
   let maxX = -Infinity;
-  let minY = 0;
+  const minY = 0;
   let maxY = 0.2;
   let minZ = Infinity;
   let maxZ = -Infinity;
 
   for (const tile of group.tiles) {
-    const size = tile.size ?? 1;
-    const half = size * 0.5;
-    minX = Math.min(minX, tile.position.x - half);
-    maxX = Math.max(maxX, tile.position.x + half);
-    minY = Math.min(minY, 0);
+    const bounds = boxBoundsXZ(tileBox(tile));
+    minX = Math.min(minX, bounds.minX);
+    maxX = Math.max(maxX, bounds.maxX);
     maxY = Math.max(maxY, Math.max(tile.position.y, 0.2) + 1.5);
-    minZ = Math.min(minZ, tile.position.z - half);
-    maxZ = Math.max(maxZ, tile.position.z + half);
+    minZ = Math.min(minZ, bounds.minZ);
+    maxZ = Math.max(maxZ, bounds.maxZ);
   }
 
   return createRecord(group.id, minX, maxX, minY, maxY, minZ, maxZ, cellSize);
@@ -150,30 +153,29 @@ export function buildWallGroupRecord(group: WallGroupConfig, cellSize = VISIBILI
   let maxZ = -Infinity;
 
   for (const wall of group.walls) {
-    minX = Math.min(minX, wall.position.x - 1.1);
-    maxX = Math.max(maxX, wall.position.x + 1.1);
-    minY = Math.min(minY, wall.position.y);
-    maxY = Math.max(maxY, wall.position.y + 3.5);
-    minZ = Math.min(minZ, wall.position.z - 1.1);
-    maxZ = Math.max(maxZ, wall.position.z + 1.1);
+    const box = wallBox(wall);
+    const bounds = boxBoundsXZ(box);
+    minX = Math.min(minX, bounds.minX);
+    maxX = Math.max(maxX, bounds.maxX);
+    minY = Math.min(minY, box.center[1] - box.half[1]);
+    maxY = Math.max(maxY, box.center[1] + box.half[1]);
+    minZ = Math.min(minZ, bounds.minZ);
+    maxZ = Math.max(maxZ, bounds.maxZ);
   }
 
   return createRecord(group.id, minX, maxX, minY, maxY, minZ, maxZ, cellSize);
 }
 
 export function buildBlockRecord(block: BuildingBlockConfig, cellSize = VISIBILITY_CELL_SIZE): VisibilityRecord {
-  const width = Math.max(1, Math.round(block.size?.x ?? 1)) * TILE_CONSTANTS.GRID_CELL_SIZE;
-  const height = Math.max(1, Math.round(block.size?.y ?? 1)) * TILE_CONSTANTS.HEIGHT_STEP;
-  const depth = Math.max(1, Math.round(block.size?.z ?? 1)) * TILE_CONSTANTS.GRID_CELL_SIZE;
-  const halfCell = TILE_CONSTANTS.GRID_CELL_SIZE * 0.5;
+  const { center, half } = blockBox(block);
   return createRecord(
     block.id,
-    block.position.x - halfCell,
-    block.position.x - halfCell + width,
-    block.position.y,
-    block.position.y + height,
-    block.position.z - halfCell,
-    block.position.z - halfCell + depth,
+    center[0] - half[0],
+    center[0] + half[0],
+    center[1] - half[1],
+    center[1] + half[1],
+    center[2] - half[2],
+    center[2] + half[2],
     cellSize,
   );
 }
@@ -208,107 +210,47 @@ export function buildObjectRecord(object: PlacedObject, cellSize = VISIBILITY_CE
   };
 }
 
-export function buildVisibilityIndex(
-  wallGroups: WallGroupConfig[],
-  tileGroups: TileGroupConfig[],
-  objects: PlacedObject[],
-  blocksOrCellSize: BuildingBlockConfig[] | number = [],
-  maybeCellSize = VISIBILITY_CELL_SIZE,
-): VisibilityIndex {
-  const blocks = Array.isArray(blocksOrCellSize) ? blocksOrCellSize : [];
-  const cellSize = typeof blocksOrCellSize === 'number' ? blocksOrCellSize : maybeCellSize;
-  const index: VisibilityIndex = {
-    tileById: new Map(),
-    wallById: new Map(),
-    blockById: new Map(),
-    objectById: new Map(),
-    tileBuckets: new Map(),
-    wallBuckets: new Map(),
-    blockBuckets: new Map(),
-    objectBuckets: new Map(),
-    occluderByKey: new Map(),
-    occluderBuckets: new Map(),
-  };
-
-  for (const group of tileGroups) {
-    const record = buildTileGroupRecord(group, cellSize);
-    if (!record) continue;
-    index.tileById.set(record.id, record);
-    pushBucket(index.tileBuckets, record, cellSize);
-    if (record.radius >= OCCLUDER_MIN_RADIUS) {
-      const occluder: OccluderRecord = {
-        ...record,
-        key: `tile:${record.id}`,
-        kind: 'tile',
-        strength: record.radius,
-      };
-      index.occluderByKey.set(occluder.key, occluder);
-      pushRecordBucket(index.occluderBuckets, occluder, occluder.key, cellSize);
-    }
-  }
-
-  for (const group of wallGroups) {
-    const record = buildWallGroupRecord(group, cellSize);
-    if (!record) continue;
-    index.wallById.set(record.id, record);
-    pushBucket(index.wallBuckets, record, cellSize);
-    if (record.radius >= OCCLUDER_MIN_WALL_RADIUS || group.walls.length >= 4) {
-      const occluder: OccluderRecord = {
-        ...record,
-        key: `wall:${record.id}`,
-        kind: 'wall',
-        strength: record.radius * 1.15,
-      };
-      index.occluderByKey.set(occluder.key, occluder);
-      pushRecordBucket(index.occluderBuckets, occluder, occluder.key, cellSize);
-    }
-  }
-
-  for (const block of blocks) {
-    const record = buildBlockRecord(block, cellSize);
-    index.blockById.set(record.id, record);
-    pushBucket(index.blockBuckets, record, cellSize);
-    if (record.radius >= OCCLUDER_MIN_WALL_RADIUS || (block.size?.y ?? 1) >= 2) {
-      const occluder: OccluderRecord = {
-        ...record,
-        key: `block:${record.id}`,
-        kind: 'block',
-        strength: record.radius * 1.1,
-      };
-      index.occluderByKey.set(occluder.key, occluder);
-      pushRecordBucket(index.occluderBuckets, occluder, occluder.key, cellSize);
-    }
-  }
-
-  for (const object of objects) {
-    const record = buildObjectRecord(object, cellSize);
-    index.objectById.set(record.id, record);
-    pushBucket(index.objectBuckets, record, cellSize);
-  }
-
-  return index;
-}
-
 export function collectCandidateIds(
-  buckets: Map<string, string[]>,
+  buckets: VisibilityBuckets,
   cameraX: number,
   cameraZ: number,
   maxDistance = VISIBILITY_MAX_DISTANCE,
-  cellSize = VISIBILITY_CELL_SIZE,
 ): Set<string> {
-  const cx = toCellCoord(cameraX, cellSize);
-  const cz = toCellCoord(cameraZ, cellSize);
-  const cellRadius = Math.ceil(maxDistance / cellSize);
+  if (!Number.isFinite(cameraX) || !Number.isFinite(cameraZ)) return new Set();
+  const ids = queryAabbIds(
+    buckets.cells,
+    cameraX - maxDistance,
+    cameraX + maxDistance,
+    cameraZ - maxDistance,
+    cameraZ + maxDistance,
+    VISIBILITY_CELL_SIZE,
+  );
+  for (const id of buckets.unbounded) ids.add(id);
+  return ids;
+}
+
+/**
+ * Entities within draw distance of the viewer. Membership has hysteresis so orbiting or small moves never
+ * remount a group; off-screen culling is left to the renderer's per-object frustum test.
+ */
+export function collectResidentIds(
+  layer: VisibilityLayer,
+  x: number,
+  y: number,
+  z: number,
+  previous: ReadonlySet<string>,
+): Set<string> {
+  const far = VISIBILITY_MAX_DISTANCE + VISIBILITY_RESIDENCY_MARGIN;
   const ids = new Set<string>();
-
-  for (let z = cz - cellRadius; z <= cz + cellRadius; z += 1) {
-    for (let x = cx - cellRadius; x <= cx + cellRadius; x += 1) {
-      const bucket = buckets.get(cellKey(x, z));
-      if (!bucket) continue;
-      for (const id of bucket) ids.add(id);
-    }
+  for (const id of collectCandidateIds(layer.buckets, x, z, far)) {
+    const record = layer.byId.get(id);
+    if (!record) continue;
+    const limit = (previous.has(id) ? far : VISIBILITY_MAX_DISTANCE) + record.radius;
+    const dx = record.centerX - x;
+    const dy = record.centerY - y;
+    const dz = record.centerZ - z;
+    if (dx * dx + dy * dy + dz * dz <= limit * limit) ids.add(id);
   }
-
   return ids;
 }
 
@@ -317,12 +259,11 @@ export function collectOccluderCandidates(
   cameraX: number,
   cameraZ: number,
   maxDistance = VISIBILITY_MAX_DISTANCE,
-  cellSize = VISIBILITY_CELL_SIZE,
 ): OccluderRecord[] {
-  const keys = collectCandidateIds(index.occluderBuckets, cameraX, cameraZ, maxDistance, cellSize);
+  const keys = collectCandidateIds(index.occluders.buckets, cameraX, cameraZ, maxDistance);
   const occluders: OccluderRecord[] = [];
   for (const key of keys) {
-    const occluder = index.occluderByKey.get(key);
+    const occluder = index.occluders.byKey.get(key);
     if (occluder) occluders.push(occluder);
   }
   return occluders;
@@ -337,7 +278,7 @@ type OcclusionScratch = {
 
 export function isOccludedByAny(
   record: VisibilityRecord,
-  selfKind: 'tile' | 'wall' | 'block' | 'object',
+  selfKind: VisibilityKind,
   camera: VectorLike,
   occluders: OccluderRecord[],
   scratch: OcclusionScratch,

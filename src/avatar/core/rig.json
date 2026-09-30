@@ -1,0 +1,30 @@
+{
+  "id": "gaesup-humanoid-v1",
+  "bodyArchetype": "SD_NEUTRAL_V1",
+  "pose": "A-pose",
+  "bones": [
+    ["root", null, 0, 0, 0],
+    ["hips", "root", 0, 0.72, 0],
+    ["spine", "hips", 0, 0.13, 0],
+    ["chest", "spine", 0, 0.16, 0],
+    ["upperChest", "chest", 0, 0.1, 0],
+    ["neck", "upperChest", 0, 0.1, 0],
+    ["head", "neck", 0, 0.23, 0],
+    ["shoulderL", "upperChest", 0.13, 0, 0],
+    ["upperArmL", "shoulderL", 0.1, -0.03, 0],
+    ["lowerArmL", "upperArmL", 0.14, -0.18, 0],
+    ["handL", "lowerArmL", 0.12, -0.16, 0],
+    ["shoulderR", "upperChest", -0.13, 0, 0],
+    ["upperArmR", "shoulderR", -0.1, -0.03, 0],
+    ["lowerArmR", "upperArmR", -0.14, -0.18, 0],
+    ["handR", "lowerArmR", -0.12, -0.16, 0],
+    ["upperLegL", "hips", 0.105, -0.03, 0],
+    ["lowerLegL", "upperLegL", 0, -0.29, 0],
+    ["footL", "lowerLegL", 0, -0.29, 0],
+    ["toeL", "footL", 0, -0.04, 0.12],
+    ["upperLegR", "hips", -0.105, -0.03, 0],
+    ["lowerLegR", "upperLegR", 0, -0.29, 0],
+    ["footR", "lowerLegR", 0, -0.29, 0],
+    ["toeR", "footR", 0, -0.04, 0.12]
+  ]
+}

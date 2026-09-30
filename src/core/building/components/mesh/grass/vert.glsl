@@ -1,4 +1,8 @@
 precision highp float;
+#ifndef GRASS_DEPTH
+#include <common>
+#include <shadowmap_pars_vertex>
+#endif
 attribute vec3 offset;
 attribute vec4 orientation;
 attribute float halfRootAngleSin;
@@ -6,6 +10,7 @@ attribute float halfRootAngleCos;
 attribute float stretch;
 uniform float time;
 uniform float windScale;
+uniform vec2 windDirection;
 uniform float bladeHeight;
 uniform vec3 trampleCenter;
 uniform float trampleRadius;
@@ -64,8 +69,9 @@ void main() {
   vec3 vPosition = vec3(position.x, position.y + position.y * stretch, position.z);
   vPosition = rotateVectorByQuaternion(vPosition, bent);
 
+  // Tips bend downwind: about the ground axis across the wind (scaled like the old diagonal one).
   float windAngle = noise * 0.3 * windScale;
-  vec4 windQuat = vec4(sin(windAngle), 0.0, -sin(windAngle), cos(windAngle));
+  vec4 windQuat = vec4(vec3(windDirection.y, 0.0, -windDirection.x) * sin(windAngle) * 1.41421356, cos(windAngle));
   vPosition = rotateVectorByQuaternion(vPosition, windQuat);
 
   // Player trampling: blades within `trampleRadius` of `trampleCenter` get
@@ -89,4 +95,9 @@ void main() {
   vShade = clamp(0.82 + noise * 0.08 + orientation.w * 0.06, 0.72, 1.1);
   vUv = uv;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(offset + vPosition, 1.0);
+#ifndef GRASS_DEPTH
+  vec4 worldPosition = modelMatrix * vec4(offset + vPosition, 1.0);
+  vec3 transformedNormal = normalMatrix * vec3(0.0, 1.0, 0.0);
+  #include <shadowmap_vertex>
+#endif
 }

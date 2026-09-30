@@ -3,15 +3,16 @@ import { useCallback, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { createUniqueId } from '../../utils/id';
 import { getDefaultBuildingObject } from '../catalog';
-import { useBuildingStore } from '../stores/buildingStore';
+import { tileWorldSize } from '../model/footprint';
+import { useBuildingStore, useBuildingStoreApi } from '../stores/buildingStore';
 import { MeshConfig, Position3D, Rotation3D, TileGroupConfig, TileObjectType } from '../types';
 import { TILE_CONSTANTS } from '../types/constants';
 
 const _vec2 = new THREE.Vector2();
 const _groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const _intersection = new THREE.Vector3();
-let _idSeq = 0;
 
 function sanitizeMaterialIdPart(value: string): string {
   return value.replace(/[^a-zA-Z0-9_-]/g, '');
@@ -53,7 +54,7 @@ export function findTerrainBlockMaterial(
   for (const group of tileGroups) {
     for (const tile of group.tiles) {
       if (tile.objectType !== 'sand' && tile.objectType !== 'snowfield') continue;
-      const tileSize = (tile.size ?? 1) * TILE_CONSTANTS.GRID_CELL_SIZE;
+      const tileSize = tileWorldSize(tile);
       const half = tileSize * 0.5;
       const inX = position.x >= tile.position.x - half && position.x <= tile.position.x + half;
       const inZ = position.z >= tile.position.z - half && position.z <= tile.position.z + half;
@@ -74,6 +75,7 @@ export function findTerrainBlockMaterial(
 }
 
 export function useBuildingEditor() {
+  const buildingStore = useBuildingStoreApi();
   const { camera, raycaster } = useThree();
   const mouseRef = useRef({ x: 0, y: 0 });
 
@@ -87,14 +89,15 @@ export function useBuildingEditor() {
   const setSelectedBlockId = useBuildingStore((s) => s.setSelectedBlockId);
   const setHoverPosition = useBuildingStore((s) => s.setHoverPosition);
 
-  const raycastGround = useCallback(() => {
+  /** The ground point under the pointer, snapped to the building grid or, given `step`, to that finer one. */
+  const raycastGround = useCallback((step?: number) => {
     _vec2.set(mouseRef.current.x, mouseRef.current.y);
     raycaster.setFromCamera(_vec2, camera);
-    if (raycaster.ray.intersectPlane(_groundPlane, _intersection)) {
-      return snapPosition({ x: _intersection.x, y: 0, z: _intersection.z });
-    }
-    return null;
-  }, [camera, raycaster, snapPosition]);
+    if (!raycaster.ray.intersectPlane(_groundPlane, _intersection)) return null;
+    const point = { x: _intersection.x, y: 0, z: _intersection.z };
+    if (!step || !buildingStore.getState().snapToGrid) return snapPosition(point);
+    return { x: Math.round(point.x / step) * step, y: 0, z: Math.round(point.z / step) * step };
+  }, [buildingStore, camera, raycaster, snapPosition]);
 
   /**
    * Box-style stacking hover: snaps to the XZ grid first, then asks the store
@@ -104,9 +107,9 @@ export function useBuildingEditor() {
   const raycastStackable = useCallback(() => {
     const grounded = raycastGround();
     if (!grounded) return null;
-    const support = useBuildingStore.getState().getSupportHeightAt(grounded);
+    const support = buildingStore.getState().getSupportHeightAt(grounded);
     return { ...grounded, y: support };
-  }, [raycastGround]);
+  }, [buildingStore, raycastGround]);
 
   const updateMousePosition = useCallback((event: MouseEvent) => {
     const targetLike = (event.currentTarget as Partial<HTMLCanvasElement> | null)
@@ -129,15 +132,17 @@ export function useBuildingEditor() {
     mouseRef.current.x = normalizedX * 2 - 1;
     mouseRef.current.y = -normalizedY * 2 + 1;
 
-    const mode = useBuildingStore.getState().editMode;
+    const mode = buildingStore.getState().editMode;
     if (mode === 'tile' || mode === 'block' || mode === 'npc') {
       setHoverPosition(raycastStackable());
-    } else if (mode === 'wall' || mode === 'object') {
+    } else if (mode === 'object') {
+      setHoverPosition(raycastGround(TILE_CONSTANTS.OBJECT_SNAP_SIZE));
+    } else if (mode === 'wall') {
       setHoverPosition(raycastGround());
     } else {
       setHoverPosition(null);
     }
-  }, [raycastGround, raycastStackable, setHoverPosition]);
+  }, [buildingStore, raycastGround, raycastStackable, setHoverPosition]);
 
   const placeWall = useCallback(() => {
     const {
@@ -147,23 +152,24 @@ export function useBuildingEditor() {
       currentWallKind,
       checkWallPosition,
       hoverPosition,
-    } = useBuildingStore.getState();
+    } = buildingStore.getState();
     if (mode !== 'wall' || !groupId || !hoverPosition) return;
     if (checkWallPosition(hoverPosition, currentWallRotation)) return;
     const rotation: Rotation3D = { x: 0, y: currentWallRotation, z: 0 };
     addWall(groupId, {
-      id: `wall-${++_idSeq}-${Date.now()}`,
+      id: createUniqueId('wall'),
       position: hoverPosition,
       rotation,
       wallGroupId: groupId,
       wallKind: currentWallKind,
     });
-  }, [addWall]);
+  }, [buildingStore, addWall]);
 
   const placeTile = useCallback(() => {
     const {
       editMode: mode,
-      selectedTileGroupId: groupId,
+      selectedTileGroupId,
+      tileGroups,
       checkTilePosition,
       getSupportHeightAt,
       currentTileMultiplier,
@@ -171,7 +177,10 @@ export function useBuildingEditor() {
       currentTileShape,
       currentTileRotation,
       hoverPosition,
-    } = useBuildingStore.getState();
+    } = buildingStore.getState();
+    // A selected group the world's own data no longer has gives way to the world's first group.
+    const known = !selectedTileGroupId || !tileGroups || tileGroups.has(selectedTileGroupId);
+    const groupId = known ? selectedTileGroupId : tileGroups.keys().next().value ?? selectedTileGroupId;
     if (mode !== 'tile' || !groupId || !hoverPosition) return;
 
     // Stacking semantics:
@@ -189,14 +198,14 @@ export function useBuildingEditor() {
     const placement = { ...hoverPosition, y: baseY };
     if (checkTilePosition(placement)) return;
     addTile(groupId, {
-      id: `tile-${++_idSeq}-${Date.now()}`,
+      id: createUniqueId('tile'),
       position: placement,
       tileGroupId: groupId,
       size: currentTileMultiplier,
       rotation: currentTileRotation,
       shape: currentTileShape,
     });
-  }, [addTile]);
+  }, [buildingStore, addTile]);
 
   const placeBlock = useCallback(() => {
     const {
@@ -212,7 +221,7 @@ export function useBuildingEditor() {
       meshes,
       addMesh,
       hoverPosition,
-    } = useBuildingStore.getState();
+    } = buildingStore.getState();
     if (mode !== 'block' || !hoverPosition) return;
 
     const heightStep = TILE_CONSTANTS.HEIGHT_STEP;
@@ -229,7 +238,7 @@ export function useBuildingEditor() {
       addMesh(terrainBlockMaterial);
     }
     const block = {
-      id: `block-${++_idSeq}-${Date.now()}`,
+      id: createUniqueId('block'),
       position: placement,
       size: { x: sizeXZ, y: 1, z: sizeXZ },
       materialId: terrainBlockMaterial?.id ?? 'default-block',
@@ -237,7 +246,7 @@ export function useBuildingEditor() {
 
     if (checkBlockPosition(block)) return;
     addBlock(block);
-  }, [addBlock]);
+  }, [buildingStore, addBlock]);
 
   const placeObject = useCallback(() => {
     const {
@@ -270,14 +279,18 @@ export function useBuildingEditor() {
       currentModelUrl,
       currentModelScale,
       currentModelColor,
-    } = useBuildingStore.getState();
+    } = buildingStore.getState();
     if (mode !== 'object' || selectedPlacedObjectType === 'none' || !hoverPosition) return;
+    // One object to a spot: a click where one stands does not stack another on it.
+    const spot = TILE_CONSTANTS.OBJECT_SNAP_SIZE / 2;
+    if (buildingStore.getState().objects.some((object) =>
+      Math.abs(object.position.x - hoverPosition.x) < spot && Math.abs(object.position.z - hoverPosition.z) < spot)) return;
 
     let tileY = 0;
     const cellSize = TILE_CONSTANTS.GRID_CELL_SIZE;
     for (const group of tileGroups.values()) {
       for (const tile of group.tiles) {
-        const half = ((tile.size || 1) * cellSize) / 2;
+        const half = tileWorldSize(tile) / 2;
         if (
           Math.abs(tile.position.x - hoverPosition.x) < half &&
           Math.abs(tile.position.z - hoverPosition.z) < half
@@ -290,7 +303,7 @@ export function useBuildingEditor() {
     const config =
       selectedPlacedObjectType === 'tree' || selectedPlacedObjectType === 'sakura'
         ? {
-            size: useBuildingStore.getState().currentTileMultiplier * cellSize,
+            size: buildingStore.getState().currentTileMultiplier * cellSize,
             primaryColor: currentObjectPrimaryColor,
             secondaryColor: currentObjectSecondaryColor,
             treeKind: selectedPlacedObjectType === 'sakura' ? 'sakura' : currentTreeKind,
@@ -324,7 +337,8 @@ export function useBuildingEditor() {
                       modelId: catalogItem?.id ?? selectedModelObjectId,
                       modelLabel: catalogItem?.label ?? selectedModelObjectId,
                       modelFallbackKind: catalogItem?.fallbackKind ?? 'generic',
-                      modelScale: currentModelScale || catalogItem?.defaultScale || 1,
+                      // The editor scale multiplies the catalog's character-sized default.
+                      modelScale: (catalogItem?.defaultScale ?? 1) * (currentModelScale || 1),
                       modelColor: currentModelColor || catalogItem?.defaultColor || '#9b7653',
                       ...(modelUrl ? { modelUrl } : {}),
                     };
@@ -332,7 +346,7 @@ export function useBuildingEditor() {
               : undefined;
 
     addObject({
-      id: `obj-${++_idSeq}-${Date.now()}`,
+      id: createUniqueId('obj'),
       type: selectedPlacedObjectType,
       position: {
         ...hoverPosition,
@@ -343,28 +357,28 @@ export function useBuildingEditor() {
       ...(currentObjectRotation !== 0 ? { rotation: currentObjectRotation } : {}),
       ...(config ? { config } : {}),
     });
-  }, [addObject]);
+  }, [buildingStore, addObject]);
 
   const handleWallClick = useCallback((wallId: string) => {
-    const { editMode: mode } = useBuildingStore.getState();
+    const { editMode: mode } = buildingStore.getState();
     if (mode === 'wall') {
       setSelectedWallId(wallId);
     }
-  }, [setSelectedWallId]);
+  }, [buildingStore, setSelectedWallId]);
 
   const handleTileClick = useCallback((tileId: string) => {
-    const { editMode: mode } = useBuildingStore.getState();
+    const { editMode: mode } = buildingStore.getState();
     if (mode === 'tile') {
       setSelectedTileId(tileId);
     }
-  }, [setSelectedTileId]);
+  }, [buildingStore, setSelectedTileId]);
 
   const handleBlockClick = useCallback((blockId: string) => {
-    const { editMode: mode } = useBuildingStore.getState();
+    const { editMode: mode } = buildingStore.getState();
     if (mode === 'block') {
       setSelectedBlockId(blockId);
     }
-  }, [setSelectedBlockId]);
+  }, [buildingStore, setSelectedBlockId]);
 
   return {
     updateMousePosition,

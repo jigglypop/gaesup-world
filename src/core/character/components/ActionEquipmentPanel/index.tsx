@@ -26,7 +26,7 @@ import {
   applyCharacterEquipmentPreset,
   toggleCharacterWeapon,
 } from '../../actionEquipment';
-import { useCharacterStore } from '../../stores/characterStore';
+import { useCharacterStore, useCharacterStoreApi } from '../../stores/characterStore';
 import './styles.css';
 export function ActionEquipmentPanel({
   presets = DEFAULT_CHARACTER_EQUIPMENT_PRESETS,
@@ -46,6 +46,7 @@ export function ActionEquipmentPanel({
   formatMetaLabel,
   children,
 }: ActionEquipmentPanelProps = {}) {
+  const characterStore = useCharacterStoreApi();
   const face = useCharacterStore((state) => state.appearance.face);
   const outfits = useCharacterStore((state) => state.outfits);
   const setFace = useCharacterStore((state) => state.setFace);
@@ -86,11 +87,11 @@ export function ActionEquipmentPanel({
     setFace(normalizedFaceSequence[(index + 1) % normalizedFaceSequence.length] ?? 'default');
   }, [face, normalizedFaceSequence, setFace]);
   const toggleWeapon = useCallback(() => {
-    toggleCharacterWeapon(weaponItemId);
-  }, [weaponItemId]);
+    toggleCharacterWeapon(weaponItemId, characterStore);
+  }, [weaponItemId, characterStore]);
   const applyPreset = useCallback((preset: (typeof presets)[number]) => {
-    applyCharacterEquipmentPreset(preset);
-  }, []);
+    applyCharacterEquipmentPreset(preset, characterStore);
+  }, [characterStore]);
   const actions = useMemo(
     () => ({ cycleFace, toggleWeapon, applyPreset, reset: resetAppearance }),
     [applyPreset, cycleFace, resetAppearance, toggleWeapon],

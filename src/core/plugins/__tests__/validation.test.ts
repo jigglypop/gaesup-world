@@ -1,8 +1,5 @@
 import {
   assertValidGaesupPlugin,
-  createCozyLifeSamplePlugin,
-  createHighGraphicsSamplePlugin,
-  createShooterKitSamplePlugin,
   defineGaesupPlugin,
   validateGaesupPlugin,
 } from '..';
@@ -59,13 +56,11 @@ describe('plugin validation utilities', () => {
     expect(result.issues.some((issue) => issue.code === 'save-namespace')).toBe(true);
   });
 
-  it('asserts official sample plugins are valid templates', async () => {
-    await expect(assertValidGaesupPlugin(createCozyLifeSamplePlugin())).resolves.toMatchObject({ ok: true });
-    await expect(assertValidGaesupPlugin(createHighGraphicsSamplePlugin(), {
-      expectedRuntime: 'client',
-    })).resolves.toMatchObject({ ok: true });
-    await expect(assertValidGaesupPlugin(createShooterKitSamplePlugin(), {
-      expectedRuntime: ['both', 'server'],
-    })).resolves.toMatchObject({ ok: true });
+  it('asserts templates are valid for the runtime they expect', async () => {
+    const client = defineGaesupPlugin({ id: '@test/client', name: 'Client', version: '0.1.0', runtime: 'client', setup: () => undefined });
+    const shared = defineGaesupPlugin({ id: '@test/shared', name: 'Shared', version: '0.1.0', runtime: 'both', setup: () => undefined });
+    await expect(assertValidGaesupPlugin(client, { expectedRuntime: 'client' })).resolves.toMatchObject({ ok: true });
+    await expect(assertValidGaesupPlugin(shared, { expectedRuntime: ['both', 'server'] })).resolves.toMatchObject({ ok: true });
+    await expect(assertValidGaesupPlugin(client, { expectedRuntime: 'server' })).rejects.toThrow();
   });
 });

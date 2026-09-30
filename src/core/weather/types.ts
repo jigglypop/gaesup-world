@@ -1,4 +1,6 @@
-export type WeatherKind = 'sunny' | 'cloudy' | 'rain' | 'snow' | 'storm';
+export type WeatherKind = 'sunny' | 'cloudy' | 'rain' | 'snow' | 'storm' | 'wind';
+
+export const WEATHER_KINDS: readonly WeatherKind[] = ['sunny', 'cloudy', 'rain', 'snow', 'storm', 'wind'];
 
 export type WeatherEntry = {
   day: number;
@@ -11,3 +13,6 @@ export type WeatherSerialized = {
   current: WeatherEntry | null;
   history: WeatherEntry[];
 };
+
+/** Falling rain streaks, their splashes on the ground, snowflakes, and leaves or petals blown by the wind. */
+export type PrecipitationKind = 'rain' | 'splash' | 'snow' | 'leaves';

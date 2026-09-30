@@ -1,3 +1,4 @@
+import { logger } from '../../utils/logger';
 import { IDisposable, BridgeEventType, BridgeEvent, BridgeMiddleware, RuntimeValue } from '../types';
 
 export abstract class AbstractBridge<
@@ -21,7 +22,7 @@ export abstract class AbstractBridge<
   use(middleware: BridgeMiddleware<EngineType, SnapshotType, CommandType>): void {
     this.middlewares.push(middleware);
   }
-  protected hasEventConsumers(type: BridgeEventType): boolean {
+  protected hasEventObservers(type: BridgeEventType): boolean {
     return this.middlewares.length > 0 || (this.eventHandlers.get(type)?.size ?? 0) > 0;
   }
   protected emit(event: BridgeEvent<EngineType, SnapshotType, CommandType>): void {
@@ -29,6 +30,7 @@ export abstract class AbstractBridge<
     if (handlers) {
       handlers.forEach(handler => handler(event));
     }
+    if (this.middlewares.length === 0) return;
     let index = 0;
     const next = () => {
       if (index < this.middlewares.length) {
@@ -87,7 +89,12 @@ export abstract class AbstractBridge<
   execute(id: string, command: CommandType): void {
     const engine = this.getEngine(id);
     if (!engine) return;
-    if (this.hasEventConsumers('execute')) {
+    // Untyped callers reach bridges too; anything but a command object never gets to the engine.
+    if (!command || typeof command !== 'object') {
+      logger.warn(`[${this.constructor.name}] Ignored invalid command for ${id}`);
+      return;
+    }
+    if (this.hasEventObservers('execute')) {
       this.emit({ type: 'execute', id, timestamp: Date.now(), data: { command } });
     }
     this.executeCommand(engine, command, id);
@@ -98,7 +105,8 @@ export abstract class AbstractBridge<
     const engine = this.getEngine(id);
     if (!engine) return null;
     const snapshot = this.createSnapshot(engine, id);
-    if (snapshot && this.hasEventConsumers('snapshot')) {
+    // Snapshots are read every physics tick; skip building an event nobody observes.
+    if (snapshot && this.hasEventObservers('snapshot')) {
       this.emit({ type: 'snapshot', id, timestamp: Date.now(), data: { snapshot } });
     }
     return snapshot;

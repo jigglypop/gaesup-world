@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 
+import { useGaesupRuntime } from '../../runtime/runtimeContext';
+import { lazyScopedStore } from '../../stores/scopedStore';
+
 type BuildingVisibilityState = {
   initialized: boolean;
   visibleTileGroupIds: Set<string>;
@@ -24,9 +27,10 @@ function sameSet(a: Set<string>, b: Set<string>): boolean {
   return true;
 }
 
-const EMPTY = new Set<string>();
 
-export const useBuildingVisibilityStore = create<BuildingVisibilityState>((set) => ({
+export function createBuildingVisibilityStore() {
+  const EMPTY = new Set<string>();
+  return create<BuildingVisibilityState>((set) => ({
   initialized: false,
   visibleTileGroupIds: EMPTY,
   visibleWallGroupIds: EMPTY,
@@ -65,3 +69,11 @@ export const useBuildingVisibilityStore = create<BuildingVisibilityState>((set) 
       visibleObjectIds: EMPTY,
     }),
 }));
+
+}
+
+export type BuildingVisibilityStore = ReturnType<typeof createBuildingVisibilityStore>;
+/** React uses the nearest runtime; static methods retain the legacy default. */
+export const { useStore: useBuildingVisibilityStore, useStoreApi: useBuildingVisibilityStoreApi } = lazyScopedStore(
+  'useBuildingVisibilityStore', createBuildingVisibilityStore, () => useGaesupRuntime()?.buildingVisibilityStore,
+);

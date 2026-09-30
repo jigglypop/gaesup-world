@@ -2,9 +2,6 @@
 // Jest loads setupFilesAfterEnv via CommonJS; keep this file CJS-compatible.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 require("@testing-library/jest-dom");
-// Decorator metadata used by boilerplate/decorators tests.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-require("reflect-metadata");
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { TextEncoder, TextDecoder } = require("node:util");
@@ -37,7 +34,7 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 // Canvas polyfill for Three.js in jsdom
-if (!global.HTMLCanvasElement.prototype.getContext) {
+if (typeof global.HTMLCanvasElement !== "undefined" && !global.HTMLCanvasElement.prototype.getContext) {
   global.HTMLCanvasElement.prototype.getContext = () => ({
     fillRect: () => {},
     clearRect: () => {},

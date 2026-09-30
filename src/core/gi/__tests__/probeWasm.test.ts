@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 
+import { instantiateGiWasm } from '../core/giWasm';
 import { ProbeCascade, createVoxelGrid, fillVoxelBox, registerVoxelMaterial } from '../index';
 import type { GiEnvironment, GiWasmExports, ProbeVolumeConfig, VoxelGrid } from '../index';
-import { instantiateGiWasm } from '../core/giWasm';
 
 const WASM_PATH = path.resolve(process.cwd(), 'public', 'wasm', 'gaesup_gi.wasm');
 const TOLERANCE = 1e-5;

@@ -6,8 +6,8 @@ import type {
   WallConfig,
   WallGroupConfig,
 } from '../../../building/types';
-import type { BuildingVoxelSource } from '../types';
 import { buildingToVoxelBoxes, wallPieces } from '../buildingVoxelBoxes';
+import type { BuildingVoxelSource } from '../types';
 
 const WHITE: MeshConfig = { id: 'white', color: '#ffffff' };
 const GLASS: MeshConfig = { id: 'glass', color: '#9ed8ff', material: 'GLASS' };

@@ -22,8 +22,8 @@ export class TopDownController extends BaseController {
     const position = activeStateUtils.getPosition(props.activeState);
     const zoom = state.config.zoom || 1;
     const offset = this.offset.set(0, state.config.distance.y * zoom, 0);
-    const orbitPitch = state.config.orbitPitch ?? 0;
-    const orbitYaw = state.config.orbitYaw ?? 0;
+    const orbitPitch = this.getOrbitPitch(state);
+    const orbitYaw = this.getOrbitYaw(state);
 
     if (orbitPitch !== 0) {
       this.pitchQuaternion.setFromAxisAngle(this.topDownXAxis, orbitPitch);

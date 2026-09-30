@@ -1,8 +1,7 @@
 import { RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 
-import { AbstractSystem, SystemContext, SystemUpdateArgs, Inject } from '@core/boilerplate/engine';
-import { Profile, HandleError, ManageRuntime } from '@core/boilerplate/engine';
+import { AbstractSystem, SystemContext, SystemUpdateArgs } from '@core/boilerplate/engine';
 import type { RuntimeRecord } from '@core/boilerplate/engine';
 import type { GameStatesType } from '@core/world/components/Rideable/types';
 
@@ -144,10 +143,8 @@ function isMotionUpdateArgs(context: SystemContext | MotionUpdateArgs): context 
   );
 }
 
-@ManageRuntime({ autoStart: false })
 export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, MotionSystemOptions, MotionUpdateArgs> {
-  @Inject(MotionService)
-  private motionService!: MotionService;
+  private readonly motionService = new MotionService();
 
   // Hot-path scratch objects to avoid per-frame allocations.
   private temp = {
@@ -157,6 +154,7 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
   };
   private tempQuaternion = new THREE.Quaternion();
   private tempForce = new THREE.Vector3();
+  private tempPlanar = new THREE.Vector3();
 
   constructor(options: MotionSystemOptions) {
     super(
@@ -166,7 +164,6 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     );
   }
 
-  @Profile()
   protected performUpdate(args: MotionUpdateArgs): void {
     if (!args.rigidBody) return;
     const { position, velocity, rotation } = this.extractPhysicsState(args.rigidBody);
@@ -182,7 +179,6 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     throw new Error('MotionSystem requires explicit motion update args.');
   }
 
-  @Profile()
   protected override updateMetrics(deltaTime: number): void {
     void deltaTime;
     const previousSpeed = this.metrics.currentSpeed;
@@ -205,14 +201,12 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     return this.temp;
   }
 
-  @HandleError()
   public updatePosition(position: THREE.Vector3, activeState: ActiveStateType): void {
     this.metrics.lastPosition.copy(this.state.position);
     this.state.position.copy(position);
     this.copyVector3(activeState.position, position);
   }
 
-  @HandleError()
   public updateVelocity(velocity: THREE.Vector3, activeState: ActiveStateType, gameStates: GameStatesType): void {
     this.state.velocity.copy(velocity);
     this.state.speed = velocity.length();
@@ -223,7 +217,6 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     this.copyVector3(activeState.velocity, velocity);
   }
 
-  @HandleError()
   public updateRotation(rotation: THREE.Euler, activeState: ActiveStateType): void {
     this.state.rotation.copy(rotation);
     activeState.euler.copy(rotation);
@@ -240,7 +233,6 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     this.metrics.currentSpeed = this.state.speed;
   }
 
-  @HandleError()
   public setGrounded(grounded: boolean, activeState: ActiveStateType, gameStates: GameStatesType): void {
     this.state.isGrounded = grounded;
     this.metrics.groundContact = grounded;
@@ -248,22 +240,26 @@ export class MotionSystem extends AbstractSystem<MotionState, MotionMetrics, Mot
     gameStates.isOnTheGround = grounded;
   }
 
-  @Profile()
   private calculateSpeed(): void {
     const distance = this.state.position.distanceTo(this.metrics.lastPosition);
     this.metrics.totalDistance += distance;
     this.metrics.currentSpeed = this.motionService.calculateSpeed(this.state.velocity);
   }
 
-  @HandleError()
   public calculateJump(config: { jumpSpeed: number }, gameStates: GameStatesType): THREE.Vector3 {
     return this.motionService.calculateJumpForce(this.state.isGrounded, config.jumpSpeed, gameStates);
   }
 
-  @HandleError()
-  public applyForce(movement: THREE.Vector3, rigidBody: RapierRigidBody): void {
-    const config = this.motionService.getDefaultConfig();
-    const force = this.motionService.calculateMovementForce(movement, this.state.velocity, config, this.tempForce);
+  /** Steers the velocity toward `movement` at `config.maxSpeed`; a planar move leaves vertical motion to gravity and jumps. */
+  public applyForce(
+    movement: THREE.Vector3,
+    rigidBody: RapierRigidBody,
+    config: { maxSpeed: number; acceleration: number } = this.motionService.getDefaultConfig(),
+    planar = false,
+  ): void {
+    const target = planar ? this.tempPlanar.set(movement.x, 0, movement.z) : movement;
+    const force = this.motionService.calculateMovementForce(target, this.state.velocity, config, this.tempForce);
+    if (planar) force.y = 0;
     rigidBody.applyImpulse(force, true);
   }
 

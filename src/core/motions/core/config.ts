@@ -19,4 +19,8 @@ export type PhysicsConfigType = {
   airDamping?: number;
   stopDamping?: number;
   navigationAgentRadius?: number | undefined;
+  /** Largest supporting slope in radians, default PI / 4. */
+  maxGroundSlopeAngle?: number;
+  /** Maximum current separation from a solver support contact, in world units (default 0.03). */
+  groundContactTolerance?: number;
 };

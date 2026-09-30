@@ -1,29 +1,32 @@
 import {
   forwardRef,
+  useCallback,
+  useDeferredValue,
   useEffect,
-  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
-  useState,
+  type ForwardedRef,
 } from 'react';
 
-import { useAnimations, useGLTF } from '@react-three/drei';
 import { useGraph } from '@react-three/fiber';
-import { CapsuleCollider, RapierRigidBody, RigidBody, euler } from '@react-three/rapier';
+import { CapsuleCollider, RapierRigidBody, RigidBody, euler, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import { SkeletonUtils } from 'three-stdlib';
 
+import { useSharedAnimations } from '@core/animation/hooks/useSharedAnimations';
+import { normalizeImportedMaterials } from '@core/assets/materialPolicy';
 import { useEntity } from '@core/boilerplate/hooks/useEntity';
+import { useWorldPhysicsInterpolation } from '@core/simulation/physicsContext';
 
 import { InnerGroupRef } from './InnerGroupRef';
 import { PartsGroupRef } from './PartsGroupRef';
-import {
-  applyToonToScene,
-  getDefaultToonMode,
-  releaseToonFromScene,
-} from '../../../rendering/toon';
+import { useGLTFAsset } from '../../../assets/useGLTFAsset';
+import { useContactShadow } from '../../../rendering/lighting/ContactShadows';
+import { releaseObject } from '../../../rendering/release';
+import { useSceneToon } from '../../../rendering/useSceneToon';
 import { useGltfAndSize } from '../../hooks';
+import { useScopedStateManager } from '../../hooks/useStateSystem';
 import { PhysicsEntityProps } from '../types';
 
 const EMPTY_GLTF_DATA_URI =
@@ -35,6 +38,26 @@ const EMPTY_GLTF_DATA_URI =
       nodes: [],
     }),
   );
+
+const UNIT_SCALE: THREE.Vector3Tuple = [1, 1, 1];
+
+/** Bodies stay upright, so only the yaw of a Euler or `[x, y, z]` rotation turns them. */
+function yawOf(rotation: PhysicsEntityProps['rotation']): number {
+  if (rotation instanceof THREE.Euler) return rotation.y;
+  return Array.isArray(rotation) ? rotation[1] : 0;
+}
+
+/** The drawn model's scale; the derived collider follows it, an explicit `colliderSize` stays in world units. */
+function scaleOf(scale: PhysicsEntityProps['scale']): THREE.Vector3Tuple | undefined {
+  if (scale === undefined) return undefined;
+  if (typeof scale === 'number') return [scale, scale, scale];
+  return Array.isArray(scale) ? scale : [scale.x, scale.y, scale.z];
+}
+
+function assignRef<T>(ref: ForwardedRef<T>, value: T | null): void {
+  if (typeof ref === 'function') ref(value);
+  else if (ref) ref.current = value;
+}
 
 function resolveAnimationKey(
   actions: Record<string, THREE.AnimationAction | null>,
@@ -52,15 +75,38 @@ function resolveAnimationKey(
 
 export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
   (props, forwardedRef) => {
+    const { world: physicsWorld } = useRapier();
     const rigidBodyRef = useRef<RapierRigidBody>(null!);
-    useImperativeHandle(forwardedRef, () => rigidBodyRef.current);
-    const { size } = useGltfAndSize({ url: props.url || '' });
-    const modelUrl = props.url?.trim() ? props.url : EMPTY_GLTF_DATA_URI;
-    const { scene, animations } = useGLTF(modelUrl);
-    const { actions, ref: animationRef } = useAnimations(animations);
+    const stateManager = useScopedStateManager();
+    // The controlled character publishes its interpolated pose so cameras follow what is drawn, not the last tick.
+    const bodyType = props.rigidbodyType || (props.isActive ? 'dynamic' : 'fixed');
+    const interpolatedVisual = useWorldPhysicsInterpolation(rigidBodyRef, props.isActive ? stateManager.getActiveState() : undefined, bodyType === 'fixed');
+    // Rapier creates the body in an effect, again after a remount, and hands each one to this stable callback; the
+    // forwarded ref follows the live body instead of whatever existed when a handle was last computed.
+    const boundRef = useRef<ForwardedRef<RapierRigidBody>>(null);
+    const bindBody = useCallback((body: RapierRigidBody | null) => {
+      if (body) rigidBodyRef.current = body;
+      assignRef(boundRef.current, body);
+    }, []);
+    useLayoutEffect(() => {
+      const previous = boundRef.current;
+      boundRef.current = forwardedRef;
+      // A ref the parent swaps in takes over the current body.
+      if (previous !== null && previous !== forwardedRef && rigidBodyRef.current) assignRef(forwardedRef, rigidBodyRef.current);
+      return () => assignRef(forwardedRef, null);
+    }, [forwardedRef]);
+    // A new model loads behind the one on screen: while it suspends React keeps showing the previous model.
+    const url = useDeferredValue(props.url);
+    const { size } = useGltfAndSize({ url: url || '' });
+    const modelUrl = url?.trim() ? url : EMPTY_GLTF_DATA_URI;
+    const { scene, animations } = useGLTFAsset(modelUrl);
+    const { actions, ref: animationRef } = useSharedAnimations(animations, undefined, props.animationCullRadius);
     const activeAnimationRef = useRef<string | undefined>(undefined);
 
     const { handleIntersectionEnter, handleIntersectionExit, handleCollisionEnter } = useEntity({
+      physicsWorld,
+      ...(props.position !== undefined ? { spawnAtBody: true } : {}),
+      ...(props.groundContactFilter ? { groundContactFilter: props.groundContactFilter } : {}),
       rigidBodyRef,
       ...(props.name ? { id: props.name } : {}),
       ...(props.userData ? { userData: props.userData } : {}),
@@ -70,9 +116,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       ...(props.onReady ? { onReady: props.onReady } : {}),
       ...(props.onFrame ? { onFrame: props.onFrame } : {}),
       ...(props.onAnimate ? { onAnimate: props.onAnimate } : {}),
-      ...(props.onDestroy || props.onDestory
-        ? { onDestroy: props.onDestroy ?? props.onDestory }
-        : {}),
+      ...(props.onDestroy ? { onDestroy: props.onDestroy } : {}),
       actions,
       isActive: props.isActive,
       ...(props.animatorController ? { animatorController: props.animatorController } : {}),
@@ -83,15 +127,26 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
       ...(props.colliderSize ? { colliderSize: props.colliderSize } : {}),
     });
 
-    const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
-    const [toonRevision, setToonRevision] = useState(0);
-    const graph = useGraph(clone);
+    // The clone is this entity's own, so its materials are adjusted in place before anything reads them.
+    const materialPolicy = props.materialPolicy ?? 'keep';
+    const clone = useMemo(() => {
+      const owned = SkeletonUtils.clone(scene);
+      normalizeImportedMaterials(owned, materialPolicy);
+      return owned;
+    }, [scene, materialPolicy]);
+    useEffect(() => () => releaseObject(clone), [clone]);
     useLayoutEffect(() => {
-      if (!getDefaultToonMode()) return;
-      applyToonToScene(clone);
-      setToonRevision((revision) => revision + 1);
-      return () => releaseToonFromScene(clone);
-    }, [clone]);
+      if (!props.modelHierarchy) return;
+      clone.traverse((node) => {
+        if (node instanceof THREE.Mesh) {
+          node.castShadow = true;
+          node.receiveShadow = true;
+          if (node instanceof THREE.SkinnedMesh) node.frustumCulled = false;
+        }
+      });
+    }, [clone, props.modelHierarchy]);
+    const graph = useGraph(clone);
+    const toonRevision = useSceneToon(clone);
     const nodes = useMemo(() => ({ ...graph.nodes }), [graph.nodes, toonRevision]);
     const skeleton = useMemo(() => {
       let skel: THREE.Skeleton | null = null;
@@ -106,7 +161,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
     const partsComponents = useMemo(() => {
       if (!props.parts || props.parts.length === 0) return null;
       return props.parts
-        .map(({ url, color }, index) => {
+        .map(({ id, slot, url, color, attachment }, index) => {
           if (!url) return null;
           return (
             <PartsGroupRef
@@ -115,7 +170,8 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
               componentType={props.componentType}
               {...(props.currentAnimation ? { currentAnimation: props.currentAnimation } : {})}
               {...(color ? { color } : {})}
-              key={`${props.componentType}-${url}-${color || 'default'}-${index}`}
+              {...(attachment ? { attachment } : {})}
+              key={`${props.componentType}-${slot ?? id ?? index}-${url}`}
               {...(skeleton ? { skeleton } : {})}
             />
           );
@@ -123,8 +179,12 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         .filter(Boolean);
     }, [props.parts, props.componentType, props.currentAnimation, skeleton]);
 
-    const objectNode = Object.values(nodes).find((node) => node.type === 'Object3D');
-    const safeRotationY = props.rotation instanceof THREE.Euler ? props.rotation.y : 0;
+    // Imported rigs may root at Group/Bone rather than Object3D. Keep the full
+    // hierarchy mounted so every joint and animation track has a live target.
+    const objectNode = clone;
+    const rotationY = yawOf(props.rotation);
+    const scale = scaleOf(props.scale);
+    const [scaleX, scaleY, scaleZ] = scale ?? UNIT_SCALE;
     const outerGroupProps = props.outerGroupRef ? { ref: props.outerGroupRef } : {};
     const innerGroupProps = props.innerGroupRef ? { ref: props.innerGroupRef } : {};
     const rigidBodyBehavior = props.isActive
@@ -140,19 +200,21 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
           y: halfHeight + radius,
         };
       }
-      const width = Math.max(size.x, 0.1);
-      const depth = Math.max(size.z, 0.1);
+      const width = Math.max(size.x * scaleX, 0.1);
+      const depth = Math.max(size.z * scaleZ, 0.1);
       const bodyRadius =
         props.componentType === 'character'
           ? Math.max(0.18, Math.min(width, depth) * 0.35)
           : Math.max(0.2, width * 1.2);
-      const bodyHalfHeight = Math.max(0.05, size.y * 0.5 - bodyRadius);
+      const bodyHalfHeight = Math.max(0.05, size.y * scaleY * 0.5 - bodyRadius);
       return {
         halfHeight: bodyHalfHeight,
         radius: bodyRadius,
         y: bodyHalfHeight + bodyRadius,
       };
-    }, [props.colliderSize, props.componentType, size.x, size.y, size.z]);
+    }, [props.colliderSize, props.componentType, size.x, size.y, size.z, scaleX, scaleY, scaleZ]);
+    // A soft shadow at the feet where `ContactShadows` draws them (indoors, or where no shadow map is drawn).
+    useContactShadow(interpolatedVisual, Math.max(0.35, collider.radius * 1.5));
 
     useEffect(() => {
       if (!props.currentAnimation) return;
@@ -171,12 +233,12 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
         <RigidBody
           {...rigidBodyBehavior}
           colliders={false}
-          ref={rigidBodyRef}
+          ref={bindBody}
           {...(props.name ? { name: props.name } : {})}
           position={props.position}
-          rotation={euler().set(0, safeRotationY, 0)}
+          rotation={euler().set(0, rotationY, 0)}
           userData={props.userData}
-          type={props.rigidbodyType || (props.isActive ? 'dynamic' : 'fixed')}
+          type={bodyType}
           {...(props.sensor !== undefined ? { sensor: props.sensor } : {})}
           onIntersectionEnter={handleIntersectionEnter}
           onIntersectionExit={handleIntersectionExit}
@@ -190,12 +252,15 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
               position={[0, collider.y, 0]}
             />
           )}
+          {props.colliderChildren}
+          <group ref={interpolatedVisual} {...(scale ? { scale } : {})}>
           <InnerGroupRef
             animationRef={animationRef}
             nodes={nodes}
             {...innerGroupProps}
             isActive={props.isActive}
             componentType={props.componentType}
+            {...(props.modelHierarchy !== undefined ? { modelHierarchy: props.modelHierarchy } : {})}
             {...(objectNode ? { objectNode } : {})}
             {...(props.modelYawOffset !== undefined
               ? { modelYawOffset: props.modelYawOffset }
@@ -211,6 +276,7 @@ export const PhysicsEntity = forwardRef<RapierRigidBody, PhysicsEntityProps>(
             {props.children}
             {partsComponents}
           </InnerGroupRef>
+          </group>
         </RigidBody>
       </group>
     );

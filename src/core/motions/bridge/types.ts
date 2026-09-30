@@ -8,7 +8,6 @@ export type MotionEntity = {
   system: MotionSystem;
   rigidBody: RapierRigidBody;
   type: MotionType;
-  grounded: boolean | null;
   dispose: () => void;
 }
 

@@ -1,11 +1,10 @@
 import type { AssetKind, AssetQuery, AssetRecord, AssetSlot, AssetSource } from './types';
+import { isRecord } from '../utils/guards';
 
 type FetchLike = typeof fetch;
 
-const ASSET_KINDS: ReadonlySet<string> = new Set<AssetKind>(['characterPart', 'weapon', 'material', 'tile', 'wall', 'object3d']);
-const ASSET_SLOTS: ReadonlySet<string> = new Set<AssetSlot>(['body', 'hair', 'hat', 'top', 'bottom', 'shoes', 'face', 'weapon', 'shield', 'accessory', 'glasses']);
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !Array.isArray(value);
+const ASSET_KINDS: ReadonlySet<string> = new Set<AssetKind>(['characterPart', 'weapon', 'material', 'tile', 'wall', 'object3d', 'avatar-body', 'avatar-part', 'avatar-animation']);
+const ASSET_SLOTS: ReadonlySet<string> = new Set<AssetSlot>(['body', 'hair', 'hat', 'top', 'bottom', 'shoes', 'face', 'weapon', 'shield', 'accessory', 'glasses', 'onepiece', 'ear', 'back', 'bag', 'hand', 'faceAccessory', 'neckAccessory']);
 
 const buildAssetUrl = (baseUrl: string, query?: AssetQuery): string => {
   const params = new URLSearchParams();
@@ -35,9 +34,10 @@ export class HttpAssetSource implements AssetSource {
   private readonly baseUrl: string;
   private readonly fetcher: FetchLike;
 
-  constructor(baseUrl: string = '/api', fetcher: FetchLike = fetch) {
+  constructor(baseUrl: string = '/api', fetcher?: FetchLike) {
     this.baseUrl = baseUrl;
-    this.fetcher = fetcher;
+    // Looked up per call and called unbound: browsers reject a fetch bound to another object.
+    this.fetcher = fetcher ?? ((input, init) => fetch(input, init));
   }
 
   async listAssets(query?: AssetQuery): Promise<AssetRecord[]> {

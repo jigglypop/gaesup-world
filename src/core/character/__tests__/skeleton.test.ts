@@ -61,9 +61,55 @@ describe('compareSkeletons', () => {
     const character = makeSkeleton(['spine', 'hips', 'extra']);
     expect(compareSkeletons(wearable, character).compatibility).toBe('incompatible');
   });
+
+  it('rejects equal-order duplicates and empty rigs', () => {
+    expect(compareSkeletons(makeSkeleton(['hips', 'hips']), makeSkeleton(['hips', 'hips'])).compatibility).toBe('incompatible');
+    expect(compareSkeletons(makeSkeleton([]), makeSkeleton([])).compatibility).toBe('incompatible');
+  });
+
+  it('rejects matching bone names with a different bind pose', () => {
+    const source = makeSkeleton(['hips', 'spine']);
+    const target = makeSkeleton(['hips', 'spine']);
+    target.boneInverses[1]!.makeTranslation(0, -1.4, 0);
+    expect(compareSkeletons(source, target)).toEqual({
+      compatibility: 'incompatible', missingBones: [], bindPoseMismatches: ['spine'],
+    });
+  });
+
+  it('compares bind poses by name after reordering, allowing exporter rounding noise', () => {
+    const source = makeSkeleton(['spine', 'hips']);
+    const target = makeSkeleton(['hips', 'spine', 'hand']);
+    source.boneInverses[0]!.makeTranslation(0, -1, 0);
+    target.boneInverses[1]!.makeTranslation(0, -1.000001, 0);
+    expect(compareSkeletons(source, target).compatibility).toBe('remappable');
+    target.boneInverses[1]!.elements[0] = Number.NaN;
+    expect(compareSkeletons(source, target).compatibility).toBe('incompatible');
+  });
 });
 
 describe('remapSkinnedGeometryJoints', () => {
+  it('widens Uint8 joint indices when the target rig exceeds 255 joints', () => {
+    const source = makeSkeleton(['hand']);
+    const target = makeSkeleton([...Array.from({ length: 260 }, (_, i) => `joint-${i}`), 'hand']);
+    const geometry = makeSkinnedGeometry([0, 0, 0, 0]);
+    geometry.setAttribute('skinIndex', new THREE.Uint8BufferAttribute([0, 0, 0, 0], 4));
+    const remapped = remapSkinnedGeometryJoints(geometry, source, target);
+    expect(Array.from(remapped.getAttribute('skinIndex').array)).toEqual([260, 260, 260, 260]);
+    expect(Array.from(geometry.getAttribute('skinIndex').array)).toEqual([0, 0, 0, 0]);
+    remapped.dispose();
+    geometry.dispose();
+  });
+
+  it('rejects missing bones and invalid palette indices without changing source geometry', () => {
+    const source = makeSkeleton(['hips']);
+    const target = makeSkeleton(['hips', 'spine']);
+    const geometry = makeSkinnedGeometry([0, 9, 0, 0]);
+    expect(() => remapSkinnedGeometryJoints(geometry, source, target)).toThrow('Invalid skin joint index');
+    expect(() => remapSkinnedGeometryJoints(geometry, makeSkeleton(['tail']), target)).toThrow('incompatible');
+    expect(Array.from(geometry.getAttribute('skinIndex').array)).toEqual([0, 9, 0, 0]);
+    geometry.dispose();
+  });
+
   it('rewrites joint indices from source order to target order', () => {
     const source = makeSkeleton(['hips', 'spine', 'chest']);
     const target = makeSkeleton(['hips', 'chest', 'spine']);

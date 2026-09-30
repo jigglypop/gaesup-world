@@ -1,3 +1,4 @@
+import { ScriptPropField } from './ScriptPropField';
 import type { ScriptComponentViewProps } from './types';
 import type { SceneJsonObject, SceneJsonValue } from '../../../../scene-object';
 import { resolveScriptProps } from '../../../../scripting/props';
@@ -7,13 +8,7 @@ function isJsonObject(value: SceneJsonValue | undefined): value is SceneJsonObje
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return '-';
-  if (Array.isArray(value)) return `[${value.join(', ')}]`;
-  return String(value);
-}
-
-export function ScriptComponentView({ data }: ScriptComponentViewProps) {
+export function ScriptComponentView({ data, onChange }: ScriptComponentViewProps) {
   const scriptId = typeof data['scriptId'] === 'string' ? data['scriptId'] : '';
   const definition = scriptId ? getScript(scriptId) : undefined;
   const rawProps = data['props'];
@@ -33,6 +28,10 @@ export function ScriptComponentView({ data }: ScriptComponentViewProps) {
 
   const { props, issues } = resolveScriptProps(definition.props, overrides);
   const values = props as Record<string, unknown>;
+  const handlePropChange = onChange
+    ? (name: string, value: SceneJsonValue) => onChange({ ...data, props: { ...overrides, [name]: value } })
+    : undefined;
+
   return (
     <div className="inspector-script">
       <div className="prop-item">
@@ -40,12 +39,15 @@ export function ScriptComponentView({ data }: ScriptComponentViewProps) {
         <span className="prop-value prop-value--readonly">{definition.name ?? definition.id}</span>
       </div>
       {Object.entries(definition.props).map(([name, schema]) => (
-        <div className="prop-item" key={name}>
+        <label className="prop-item" key={name}>
           <span className="prop-label">{name}</span>
-          <span className="prop-value prop-value--readonly">
-            {schema.kind} · {formatValue(values[name])}
-          </span>
-        </div>
+          <ScriptPropField
+            name={name}
+            schema={schema}
+            value={values[name]}
+            {...(handlePropChange ? { onChange: handlePropChange } : {})}
+          />
+        </label>
       ))}
       {issues.map((issue) => (
         <div className="inspector-component-empty" key={issue.prop}>

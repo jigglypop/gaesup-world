@@ -14,35 +14,64 @@ type RendererProps = Omit<THREE.WebGLRendererParameters, 'canvas' | 'context'> &
 };
 
 type AnyRenderer = THREE.WebGLRenderer | WebGPURenderer;
+type WebGPURendererParameters = ConstructorParameters<typeof import('three/webgpu').WebGPURenderer>[0];
 type WebGPURendererWithContextLoss = WebGPURenderer & {
   forceContextLoss: () => void;
 };
 
+/**
+ * How a renderer draws. A `WebGPURenderer` runs TSL node materials on a WebGPU device (`'webgpu'`) or on its
+ * WebGL2 fallback (`'webgpu-fallback'`); any other renderer is a classic `WebGLRenderer` (`'webgl'`).
+ * Compute, storage buffers and GPU batches need `'webgpu'`.
+ */
+export type RendererKind = 'webgpu' | 'webgpu-fallback' | 'webgl';
+
+export function rendererKind(renderer: unknown): RendererKind {
+  const value = renderer as { isWebGPURenderer?: boolean; backend?: { isWebGPUBackend?: boolean } } | null | undefined;
+  if (value?.isWebGPURenderer !== true) return 'webgl';
+  return value.backend?.isWebGPUBackend === true ? 'webgpu' : 'webgpu-fallback';
+}
+
+/** Whether a renderer draws on a WebGPU device that has `feature`; false on WebGL backends and classic renderers. */
+export function hasWebGPUFeature(renderer: unknown, feature: string): boolean {
+  if (rendererKind(renderer) !== 'webgpu') return false;
+  try {
+    return (renderer as { hasFeature?: (name: string) => boolean }).hasFeature?.(feature) === true;
+  } catch {
+    return false;
+  }
+}
+
+/** Whether the environment exposes the WebGPU API at all; `isWebGPUAvailable` also requires an adapter. */
+export function hasWebGPUApi(): boolean {
+  try {
+    const gpu = (globalThis as { navigator?: { gpu?: unknown } }).navigator?.gpu;
+    return typeof gpu === 'object' && gpu !== null;
+  } catch {
+    return false;
+  }
+}
+
 let webgpuAvailability: Promise<boolean> | null = null;
 
-function disposeBackend(backend: WebGPURenderer['backend']): void {
+function disposeBackend(backend: object | undefined): void {
   try {
-    if ('dispose' in backend && typeof backend.dispose === 'function') backend.dispose();
+    if (backend && 'dispose' in backend && typeof backend.dispose === 'function') backend.dispose();
   } catch (error) {
     logger.error('Renderer backend cleanup failed', error instanceof Error ? error : String(error));
   }
 }
 
 async function detectWebGPUAvailability(): Promise<boolean> {
+  if (!hasWebGPUApi()) return false;
   try {
-    if (typeof navigator === 'undefined') return false;
-
-    const webgpuNavigator = navigator as WebGPUNavigator;
-    if (!webgpuNavigator.gpu) return false;
-
-    const adapter = await webgpuNavigator.gpu.requestAdapter();
-    return adapter !== null;
+    return Boolean(await (navigator as WebGPUNavigator).gpu?.requestAdapter());
   } catch {
     return false;
   }
 }
 
-function createLegacyRenderer(props: RendererProps): THREE.WebGLRenderer {
+export function createLegacyRenderer(props: RendererProps): THREE.WebGLRenderer {
   const rendererProps = {
     ...props,
     antialias: props.antialias ?? true,
@@ -95,6 +124,14 @@ function installDisposalCompatibility(renderer: WebGPURenderer): WebGPURendererW
   return renderer as WebGPURendererWithContextLoss;
 }
 
+/** Dispatched on `window` when a renderer from `createRenderer` loses its device; `useRendererRecovery` listens. */
+export const RENDERER_LOST_EVENT = 'gaesup:renderer-lost';
+
+function isWindows(): boolean {
+  const nav = (globalThis as { navigator?: Navigator & { userAgentData?: { platform?: string } } }).navigator;
+  return nav?.userAgentData?.platform === 'Windows' || /Windows/.test(nav?.userAgent ?? '');
+}
+
 /**
  * Check WebGPU availability (cached after first call).
  */
@@ -104,45 +141,25 @@ export function isWebGPUAvailable(): Promise<boolean> {
 }
 
 /**
- * Create a WebGPU renderer with WebGL fallback for unavailable capabilities/modules/constructors.
- * Initialization failures propagate: a partially initialized canvas cannot safely be reused
- * for another renderer, and Three's dispose() awaits initialization again through setAnimationLoop().
- * Use as the `gl` prop on R3F Canvas:
- *
- *   <Canvas gl={createRenderer}>
- *
- * R3F v9 supports async gl functions natively.
+ * Constructs and initializes a Three `WebGPURenderer`; null when its module or constructor is unavailable.
+ * Initialization failures release each distinct backend and propagate: a partially initialized canvas cannot
+ * safely host another renderer, and Three's dispose() would await the failed initialization again.
  */
-export async function createRenderer(props: RendererProps): Promise<AnyRenderer> {
-  const available = await isWebGPUAvailable();
-
-  if (!available) return createLegacyRenderer(props);
-
-  let WebGPURendererConstructor: typeof import('three/webgpu').WebGPURenderer;
+export async function initWebGPURenderer(parameters: WebGPURendererParameters): Promise<WebGPURenderer | null> {
+  let Renderer: typeof import('three/webgpu').WebGPURenderer | undefined;
   try {
     // Dynamic import to avoid bundling WebGPU code when not available.
-    const webgpuModule = await import('three/webgpu');
-    WebGPURendererConstructor = webgpuModule.WebGPURenderer;
+    Renderer = (await import('three/webgpu')).WebGPURenderer;
   } catch {
-    return createLegacyRenderer(props);
+    return null;
   }
+  if (typeof Renderer !== 'function') return null;
 
-  if (typeof WebGPURendererConstructor !== 'function') return createLegacyRenderer(props);
-
-  const { context, powerPreference, ...restProps } = props as RendererProps & {
-    context?: unknown;
-  };
-  void context;
-  const rendererProps = (powerPreference === 'default'
-    ? restProps
-    : { ...restProps, powerPreference }) as unknown as ConstructorParameters<
-    typeof WebGPURendererConstructor
-  >[0];
   let renderer: WebGPURenderer;
   try {
-    renderer = new WebGPURendererConstructor(rendererProps);
+    renderer = new Renderer(parameters);
   } catch {
-    return createLegacyRenderer(props);
+    return null;
   }
 
   const initialBackend = renderer.backend;
@@ -154,5 +171,36 @@ export async function createRenderer(props: RendererProps): Promise<AnyRenderer>
     throw error;
   }
   if (renderer.backend !== initialBackend) disposeBackend(initialBackend);
-  return installDisposalCompatibility(renderer);
+  return renderer;
+}
+
+/**
+ * Create a WebGPU renderer with WebGL fallback for unavailable capabilities/modules/constructors.
+ * Initialization failures propagate (see `initWebGPURenderer`).
+ * Use as the `gl` prop on R3F Canvas:
+ *
+ *   <Canvas gl={createRenderer}>
+ *
+ * R3F v9 supports async gl functions natively.
+ */
+export async function createRenderer(props: RendererProps): Promise<AnyRenderer> {
+  if (!(await isWebGPUAvailable())) return createLegacyRenderer(props);
+
+  const { context, powerPreference, ...restProps } = props as RendererProps & {
+    context?: unknown;
+  };
+  void context;
+  // GPU timestamps where the adapter has them: `quality="auto"` tells GPU-bound frames from CPU-bound ones by them.
+  // Windows ignores the power preference and warns about it, so it is left out there.
+  const preference = powerPreference === 'default' || isWindows() ? {} : { powerPreference };
+  const parameters = { trackTimestamp: true, ...restProps, ...preference };
+  const renderer = await initWebGPURenderer(parameters as unknown as WebGPURendererParameters);
+  if (!renderer) return createLegacyRenderer(props);
+  const installed = installDisposalCompatibility(renderer);
+  // A lost device (driver reset, GPU switch) takes every GPU resource with it; the canvas owner remounts on this event.
+  installed.onDeviceLost = (info) => {
+    logger.warn(`WebGPU device lost: ${info.message}`);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(RENDERER_LOST_EVENT, { detail: info }));
+  };
+  return installed;
 }

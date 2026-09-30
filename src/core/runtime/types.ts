@@ -1,7 +1,50 @@
-import type { AssetSource } from '../assets';
-import type { GaesupPlugin, PluginLogger, PluginRegistry, PluginRuntimeTarget } from '../plugins';
-import type { DomainBinding, SaveSystem, SaveSystemOptions, SerializedDomainValue } from '../save';
+import type { AnimationBridge } from '../animation/bridge/AnimationBridge';
+import type { AssetSource, AssetStore } from '../assets';
 import type { RuntimeSaveDiagnosticsOptions, RuntimeSaveDiagnosticsService } from './saveDiagnostics';
+import type { AudioEngine } from '../audio/core/AudioEngine';
+import type { AudioStore } from '../audio/stores/audioStore';
+import type { GrassManagerType } from '../building/components/mesh/grass/manager';
+import type { BuildingCullingStore } from '../building/render/cullingStore';
+import type { BuildingRenderStore } from '../building/render/store';
+import type { BuildingStoreApi } from '../building/stores/buildingStore';
+import type { BuildingVisibilityStore } from '../building/visibility/store';
+import type { CameraCinematicPlayer } from '../camera/cinematic';
+import type { CharacterStore } from '../character/stores/characterStore';
+import type { DialogRegistry } from '../dialog/registry/DialogRegistry';
+import type { DialogStore } from '../dialog/stores/dialogStore';
+import type { GameplayAreas } from '../gameplay/events/areas';
+import type { GameplayEventEngine } from '../gameplay/events/engine';
+import type { GameplayEventRegistry } from '../gameplay/events/registry';
+import type { InputAdapter } from '../input/core';
+import type { WorldGamepadInput, WorldGamepadOptions } from '../input/WorldGamepadInput';
+import type { WorldInputActions } from '../input/WorldInputActions';
+import type { WorldInputScope } from '../input/WorldInputScope';
+import type { InteractablesStore } from '../interactions/stores/interactablesStore';
+import type { EngineStats } from '../kernel';
+import type { MotionBridge } from '../motions/bridge/MotionBridge';
+import type { EntityStateManager } from '../motions/core/system/EntityStateManager';
+import type { MotionsRuntime } from '../motions/plugin';
+import type { ClickNavigationRoute } from '../navigation/ClickNavigationRoute';
+import type { NavigationObstacleRegistry } from '../navigation/NavigationObstacleRegistry';
+import type { NavigationSystem, NavigationConfig } from '../navigation/NavigationSystem';
+import type { NPCBrainAdapterRegistry } from '../npc/core/brain';
+import type { SchedulerRegistry } from '../npc/core/NPCScheduler';
+import type { NPCSimulation } from '../npc/core/NPCSimulation';
+import type { ReinforcementAdapter } from '../npc/core/reinforcement';
+import type { NPCStoreApi } from '../npc/stores/npcStore';
+import type { GaesupPlugin, PluginLogger, PluginRegistry, PluginRuntimeTarget } from '../plugins';
+import type { ServiceKey } from '../plugins/serviceKey';
+import type { DomainBinding, SaveSystem, SaveSystemOptions, SerializedDomainValue } from '../save';
+import type { RoomVisibilityStore } from '../scene/stores/roomVisibilityStore';
+import type { SceneStore } from '../scene/stores/sceneStore';
+import type { AnimationClockLoop } from '../simulation/AnimationClockLoop';
+import type { GaesupStore } from '../stores/gaesupStore';
+import type { TimeStore } from '../time/stores/timeStore';
+import type { ErrorReporter, ErrorSink } from '../utils/reportError';
+import type { WeatherStore } from '../weather/stores/weatherStore';
+import type { WorldBridge } from '../world/bridge/WorldBridge';
+import type { WorldViews } from '../world/core/WorldViews';
+import type { WorldObjectStore } from '../world/stores/worldObjectStore';
 
 export type RuntimeDomainBinding = DomainBinding<SerializedDomainValue>;
 export type RuntimePluginTarget = PluginRuntimeTarget;
@@ -12,6 +55,12 @@ export type RuntimeAssetOptions = {
 };
 
 export type GaesupRuntimeOptions = {
+  /** Stable identity for persistent worlds. Omission creates a fresh, isolated transient identity. */
+  worldId?: string;
+  navigation?: Partial<NavigationConfig>;
+  /** Primary input extension shared by the world store, hooks and motion services. */
+  inputExtensionId?: string;
+  gamepad?: WorldGamepadOptions | false;
   plugins?: GaesupPlugin[];
   pluginRuntime?: RuntimePluginTarget;
   saveSystem?: SaveSystem;
@@ -20,16 +69,74 @@ export type GaesupRuntimeOptions = {
   saveDiagnostics?: RuntimeSaveDiagnosticsOptions;
   assets?: RuntimeAssetOptions;
   logger?: Partial<PluginLogger>;
+  /**
+   * Receives errors caught at this runtime's boundaries (its clock, its canvases' frame callbacks, plugin events, save,
+   * interaction commands) from setup until dispose completes. Other worlds and errors outside that window never reach it;
+   * they go to the page default (console.error).
+   */
+  onError?: ErrorSink;
 };
 
 export type GaesupRuntime = {
+  worldId: string;
+  /** Reports through `onError` while this runtime is set up; for game code that wants the same routing. */
+  reportError: ErrorReporter;
+  /** This world's asset catalog; `useAssetStore` under this runtime reads it. */
+  assetStore: AssetStore;
+  /** Dialog trees this world's `dialogStore` starts from. */
+  dialogRegistry: DialogRegistry;
+  store: GaesupStore;
+  weatherStore: WeatherStore;
+  dialogStore: DialogStore;
+  audioEngine: AudioEngine;
+  audioStore: AudioStore;
+  characterStore: CharacterStore;
+  sceneStore: SceneStore;
+  roomVisibilityStore: RoomVisibilityStore;
+  gameplayEventRegistry: GameplayEventRegistry;
+  gameplayEvents: GameplayEventEngine;
+  /** Trigger boxes checked against the player every fixed tick; entering one dispatches `enterArea`. */
+  gameplayAreas: GameplayAreas;
+  buildingStore: BuildingStoreApi;
+  npcStore: NPCStoreApi;
+  npcScheduler: SchedulerRegistry;
+  npcSimulation: NPCSimulation;
+  npcBrainAdapters: NPCBrainAdapterRegistry;
+  npcReinforcement: ReinforcementAdapter;
+  buildingRenderStore: BuildingRenderStore;
+  buildingCullingStore: BuildingCullingStore;
+  buildingVisibilityStore: BuildingVisibilityStore;
+  navigationObstacles: NavigationObstacleRegistry;
+  navigation: NavigationSystem;
+  clickNavigation: ClickNavigationRoute;
+  stateManager: EntityStateManager;
+  grassManager: GrassManagerType;
+  worldObjectStore: WorldObjectStore;
+  worldBridge: WorldBridge;
+  worldViews: WorldViews;
+  inputAdapter: InputAdapter;
+  inputScope: WorldInputScope;
+  inputActions: WorldInputActions;
+  gamepad: WorldGamepadInput;
+  interactablesStore: InteractablesStore;
+  cinematics: CameraCinematicPlayer;
+  readonly motions: MotionsRuntime;
+  readonly motionBridge: MotionBridge;
+  readonly animationBridge: AnimationBridge;
+  isActive: () => boolean;
+  getLifecycleRevision: () => number;
+  subscribeLifecycle: (listener: () => void) => () => void;
+  timeStore: TimeStore;
+  clockLoop: AnimationClockLoop;
+  /** Engine counters for tests, the acceptance runner and debug HUDs. */
+  readonly stats: EngineStats;
   pluginRuntime: RuntimePluginTarget;
   plugins: PluginRegistry;
   save: SaveSystem;
   saveDiagnostics: RuntimeSaveDiagnosticsService;
   loadAssets: () => Promise<void>;
-  getService: <TService = unknown>(id: string) => TService | undefined;
-  requireService: <TService = unknown>(id: string) => TService;
+  getService: <TService = unknown>(id: string | ServiceKey<TService>) => TService | undefined;
+  requireService: <TService = unknown>(id: string | ServiceKey<TService>) => TService;
   setup: () => Promise<void>;
   dispose: () => Promise<void>;
 };

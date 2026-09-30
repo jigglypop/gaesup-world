@@ -1,5 +1,5 @@
-import { buildBuildingIndirectDrawMirror, createBuildingIndirectDrawUploadPlan, INDIRECT_DRAW_STRIDE } from '../draw';
 import { DRAW_CLUSTER_COUNT, DRAW_CLUSTER_FIRE, DRAW_CLUSTER_GRASS } from '../culling';
+import { buildBuildingIndirectDrawMirror, createBuildingIndirectDrawUploadPlan, INDIRECT_DRAW_STRIDE } from '../draw';
 
 describe('building indirect draw prep', () => {
   it('builds indirect args from cluster counts', () => {

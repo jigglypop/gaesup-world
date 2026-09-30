@@ -1,26 +1,37 @@
 import { FC, lazy, memo, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
-import { extend, useThree } from "@react-three/fiber";
-import { createNoise2D } from "simplex-noise";
+import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { float, vertexColor } from 'three/tsl';
+import { MeshStandardNodeMaterial, MeshToonNodeMaterial } from 'three/webgpu';
 
+import { extendOnce } from '@/core/rendering/extendOnce';
 import { shaderMaterial } from '@/core/rendering/legacyDrei';
 import { usePerfStore } from "@core/perf/stores/perfStore";
-import { createToonMaterial, getDefaultToonMode } from "@core/rendering/toon";
-import { loadCoreWasm, type GaesupCoreWasmExports } from "@core/wasm/loader";
+import { createToonMaterial, getDefaultToonMode, getToonGradient } from "@core/rendering/toon";
+import { weatherGround } from '@core/rendering/tsl/groundCover';
+import { getLoadedCoreWasm, loadCoreWasm, type GaesupCoreWasmExports } from "@core/wasm/loader";
+import { weatherField } from '@core/weather/core/field';
+import { WEATHER_SURFACE_GLSL, weatherGlUniforms } from '@core/weather/core/glsl';
 
 import {
   DEFAULT_BLADE_ALPHA_URL,
   DEFAULT_BLADE_DIFFUSE_URL,
   resolveGrassTextureSources,
 } from "./assets";
+import { placeGrassOnCells } from './cells';
 import fragmentShader from "./frag.glsl";
-import { getGrassManager, setGrassManagerWasm, type GrassTileRenderState } from "./manager";
+import { GrassDepthMaterial } from './GrassDepthMaterial';
+import { meadowLift, MEADOW, paintMeadow } from './ground';
+import { setGrassManagerWasm, type GrassTileRenderState } from "./manager";
 import { GrassMaterialInstance, GrassMeshProps } from "./type";
+import { useGrassManager } from "./useGrassManager";
 import vertexShader from "./vert.glsl";
+import { castNearShadowOnly } from '../../../../rendering/sky/nearShadow';
+import { rendererKind } from '../../../../rendering/webgpu';
+import { classicWeather, GROUND_POROSITY } from '../../../terrain/groundMaterial';
 
-let _grassGroundToon: THREE.MeshToonMaterial | null = null;
-let _grassGroundPbr: THREE.MeshStandardMaterial | null = null;
+const grassGrounds = new Map<string, THREE.Material>();
 let _fallbackBladeDiffuse: THREE.DataTexture | null = null;
 let _fallbackBladeAlpha: THREE.DataTexture | null = null;
 let _grassTextureLoader: THREE.TextureLoader | null = null;
@@ -69,57 +80,97 @@ function loadBladeTexture(url: string, fallbackUrl: string, fallbackTexture: THR
   return load(url).catch(() => (url === fallbackUrl ? fallbackTexture : load(fallbackUrl).catch(() => fallbackTexture)));
 }
 
-function getGroundMaterial(toon: boolean): THREE.Material {
-  if (toon) {
-    if (!_grassGroundToon) {
-      _grassGroundToon = createToonMaterial({
-        color: '#ffffff',
-        vertexColors: true,
-        steps: 3,
-      });
-    }
-    return _grassGroundToon;
-  }
-  if (!_grassGroundPbr) {
-    _grassGroundPbr = new THREE.MeshStandardMaterial({
-      color: '#ffffff',
-      vertexColors: true,
-      roughness: 0.95,
-      metalness: 0.0,
-    });
-  }
-  return _grassGroundPbr;
+/** The painted meadow on a node renderer: its vertex colors under the live weather, wet and snowed on. */
+function nodeGrassGround(toon: boolean): THREE.Material {
+  const material = toon ? new MeshToonNodeMaterial({ gradientMap: getToonGradient(3) }) : new MeshStandardNodeMaterial({ metalness: 0 });
+  const ground = weatherGround(vertexColor().rgb, float(0.95), { porosity: GROUND_POROSITY.grass, puddles: false });
+  material.colorNode = ground.color;
+  if (material instanceof MeshStandardNodeMaterial) material.roughnessNode = ground.roughness;
+  return material;
 }
 
-const noise2D = createNoise2D();
-const GROUND_LIGHT = new THREE.Color('#5a7a35');
-const GROUND_ACCENT = new THREE.Color('#7a8e3a');
-const GROUND_DIRT = new THREE.Color('#5b4628');
+/** The painted meadow's shared material, wet and snowed on by the live weather on either renderer. */
+export function getGrassGroundMaterial(toon: boolean, node = false): THREE.Material {
+  const key = `${toon}:${node}`;
+  let material = grassGrounds.get(key);
+  if (!material) {
+    material = node ? nodeGrassGround(toon) : classicWeather(toon
+      ? createToonMaterial({ color: '#ffffff', vertexColors: true, steps: 3 })
+      : new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.95, metalness: 0 }), GROUND_POROSITY.grass);
+    grassGrounds.set(key, material);
+  }
+  return material;
+}
 
+/** Blades never stop the camera or other ray probes. */
+const GRASS_USER_DATA = { intangible: true };
+
+/** Classic blades: `windDirection` follows the live wind, and the shared weather uniforms frost and wet them. */
 const GrassMaterial = shaderMaterial(
   {
+    ...Object.fromEntries(Object.entries(THREE.UniformsLib.lights).map(([key, uniform]) => [key, uniform.value])),
     bladeHeight: 1,
     map: null as THREE.Texture | null,
     alphaMap: null as THREE.Texture | null,
     time: 0,
     windScale: 1.0,
+    windDirection: new THREE.Vector2(weatherField.windX, weatherField.windZ),
     trampleCenter: new THREE.Vector3(0, -9999, 0),
     trampleRadius: 1.4,
     trampleStrength: 0.85,
-    tipColor: new THREE.Color("#8fbc5a").convertSRGBToLinear(),
-    bottomColor: new THREE.Color("#355b2d").convertSRGBToLinear(),
+    tipColor: new THREE.Color("#8fbc5a"),
+    bottomColor: new THREE.Color("#355b2d"),
     uToon: 0,
     uToonSteps: 4,
   },
   vertexShader,
-  fragmentShader
+  `${WEATHER_SURFACE_GLSL}\n${fragmentShader}`,
+  (material) => { if (material) Object.assign(material.uniforms, weatherGlUniforms()); },
 );
 
-extend({ GrassMaterial });
+const extendGrassMaterial = extendOnce({ GrassMaterial });
 const NodeGrassMaterial = lazy(() => import('./NodeGrassMaterial'));
 
-function getYPosition(x: number, z: number): number {
-  return 0.05 * noise2D(x / 50, z / 50) + 0.05 * noise2D(x / 100, z / 100);
+const getYPosition = meadowLift;
+
+/**
+ * Noise-lifted, vertex-colored meadow ground under the given cells as one indexed geometry (one draw). `originX` and
+ * `originZ` place the cells in the world, where the meadow's noise is read.
+ */
+export function createGrassGround(
+  cells: ReadonlyArray<readonly [number, number, number?, number?]>,
+  cellSize: number,
+  groundColor?: string,
+  groundAccentColor?: string,
+  originX = 0,
+  originZ = 0,
+): THREE.BufferGeometry {
+  const geometry = createCellGround(cells, cellSize);
+  paintMeadow(geometry, new THREE.Color(groundColor ?? MEADOW.base), new THREE.Color(groundAccentColor ?? MEADOW.accent), originX, originZ);
+  return geometry;
+}
+
+function createCellGround(cells: ReadonlyArray<readonly [number, number, number?, number?]>, cellSize: number): THREE.BufferGeometry {
+  const segments = Math.max(2, Math.min(16, Math.round(cellSize * 1.5)));
+  const plane = new THREE.PlaneGeometry(cellSize, cellSize, segments, segments).rotateX(-Math.PI / 2);
+  const source = plane.getAttribute("position");
+  const sourceIndex = plane.index!;
+  const positions = new Float32Array(cells.length * source.count * 3);
+  const indices = new Uint32Array(cells.length * sourceIndex.count);
+  cells.forEach(([x, z, y = 0], cell) => {
+    const base = cell * source.count;
+    for (let v = 0; v < source.count; v++) {
+      positions[(base + v) * 3] = source.getX(v) + x;
+      positions[(base + v) * 3 + 1] = source.getY(v) + y;
+      positions[(base + v) * 3 + 2] = source.getZ(v) + z;
+    }
+    for (let i = 0; i < sourceIndex.count; i++) indices[cell * sourceIndex.count + i] = sourceIndex.getX(i) + base;
+  });
+  plane.dispose();
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+  return geometry;
 }
 
 type GrassAttributeData = {
@@ -135,13 +186,25 @@ function disposeBladeTextures(texture: THREE.Texture, alphaMap: THREE.Texture): 
   if (alphaMap !== getFallbackBladeAlpha()) alphaMap.dispose();
 }
 
+type BladeTextures = { texture: THREE.Texture; alphaMap: THREE.Texture };
+/**
+ * The last pair loaded for each source pair. A chunk that mounts later starts with its own clones (same images) instead
+ * of loading again and rendering a second time; each chunk still owns and disposes the textures it draws.
+ */
+const loadedBladeTextures = new Map<string, BladeTextures>();
+
 function useGrassBladeTextures(textureSources: ReturnType<typeof resolveGrassTextureSources>) {
-  const [textures, setTextures] = useState(() => ({
-    texture: getFallbackBladeDiffuse(),
-    alphaMap: getFallbackBladeAlpha(),
-  }));
+  const key = `${textureSources.bladeDiffuseUrl}|${textureSources.bladeAlphaUrl}`;
+  const [textures, setTextures] = useState(() => {
+    const loaded = loadedBladeTextures.get(key);
+    return loaded
+      ? { key, texture: loaded.texture.clone(), alphaMap: loaded.alphaMap.clone() }
+      : { key: '', texture: getFallbackBladeDiffuse(), alphaMap: getFallbackBladeAlpha() };
+  });
+  const shownKey = textures.key;
 
   useEffect(() => {
+    if (shownKey === key) return undefined;
     let cancelled = false;
 
     Promise.all([
@@ -162,13 +225,14 @@ function useGrassBladeTextures(textureSources: ReturnType<typeof resolveGrassTex
         disposeBladeTextures(texture, alphaMap);
         return;
       }
-      setTextures({ texture, alphaMap });
+      loadedBladeTextures.set(key, { texture, alphaMap });
+      setTextures({ key, texture, alphaMap });
     });
 
     return () => {
       cancelled = true;
     };
-  }, [textureSources.bladeAlphaUrl, textureSources.bladeDiffuseUrl]);
+  }, [key, shownKey, textureSources.bladeAlphaUrl, textureSources.bladeDiffuseUrl]);
 
   useEffect(() => () => disposeBladeTextures(textures.texture, textures.alphaMap), [textures]);
 
@@ -290,6 +354,9 @@ const GrassContent: FC<GrassMeshProps> = memo(
   ({
     options = { bW: 0.14, bH: 0.65, joints: 5 },
     width = 4,
+    cells,
+    cellSize = 1,
+    ground = true,
     instances,
     density,
     maxInstances = 18000,
@@ -304,31 +371,35 @@ const GrassContent: FC<GrassMeshProps> = memo(
     bladeAlphaUrl,
     ...props
   }) => {
-    const { bW, bH, joints } = options;
-    const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+    extendGrassMaterial();
+    const { bW = 0.14, bH = 0.65, joints = 5 } = options;
+    const useNodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
+    const manager = useGrassManager();
     // Auto-clamp instance budget to the active perf tier. Low-end devices get
     // a quarter of the blades; high-end keep the user-supplied cap. This is
     // why "many tiles" no longer melts down on integrated GPUs.
     const instanceScale = usePerfStore((s) => s.profile.instanceScale);
     const resolvedInstances = useMemo(() => {
+      if (cells?.length === 0) return 0;
       const cap = Math.max(64, Math.min(maxInstances, Math.round(maxInstances * instanceScale)));
       if (typeof instances === 'number' && instances > 0) {
         return Math.max(1, Math.min(cap, Math.floor(instances * instanceScale)));
       }
       const d = typeof density === 'number' && density > 0 ? density : 90;
-      const area = Math.max(1, width * width);
+      const area = Math.max(1, cells ? cells.length * cellSize * cellSize : width * width);
       return Math.max(64, Math.min(cap, Math.round(d * area * instanceScale)));
-    }, [instances, density, width, maxInstances, instanceScale]);
+    }, [instances, density, width, maxInstances, instanceScale, cells, cellSize]);
+    const maxCellHeight = useMemo(() => cells?.reduce((max, cell) => Math.max(max, Math.abs(cell[2] ?? 0)), 0) ?? 0, [cells]);
     const useToon = toon ?? getDefaultToonMode();
-    const groundMat = getGroundMaterial(useToon);
-    const baseGroundColor = useMemo(() => new THREE.Color(groundColor ?? GROUND_LIGHT), [groundColor]);
-    const accentGroundColor = useMemo(() => new THREE.Color(groundAccentColor ?? GROUND_ACCENT), [groundAccentColor]);
+    const groundMat = getGrassGroundMaterial(useToon, useNodes);
+    const baseGroundColor = useMemo(() => new THREE.Color(groundColor ?? MEADOW.base), [groundColor]);
+    const accentGroundColor = useMemo(() => new THREE.Color(groundAccentColor ?? MEADOW.accent), [groundAccentColor]);
     const tipBladeColor = useMemo(
-      () => new THREE.Color(bladeTipColor ?? '#8fbc5a').convertSRGBToLinear(),
+      () => new THREE.Color(bladeTipColor ?? '#8fbc5a'),
       [bladeTipColor],
     );
     const bottomBladeColor = useMemo(
-      () => new THREE.Color(bladeBottomColor ?? '#355b2d').convertSRGBToLinear(),
+      () => new THREE.Color(bladeBottomColor ?? '#355b2d'),
       [bladeBottomColor],
     );
     const groupRef = useRef<THREE.Group>(null);
@@ -349,14 +420,18 @@ const GrassContent: FC<GrassMeshProps> = memo(
     // WASM-accelerated attribute generation with JS fallback. Loaded once
     // and shared with the central GrassManager so manager-side passes
     // (LOD weight batching) can also benefit.
-    const [wasmModule, setWasmModule] = useState<GaesupCoreWasmExports | null>(null);
+    // A chunk that mounts after the first load starts with the module instead of computing its blades twice.
+    const [wasmModule, setWasmModule] = useState<GaesupCoreWasmExports | null>(getLoadedCoreWasm);
     useEffect(() => {
+      if (wasmModule) return undefined;
+      let active = true;
       loadCoreWasm().then((w) => {
-        if (!w) return;
+        if (!w || !active) return;
         setWasmModule(w);
         setGrassManagerWasm(w);
       });
-    }, []);
+      return () => { active = false; };
+    }, [wasmModule]);
 
     const attributeData = useMemo(
       () => {
@@ -367,52 +442,28 @@ const GrassContent: FC<GrassMeshProps> = memo(
         // narrower jitter; normalise both with a strong jitter pass so big tiles
         // never show the underlying lattice pattern.
         jitterAndVary(data, resolvedInstances, width);
+        if (cells) placeGrassOnCells(data.offsets, cells, cellSize);
         return data;
       },
-      [resolvedInstances, width, wasmModule],
+      [resolvedInstances, width, wasmModule, cells, cellSize],
     );
 
-    const [baseGeom, groundGeo] = useMemo(() => {
-      const bg = new THREE.PlaneGeometry(bW, bH, 1, joints).translate(0, bH / 2, 0);
+    const baseGeom = useMemo(() => new THREE.PlaneGeometry(bW, bH, 1, joints).translate(0, bH / 2, 0), [bH, bW, joints]);
+    const groundGeo = useMemo(() => {
+      if (!ground) return null;
       // Ground tessellation must scale with width so the noise-driven elevation
       // stays smooth on big tiles instead of degenerating into flat quads.
       const groundSegs = Math.max(8, Math.min(128, Math.round(width * 1.5)));
-      const gg = new THREE.PlaneGeometry(width, width, groundSegs, groundSegs).rotateX(-Math.PI / 2);
-      const positions = gg.getAttribute("position") as THREE.BufferAttribute;
-      const colors = new Float32Array(positions.count * 3);
-      const tmp = new THREE.Color();
-      for (let k = 0; k < positions.count; k++) {
-        const x = positions.getX(k);
-        const z = positions.getZ(k);
-        positions.setY(k, getYPosition(x, z));
-
-        // Two-octave noise gives natural patchiness; an extra tight noise
-        // sprinkles dirt scuffs so the ground reads as a real meadow.
-        const n0 = 0.5 + 0.5 * noise2D(x * 0.18, z * 0.18);
-        const n1 = 0.5 + 0.5 * noise2D(x * 0.04 + 11.3, z * 0.04 - 7.7);
-        const n2 = 0.5 + 0.5 * noise2D(x * 0.55 - 3.1, z * 0.55 + 9.4);
-
-        const tint = THREE.MathUtils.clamp(n0 * 0.65 + n1 * 0.45, 0, 1);
-        tmp.copy(baseGroundColor).multiplyScalar(0.58 + tint * 0.42).lerp(accentGroundColor, n1 * 0.28);
-        if (n2 > 0.86) {
-          tmp.lerp(GROUND_DIRT, (n2 - 0.86) * 4.0);
-        }
-
-        const ci = k * 3;
-        colors[ci]     = tmp.r;
-        colors[ci + 1] = tmp.g;
-        colors[ci + 2] = tmp.b;
-      }
-      gg.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-      gg.computeVertexNormals();
-      return [bg, gg];
-    }, [accentGroundColor, bW, bH, baseGroundColor, joints, width]);
-    useEffect(() => {
-      return () => {
-        baseGeom.dispose();
-        groundGeo.dispose();
-      };
-    }, [baseGeom, groundGeo]);
+      const gg = cells
+        ? createCellGround(cells, cellSize)
+        : new THREE.PlaneGeometry(width, width, groundSegs, groundSegs).rotateX(-Math.PI / 2);
+      paintMeadow(gg, baseGroundColor, accentGroundColor);
+      return gg;
+    }, [accentGroundColor, baseGroundColor, width, cells, cellSize, ground]);
+    // Blade shadows are finer than a far cascade's texels: only the nearest cascade draws them.
+    useEffect(() => (meshRef.current ? castNearShadowOnly(meshRef.current) : undefined), []);
+    useEffect(() => () => baseGeom.dispose(), [baseGeom]);
+    useEffect(() => () => groundGeo?.dispose(), [groundGeo]);
 
     useEffect(() => {
       const geo = geometryRef.current;
@@ -432,10 +483,9 @@ const GrassContent: FC<GrassMeshProps> = memo(
     }, [bottomBladeColor, tipBladeColor, useToon]);
 
     // Register with the central GrassManager. The manager runs one
-    // shared `useFrame` (via <GrassDriver />) and updates per-tile
-    // uniforms + instanceCount in batch. When the driver is not mounted
-    // the local frame loop below covers a single tile so legacy uses
-    // keep working.
+    // shared engine frame (via <GrassDriver />) and updates per-tile
+    // uniforms + instanceCount in batch. BuildingSystem mounts the driver;
+    // standalone grass scenes must mount GrassDriver alongside their tiles.
     useEffect(() => {
       const grp = groupRef.current;
       const initialCenter = new THREE.Vector3();
@@ -453,30 +503,36 @@ const GrassContent: FC<GrassMeshProps> = memo(
         if (!mesh || !geo || !u) return;
 
         if (mesh.visible !== s.visible) mesh.visible = s.visible;
-        if (geo.instanceCount !== s.instanceCount) {
-          geo.instanceCount = s.instanceCount;
-          lastInstanceCount.current = s.instanceCount;
+        // A previous manager registration can run before passive cleanup after
+        // React replaces a smaller geometry. Never draw beyond its buffers.
+        const instanceCount = Math.min(s.instanceCount, geo.getAttribute('offset')?.count ?? 0);
+        if (geo.instanceCount !== instanceCount) {
+          geo.instanceCount = instanceCount;
+          lastInstanceCount.current = instanceCount;
         }
+        if (u['bladeHeight']) u['bladeHeight'].value = bH;
         if (u['time']) u['time'].value = s.time;
         if (u['windScale']) u['windScale'].value = s.windScale;
+        (u['windDirection']?.value as THREE.Vector2 | undefined)?.set(weatherField.windX, weatherField.windZ);
         if (u['trampleCenter']) {
           const v = u['trampleCenter'].value as THREE.Vector3;
           v.copy(s.trampleCenter);
+          mesh.worldToLocal(v);
         }
         if (u['trampleStrength']) u['trampleStrength'].value = s.trampleStrength;
       };
 
-      const handle = getGrassManager().register({
+      const handle = manager.register({
         width,
-        height: bH * 1.4,
+        height: bH * 2.2 + maxCellHeight * 2,
         center: initialCenter,
         maxInstances: resolvedInstances,
         ...(lod ? { lod } : {}),
         apply,
       });
 
-      return () => { getGrassManager().unregister(handle.id); };
-    }, [width, bH, resolvedInstances, center?.[0], center?.[1], center?.[2], lod?.near, lod?.far, lod?.strength]);
+      return () => { manager.unregister(handle.id); };
+    }, [manager, width, bH, maxCellHeight, resolvedInstances, center?.[0], center?.[1], center?.[2], lod?.near, lod?.far, lod?.strength]);
 
     // Pre-compute a bounding sphere that contains every blade in the tile.
     // InstancedBufferGeometry can't compute one automatically because the
@@ -486,22 +542,25 @@ const GrassContent: FC<GrassMeshProps> = memo(
     useEffect(() => {
       const geo = geometryRef.current;
       if (!geo) return;
-      const radius = Math.hypot(width, bH * 1.4) * 0.6;
-      geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, bH * 0.5, 0), radius);
+      const radius = Math.hypot(width, width, bH * 2.2 + maxCellHeight * 2) * 0.5;
+      geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, maxCellHeight * 0.5 + bH, 0), radius);
       geo.boundingBox = new THREE.Box3(
-        new THREE.Vector3(-width * 0.5, 0, -width * 0.5),
-        new THREE.Vector3(width * 0.5, bH * 1.6, width * 0.5),
+        new THREE.Vector3(-width * 0.5 - bH, -maxCellHeight - bH, -width * 0.5 - bH),
+        new THREE.Vector3(width * 0.5 + bH, maxCellHeight + bH * 2.2, width * 0.5 + bH),
       );
-    }, [width, bH]);
+    }, [width, bH, maxCellHeight, resolvedInstances]);
 
     return (
       <group ref={groupRef} {...props}>
-        <mesh ref={meshRef} frustumCulled>
+        <mesh ref={meshRef} frustumCulled castShadow receiveShadow userData={GRASS_USER_DATA}>
           <instancedBufferGeometry
+            key={resolvedInstances}
             ref={geometryRef}
+            instanceCount={resolvedInstances}
             index={baseGeom.index}
             attributes-position={baseGeom.getAttribute("position")}
             attributes-uv={baseGeom.getAttribute("uv")}
+            attributes-normal={baseGeom.getAttribute("normal")}
           >
             <instancedBufferAttribute attach="attributes-offset" args={[attributeData.offsets, 3]} />
             <instancedBufferAttribute attach="attributes-orientation" args={[attributeData.orientations, 4]} />
@@ -516,16 +575,18 @@ const GrassContent: FC<GrassMeshProps> = memo(
             alphaMap={alphaMap ?? null}
             toneMapped={false}
             side={THREE.DoubleSide}
-            transparent
+            transparent={false}
+            lights
           />}
+          {!useNodes && <GrassDepthMaterial source={materialRef} />}
         </mesh>
-        <mesh
+        {groundGeo && <mesh
           position={[0, 0, 0]}
           material={groundMat}
           receiveShadow
         >
           <primitive object={groundGeo} attach="geometry" />
-        </mesh>
+        </mesh>}
       </group>
     );
   }

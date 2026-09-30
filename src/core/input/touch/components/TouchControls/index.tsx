@@ -1,7 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
+import { createKeyboardOwnership } from '../../../../hooks/useKeyboard/ownership';
 import type { KeyboardState } from '../../../../interactions/bridge';
 import { useInputBackend } from '../../../../interactions/hooks';
+import { useWorldInputScope } from '../../../useWorldInputScope';
+import { WorldInputSurface } from '../../../WorldInputSurface';
 
 export type TouchControlsProps = {
   /** Force visibility regardless of pointer detection. */
@@ -39,17 +42,6 @@ function isCoarsePointer(): boolean {
   return window.matchMedia('(pointer: coarse)').matches;
 }
 
-function dispatchKey(type: 'keydown' | 'keyup', key: string): void {
-  if (typeof window === 'undefined') return;
-  const code = /^[a-zA-Z]$/.test(key) ? `Key${key.toUpperCase()}` : key === ' ' ? 'Space' : key;
-  const event = new KeyboardEvent(type, {
-    key: key === ' ' ? ' ' : key.toLowerCase(),
-    code,
-    bubbles: true,
-  });
-  window.dispatchEvent(event);
-}
-
 /**
  * Mobile / coarse-pointer overlay: virtual joystick on the left, action
  * buttons on the right. The joystick drives the active input backend with
@@ -65,6 +57,8 @@ export function TouchControls({
 }: TouchControlsProps = {}) {
   const [visible, setVisible] = useState(false);
   const inputBackend = useInputBackend();
+  const inputScope = useWorldInputScope();
+  const ownership = useMemo(() => createKeyboardOwnership(inputBackend), [inputBackend]);
   const padRef = useRef<HTMLDivElement>(null);
   const knobRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef({
@@ -89,19 +83,15 @@ export function TouchControls({
     if (!pad || !knob) return;
     const reset = () => {
       const s = stateRef.current;
-      const upd: TouchKeyboardUpdate = {};
-      if (s.forward) upd.forward = false;
-      if (s.backward) upd.backward = false;
-      if (s.leftward) upd.leftward = false;
-      if (s.rightward) upd.rightward = false;
-      if (s.run) upd.shift = false;
       s.forward = s.backward = s.leftward = s.rightward = s.run = false;
-      if (Object.keys(upd).length > 0) inputBackend.updateKeyboard(upd);
+      ownership.release();
       knob.style.transform = 'translate(-50%, -50%)';
       stateRef.current.pointerId = -1;
     };
 
     const onDown = (e: PointerEvent) => {
+      if (!inputScope.isEnabled()) return;
+      inputScope.activate();
       e.preventDefault();
       const rect = pad.getBoundingClientRect();
       stateRef.current.cx = rect.left + rect.width / 2;
@@ -145,7 +135,7 @@ export function TouchControls({
         if (s.rightward !== r) { upd.rightward = r;   s.rightward = r; }
         if (s.run !== run)     { upd.shift     = run; s.run       = run; }
       }
-      if (Object.keys(upd).length > 0) inputBackend.updateKeyboard(upd);
+      for (const [key, down] of Object.entries(upd)) ownership.set(`joystick:${key}`, key, down);
     };
 
     const onUp = (e: PointerEvent) => {
@@ -158,20 +148,22 @@ export function TouchControls({
     pad.addEventListener('pointerup', onUp);
     pad.addEventListener('pointercancel', onUp);
     pad.addEventListener('pointerleave', onUp);
+    const offBlur = inputScope.onBlur(reset);
     return () => {
       pad.removeEventListener('pointerdown', onDown);
       pad.removeEventListener('pointermove', onMove);
       pad.removeEventListener('pointerup', onUp);
       pad.removeEventListener('pointercancel', onUp);
       pad.removeEventListener('pointerleave', onUp);
+      offBlur();
       reset();
     };
-  }, [visible, radius, deadzone, runThreshold, inputBackend]);
+  }, [visible, radius, deadzone, runThreshold, ownership, inputScope]);
 
   if (!visible) return null;
 
   return (
-    <div
+    <WorldInputSurface
       style={{
         position: 'fixed',
         inset: 0,
@@ -230,7 +222,7 @@ export function TouchControls({
           <ActionPad key={action.id} action={action} />
         ))}
       </div>
-    </div>
+    </WorldInputSurface>
   );
 }
 
@@ -238,16 +230,29 @@ type ActionPadProps = { action: TouchActionButton };
 
 function ActionPad({ action }: ActionPadProps) {
   const [pressed, setPressed] = useState(false);
+  const held = useRef(false);
+  const inputScope = useWorldInputScope();
+  const source = useId();
+
+  const release = useCallback(() => {
+    if (!held.current) return;
+    held.current = false;
+    setPressed(false);
+    if (action.key) inputScope.dispatchKey('keyup', action.key, source);
+    action.onRelease?.();
+  }, [action.key, action.onRelease, inputScope, source]);
+
+  useEffect(() => {
+    const off = inputScope.onBlur(release);
+    return () => { off(); release(); };
+  }, [inputScope, release]);
 
   const press = () => {
+    if (held.current || !inputScope.isEnabled()) return;
+    inputScope.activate(); held.current = true;
     setPressed(true);
-    if (action.key) dispatchKey('keydown', action.key);
+    if (action.key) inputScope.dispatchKey('keydown', action.key, source);
     action.onPress?.();
-  };
-  const release = () => {
-    setPressed(false);
-    if (action.key) dispatchKey('keyup', action.key);
-    action.onRelease?.();
   };
 
   return (
@@ -256,7 +261,7 @@ function ActionPad({ action }: ActionPadProps) {
       onPointerDown={(e) => { e.preventDefault(); press(); }}
       onPointerUp={(e) => { e.preventDefault(); release(); }}
       onPointerCancel={release}
-      onPointerLeave={() => { if (pressed) release(); }}
+      onPointerLeave={release}
       style={{
         width: 64,
         height: 64,

@@ -1,20 +1,28 @@
+import { createContext, useContext } from 'react';
+
 import { create } from 'zustand';
 
+import { lazyScopedStore } from '../../stores/scopedStore';
 import { computeGameTime, isNewDay, isNewHour, realMsToGameMinutes } from '../core/Clock';
 import type { GameTime, TimeMode, TimeSerialized } from '../types';
 
 type TimeListener = (event: { kind: 'newDay' | 'newHour'; time: GameTime }) => void;
 
-type TimeState = {
+export type TimeState = {
   mode: TimeMode;
   scale: number;
   startEpochMs: number;
+  /** Game minutes at the last published minute change. Read `exactMinutes()` for the running fraction. */
   totalMinutes: number;
   paused: boolean;
+  /** Changes only when restoring a snapshot, so observers can distinguish restoration from gameplay. */
+  hydrationRevision: number;
   time: GameTime;
   listeners: Set<TimeListener>;
 
   tick: (realDeltaMs: number) => void;
+  /** Running game minutes including the fraction since the last publish. Not reactive. */
+  exactMinutes: () => number;
   setScale: (scale: number) => void;
   setMode: (mode: TimeMode) => void;
   setTotalMinutes: (totalMinutes: number) => void;
@@ -37,9 +45,19 @@ function emit(listeners: Set<TimeListener>, kind: 'newDay' | 'newHour', time: Ga
   });
 }
 
-export const useTimeStore = create<TimeState>((set, get) => ({
+export function createTimeStore() {
+  // The fraction advances every tick outside React state; subscribers wake once per game minute. A published
+  // value this store did not write (setState, restore) becomes the new base.
+  let exact = INITIAL_TOTAL_MINUTES;
+  let published = INITIAL_TOTAL_MINUTES;
+  const current = (state: TimeState): number => {
+    if (state.totalMinutes !== published) exact = published = state.totalMinutes;
+    return exact;
+  };
+  return create<TimeState>((set, get) => ({
   mode: 'scaled',
   scale: DEFAULT_SCALE,
+  hydrationRevision: 0,
   startEpochMs: Date.now() - INITIAL_TOTAL_MINUTES * REAL_MS_PER_MINUTE,
   totalMinutes: INITIAL_TOTAL_MINUTES,
   paused: false,
@@ -49,35 +67,34 @@ export const useTimeStore = create<TimeState>((set, get) => ({
   tick: (realDeltaMs: number) => {
     const s = get();
     if (s.paused || realDeltaMs <= 0) return;
-    let nextMinutes = s.totalMinutes;
-    if (s.mode === 'scaled') {
-      nextMinutes = s.totalMinutes + realMsToGameMinutes(realDeltaMs, s.scale);
-    } else {
-      const now = Date.now();
-      const realStart = s.startEpochMs;
-      nextMinutes = (now - realStart) / REAL_MS_PER_MINUTE;
-    }
-    if (nextMinutes === s.totalMinutes) return;
-    const newDay = isNewDay(s.totalMinutes, nextMinutes);
-    const newHour = isNewHour(s.totalMinutes, nextMinutes);
-    const time =
-      Math.floor(nextMinutes) === s.time.totalMinutes ? s.time : computeGameTime(nextMinutes);
-    set({ totalMinutes: nextMinutes, time });
+    exact = s.mode === 'scaled'
+      ? current(s) + realMsToGameMinutes(realDeltaMs, s.scale)
+      : (Date.now() - s.startEpochMs) / REAL_MS_PER_MINUTE;
+    if (Math.floor(exact) === Math.floor(s.totalMinutes)) return;
+    const newDay = isNewDay(s.totalMinutes, exact);
+    const newHour = isNewHour(s.totalMinutes, exact);
+    const time = computeGameTime(exact);
+    published = exact;
+    set({ totalMinutes: exact, time });
     if (newHour) emit(s.listeners, 'newHour', time);
     if (newDay) emit(s.listeners, 'newDay', time);
   },
 
+  exactMinutes: () => current(get()),
+
   setScale: (scale: number) => set({ scale: Math.max(0.001, scale) }),
   setMode: (mode: TimeMode) => {
     if (mode === get().mode) return;
-    set({ mode, startEpochMs: Date.now() - get().totalMinutes * REAL_MS_PER_MINUTE });
+    set({ mode, startEpochMs: Date.now() - current(get()) * REAL_MS_PER_MINUTE });
   },
-  setTotalMinutes: (totalMinutes: number) =>
-    set({ totalMinutes, time: computeGameTime(totalMinutes), startEpochMs: Date.now() - totalMinutes * REAL_MS_PER_MINUTE }),
+  setTotalMinutes: (totalMinutes: number) => {
+    exact = published = totalMinutes;
+    set({ totalMinutes, time: computeGameTime(totalMinutes), startEpochMs: Date.now() - totalMinutes * REAL_MS_PER_MINUTE });
+  },
   pause: () => set({ paused: true }),
   resume: () => {
     if (!get().paused) return;
-    set({ paused: false, startEpochMs: Date.now() - get().totalMinutes * REAL_MS_PER_MINUTE });
+    set({ paused: false, startEpochMs: Date.now() - current(get()) * REAL_MS_PER_MINUTE });
   },
 
   addListener: (l: TimeListener) => {
@@ -90,7 +107,7 @@ export const useTimeStore = create<TimeState>((set, get) => ({
     const s = get();
     return {
       version: 1,
-      totalMinutes: s.totalMinutes,
+      totalMinutes: current(s),
       startEpochMs: s.startEpochMs,
       mode: s.mode,
       scale: s.scale,
@@ -108,15 +125,30 @@ export const useTimeStore = create<TimeState>((set, get) => ({
       throw new TypeError('Invalid time snapshot');
     }
     const { totalMinutes, mode, scale, startEpochMs } = data;
+    const paused = data.pausedAt !== null;
     const time = computeGameTime(totalMinutes);
-    return () => set({
+    return () => {
+      exact = published = totalMinutes;
+      set(state => ({
       totalMinutes,
       time,
       mode,
       scale,
       startEpochMs,
-      paused: false,
-    });
+      paused,
+      hydrationRevision: state.hydrationRevision + 1,
+      }));
+    };
   },
   hydrate: (data) => get().prepareHydrate(data)(),
 }));
+}
+
+export type TimeStore = ReturnType<typeof createTimeStore>;
+const TimeStoreContext = createContext<TimeStore | null>(null);
+export const TimeStoreProvider = TimeStoreContext.Provider;
+
+/** Hook reads the nearest world; imperative static methods retain the legacy default store. */
+export const { useStore: useTimeStore, useStoreApi: useTimeStoreApi } = lazyScopedStore(
+  'useTimeStore', createTimeStore, () => useContext(TimeStoreContext),
+);

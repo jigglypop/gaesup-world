@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useAssetStore, type AssetRecord } from '../../../assets';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
+import { useEngineFrame } from '../../../runtime/frame';
 import { DEFAULT_CHARACTER_ATTACHMENT_SOCKETS } from '../../attachments';
 import { EMPTY_OUTFITS, useCharacterStore } from '../../stores/characterStore';
 import { DEFAULT_APPEARANCE, type FaceStyle, type HairStyle, type OutfitSlot } from '../../types';
@@ -98,12 +98,12 @@ export function OutfitAvatar({
     };
   }, [hairShape.geometry]);
 
-  useFrame(() => {
+  useEngineFrame('lateUpdate', () => {
     const g = groupRef.current;
     if (!g) return;
     g.position.set(position.x, position.y + headHeight, position.z);
     g.rotation.set(0, rotation.y, 0);
-  });
+  }, { label: 'character:outfit-avatar' });
 
   if (!enabled) return null;
 

@@ -1,3 +1,6 @@
+import { Vector3 } from 'three';
+
+import { createInitialCameraMetrics } from '../defaults';
 import {
   cx,
   defaultClassFor,
@@ -10,13 +13,12 @@ import {
   resolveEnabledFields,
   toVec3,
 } from '../helpers';
-import { createInitialCameraMetrics } from '../defaults';
 
 describe('CameraDebugPanel helper', () => {
   test('벡터 값을 판정하고 포맷한다', () => {
     expect(isVec3Like({ x: 1, y: 2, z: 3 })).toBe(true);
     expect(toVec3({ x: 1, y: 2, z: 3 })).toEqual({ x: 1, y: 2, z: 3 });
-    expect(formatDebugValue({ x: 1, y: 2, z: 3 }, 1)).toBe('X:1.0 Y:2.0 Z:3.0');
+    expect(formatDebugValue(new Vector3(1, 2, 3), 1)).toBe('X:1.0 Y:2.0 Z:3.0');
     expect(formatDebugValue(undefined, 2, 'Empty')).toBe('Empty');
   });
   test('변경 여부와 metric 값을 읽는다', () => {

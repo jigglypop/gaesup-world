@@ -68,17 +68,14 @@ describe('NPC 스토어 기본값 초기화', () => {
 });
 
 describe('NPC 대사 이벤트', () => {
-  it('같은 NPC가 반복해서 말해도 대사 이벤트는 하나만 유지하고 최신 내용으로 바꾼다', () => {
+  it('말하기는 화면에만 띄우고 이벤트로 쌓거나 저장하지 않는다', () => {
     withInstances([createInstance('talker')]);
     const { executeInstanceAction } = useNPCStore.getState();
 
     executeInstanceAction('talker', { type: 'speak', text: '첫 번째' });
     executeInstanceAction('talker', { type: 'speak', text: '두 번째' });
-    executeInstanceAction('talker', { type: 'speak', text: '세 번째' });
 
-    const events = useNPCStore.getState().instances.get('talker')?.events ?? [];
-    expect(events).toHaveLength(1);
-    expect(events[0]?.payload).toMatchObject({ type: 'dialogue', text: '세 번째' });
+    expect(useNPCStore.getState().instances.get('talker')?.events ?? []).toHaveLength(0);
   });
 
   it('id가 다른 이벤트는 그대로 쌓이고 같은 id는 교체된다', () => {

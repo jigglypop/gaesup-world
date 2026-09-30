@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 import { act, renderHook } from '@testing-library/react';
 
 import { BridgeFactory } from '../../../core/boilerplate';
@@ -8,7 +9,7 @@ import { useSpawnFromBlueprint } from '../useSpawnFromBlueprint';
 
 test('a real world bridge rejects spawning before registration and retains the object after retry', async () => {
   const bridge = new WorldBridge();
-  const factory = jest.spyOn(BridgeFactory, 'getOrCreate').mockReturnValue(bridge);
+  const factory = jest.spyOn(BridgeFactory, 'getOrCreateFor').mockReturnValue(bridge);
   const { mode, urls } = useGaesupStore.getState();
   const { result, unmount } = renderHook(() => useSpawnFromBlueprint());
   try {
@@ -23,9 +24,9 @@ test('a real world bridge rejects spawning before registration and retains the o
       expect(entity).not.toBeNull();
       const object = bridge.getEngine('default')?.system.getObject(entity!.id);
       expect(object?.position.toArray()).toEqual([3, 2, 1]);
-      expect(object?.metadata?.['characterUrl']).toBe('gltf/ally_body.glb');
+      expect(object?.metadata?.['characterUrl']).toBe('gltf/trainer_green.glb');
     });
-    expect(useGaesupStore.getState().urls.characterUrl).toBe('gltf/ally_body.glb');
+    expect(useGaesupStore.getState().urls.characterUrl).toBe('gltf/trainer_green.glb');
     expect(result.current.lastSpawnedEntity).not.toBeNull();
   } finally {
     unmount();

@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 
 import { BridgeFactory } from '@core/boilerplate';
-import type { MotionBridge } from '@core/motions/bridge/MotionBridge';
+import { MotionBridge } from '@core/motions/bridge/MotionBridge';
+import { logger } from '@core/utils/logger';
 import type { GaesupCoreWasmExports } from '@core/wasm/loader';
-import { useWeatherStore } from '@core/weather/stores/weatherStore';
+import { windSway } from '@core/weather/core/field';
 
 /**
  * Per-tile grass record consumed by the manager. Tiles register on
@@ -31,6 +32,17 @@ export type GrassTileHandle = {
   apply: (state: GrassTileRenderState) => void;
 };
 
+/** Deferred grass work, such as a blade layout, stepped nearest to the camera first within the frame budget. */
+export type GrassBuild = {
+  /** World point the camera distance is measured to. */
+  center: THREE.Vector3;
+  /** Works until `deadline` (a `performance.now()` time); true once finished. */
+  step: (deadline: number) => boolean;
+};
+
+/** Milliseconds of builds a tick runs. */
+const BUILD_BUDGET_MS = 2;
+
 export type GrassTileRenderState = {
   /** True when the tile should be rendered at all this frame. */
   visible: boolean;
@@ -38,7 +50,7 @@ export type GrassTileRenderState = {
   instanceCount: number;
   /** Animation time (seconds, scaled). */
   time: number;
-  /** Wind multiplier blended from current weather. */
+  /** Sway multiplier from the live wind (`windSway`): about 0.9 calm, 2 windy, near 3 in a storm's gusts. */
   windScale: number;
   /** XZ trample center expressed in world-space. */
   trampleCenter: THREE.Vector3;
@@ -51,27 +63,99 @@ export function setGrassManagerWasm(w: GaesupCoreWasmExports | null): void {
   _wasm = w;
 }
 
-class GrassManager {
+export type GrassManagerSources = {
+  trample: () => { position: { x: number; y: number; z: number }; isMoving: boolean; isGrounded: boolean } | null;
+};
+
+const legacySources: GrassManagerSources = {
+  trample: () => {
+    const bridge = BridgeFactory.getOrCreateFor(MotionBridge);
+    const id = bridge.getPlayerEntityId();
+    return id ? bridge.snapshot(id) : null;
+  },
+};
+
+export class GrassManager {
+  constructor(private readonly sources: GrassManagerSources = legacySources) {}
   private nextId = 1;
   private tiles = new Map<number, GrassTileHandle>();
+  private builds = new Set<GrassBuild>();
+  private orderedTiles: GrassTileHandle[] = [];
+  private orderDirty = true;
+  private enabled = true;
+  private sphere = new THREE.Sphere();
 
-  // Reusable scratch buffers — never grow beyond the largest registered batch.
+  // Geometric growth amortizes edits; buffers are released at zero owners or suspension.
   private positions = new Float32Array(0);
   private weights = new Float32Array(0);
 
   private trampleWorld = new THREE.Vector3(0, -9999, 0);
   private trampleStrength = 0.0;
+  private hasTrample = false;
 
-  private lastSampleAt = 0;
+  private lastElapsedTime: number | undefined;
+  private lastCameraPosition = new THREE.Vector3();
+  private lastFrustum = new THREE.Frustum();
+  private wasmBuffers: { module: GaesupCoreWasmExports; input: number; output: number; capacity: number } | undefined;
+
+  suspend(): void {
+    if (!this.enabled) return;
+    this.enabled = false;
+    this.lastElapsedTime = undefined;
+    this.releaseBuffers();
+    this.positions = new Float32Array(0); this.weights = new Float32Array(0);
+    this.trampleWorld.set(0, -9999, 0); this.trampleStrength = 0; this.hasTrample = false;
+    for (const tile of this.tiles.values()) this.hide(tile);
+  }
+
+  resume(): void { this.enabled = true; this.lastElapsedTime = undefined; }
+  isEnabled(): boolean { return this.enabled; }
+
+  dispose(): void {
+    this.suspend(); this.tiles.clear(); this.builds.clear(); this.orderedTiles = []; this.orderDirty = true;
+  }
+
+  /** Queues `build` for the ticks, which spend at most `BUILD_BUDGET_MS` each on builds. Returns the cancel. */
+  schedule(build: GrassBuild): () => void {
+    this.builds.add(build);
+    return () => { this.builds.delete(build); };
+  }
+
+  private runBuilds(camera: THREE.Vector3): void {
+    const deadline = performance.now() + BUILD_BUDGET_MS;
+    do {
+      let next: GrassBuild | undefined;
+      let nearest = Infinity;
+      for (const build of this.builds) {
+        const distance = build.center.distanceToSquared(camera);
+        if (distance < nearest) { nearest = distance; next = build; }
+      }
+      if (!next) return;
+      let done = true;
+      try { done = next.step(deadline); }
+      catch (error) { logger.error('Grass build failed', { error }); }
+      if (done) this.builds.delete(next);
+    } while (this.builds.size > 0 && performance.now() < deadline);
+  }
+
+  private hide(tile: GrassTileHandle): void {
+    this.apply(tile, { visible: false, instanceCount: 0, time: 0, windScale: windSway(), trampleCenter: this.trampleWorld, trampleStrength: 0 });
+  }
+
+  private apply(tile: GrassTileHandle, state: GrassTileRenderState): void {
+    try { tile.apply(state); }
+    catch (error) { logger.error('Grass tile update failed', { id: tile.id, error }); }
+  }
 
   register(handle: Omit<GrassTileHandle, 'id'>): GrassTileHandle {
     if (this.tiles.size === 0) {
-      this.lastSampleAt = 0;
+      this.lastElapsedTime = undefined;
     }
     const id = this.nextId++;
     const tile: GrassTileHandle = { ...handle, id };
     this.tiles.set(id, tile);
-    this.ensureCapacity(this.tiles.size);
+    this.orderDirty = true;
+    if (!this.enabled) this.hide(tile);
     return tile;
   }
 
@@ -82,9 +166,13 @@ class GrassManager {
   }
 
   unregister(id: number): void {
-    this.tiles.delete(id);
+    if (!this.tiles.delete(id)) return;
+    this.orderDirty = true;
     if (this.tiles.size === 0) {
-      this.lastSampleAt = 0;
+      this.lastElapsedTime = undefined;
+      this.orderedTiles = [];
+      this.positions = new Float32Array(0); this.weights = new Float32Array(0);
+      this.releaseBuffers();
     }
   }
 
@@ -95,8 +183,8 @@ class GrassManager {
   /**
    * Run one management tick. Cheap to call from a single shared
    * `useFrame` that lives at the top of the scene; safe to call from
-   * each individual tile if no shared driver is mounted (the manager
-   * dedupes by tracking `lastSampleAt`).
+   * multiple drivers: elapsedTime identifies a render frame. Wall-clock
+   * throttling would skip valid high-refresh or manually advanced frames.
    */
   tick(args: {
     elapsedTime: number;
@@ -104,34 +192,36 @@ class GrassManager {
     cameraPosition: THREE.Vector3;
     frustum: THREE.Frustum;
   }): void {
-    if (this.tiles.size === 0) return;
-    const now = performance.now();
-    if (now - this.lastSampleAt < 12) return; // cap at ~80Hz to avoid burning
-    this.lastSampleAt = now;
+    if (!this.enabled || this.tiles.size === 0) return;
+    if (this.lastElapsedTime === args.elapsedTime && this.lastCameraPosition.equals(args.cameraPosition)
+      && this.lastFrustum.planes.every((plane, index) => plane.equals(args.frustum.planes[index]!))) return;
+    this.lastElapsedTime = args.elapsedTime;
+    this.lastCameraPosition.copy(args.cameraPosition); this.lastFrustum.copy(args.frustum);
 
+    if (this.builds.size > 0) this.runBuilds(args.cameraPosition);
     this.refreshTrample(args.delta);
 
-    const wind = this.computeWindScale();
+    const wind = windSway();
     const time = args.elapsedTime / 4;
 
     this.ensureCapacity(this.tiles.size);
     let i = 0;
-    const sortedIds: number[] = [];
-    for (const tile of this.tiles.values()) {
+    if (this.orderDirty) { this.orderedTiles = [...this.tiles.values()]; this.orderDirty = false; }
+    const batch = this.orderedTiles;
+    for (const tile of batch) {
       const oi = i * 3;
       this.positions[oi] = tile.center.x;
       this.positions[oi + 1] = tile.center.y;
       this.positions[oi + 2] = tile.center.z;
-      sortedIds.push(tile.id);
       i += 1;
     }
 
-    this.computeWeights(sortedIds.length, args.cameraPosition);
+    this.computeWeights(batch.length, args.cameraPosition);
 
     let idx = 0;
-    for (const id of sortedIds) {
-      const tile = this.tiles.get(id);
-      if (!tile) { idx += 1; continue; }
+    for (const tile of batch) {
+      if (!this.enabled) break;
+      if (!this.tiles.has(tile.id)) { idx += 1; continue; }
 
       let weight = this.weights[idx] ?? 0;
       idx += 1;
@@ -139,8 +229,8 @@ class GrassManager {
       // Frustum cull using a sphere whose radius matches the tile's
       // diagonal. Cheaper than per-blade culling and correct for tiles
       // placed far apart.
-      const radius = Math.hypot(tile.width, tile.height) * 0.6;
-      const sphere = SPHERE_SCRATCH.set(tile.center, radius);
+      const radius = Math.hypot(tile.width, tile.width, tile.height) * 0.5;
+      const sphere = this.sphere.set(tile.center, radius);
       const inFrustum = args.frustum.intersectsSphere(sphere);
       if (tile.lod) {
         const dist = tile.center.distanceTo(args.cameraPosition);
@@ -155,7 +245,7 @@ class GrassManager {
       const target = Math.max(0, Math.floor(tile.maxInstances * weight));
       const visible = inFrustum && target > 0;
 
-      tile.apply({
+      this.apply(tile, {
         visible,
         instanceCount: visible ? target : 0,
         time,
@@ -168,11 +258,17 @@ class GrassManager {
 
   private ensureCapacity(count: number): void {
     if (this.positions.length < count * 3) {
-      this.positions = new Float32Array(count * 3);
+      const capacity = Math.max(count, this.weights.length * 2, 8);
+      this.positions = new Float32Array(capacity * 3);
+      this.weights = new Float32Array(capacity);
     }
-    if (this.weights.length < count) {
-      this.weights = new Float32Array(count);
-    }
+  }
+
+  private releaseBuffers(): void {
+    const buffers = this.wasmBuffers; this.wasmBuffers = undefined;
+    if (!buffers) return;
+    try { buffers.module.dealloc_f32(buffers.input, buffers.capacity * 3); }
+    finally { buffers.module.dealloc_f32(buffers.output, buffers.capacity); }
   }
 
   private computeWeights(count: number, camera: THREE.Vector3): void {
@@ -186,21 +282,23 @@ class GrassManager {
 
     if (wasm) {
       try {
-        const inPtr = wasm.alloc_f32(count * 3);
-        const outPtr = wasm.alloc_f32(count);
-        try {
-          new Float32Array(wasm.memory.buffer, inPtr, count * 3).set(this.positions.subarray(0, count * 3));
-          wasm.batch_sfe_weights(count, inPtr, camera.x, camera.y, camera.z, near, far, strength, outPtr);
-          this.weights.set(new Float32Array(wasm.memory.buffer, outPtr, count));
-        } finally {
-          wasm.dealloc_f32(inPtr, count * 3);
-          wasm.dealloc_f32(outPtr, count);
+        if (this.wasmBuffers?.module !== wasm || this.wasmBuffers.capacity < count) {
+          this.releaseBuffers();
+          const capacity = this.weights.length;
+          const input = wasm.alloc_f32(capacity * 3);
+          try { this.wasmBuffers = { module: wasm, input, output: wasm.alloc_f32(capacity), capacity }; }
+          catch (error) { wasm.dealloc_f32(input, capacity * 3); throw error; }
         }
+        const { input, output } = this.wasmBuffers;
+        new Float32Array(wasm.memory.buffer, input, count * 3).set(this.positions.subarray(0, count * 3));
+        wasm.batch_sfe_weights(count, input, camera.x, camera.y, camera.z, near, far, strength, output);
+        this.weights.set(new Float32Array(wasm.memory.buffer, output, count));
         return;
       } catch {
+        this.releaseBuffers();
         // fall through to the JS path on wasm hiccups
       }
-    }
+    } else this.releaseBuffers();
 
     for (let i = 0; i < count; i += 1) {
       const oi = i * 3;
@@ -213,11 +311,11 @@ class GrassManager {
   }
 
   private refreshTrample(delta: number): void {
-    const bridge = BridgeFactory.getOrCreate('motion') as MotionBridge | null;
-    const playerId = bridge?.getPlayerEntityId() ?? null;
-    const snap = playerId ? bridge?.snapshot(playerId) : null;
-    const lerp = THREE.MathUtils.clamp(delta * 6, 0, 1);
+    const snap = this.sources.trample();
+    const lerp = 1 - Math.exp(-Math.max(0, delta) * 6);
     if (snap) {
+      if (!this.hasTrample) this.trampleWorld.set(snap.position.x, snap.position.y, snap.position.z);
+      this.hasTrample = true;
       this.trampleWorld.x += (snap.position.x - this.trampleWorld.x) * lerp;
       this.trampleWorld.y = snap.position.y;
       this.trampleWorld.z += (snap.position.z - this.trampleWorld.z) * lerp;
@@ -225,21 +323,7 @@ class GrassManager {
     const desired = snap?.isMoving && snap?.isGrounded ? 0.85 : 0.35;
     this.trampleStrength += (desired - this.trampleStrength) * lerp;
   }
-
-  private computeWindScale(): number {
-    const w = useWeatherStore.getState().current;
-    const intensity = w?.intensity ?? 0;
-    const base =
-      w?.kind === 'storm'  ? 2.6 :
-      w?.kind === 'rain'   ? 1.7 :
-      w?.kind === 'snow'   ? 1.3 :
-      w?.kind === 'cloudy' ? 1.15 :
-                             0.85;
-    return base + intensity * 0.9;
-  }
 }
-
-const SPHERE_SCRATCH = new THREE.Sphere();
 
 function jsWeight(dist: number, near: number, far: number, strength: number): number {
   if (dist <= near) return 1;
@@ -249,6 +333,7 @@ function jsWeight(dist: number, near: number, far: number, strength: number): nu
 }
 
 let _instance: GrassManager | null = null;
+export function createGrassManager(sources?: GrassManagerSources): GrassManager { return new GrassManager(sources); }
 export function getGrassManager(): GrassManager {
   if (!_instance) _instance = new GrassManager();
   return _instance;

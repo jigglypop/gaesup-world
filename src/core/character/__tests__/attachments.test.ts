@@ -1,10 +1,10 @@
+import type { AssetRecord } from '../../assets';
 import {
   DEFAULT_CHARACTER_ATTACHMENT_SOCKETS,
   resolveCharacterAttachment,
   resolveEquippedCharacterAttachments,
 } from '../attachments';
 import type { OutfitSlot } from '../types';
-import type { AssetRecord } from '../../assets';
 
 const emptyOutfits = (): Record<OutfitSlot, string | null> => ({
   hat: null,

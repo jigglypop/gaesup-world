@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useTeleport } from '../../../hooks/useTeleport';
 import { usePlayerPosition } from '../../../motions/hooks/usePlayerPosition';
+import { AFTER_MOTION_FRAME_ORDER, useSharedFrame, type SharedFrameChannel } from '../../../runtime/frame';
 import { useSceneStore } from '../../stores/sceneStore';
 import type { SceneEntry, SceneId } from '../../types';
 
@@ -38,6 +38,8 @@ export type HouseDoorProps = {
  * a sensor mid-event. Polling the player's position with a small radius is
  * cheap and survives scene swaps.
  */
+const HOUSE_DOOR_FRAME: SharedFrameChannel = { phase: 'postPhysics', label: 'scene:house-door', order: AFTER_MOTION_FRAME_ORDER };
+
 export function HouseDoor({
   position,
   sceneId,
@@ -51,14 +53,14 @@ export function HouseDoor({
   const goTo = useSceneStore((s) => s.goTo);
   const current = useSceneStore((s) => s.current);
   const { teleport } = useTeleport();
-  const { position: playerPos } = usePlayerPosition({ updateInterval: 50 });
-  const lastTriggerRef = useRef<number>(0);
+  const { position: playerPos } = usePlayerPosition({ updateInterval: 50, reactive: false });
+  const lastTriggerRef = useRef(Number.NEGATIVE_INFINITY);
 
   const padGeometry = useMemo(() => new THREE.CylinderGeometry(radius, radius, 0.08, 28), [radius]);
 
   useEffect(() => () => padGeometry.dispose(), [padGeometry]);
 
-  useFrame(() => {
+  useSharedFrame(HOUSE_DOOR_FRAME, () => {
     const now = performance.now();
     if (now - lastTriggerRef.current < cooldownMs) return;
 
@@ -79,10 +81,10 @@ export function HouseDoor({
       position: [position[0], position[1], position[2]] as [number, number, number],
     };
 
-    await goTo(sceneId, { entry, saveReturn });
-
-    const target = new THREE.Vector3(entry.position[0], entry.position[1], entry.position[2]);
-    teleport(target);
+    await goTo(sceneId, {
+      entry, saveReturn,
+      onEntered: () => teleport(new THREE.Vector3(...entry.position)),
+    });
   }
 
   return (

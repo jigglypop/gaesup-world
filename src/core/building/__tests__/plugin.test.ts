@@ -1,4 +1,8 @@
+import { createWebSocketVisitChannel } from '../../networks/visit/channel';
+import { applyVisitSnapshot } from '../../networks/visit/serializer';
 import { createPluginRegistry } from '../../plugins';
+import { SaveSystem } from '../../save';
+import type { DomainBinding } from '../../save/types';
 import {
   buildingGridAdapter,
   buildingPlacementAdapter,
@@ -6,10 +10,6 @@ import {
 import { createBuildingPlugin } from '../plugin';
 import type { BuildingPlacementExtension } from '../plugin';
 import { useBuildingStore } from '../stores/buildingStore';
-import { createWebSocketVisitChannel } from '../../networks/visit/channel';
-import { applyVisitSnapshot } from '../../networks/visit/serializer';
-import type { DomainBinding } from '../../save/types';
-import { SaveSystem } from '../../save';
 
 describe('building plugin', () => {
   it('rejects malformed building geometry before applying earlier save domains', async () => {
@@ -40,7 +40,7 @@ describe('building plugin', () => {
     registry.register(createBuildingPlugin());
     await registry.setup('gaesup.building');
     const previous = useBuildingStore.getState().serialize();
-    let receive = (_raw: string): void => {};
+    let receive: (raw: string) => void = () => {};
     const channel = createWebSocketVisitChannel({
       send: jest.fn(),
       onMessage: (listener) => { receive = listener; return () => {}; },
@@ -56,13 +56,34 @@ describe('building plugin', () => {
       const local = useBuildingStore.getState().serialize();
       const snapshot = { kind: 'world', worldId: 'remote', hostId: 'remote', version: 1, savedAt: 0, capturedAt: 0 };
       receive(JSON.stringify({ type: 'VisitSnapshot', v: 1, snapshot: { ...snapshot, domains: { building: {} } } }));
-      expect(results).toEqual([{ applied: [], skipped: ['building'] }]);
+      expect(results).toEqual([{ applied: [], skipped: ['building'], failed: [{ key: 'building', error: new Error('Empty building snapshot') }] }]);
       expect(useBuildingStore.getState().serialize()).toEqual(local);
       receive(JSON.stringify({ type: 'VisitSnapshot', v: 1, snapshot: { ...snapshot, domains: { building: { meshes: [] } } } }));
       expect(results[1]).toEqual({ applied: ['building'], skipped: [] });
       expect(useBuildingStore.getState().meshes.size).toBe(0);
     } finally {
       channel.close();
+      useBuildingStore.getState().hydrate(previous);
+      await registry.dispose('gaesup.building');
+    }
+  });
+
+  it('owns its snapshot and keeps its save revision across UI-only store updates', async () => {
+    const registry = createPluginRegistry();
+    registry.register(createBuildingPlugin());
+    await registry.setup('gaesup.building');
+    const previous = useBuildingStore.getState().serialize();
+    const binding = registry.context.save.require<DomainBinding>('building');
+    try {
+      expect(binding.owned).toBe(true);
+      const revision = binding.revision!();
+      useBuildingStore.getState().setShowGrid(!useBuildingStore.getState().showGrid);
+      useBuildingStore.getState().setGridSize(useBuildingStore.getState().gridSize + 1);
+      expect(binding.revision!()).toBe(revision);
+      useBuildingStore.getState().hydrate({ meshes: [{ id: 'revision-mesh', color: '#fff', material: 'STANDARD' }] });
+      expect(binding.revision!()).toBe(revision + 1);
+      expect(binding.revision!()).toBe(revision + 1);
+    } finally {
       useBuildingStore.getState().hydrate(previous);
       await registry.dispose('gaesup.building');
     }

@@ -3,10 +3,8 @@ import type { WorldSnapshot } from '../../platform';
 import type { DomainBinding, SerializedDomainValue } from '../../save/types';
 
 /**
- * Set of save-domain keys that are considered "shareable" when another
- * player visits this world. Building layouts, scene, character look,
- * farming plots, and audio settings are intentionally included; private
- * progression (mail, friendship, quests, wallet, inventory) is not.
+ * Save-domain keys shared when another player visits this world: the world snapshot domains (building, scene,
+ * character look, NPCs, camera, time, weather, audio). Player-owned progress domains stay out.
  */
 export const DEFAULT_VISIT_DOMAINS: readonly string[] = WORLD_SNAPSHOT_DOMAINS;
 

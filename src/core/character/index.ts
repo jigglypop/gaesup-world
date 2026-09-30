@@ -6,7 +6,7 @@ export {
   serializeCharacterState,
 } from './plugin';
 export type { CharacterPluginOptions } from './plugin';
-export { DEFAULT_CHARACTER_ID, EMPTY_OUTFITS, useCharacterStore } from './stores/characterStore';
+export { DEFAULT_CHARACTER_ID, EMPTY_OUTFITS, createCharacterStore, useCharacterStore, useCharacterStoreApi } from './stores/characterStore';
 export { CharacterCreator } from './components/CharacterCreator';
 export type { CharacterCreatorProps } from './components/CharacterCreator';
 
@@ -92,3 +92,5 @@ export type {
   WearableDeformation,
   WearableMetadata,
 } from './skeleton';
+
+export type { CharacterStore } from './stores/characterStore';

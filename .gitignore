@@ -1,4 +1,7 @@
 # Logs
+.asset-work/
+# Reference copy of the choketmonster game, read while porting its techniques
+chocketmon/
 logs
 *.log
 npm-debug.log*
@@ -13,6 +16,7 @@ node_modules
 # Test coverage
 coverage/
 .tmp/
+.jest-cache/
 
 # Editor directories and files
 .vscode/*
@@ -36,6 +40,7 @@ coverage/
 
 dist
 dist/*
+demo-dist/
 .cursor/*
 coverage
 coverage/*
@@ -52,3 +57,10 @@ coverage/*
 # Python cache artifacts
 __pycache__/
 *.py[cod]
+
+# Local performance runs (approved baseline summaries remain versioned).
+.artifacts/performance/
+.artifacts/minihome/
+.artifacts/release/
+.artifacts/accept/
+.artifacts/minihome-release/

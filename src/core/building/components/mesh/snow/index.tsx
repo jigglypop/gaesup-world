@@ -1,11 +1,12 @@
 import React, { lazy, Suspense, useEffect, useMemo, useRef } from 'react';
 
-import { useFrame, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { loadCoreWasm, type GaesupCoreWasmExports } from '@core/wasm/loader';
 
-import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
+import { rendererKind } from '../../../../rendering/webgpu';
+import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
 import { logger } from '../../../../utils/logger';
 
 const COUNT = 2000;
@@ -14,6 +15,8 @@ const HALF_RANGE = 20;
 const HEIGHT = 20;
 const LOD_INTERVAL = 3;
 const NodeGpuSnow = lazy(() => import('./NodeGpuSnow'));
+const GPU_SNOW_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:snow-gpu' };
+const CPU_SNOW_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:snow-cpu' };
 
 type SnowProps = {
   /**
@@ -138,7 +141,7 @@ function GpuSnow({ followCamera = false }: Pick<SnowProps, 'followCamera'>) {
 
   useEffect(() => () => { geometry.dispose(); material.dispose(); }, [geometry, material]);
 
-  useFrame((state) => {
+  useSharedFrame(GPU_SNOW_FRAME, (_, elapsedSeconds, three) => {
     const points = pointsRef.current;
     if (!points) return;
     const parent = points.parent;
@@ -147,9 +150,9 @@ function GpuSnow({ followCamera = false }: Pick<SnowProps, 'followCamera'>) {
     const uTime = u['uTime'];
     const uOrigin = u['uOrigin'];
     const uScale = u['uScale'];
-    if (uTime) uTime.value = getFrameElapsedSeconds(state);
-    if (followCamera && uOrigin) (uOrigin.value as THREE.Vector3).copy(state.camera.position);
-    if (uScale) uScale.value = state.gl.domElement.height * 0.5;
+    if (uTime) uTime.value = elapsedSeconds;
+    if (followCamera && uOrigin) (uOrigin.value as THREE.Vector3).copy(three.camera.position);
+    if (uScale) uScale.value = three.gl.domElement.height * 0.5;
   });
 
   return (
@@ -164,7 +167,7 @@ function GpuSnow({ followCamera = false }: Pick<SnowProps, 'followCamera'>) {
 }
 
 export function Snow({ gpu, followCamera = false }: SnowProps = {}) {
-  const useNodes = useThree((state) => 'isWebGPURenderer' in state.gl && state.gl.isWebGPURenderer === true);
+  const useNodes = useThree((state) => rendererKind(state.gl) !== 'webgl');
   if (gpu && useNodes) return <Suspense fallback={null}><NodeGpuSnow followCamera={followCamera} count={COUNT} halfRange={HALF_RANGE} height={HEIGHT} /></Suspense>;
   if (gpu) {
     return <GpuSnow followCamera={followCamera} />;
@@ -227,12 +230,12 @@ function CpuSnow({ followCamera = false }: Pick<SnowProps, 'followCamera'>) {
     };
   }, [positions, velocities]);
 
-  useFrame((state, delta) => {
+  useSharedFrame(CPU_SNOW_FRAME, (delta, _, three) => {
     const parent = pointsRef.current?.parent;
     if (parent && !parent.visible) return;
 
     if (followCamera) {
-      const cam = state.camera.position;
+      const cam = three.camera.position;
       bounds[0] = cam.x - HALF_RANGE;
       bounds[1] = cam.x + HALF_RANGE;
       bounds[2] = cam.y - 5;

@@ -1,3 +1,4 @@
+import { createMeshRendererComponent } from '../../scene-object';
 import {
   createPrefabDocument,
   createPrefabFromSceneObjects,
@@ -6,7 +7,6 @@ import {
   serializePrefabDocument,
   validatePrefabDocument,
 } from '../index';
-import { createMeshRendererComponent } from '../../scene-object';
 
 describe('prefab document model', () => {
   test('creates a reusable scene object tree template', () => {

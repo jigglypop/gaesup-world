@@ -145,7 +145,17 @@ export type GaesupCoreWasmExports = {
   ) => number;
 };
 
+const TRANSIENT_FAILURE_RETRY_MS = 30_000;
+const SERVER_ERROR_STATUS = 500;
+
 let wasmPromise: Promise<GaesupCoreWasmExports | null> | null = null;
+let loaded: GaesupCoreWasmExports | null = null;
+
+/** The module once a load has finished, so code that starts later can use it without waiting a frame. */
+export function getLoadedCoreWasm(): GaesupCoreWasmExports | null {
+  return loaded;
+}
+let retryAfter = 0;
 
 type GaesupWasmGlobal = typeof globalThis & {
   __GAESUP_WASM_BASE_URL__?: string;
@@ -174,14 +184,27 @@ function getWasmUrl(): string {
   return resolveWasmUrl('gaesup_core.wasm');
 }
 
+/** Missing or invalid modules stay cached as unavailable; network and server failures are retried after a cooldown. */
 export async function loadCoreWasm(): Promise<GaesupCoreWasmExports | null> {
   if (typeof WebAssembly === 'undefined') return null;
   if (wasmPromise) return wasmPromise;
+  if (Date.now() < retryAfter) return null;
+
+  const markTransientFailure = (): null => {
+    retryAfter = Date.now() + TRANSIENT_FAILURE_RETRY_MS;
+    wasmPromise = null;
+    return null;
+  };
 
   wasmPromise = (async () => {
+    let res: Response;
     try {
-      const url = getWasmUrl();
-      const res = await fetch(url);
+      res = await fetch(getWasmUrl());
+    } catch {
+      return markTransientFailure();
+    }
+    if (res.status >= SERVER_ERROR_STATUS) return markTransientFailure();
+    try {
       if (!res.ok) return null;
       const bytes = await res.arrayBuffer();
       const { instance } = await WebAssembly.instantiate(bytes, {});
@@ -191,7 +214,8 @@ export async function loadCoreWasm(): Promise<GaesupCoreWasmExports | null> {
       if (typeof exports.alloc_f32 !== 'function') return null;
       if (typeof exports.dealloc_f32 !== 'function') return null;
 
-      return exports as GaesupCoreWasmExports;
+      loaded = exports as GaesupCoreWasmExports;
+      return loaded;
     } catch {
       return null;
     }

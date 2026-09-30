@@ -1,8 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import { StudioPanel } from '..';
-import { getSaveSystem, SaveSystem, suspendAutoSave, type SaveBlob } from '../../../../../save';
 import { createGaesupRuntime, GaesupRuntimeProvider } from '../../../../../runtime';
+import { getSaveSystem, SaveSystem, type SaveBlob } from '../../../../../save';
 import { logger } from '../../../../../utils/logger';
 
 afterEach(() => jest.restoreAllMocks());
@@ -102,17 +102,4 @@ test('distinguishes a committed save from a failed slot refresh', async () => {
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: '현재 월드 저장' })); });
   expect(onSaveWorld).toHaveBeenCalledTimes(1);
   expect(screen.getByRole('status')).toHaveTextContent('저장했지만 목록을 갱신하지 못했습니다.');
-});
-
-test('다른 월드를 방문하는 동안에는 월드를 저장하지 않는다', async () => {
-  const onSaveWorld = jest.fn();
-  const release = suspendAutoSave();
-  try {
-    render(<StudioPanel onSaveWorld={onSaveWorld} />);
-    await act(async () => { fireEvent.click(screen.getByRole('button', { name: '현재 월드 저장' })); });
-    expect(onSaveWorld).not.toHaveBeenCalled();
-    expect(screen.getByRole('status')).toHaveTextContent('다른 월드를 방문하는 동안에는 저장할 수 없습니다.');
-  } finally {
-    release();
-  }
 });

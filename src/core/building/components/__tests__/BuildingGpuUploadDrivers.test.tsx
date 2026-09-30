@@ -17,7 +17,7 @@ jest.mock('@react-three/fiber', () => ({
 
 type RendererSelector = (state: { gl: object }) => unknown;
 type TrackedBuffer = GpuBufferLike & {
-  label?: string;
+  label: string | undefined;
   destroy: jest.MockedFunction<() => void>;
 };
 

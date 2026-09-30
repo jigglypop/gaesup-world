@@ -11,6 +11,7 @@ const ICONS: Record<WeatherKind, { sym: string; color: string; label: string }> 
   rain:   { sym: 'r', color: '#4aa8ff', label: '비' },
   snow:   { sym: '*', color: '#dff0ff', label: '눈' },
   storm:  { sym: '!', color: '#7f7fff', label: '폭풍' },
+  wind:   { sym: '~', color: '#9fd8c4', label: '바람' },
 };
 
 export function WeatherHUD({ position = 'top-left' }: WeatherHUDProps) {

@@ -5,7 +5,7 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const outputRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gaesup-world-demo-'));
-const assetsDir = path.join(outputRoot, 'assets');
+const ROUTE = 'examples/minihome/Minihome.tsx';
 
 function buildDemo() {
   childProcess.execFileSync(
@@ -37,81 +37,51 @@ function cleanupOutput() {
   fs.rmSync(resolvedOutputRoot, { recursive: true, force: true });
 }
 
-function listAssets() {
-  if (!fs.existsSync(assetsDir)) return [];
-  return fs.readdirSync(assetsDir).sort();
-}
-
 try {
   buildDemo();
-  const assets = listAssets();
-  const manifest = JSON.parse(fs.readFileSync(path.join(outputRoot, '.vite', 'manifest.json'), 'utf8'));
-  const initialChunks = new Set();
-  function visitInitialChunk(key) {
-    if (initialChunks.has(key)) return;
-    initialChunks.add(key);
-    for (const dependency of manifest[key]?.imports ?? []) visitInitialChunk(dependency);
+  const manifest = JSON.parse(
+    fs.readFileSync(path.join(outputRoot, '.vite', 'manifest.json'), 'utf8'),
+  );
+  function visitStaticChunk(key, chunks) {
+    if (chunks.has(key)) return;
+    chunks.add(key);
+    for (const dependency of manifest[key]?.imports ?? []) visitStaticChunk(dependency, chunks);
   }
+  const initialChunks = new Set();
   for (const [key, chunk] of Object.entries(manifest)) {
-    if (chunk.isEntry) visitInitialChunk(key);
+    if (chunk.isEntry) visitStaticChunk(key, initialChunks);
   }
   const initialJsBytes = [...initialChunks].reduce((total, key) => {
     const file = manifest[key].file;
     return total + (file.endsWith('.js') ? fs.statSync(path.join(outputRoot, file)).size : 0);
   }, 0);
   console.log(`Initial static imports: ${initialChunks.size} chunks, ${initialJsBytes} JS bytes.`);
-  for (const route of ['examples/pages/AdminPage.tsx', 'examples/AdminTest.tsx', 'examples/pages/AssetsPage.tsx']) {
-    if (!manifest[route]?.isDynamicEntry || initialChunks.has(route)) {
-      throw new Error(`Expected an independently lazy route: ${route}`);
-    }
+  function sourcesOf(key) {
+    const map = path.join(outputRoot, `${manifest[key].file}.map`);
+    return fs.existsSync(map) ? JSON.parse(fs.readFileSync(map, 'utf8')).sources : [];
   }
-  const adminUiChunks = Object.entries(manifest).filter(([, chunk]) =>
-    /^assets\/GaesupAdmin-.+\.js$/.test(chunk.file),
+  function sourcesFor(chunks) {
+    return [...chunks].flatMap(sourcesOf);
+  }
+
+  if (sourcesFor(initialChunks).some((source) => /\/three\//.test(source))) {
+    throw new Error('Engine code leaked into the initial UI import graph.');
+  }
+  // A single lazy route may be emitted as a shared chunk instead of a dynamic-entry facade, so its chunk is found by
+  // the source files the maps contain.
+  const routeChunk = Object.keys(manifest).find((key) => sourcesOf(key).some((source) => source.endsWith(ROUTE)));
+  if (!routeChunk || initialChunks.has(routeChunk)) throw new Error(`Expected an independently lazy route: ${ROUTE}`);
+  // The world route loads the engine and physics; editor and post-processing load only when a scene asks for them.
+  const routeChunks = new Set();
+  visitStaticChunk(routeChunk, routeChunks);
+  const heavy = sourcesFor(routeChunks).filter((source) =>
+    /\/src\/core\/editor\/|\/src\/core\/rendering\/postprocess\/|\/postprocessing\//.test(source),
   );
-  if (adminUiChunks.length === 0 || adminUiChunks.some(([key]) => initialChunks.has(key))) {
-    throw new Error('Expected shared administrator UI outside the initial static import graph.');
-  }
-  const deferredAdminBytes = adminUiChunks.reduce(
-    (total, [, chunk]) => total + fs.statSync(path.join(outputRoot, chunk.file)).size,
-    0,
-  );
-  console.log(`Administrator UI deferred from initial imports: ${deferredAdminBytes} JS bytes.`);
-  const surfaceJs = assets.filter((file) => /^packageSurface-.+\.js$/.test(file));
-  const cssAssets = assets.filter((file) => file.endsWith('.css'));
-  const indexJs = assets.filter((file) => /^index-.+\.js$/.test(file));
-
-  if (surfaceJs.length === 0) {
-    throw new Error('Expected demo build to emit a lazy packageSurface JS chunk.');
+  if (heavy.length > 0) {
+    throw new Error(`The world route eagerly loads editor/postprocessing modules: ${heavy.slice(0, 5).join(', ')}`);
   }
 
-  if (cssAssets.length === 0) {
-    throw new Error('Expected demo build to emit CSS for gaesup-world/style.css.');
-  }
-
-  const hasEditorTheme = cssAssets.some((file) => {
-    const source = fs.readFileSync(path.join(assetsDir, file), 'utf8');
-    return source.includes('--editor-bg-1');
-  });
-
-  if (!hasEditorTheme) {
-    throw new Error('Expected demo build CSS to include the gaesup-world editor theme.');
-  }
-
-  const builtStyles = cssAssets.map((file) => fs.readFileSync(path.join(assetsDir, file), 'utf8')).join('\n');
-  for (const selector of ['.mailbox-panel', '.mailbox-list', '[data-world-overlay]']) {
-    if (!builtStyles.includes(selector)) {
-      throw new Error(`Missing world panel styles in demo build: ${selector}`);
-    }
-  }
-
-  for (const file of indexJs) {
-    const source = fs.readFileSync(path.join(assetsDir, file), 'utf8');
-    if (source.includes('examples.package-surface')) {
-      throw new Error(`Package surface code leaked into initial chunk: ${file}`);
-    }
-  }
-
-  console.log('Demo package surface chunk verification passed.');
+  console.log('Example lazy route verification passed.');
 } finally {
   cleanupOutput();
 }

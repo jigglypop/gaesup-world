@@ -1,31 +1,13 @@
+import { DefinitionRegistry } from '../../utils/definitionRegistry';
 import type { DialogTree, DialogTreeId } from '../types';
 
-class DialogRegistry {
-  private trees = new Map<DialogTreeId, DialogTree>();
+export type DialogRegistry = DefinitionRegistry<DialogTreeId, DialogTree>;
 
-  register(tree: DialogTree): void {
-    this.trees.set(tree.id, tree);
-  }
-
-  registerAll(trees: DialogTree[]): void {
-    for (const t of trees) this.register(t);
-  }
-
-  get(id: DialogTreeId): DialogTree | undefined { return this.trees.get(id); }
-
-  require(id: DialogTreeId): DialogTree {
-    const t = this.trees.get(id);
-    if (!t) throw new Error(`Unknown DialogTreeId: ${id}`);
-    return t;
-  }
-
-  has(id: DialogTreeId): boolean { return this.trees.has(id); }
-  clear(): void { this.trees.clear(); }
-}
+export const createDialogRegistry = (): DialogRegistry => new DefinitionRegistry('DialogTreeId');
 
 let _instance: DialogRegistry | null = null;
+/** The page registry used where no runtime owns the dialog store; a runtime has its own `dialogRegistry`. */
 export function getDialogRegistry(): DialogRegistry {
-  if (!_instance) _instance = new DialogRegistry();
+  if (!_instance) _instance = createDialogRegistry();
   return _instance;
 }
-export type { DialogRegistry };

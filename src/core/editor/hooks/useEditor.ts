@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 
+import { lazyStore } from '../../stores/lazyStore';
 import { EditorState, createEditorSlice } from '../stores/editorSlice';
 
-export const useEditorStore = create<EditorState>(createEditorSlice);
+export const useEditorStore = lazyStore(() => create<EditorState>(createEditorSlice));
 
 export const useEditor = () => {
   const store = useEditorStore(
@@ -11,7 +12,6 @@ export const useEditor = () => {
       selectedObjectIds: state.selectedObjectIds,
       activeObjectId: state.activeObjectId,
       hoveredObjectId: state.hoveredObjectId,
-      playMode: state.playMode,
       saveStatus: state.saveStatus,
       layoutConfig: state.layoutConfig,
       activeNodeGraph: state.activeNodeGraph,
@@ -19,7 +19,6 @@ export const useEditor = () => {
       setSelectedObjectIds: state.setSelectedObjectIds,
       selectObject: state.selectObject,
       setHoveredObjectId: state.setHoveredObjectId,
-      setPlayMode: state.setPlayMode,
       setSaveStatus: state.setSaveStatus,
       updateSaveStatus: state.updateSaveStatus,
       clearSelection: state.clearSelection,

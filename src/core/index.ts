@@ -4,6 +4,7 @@ export * from './error';
 export * from './hooks';
 export * from './grid';
 export * from './gameplay';
+export { GameplayArea } from './gameplay/GameplayArea';
 export * from './interactions';
 export * from './motions';
 export * from './stores';
@@ -11,23 +12,10 @@ export * from './ui';
 export * from './utils';
 export * from './world';
 export * from './networks';
-export * from './ops';
 export * from './time';
 export * from './save';
-export * from './items';
-export * from './inventory';
-export * from './economy';
 export * from './dialog';
-export * from './tools';
-export * from './relations';
-export * from './quests';
-export * from './mail';
-export * from './catalog';
-export * from './crafting';
-export * from './farming';
 export * from './weather';
-export * from './events';
-export * from './town';
 export * from './audio';
 export * from './assets';
 export * from './character';
@@ -73,26 +61,12 @@ export { DynamicFog } from './rendering/fog/DynamicFog';
 export type { DynamicFogProps } from './rendering/fog/DynamicFog';
 export { DynamicSky } from './rendering/sky';
 export type { DynamicSkyProps, SkyKeyframe } from './rendering/sky';
-export {
-  GiVolume,
-  ProbeCascade,
-  ProbeVolume,
-  buildingToVoxelBoxes,
-  hexToLinearRgb,
-  instantiateGiWasm,
-  loadGiWasmModule,
-  useBuildingVoxelBoxes,
-  useGi,
-} from './gi';
-export type {
-  BuildingVoxelSource,
-  GiEnvironment,
-  GiIrradiance,
-  GiVolumeProps,
-  GiWasmExports,
-  ProbeVolumeConfig,
-  VoxelSourceBox,
-} from './gi';
+export { CascadedSun } from './rendering/sky/CascadedSun';
+export type { CascadedSunProps, CascadedSunQuality } from './rendering/sky/CascadedSun';
+export { createSkyEnvironmentTexture, SkyEnvironment } from './rendering/sky/SkyEnvironment';
+export { ContactShadows, LightingZone, useContactShadow } from './rendering/lighting';
+export type { ContactShadowsProps, LightingProfile, LightingZoneProps } from './rendering/lighting';
+export type { SkyEnvironmentProps } from './rendering/sky/SkyEnvironment';
 export { ColorGrade } from './rendering/postprocess/ColorGrade';
 export type { ColorGradeProps, GradePreset } from './rendering/postprocess/ColorGrade';
 export { LutOverlay } from './rendering/postprocess/LutOverlay';
@@ -216,12 +190,13 @@ export * from './building';
 export * from './npc';
 
 export { WorldProps as GaeSupProps } from './world/components/WorldProps';
-export { WorldContainer as GaesupWorld } from './world/components/WorldContainer';
+export { WorldConfigProvider as GaesupWorld } from './world/components/WorldContainer';
 export { GaesupWorldContent } from './world/components/WorldContainer';
-export { WorldConfigProvider, WorldContainer } from './world/components/WorldContainer';
+export { WorldConfigProvider } from './world/components/WorldContainer';
 export { ControllerWrapper as GaesupController } from './interactions/components/ControllerWrapper';
 
-export { createRenderer, isWebGPUAvailable } from './rendering/webgpu';
+export { createRenderer, createLegacyRenderer, isWebGPUAvailable, RENDERER_LOST_EVENT } from './rendering/webgpu';
+export { useRendererRecovery } from './rendering/recovery';
 export { Grid as LegacyGrid } from './rendering/legacyDrei';
 export {
   createToonMaterial,
@@ -238,3 +213,25 @@ export type { GaesupCoreWasmExports } from './wasm/loader';
 
 export { NavigationSystem } from './navigation';
 export type { NavigationConfig, Waypoint } from './navigation';
+export {
+  GiVolume,
+  ProbeCascade,
+  ProbeVolume,
+  buildingToVoxelBoxes,
+  hexToLinearRgb,
+  instantiateGiWasm,
+  loadGiWasmModule,
+  useBuildingVoxelBoxes,
+  useGi,
+  WorldGi,
+} from './gi';
+export type {
+  BuildingVoxelSource,
+  GiEnvironment,
+  GiIrradiance,
+  GiVolumeProps,
+  GiWasmExports,
+  ProbeVolumeConfig,
+  VoxelSourceBox,
+  WorldGiProps,
+} from './gi';

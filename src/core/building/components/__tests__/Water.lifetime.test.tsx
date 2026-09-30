@@ -30,17 +30,16 @@ test('reflection resources follow the replaced water object without disposing sh
   normalsDispose.mockRestore();
 });
 
-test('toon geometry changes retain the live shader until the surface is removed', async () => {
+test('toon geometry changes retain the live shaders until the surface is removed', async () => {
   const renderer = await ReactThreeTestRenderer.create(<Ocean toon size={8} />);
-  const findSurface = () => renderer.scene.find((node) =>
-    node.instance instanceof THREE.Mesh && node.instance.material instanceof THREE.ShaderMaterial,
+  const find = (name: string) => renderer.scene.find((node) =>
+    node.instance instanceof THREE.Mesh && node.instance.material instanceof THREE.ShaderMaterial && node.instance.material.name === name,
   ).instance as THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
-  const first = findSurface();
-  const material = first.material;
-  const dispose = jest.spyOn(material, 'dispose');
+  const materials = ['water-surface', 'water-bed'].map((name) => find(name).material);
+  const disposals = materials.map((material) => jest.spyOn(material, 'dispose'));
   await renderer.update(<Ocean toon size={32} />);
-  expect(findSurface().material).toBe(material);
-  expect(dispose).not.toHaveBeenCalled();
+  expect(['water-surface', 'water-bed'].map((name) => find(name).material)).toEqual(materials);
+  for (const dispose of disposals) expect(dispose).not.toHaveBeenCalled();
   await renderer.unmount();
-  expect(dispose).toHaveBeenCalled();
+  for (const dispose of disposals) expect(dispose).toHaveBeenCalled();
 });

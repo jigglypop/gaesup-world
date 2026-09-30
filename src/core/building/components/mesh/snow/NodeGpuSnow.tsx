@@ -1,10 +1,11 @@
 import { useEffect, useMemo } from 'react';
 
-import { useFrame } from '@react-three/fiber';
 import { InstancedBufferAttribute, Sprite } from 'three/webgpu';
 
-import { getFrameElapsedSeconds } from '../../../../boilerplate/hooks/frameTime';
 import { SnowNodeMaterial } from '../../../../rendering/tsl/snow';
+import { useSharedFrame, type SharedFrameChannel } from '../../../../runtime/frame';
+
+const NODE_SNOW_FRAME: SharedFrameChannel = { phase: 'effects', label: 'building:snow-node' };
 
 export default function NodeGpuSnow({ followCamera, count, halfRange, height }: {
   followCamera: boolean; count: number; halfRange: number; height: number;
@@ -29,12 +30,11 @@ export default function NodeGpuSnow({ followCamera, count, halfRange, height }: 
     return object;
   }, [count, halfRange, height]);
   useEffect(() => () => { sprite.geometry.dispose(); sprite.material.dispose(); }, [sprite]);
-  useFrame((state) => {
+  useSharedFrame(NODE_SNOW_FRAME, (_delta, _elapsedSeconds, three) => {
     if (sprite.parent && !sprite.parent.visible) return;
     const material = sprite.material as SnowNodeMaterial;
-    material.time = getFrameElapsedSeconds(state);
-    material.pixelScale = state.gl.domElement.height * 0.5;
-    if (followCamera) material.origin.copy(state.camera.position);
+    material.pixelScale = three.gl.domElement.height * 0.5;
+    if (followCamera) material.origin.copy(three.camera.position);
   });
   return <primitive object={sprite} />;
 }

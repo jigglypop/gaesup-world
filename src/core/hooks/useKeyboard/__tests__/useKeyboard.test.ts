@@ -1,10 +1,10 @@
-import 'reflect-metadata';
+/** @jest-environment jsdom */
 
 import { renderHook, act } from '@testing-library/react';
 
-import { useKeyboard } from '../index';
 import { createMemoryInputBackend } from '../../../interactions/core/adapter';
 import { useInputBackend } from '../../../interactions/hooks';
+import { useKeyboard } from '../index';
 
 const mockUpdateKeyboard = jest.fn();
 const mockUpdateMouse = jest.fn();
@@ -61,6 +61,16 @@ describe('useKeyboard', () => {
       interaction: { isActive: true },
       stopAutomation: mockStopAutomation,
     };
+  });
+
+  it.each([
+    ['ArrowUp', 'forward'], ['ArrowDown', 'backward'], ['ArrowLeft', 'leftward'], ['ArrowRight', 'rightward'], ['ShiftRight', 'shift'],
+  ])('%s drives %s like its default input action binding', (code, key) => {
+    renderHook(() => useKeyboard());
+    act(() => fireKeyEvent(code, 'keydown'));
+    expect(mockUpdateKeyboard).toHaveBeenLastCalledWith({ [key]: true });
+    act(() => fireKeyEvent(code, 'keyup'));
+    expect(mockUpdateKeyboard).toHaveBeenLastCalledWith({ [key]: false });
   });
 
   it('초기 상태에서 pressedKeys는 비어있어야 합니다', () => {

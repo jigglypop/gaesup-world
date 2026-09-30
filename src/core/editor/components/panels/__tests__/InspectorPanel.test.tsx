@@ -1,8 +1,13 @@
-import React from 'react';
-
 import { fireEvent, render, screen } from '@testing-library/react';
 
-import { createMeshRendererComponent, createSceneDocument } from '../../../../scene-object';
+import { createPrefabDocument, createPrefabInstance } from '../../../../prefab';
+import {
+  createMeshRendererComponent,
+  createSceneComponent,
+  createSceneDocument,
+  SCENE_COMPONENT_TYPES,
+} from '../../../../scene-object';
+import { BUILTIN_SCRIPT_IDS, registerBuiltinScripts } from '../../../../scripting/builtins';
 import { InspectorPanel } from '../InspectorPanel';
 
 describe('InspectorPanel', () => {
@@ -64,7 +69,7 @@ describe('InspectorPanel', () => {
     expect(onAddComponent).toHaveBeenCalledWith('tree', { type: 'game.health', data: {} });
 
     fireEvent.click(screen.getByText('삭제'));
-    expect(onRemoveComponent).toHaveBeenCalledWith('tree', 'component-1');
+    expect(onRemoveComponent).toHaveBeenCalledWith('tree', document.objects[0]!.components[0]!.id);
   });
 
   test('commits finite numeric drafts and restores empty input without moving the object', () => {
@@ -112,6 +117,87 @@ describe('InspectorPanel', () => {
     fireEvent.change(screen.getByLabelText('태그'), { target: { value: '' } });
     fireEvent.blur(screen.getByLabelText('태그'));
     expect(onUpdateObject).toHaveBeenCalledWith('tree', { tags: [] });
+  });
+
+  test('스크립트 추가 메뉴는 선택한 스크립트를 script 구성 요소로 추가한다', () => {
+    const unregister = registerBuiltinScripts();
+    const onAddComponent = jest.fn();
+    try {
+      render(<InspectorPanel sceneDocument={document} selectedObjectId="tree" onAddComponent={onAddComponent} />);
+      fireEvent.change(screen.getByLabelText('추가할 스크립트'), { target: { value: BUILTIN_SCRIPT_IDS.door } });
+      fireEvent.click(screen.getByText('스크립트 추가'));
+      expect(onAddComponent).toHaveBeenCalledWith('tree', {
+        type: SCENE_COMPONENT_TYPES.script,
+        data: { scriptId: BUILTIN_SCRIPT_IDS.door, props: {} },
+      });
+    } finally {
+      unregister();
+    }
+  });
+
+  test('스크립트 prop 편집은 기존 override를 유지한 채 구성 요소 데이터 갱신을 요청한다', () => {
+    const unregister = registerBuiltinScripts();
+    const onUpdateComponent = jest.fn();
+    const scripted = createSceneDocument({
+      id: 'scene',
+      objects: [{
+        id: 'spinner',
+        components: [createSceneComponent({
+          id: 'rotator',
+          type: SCENE_COMPONENT_TYPES.script,
+          data: { scriptId: BUILTIN_SCRIPT_IDS.rotator, props: { degreesPerSecond: 90 } },
+        })],
+      }],
+    });
+    try {
+      render(<InspectorPanel sceneDocument={scripted} selectedObjectId="spinner" onUpdateComponent={onUpdateComponent} />);
+      const input = screen.getByLabelText('degreesPerSecond');
+      expect(input).toHaveValue(90);
+      fireEvent.change(input, { target: { value: '120' } });
+      fireEvent.blur(input);
+      expect(onUpdateComponent).toHaveBeenCalledWith('spinner', 'rotator', {
+        scriptId: BUILTIN_SCRIPT_IDS.rotator,
+        props: { degreesPerSecond: 120 },
+      });
+    } finally {
+      unregister();
+    }
+  });
+
+  test('prefab 인스턴스 루트는 override 목록과 되돌리기·적용을, 일반 객체는 프리팹 만들기를 보여 준다', () => {
+    const prefab = createPrefabDocument({ id: 'lamp', name: 'Lamp', objects: [{ id: 'root', name: 'Lamp' }] });
+    const instance = createPrefabInstance(prefab, { idPrefix: 'lamp-1' });
+    const renamed = instance.objects.map((object) => ({ ...object, name: 'Custom' }));
+    const scene = createSceneDocument({ id: 'scene', objects: [...renamed, { id: 'tree', name: 'Tree' }] });
+    const actions = {
+      prefabs: [prefab],
+      onCreate: jest.fn(),
+      onRevertOverride: jest.fn(),
+      onRevertAll: jest.fn(),
+      onApply: jest.fn(),
+    };
+    const { rerender } = render(<InspectorPanel sceneDocument={scene} selectedObjectId="lamp-1:root" prefab={actions} />);
+
+    expect(screen.getByText('프리팹 · Lamp')).toBeTruthy();
+    expect(screen.getByText('Lamp · name')).toBeTruthy();
+    fireEvent.click(screen.getByText('되돌리기'));
+    expect(actions.onRevertOverride).toHaveBeenCalledWith('lamp-1:root', prefab, {
+      kind: 'property',
+      objectId: 'root',
+      path: 'name',
+      value: 'Custom',
+    });
+    fireEvent.click(screen.getByText('모두 되돌리기'));
+    expect(actions.onRevertAll).toHaveBeenCalledWith('lamp-1:root', prefab);
+    fireEvent.click(screen.getByText('프리팹에 적용'));
+    expect(actions.onApply).toHaveBeenCalledWith('lamp-1:root', prefab);
+
+    rerender(<InspectorPanel sceneDocument={scene} selectedObjectId="lamp-1:root" prefab={{ ...actions, prefabs: [] }} />);
+    expect(screen.getByText('원본 프리팹을 찾을 수 없습니다 (lamp)')).toBeTruthy();
+
+    rerender(<InspectorPanel sceneDocument={scene} selectedObjectId="tree" prefab={actions} />);
+    fireEvent.click(screen.getByText('프리팹으로 만들기'));
+    expect(actions.onCreate).toHaveBeenCalledWith('tree');
   });
 
   test('renders empty state without selected object', () => {

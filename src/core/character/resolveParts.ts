@@ -1,4 +1,5 @@
 import type { AssetRecord } from '../assets';
+import { readCharacterBoneAttachment } from './attachments';
 import type { OutfitSlot } from './types';
 import type { Part } from '../motions/entities/types';
 
@@ -13,6 +14,7 @@ export type ResolveCharacterPartsInput = {
 const isRenderableAsset = (asset: AssetRecord | undefined): asset is AssetRecord & { url: string } => {
   if (!asset?.url) return false;
   if (asset.metadata?.['placeholder'] === true) return false;
+  if (asset.metadata?.['deformation'] === 'rigid' && !readCharacterBoneAttachment(asset)) return false;
   return asset.kind === 'characterPart' || asset.kind === 'weapon';
 };
 
@@ -25,12 +27,14 @@ const readHideBodyRegions = (asset: AssetRecord): string[] | undefined => {
 
 const assetToPart = (asset: AssetRecord & { url: string }): Part => {
   const hideNodeNames = readHideBodyRegions(asset);
+  const attachment = readCharacterBoneAttachment(asset);
   return {
     id: asset.id,
     ...(asset.slot ? { slot: asset.slot } : {}),
     url: asset.url,
     ...(asset.colors?.primary ? { color: asset.colors.primary } : {}),
     ...(hideNodeNames ? { hideNodeNames } : {}),
+    ...(attachment ? { attachment } : {}),
   };
 };
 

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { render, screen } from '@testing-library/react';
 
+import type { AnimatorControllerDefinition } from '../../../animation/core/animator/types';
 import { EntityController } from '../EntityController';
 
 const mockGaesupState = {
@@ -12,7 +13,6 @@ const mockGaesupState = {
     characterUrl: '',
     ridingUrl: '',
     vehicleUrl: '',
-    wheelUrl: '',
   },
 };
 let mockBuildingEditMode = false;
@@ -59,10 +59,12 @@ jest.mock('../../../stores/gaesupStore', () => ({
     selector(mockGaesupState),
 }));
 
+const mockEntityProps = jest.fn();
 jest.mock('../../entities/refs/PhysicsEntity', () => ({
-  PhysicsEntity: ({ children }: { children?: ReactNode }) => (
-    <div data-testid="physics-entity">{children}</div>
-  ),
+  PhysicsEntity: ({ children, ...props }: { children?: ReactNode }) => {
+    mockEntityProps(props);
+    return <div data-testid="physics-entity">{children}</div>;
+  },
 }));
 
 jest.mock('../../hooks/useStateSystem', () => ({
@@ -81,6 +83,32 @@ describe('EntityController', () => {
     mockBuildingEditMode = false;
     mockGaesupState.urls.characterUrl = '';
     jest.clearAllMocks();
+  });
+
+  test('passes every entity prop the caller sets and keeps the controller-owned ones', () => {
+    mockGaesupState.urls.characterUrl = '/character.glb';
+    const callerProps = {
+      name: 'hero',
+      size: { x: 1, y: 2, z: 1 },
+      rigidbodyType: 'kinematicPosition' as const,
+      groundContactFilter: () => true,
+      animatorController: { id: 'hero' } as unknown as AnimatorControllerDefinition,
+      userData: { team: 'blue' },
+      sensor: true,
+      onCollisionEnter: jest.fn(),
+      onIntersectionEnter: jest.fn(),
+      onIntersectionExit: jest.fn(),
+      isNotColliding: true,
+      currentAnimation: 'wave',
+      scale: 0.5,
+      rotation: [0, 1, 0] as [number, number, number],
+    };
+    render(<EntityController props={{ ...callerProps, enableKeyboard: false, isRiderOn: true }} />);
+    const entityProps = mockEntityProps.mock.lastCall?.[0];
+    expect(entityProps).toMatchObject({
+      ...callerProps, isActive: true, componentType: 'character', url: '/character.glb', isRiderOn: false,
+    });
+    expect(entityProps).not.toHaveProperty('enableKeyboard');
   });
 
   test('keeps hook order stable while readiness and edit eligibility change', () => {
